@@ -20,40 +20,43 @@ ditto mines it into a <code>you.md</code> your agents read before every task.
 
 ---
 
-## a real one
+## a real run
 
-no toy demo. i asked an agent to help me launch *this repo*. one line: **"help me post ditto on reddit."**
+i asked an agent to help me launch this repo. one line: **"help me post ditto on reddit."** same model, once cold, once with my ditto profile loaded.
 
-a cold agent hands you generic launch slop:
+<table><tr><td>
 
-> **title:** Introducing Ditto: Turn Your AI Coding History Into a Personalized Assistant Profile
->
-> **body:** Are you tired of re-explaining yourself to your AI every session? 🤖 Meet **Ditto** — the open-source tool that transforms your coding history into a personalized profile your agents can read! ✨
-> 🔒 100% local & private
-> ⚡ Works with Claude, Cursor, Codex & more
-> 🚀 Set up in minutes
-> Would love your feedback — check it out and drop a ⭐!
+**🡒 cold agent**
 
-the same model, running my ditto profile, hands you this:
+**Title:** Introducing Ditto: Turn Your AI Coding History Into a Personalized Assistant Profile
 
-> **post it in r/ClaudeCode.**
->
-> **title:** I had 20 AI agents read 8 months of my claude sessions and build a model of how I think. it was unsettling how accurate it was
->
-> **body:**
-> i work with claude and codex every day. 8 months, solo. every session gets logged and i never looked back at them.
->
-> last night it hit me those logs are the most honest record of how i actually work that exists anywhere. i don't perform in them, i just work. so i mined them.
->
-> pulled every message i ever typed. claude code stores sessions as jsonl on disk (~/.claude/projects), codex too. stripped all the tool output and pasted errors, kept only my own words. ~1,656 sessions, about 3M tokens of just me.
->
-> split it into 20 chunks and sent 20 agents at it in parallel. each read a slice and pulled how i decide, what i reject, how i talk, where i get stuck. merged them into one profile, ranked by how many agents independently found the same trait. what 15+ of them caught is the real me.
->
-> turned the top of it into a skill claude reads before every task, a you.md in .claude/skills. i called it ditto. now it starts already knowing how i work instead of me re-explaining myself every session.
->
-> you have this same goldmine sitting on your disk right now and you're probably deleting it.
+Are you tired of re-explaining yourself to your AI every session? 🤖 Meet **Ditto**, the open-source tool that transforms your coding history into a personalized profile your agents can read!
 
-it chose the subreddit. it wrote the title the way i'd write it, lowercase, curiosity-first, brand name nowhere near the front. it wrote the body in my voice, no hype, no emoji, the real story. i posted it word for word. that's not a smarter model. it's the same model that read 8 months of me.
+🔒 100% local & private  ⚡ Works with Claude, Cursor, Codex & more  🚀 Set up in minutes
+
+Would love your feedback, check it out and drop a ⭐!
+
+</td></tr></table>
+
+<table><tr><td>
+
+**🡒 agent + ditto**
+
+r/ClaudeCode is where this lands, that crowd basically lives in their session logs. i'd run with this:
+
+**title:** I had 20 AI agents read 8 months of my claude sessions and build a model of how I think. it was unsettling how accurate it was
+
+**body:** i work with claude and codex every day. 8 months, solo. every session gets logged and i never looked back at them.
+
+last night it hit me those logs are the most honest record of how i actually work that exists anywhere. i don't perform in them, i just work. so i mined them.
+
+pulled every message i ever typed, ~1,656 sessions, about 3M tokens of just me. split it into 20 chunks, sent 20 agents at it in parallel, each pulling how i decide, what i reject, how i talk, where i get stuck. merged them into one profile ranked by how many agents independently found each trait. what 15+ of them caught is the real me.
+
+turned the top of it into a skill claude reads before every task. now it starts already knowing how i work instead of me re-explaining myself every session.
+
+you have this same goldmine sitting on your disk right now and you're probably deleting it.
+
+</td></tr></table>
 
 ## what it finds
 
