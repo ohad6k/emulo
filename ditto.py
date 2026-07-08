@@ -111,6 +111,18 @@ def discover_files(roots):
         files += glob.glob(os.path.join(r, "**", "*.jsonl"), recursive=True)
     return sorted(set(files))
 
+def session_label(path):
+    """Label a session block by parent dir + filename.
+
+    Copilot logs are all named events.jsonl under a per-session directory, so
+    the bare filename collapses every block header to the same string. Prefix
+    the parent directory (the session id for Copilot, the project for Claude)
+    to keep sessions distinguishable in the corpus.
+    """
+    parent = os.path.basename(os.path.dirname(path))
+    name = os.path.basename(path)
+    return f"{parent}/{name}" if parent else name
+
 def mine_files(files, no_redact=False):
     sessions = msgs = chars = redactions = 0
     blocks = []
@@ -119,7 +131,7 @@ def mine_files(files, no_redact=False):
         if not ums:
             continue
         sessions += 1
-        buf = [f"\n===== {os.path.basename(f)} ====="]
+        buf = [f"\n===== {session_label(f)} ====="]
         for ts, t in ums:
             if not no_redact:
                 before = t
