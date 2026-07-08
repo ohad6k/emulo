@@ -144,6 +144,8 @@ ditto writes the `you.md` with the right frontmatter already, so on claude code 
 
 your logs are ~95% noise (tool output, file contents, diffs). the signal is the small slice of words you actually typed. ditto isolates that, then uses an agent fan-out so no single context has to hold all of it: each agent reads a chunk and pulls how you decide, what you reject, how you talk, where you get stuck. traits that show up across many chunks are the real you. one-offs are noise. that ranking is the whole trick.
 
+**it mines your raw sessions, not your `CLAUDE.md` or rules file.** that's the entire point — anything can summarize the rules you already wrote (that's what `/init` does). ditto surfaces the stuff you *never* wrote down, straight from how you actually worked. if a run builds a profile without reading your real `.jsonl` logs, it isn't ditto — it's just your rules file reflected back.
+
 ## limits (being honest)
 
 - it models how you *work and talk*, not your knowledge. it won't make an agent smarter, it makes it act more like you.

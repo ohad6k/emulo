@@ -7,13 +7,19 @@ description: Mine your own AI coding-session history into a "you.md" — a model
 
 Turn the user's own AI session logs into a `you.md` they can drop into `.claude/skills/`, `AGENTS.md`, or cursor rules. Runs locally, redacts secrets by default. This skill orchestrates the whole flow so the user never touches python or a manual step.
 
+## The one rule that makes this ditto (read first)
+
+The profile MUST be mined from the user's **raw session logs** (the `.jsonl` history). **NEVER** build it from their `AGENTS.md`, `CLAUDE.md`, cursor rules, memory files, or a description they type — that just reflects their existing rules back at them, which is the exact opposite of the point and something `/init` already does. The whole value of ditto is pulling out what they *never wrote down*, straight from how they actually worked.
+
+So: **run `ditto.py` on the real logs first.** If it finds no logs, **STOP and ask where the logs are** (`--path <folder>`). Do not fall back to summarizing instructions. **No mined logs → no profile.** If you ever produce a profile without having run the extractor over real session `.jsonl`, you have failed the task — say so instead of shipping a fake.
+
 ## Steps
 
 1. **Extract (deterministic, safe).** Run the bundled extractor. It reads the user's session logs, keeps only their own words, and redacts API keys / tokens / emails / phone numbers BEFORE anything is written. Never skip redaction.
    ```
    python <skill-dir>/../ditto.py --chunks 20 --out ditto-out
    ```
-   If no logs are found, ask where their logs live and pass `--path <folder>`. Report the counts it prints (sessions / messages / tokens / redactions).
+   If no logs are found, **STOP and ask** where their logs live (pass `--path <folder>`). Do not proceed without real logs, and never build a profile from their instructions instead. The counts it prints (sessions / messages / tokens / redactions) are your proof it actually read the logs — report them; if sessions is 0, you have nothing to mine.
 
 2. **Mine (fan-out).** Spawn one sub-agent per file in `ditto-out/chunks/`, each running the per-chunk prompt from `MINING_PROMPT.md` on its chunk. Run them in parallel. Each returns a structured profile of one slice.
    - If the environment can't fan out sub-agents, process chunks sequentially instead — same prompt, one at a time.
@@ -30,5 +36,6 @@ Turn the user's own AI session logs into a `you.md` they can drop into `.claude/
 ## Rules
 - **Local only.** No network calls. The user's logs never leave their machine. Say so.
 - **Redaction is not optional.** If the user asks for `--no-redact`, warn them their secrets will appear in the corpus and any shared output.
-- **Don't invent traits.** Every line in `you.md` must trace to something they actually wrote. Cut generic filler.
+- **Don't invent traits.** Every line in `you.md` must trace to something they actually wrote *in the logs*. Cut generic filler.
+- **Mine the logs or stop.** The profile comes ONLY from the raw session `.jsonl`. Never synthesize it from `AGENTS.md` / `CLAUDE.md` / memory / a description — that is not ditto, it is their rules file reflected back.
 - Keep `you.md` lean — it loads on every task.
