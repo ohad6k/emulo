@@ -30,51 +30,25 @@ that's why it reads raw session logs, not your `CLAUDE.md` or rules file.
 
 ## a real run
 
-i asked an agent to help me launch this repo. one line: **"help me post ditto on reddit."** same model, once cold, once with my ditto profile loaded.
+i asked an agent to make this repo easier to trust before someone runs it on private logs. same model, once cold, once with my ditto profile loaded.
 
 <table><tr><td>
 
-**🡒 agent**
+**agent**
 
-Here's how I'd play it.
-
-**Subreddits:** r/ClaudeAI and r/ChatGPTCoding are your core audience — they've got the .jsonl logs on disk right now. r/LocalLLaMA fits the local angle but is allergic to hype. r/cursor, r/SideProject, r/opensource for reach. Skip r/programming on launch day. Don't blast all at once — post to one, tune the title, repost over a few days.
-
-**Titles (pick per sub):**
-- I built a local tool that reads your AI coding logs and writes a "you.md" your agents read before every task
-- ditto: mine your own Claude Code / Cursor history into a profile so your agent codes like you (local, open source)
-
-**Body:**
-> Every fresh agent session starts from zero — it doesn't know how you work, so you re-explain yourself every time. All of that is already in your session logs. So I built **ditto**: it reads your history, mines how you decide and talk, and writes a `you.md` your agents read before every task.
-> - runs locally, your logs never leave your machine
-> - redacts secrets before processing
-> - open source: [link]
-
-Also: open with the pain not the product, reply fast in the first hour, add a demo gif, and flair it correctly. Want me to write tuned variants for each subreddit?
+Add a privacy section explaining that the tool runs locally, redacts secrets, and does not upload user data. Include a quickstart and mention that users can inspect the Python file before running it.
 
 </td></tr></table>
 
 <table><tr><td>
 
-**🡒 agent + ditto**
+**agent + ditto**
 
-the insight first: the mining number is your whole post. "i read 1,656 of my own sessions" is a confession, not a pitch, and nobody scrolls past a confession. lead with the mirror, not the mechanism. the tool is secondary.
+make the trust path auditable, not just reassuring.
 
-post it in r/ClaudeCode. one sub, not five — that crowd lives in their session logs, they'll get it instantly. the repo link goes in your first comment, not the body.
+show exactly what it reads, exactly what it writes, and where redaction happens. link the source file next to the claim. don't say "safe" like a slogan. give people something they can verify.
 
-**title:** I had 20 AI agents read 8 months of my claude sessions and build a model of how I think. it was unsettling how accurate it was
-
-**body:** i work with claude and codex every day. 8 months, solo. every session gets logged and i never looked back at them.
-
-last night it hit me those logs are the most honest record of how i actually work that exists anywhere. i don't perform in them, i just work. so i mined them.
-
-pulled every message i ever typed, ~1,656 sessions, about 3M tokens of just me. split it into 20 chunks, sent 20 agents at it in parallel, each pulling how i decide, what i reject, how i talk, where i get stuck. merged them into one profile ranked by how many agents independently found each trait. what 15+ of them caught is the real me.
-
-turned the top of it into a skill claude reads before every task. now it starts already knowing how i work instead of me re-explaining myself every session.
-
-you have this same goldmine sitting on your disk right now and you're probably deleting it.
-
-then the move: post it, drop the repo as your own first comment within a minute, and answer every "how" with the mining approach, not features. the comments are where it converts.
+also don't ask people to share their full `you.md`. that's private by default. ask them to share one weird trait it found instead.
 
 </td></tr></table>
 
