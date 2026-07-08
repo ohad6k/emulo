@@ -19,36 +19,17 @@ ditto mines it into a <code>you.md</code> your agents read before every task.
 
 ---
 
-## the difference
+## one profile, every task
 
-ask an agent a real judgment call. one hedges through a wall of considerations. one answers like you.
+ditto isn't a coding tool. your `you.md` rides on everything — the agent starts each task already knowing your taste, your voice, your rules. same you, whether you're building, designing, or posting. these are real runs, cold vs the same model with a profile loaded:
 
-**prompt:** *"i'm thinking of building a dashboard to track my users. good idea?"*
+| you ask for | a cold agent | your agent, with ditto |
+|---|---|---|
+| **a launch tweet** | *"just shipped trimstate 🧹 your components get honest!"* | *"every codebase i inherit has like 40 useState hooks nothing reads anymore. now it's one command."* |
+| **a landing hero** | centered layout, indigo accent, a gradient glow behind the headline, a "trusted by" logo strip | flat, monochrome, no blobs. the real screenshot is the hero. reads like linear. |
+| **"should i build a dashboard to track users?"** | *"it can be a good idea, but it depends. here are five factors to weigh…"* | *"no. a dashboard for a handful of users is procrastination. go get users."* |
 
-<table>
-<tr><th width="50%">cold agent</th><th width="50%">agent + ditto</th></tr>
-<tr valign="top"><td>
-
-> it can be a good idea, but it depends. before building anything i'd pin down:
->
-> - what decision does this drive?
-> - how many users? under a few hundred, a weekly SQL query beats a custom UI.
-> - buy vs build: PostHog or Plausible give you this today.
->
-> …good idea *if* you can name the decision it drives and you've outgrown a manual query.
-
-</td><td>
-
-> no. build the thing that gets you users, not the thing that watches them.
->
-> a dashboard for a handful of users is procrastination dressed up as work.
->
-> if you need the numbers, wire posthog in 20 min and move on. then go ship something that pulls people in.
-
-</td></tr>
-</table>
-
-both landed in a similar place. the cold one hedged through a wall to get there. ditto just told you, the way you would: no, go do the real thing.
+nobody re-explained a thing. it read all of that out of your own history — how you write, what you find ugly, how you actually decide.
 
 ## what it finds
 
