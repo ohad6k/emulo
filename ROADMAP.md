@@ -1,8 +1,8 @@
 # roadmap
 
-ditto is intentionally small right now: extract logs, mine a profile, install `you.md`.
+ditto's core is focused: extract real AI coding history, mine the user's working profile, and install it where agents already read context.
 
-The next useful pieces are the ones that reduce trust friction or make the profile more useful across agents.
+The roadmap is about making that loop safer, easier to install, and portable across more agent tools.
 
 ## next
 
@@ -54,7 +54,7 @@ Goal: use the profile to improve the human, not only imitate them.
 
 ## contributions wanted
 
-The best contributions right now are small and auditable:
+The most useful contributions right now are practical and easy to audit:
 
 - sample JSONL formats from other tools
 - redaction pattern improvements
