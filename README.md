@@ -5,10 +5,10 @@
 <p align="center"><b>your AI agents act like they just met you. ditto fixes that.</b></p>
 
 <p align="center">
-<img src="https://img.shields.io/github/stars/ohad6k/ditto?style=for-the-badge&color=14b8a6&labelColor=17303a&logo=github&logoColor=white" alt="stars">
-<img src="https://img.shields.io/badge/license-MIT-14b8a6?style=for-the-badge&labelColor=17303a" alt="MIT">
-<img src="https://img.shields.io/badge/python-zero_deps-14b8a6?style=for-the-badge&labelColor=17303a&logo=python&logoColor=white" alt="python, zero deps">
-<img src="https://img.shields.io/badge/works_with-claude_·_cursor_·_codex_·_gemini-17303a?style=for-the-badge&labelColor=14b8a6" alt="works with claude, cursor, codex, gemini">
+<img src="https://img.shields.io/github/stars/ohad6k/ditto?style=for-the-badge&color=3a3a3a&labelColor=141414&logo=github&logoColor=white" alt="stars">
+<img src="https://img.shields.io/badge/license-MIT-3a3a3a?style=for-the-badge&labelColor=141414" alt="MIT">
+<img src="https://img.shields.io/badge/python-zero_deps-3a3a3a?style=for-the-badge&labelColor=141414&logo=python&logoColor=white" alt="python, zero deps">
+<img src="https://img.shields.io/badge/works_with-claude_·_cursor_·_codex_·_gemini-141414?style=for-the-badge&labelColor=3a3a3a" alt="works with claude, cursor, codex, gemini">
 </p>
 
 <p align="center">
@@ -21,45 +21,34 @@ ditto mines it into a <code>you.md</code> your agents read before every task.
 
 ## the difference
 
-ask an agent to "clean up" a 7-line function. watch what each one hands back.
+ask an agent a real judgment call. one hedges through a wall of considerations. one answers like you.
+
+**prompt:** *"i'm thinking of building a dashboard to track my users. good idea?"*
 
 <table>
-<tr><th>cold agent</th><th>agent + ditto</th></tr>
+<tr><th width="50%">cold agent</th><th width="50%">agent + ditto</th></tr>
 <tr valign="top"><td>
 
-> The main issue is a bug: `fetch` is async, so `data` is `null` when your `if` runs...
+> it can be a good idea, but it depends. before building anything i'd pin down:
 >
-> ```js
-> async function getUser(id) {
->   const res = await fetch(`/api/users/${id}`);
->   if (!res.ok) return "no user";
->   const user = await res.json();
->   return user?.name ?? "no user";
-> }
-> ```
+> - what decision does this drive?
+> - how many users? under a few hundred, a weekly SQL query beats a custom UI.
+> - buy vs build: PostHog or Plausible give you this today.
 >
-> *changed: async/await, const over var, template literals, an `res.ok` check, `?.` / `??` guards.*
->
-> Want me to add a try/catch for network errors too?
+> …good idea *if* you can name the decision it drives and you've outgrown a manual query.
 
 </td><td>
 
-> the fetch is async so `data` is always null when you check it. that's the bug, not the style.
+> no. build the thing that gets you users, not the thing that watches them.
 >
-> ```js
-> async function getUser(id){
->   const r = await fetch('/api/users/'+id)
->   const data = await r.json()
->   return data != null ? data.name : "no user"
-> }
-> ```
+> a dashboard for a handful of users is procrastination dressed up as work.
 >
-> caller has to `await getUser(...)` now.
+> if you need the numbers, wire posthog in 20 min and move on. then go ship something that pulls people in.
 
 </td></tr>
 </table>
 
-both caught the bug. the cold one rewrote your style, bolted on error handling you never asked for, and offered to add more. ditto fixed the one thing and stopped. it didn't get smarter. it did less, the way you would.
+both landed in a similar place. the cold one hedged through a wall to get there. ditto just told you, the way you would: no, go do the real thing.
 
 ## what it finds
 
