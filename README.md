@@ -19,17 +19,40 @@ ditto mines it into a <code>you.md</code> your agents read before every task.
 
 ---
 
-## one profile, every task
+## a real one
 
-ditto isn't a coding tool. your `you.md` rides on everything — the agent starts each task already knowing your taste, your voice, your rules. same you, whether you're building, designing, or posting. these are real runs, cold vs the same model with a profile loaded:
+no toy demo. i asked an agent to help me launch *this repo*. one line: **"help me post ditto on reddit."**
 
-| you ask for | a cold agent | your agent, with ditto |
-|---|---|---|
-| **a launch tweet** | *"just shipped trimstate 🧹 your components get honest!"* | *"every codebase i inherit has like 40 useState hooks nothing reads anymore. now it's one command."* |
-| **a landing hero** | centered layout, indigo accent, a gradient glow behind the headline, a "trusted by" logo strip | flat, monochrome, no blobs. the real screenshot is the hero. reads like linear. |
-| **"should i build a dashboard to track users?"** | *"it can be a good idea, but it depends. here are five factors to weigh…"* | *"no. a dashboard for a handful of users is procrastination. go get users."* |
+a cold agent hands you generic launch slop:
 
-nobody re-explained a thing. it read all of that out of your own history — how you write, what you find ugly, how you actually decide.
+> **title:** Introducing Ditto: Turn Your AI Coding History Into a Personalized Assistant Profile
+>
+> **body:** Are you tired of re-explaining yourself to your AI every session? 🤖 Meet **Ditto** — the open-source tool that transforms your coding history into a personalized profile your agents can read! ✨
+> 🔒 100% local & private
+> ⚡ Works with Claude, Cursor, Codex & more
+> 🚀 Set up in minutes
+> Would love your feedback — check it out and drop a ⭐!
+
+the same model, running my ditto profile, hands you this:
+
+> **post it in r/ClaudeCode.**
+>
+> **title:** I had 20 AI agents read 8 months of my claude sessions and build a model of how I think. it was unsettling how accurate it was
+>
+> **body:**
+> i work with claude and codex every day. 8 months, solo. every session gets logged and i never looked back at them.
+>
+> last night it hit me those logs are the most honest record of how i actually work that exists anywhere. i don't perform in them, i just work. so i mined them.
+>
+> pulled every message i ever typed. claude code stores sessions as jsonl on disk (~/.claude/projects), codex too. stripped all the tool output and pasted errors, kept only my own words. ~1,656 sessions, about 3M tokens of just me.
+>
+> split it into 20 chunks and sent 20 agents at it in parallel. each read a slice and pulled how i decide, what i reject, how i talk, where i get stuck. merged them into one profile, ranked by how many agents independently found the same trait. what 15+ of them caught is the real me.
+>
+> turned the top of it into a skill claude reads before every task, a you.md in .claude/skills. i called it ditto. now it starts already knowing how i work instead of me re-explaining myself every session.
+>
+> you have this same goldmine sitting on your disk right now and you're probably deleting it.
+
+it chose the subreddit. it wrote the title the way i'd write it, lowercase, curiosity-first, brand name nowhere near the front. it wrote the body in my voice, no hype, no emoji, the real story. i posted it word for word. that's not a smarter model. it's the same model that read 8 months of me.
 
 ## what it finds
 
