@@ -106,6 +106,119 @@ class DittoCliTest(unittest.TestCase):
             self.assertNotIn("assistant output should not appear", corpus)
             self.assertEqual(corpus, chunk)
 
+    def test_install_codex_writes_skill_and_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            home = root / "home"
+            profile = root / "you.md"
+            profile.write_text(
+                "---\nname: you\ndescription: test profile\n---\n\n# profile\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "--install",
+                    str(profile),
+                    "--target",
+                    "codex",
+                    "--home",
+                    str(home),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            dest = home / ".codex" / "skills" / "you" / "SKILL.md"
+            self.assertEqual(profile.read_text(encoding="utf-8"), dest.read_text(encoding="utf-8"))
+
+            second = subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "--install",
+                    str(profile),
+                    "--target",
+                    "codex",
+                    "--home",
+                    str(home),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(second.returncode, 0)
+            self.assertIn("destination already exists", second.stdout)
+
+    def test_install_agents_appends_marked_block_without_deleting_existing_content(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = root / "repo"
+            repo.mkdir()
+            agents = repo / "AGENTS.md"
+            agents.write_text("# existing rules\n\nkeep this\n", encoding="utf-8")
+            profile = root / "you.md"
+            profile.write_text(
+                "---\nname: you\ndescription: test profile\n---\n\n# profile\n\n- done means live\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "--install",
+                    str(profile),
+                    "--target",
+                    "agents",
+                    "--repo",
+                    str(repo),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            installed = agents.read_text(encoding="utf-8")
+            self.assertIn("keep this", installed)
+            self.assertIn("<!-- ditto profile:start -->", installed)
+            self.assertIn("- done means live", installed)
+            self.assertNotIn("name: you", installed)
+
+    def test_install_cursor_writes_mdc_frontmatter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = root / "repo"
+            repo.mkdir()
+            profile = root / "you.md"
+            profile.write_text(
+                "---\nname: you\ndescription: test profile\n---\n\n# profile\n\n- keep answers short\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "--install",
+                    str(profile),
+                    "--target",
+                    "cursor",
+                    "--repo",
+                    str(repo),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            rule = (repo / ".cursor" / "rules" / "you.mdc").read_text(encoding="utf-8")
+            self.assertTrue(rule.startswith("---\ndescription: ditto user profile\nalwaysApply: true\n---"))
+            self.assertIn("- keep answers short", rule)
+            self.assertNotIn("name: you", rule)
+
 
 if __name__ == "__main__":
     unittest.main()

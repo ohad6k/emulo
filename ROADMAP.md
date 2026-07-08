@@ -6,18 +6,6 @@ The roadmap is about making that loop safer, easier to install, and portable acr
 
 ## next
 
-### one-command installer
-
-Turn the current agent-guided flow into a direct command that can place the generated profile into:
-
-- Claude Code skills
-- Codex skills
-- Cursor rules
-- `AGENTS.md`
-- `GEMINI.md`
-
-Goal: fewer manual steps after `you.md` exists.
-
 ### more log sources
 
 Add adapters for other AI coding tools when their local logs are accessible.

@@ -158,6 +158,16 @@ copy/paste version:
 run ditto on my local Claude/Codex logs, mine a you.md from the chunks, install it for my current agent, and show me the session/message/token/redaction counts before claiming it worked.
 ```
 
+manual install:
+
+```bash
+python ditto.py --install you.md --target codex
+python ditto.py --install you.md --target claude
+python ditto.py --install you.md --target cursor --repo .
+python ditto.py --install you.md --target agents --repo .
+python ditto.py --install you.md --target gemini --repo .
+```
+
 ## privacy (read this)
 
 - **100% local.** ditto makes zero network calls. your logs never leave your machine. it's plain python, read the file.

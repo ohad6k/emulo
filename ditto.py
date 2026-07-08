@@ -12,6 +12,7 @@ MINING_PROMPT.md to produce your `you.md`.
 Usage:
     python ditto.py                     # auto-detect Codex + Claude logs
     python ditto.py --dry-run           # preview counts without writing files
+    python ditto.py --install you.md --target codex
     python ditto.py --source codex      # only ~/.codex/sessions
     python ditto.py --path ./logs       # a folder of jsonl you point at
     python ditto.py --chunks 20         # how many chunks to split into
@@ -24,6 +25,8 @@ SOURCES = {
     "codex":  [os.path.join(HOME, ".codex", "sessions")],
     "claude": [os.path.join(HOME, ".claude", "projects")],
 }
+DITTO_START = "<!-- ditto profile:start -->"
+DITTO_END = "<!-- ditto profile:end -->"
 
 # --- redaction: run BEFORE any of your text is written or seen by an agent ---
 REDACTIONS = [
@@ -158,6 +161,100 @@ def print_counts(result, no_redact=False):
     print(f"tokens (approx): {result['chars'] // 4:,}")
     print(f"secrets/PII redacted: {result['redactions']}" + ("  (redaction OFF)" if no_redact else ""))
 
+def strip_frontmatter(text):
+    if not text.startswith("---\n"):
+        return text.strip()
+    end = text.find("\n---", 4)
+    if end == -1:
+        return text.strip()
+    return text[end + 4:].strip()
+
+def has_skill_frontmatter(text):
+    if not text.startswith("---\n"):
+        return False
+    end = text.find("\n---", 4)
+    if end == -1:
+        return False
+    head = text[4:end]
+    return "name:" in head and "description:" in head
+
+def cursor_rule(profile):
+    body = strip_frontmatter(profile)
+    return f"---\ndescription: ditto user profile\nalwaysApply: true\n---\n\n{body.strip()}\n"
+
+def install_destination(target, repo_dir, home_dir):
+    if target == "claude":
+        return os.path.join(home_dir, ".claude", "skills", "you", "SKILL.md")
+    if target == "codex":
+        return os.path.join(home_dir, ".codex", "skills", "you", "SKILL.md")
+    if target == "cursor":
+        return os.path.join(repo_dir, ".cursor", "rules", "you.mdc")
+    if target == "agents":
+        return os.path.join(repo_dir, "AGENTS.md")
+    if target == "gemini":
+        return os.path.join(repo_dir, "GEMINI.md")
+    raise ValueError(f"unknown target: {target}")
+
+def install_profile(profile_path, target, repo_dir, home_dir, yes=False, dry_run=False):
+    if not os.path.exists(profile_path):
+        print(f"profile not found: {profile_path}")
+        sys.exit(1)
+
+    with open(profile_path, "r", encoding="utf-8", errors="replace") as fh:
+        profile = fh.read()
+
+    if target in ("claude", "codex") and not has_skill_frontmatter(profile):
+        print("profile must start with skill frontmatter for this target: name + description")
+        sys.exit(1)
+
+    repo_dir = os.path.abspath(repo_dir)
+    home_dir = os.path.abspath(os.path.expanduser(home_dir))
+    dest = install_destination(target, repo_dir, home_dir)
+    print(f"target: {target}")
+    print(f"destination: {dest}")
+
+    if dry_run:
+        if target in ("agents", "gemini"):
+            print("dry run: would append or update a marked ditto block")
+        else:
+            print("dry run: would write profile file")
+        return
+
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+
+    if target in ("agents", "gemini"):
+        body = strip_frontmatter(profile)
+        block = f"\n\n{DITTO_START}\n# ditto profile\n\n{body}\n{DITTO_END}\n"
+        existing = ""
+        if os.path.exists(dest):
+            with open(dest, "r", encoding="utf-8", errors="replace") as fh:
+                existing = fh.read()
+        if DITTO_START in existing and DITTO_END in existing:
+            if not yes:
+                print("ditto profile block already exists. pass --yes to replace it.")
+                sys.exit(1)
+            pattern = re.compile(
+                re.escape(DITTO_START) + r".*?" + re.escape(DITTO_END),
+                re.DOTALL,
+            )
+            updated = pattern.sub(block.strip(), existing)
+        else:
+            updated = existing.rstrip() + block
+        with open(dest, "w", encoding="utf-8") as fh:
+            fh.write(updated.lstrip() if not existing else updated)
+        print(f"installed: {dest}")
+        return
+
+    if target == "cursor":
+        profile = cursor_rule(profile)
+
+    if os.path.exists(dest) and not yes:
+        print("destination already exists. pass --yes to overwrite it.")
+        sys.exit(1)
+    with open(dest, "w", encoding="utf-8") as fh:
+        fh.write(profile)
+    print(f"installed: {dest}")
+
 def main():
     ap = argparse.ArgumentParser(description="mine your AI sessions into a model of you")
     ap.add_argument("--source", choices=["auto", "codex", "claude"], default="auto")
@@ -166,7 +263,19 @@ def main():
     ap.add_argument("--chunks", type=int, default=20)
     ap.add_argument("--dry-run", action="store_true", help="show counts and output paths without writing files")
     ap.add_argument("--no-redact", action="store_true", help="skip redaction (NOT recommended)")
+    ap.add_argument("--install", metavar="PROFILE", help="install an existing generated you.md profile")
+    ap.add_argument("--target", choices=["claude", "codex", "cursor", "agents", "gemini"], help="where to install --install")
+    ap.add_argument("--repo", default=".", help="repo path for cursor/AGENTS.md/GEMINI.md installs")
+    ap.add_argument("--yes", action="store_true", help="overwrite/replace an existing install")
+    ap.add_argument("--home", default=HOME, help=argparse.SUPPRESS)
     args = ap.parse_args()
+
+    if args.install:
+        if not args.target:
+            print("--install requires --target")
+            sys.exit(1)
+        install_profile(args.install, args.target, args.repo, args.home, args.yes, args.dry_run)
+        return
 
     roots = []
     if args.path:
