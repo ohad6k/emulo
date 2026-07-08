@@ -20,6 +20,14 @@ ditto mines it into a <code>you.md</code> your agents read before every task.
 
 ---
 
+## not memory
+
+memory is what you explicitly told the model.
+
+ditto mines what your work already proved about you: what you reject, what "done" means, when you ask for proof, how you talk when you're actually working, and the agent behaviors that make you stop the task.
+
+that's why it reads raw session logs, not your `CLAUDE.md` or rules file.
+
 ## a real run
 
 i asked an agent to help me launch this repo. one line: **"help me post ditto on reddit."** same model, once cold, once with my ditto profile loaded.
@@ -105,6 +113,12 @@ git clone https://github.com/ohad6k/ditto
 cd ditto
 python ditto.py            # auto-detects Codex + Claude logs. no deps, stdlib only.
 ```
+
+what you can audit before running it:
+
+- [`ditto.py`](ditto.py) is the extractor. stdlib only, no network calls.
+- redaction happens before text is written to `ditto-out/`.
+- the mining prompt is plain markdown: [`MINING_PROMPT.md`](MINING_PROMPT.md).
 
 you get:
 
