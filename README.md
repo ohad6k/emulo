@@ -5,8 +5,7 @@
 <p align="center"><b>Your AI agents act like they just met you. Ditto fixes that.</b></p>
 
 <p align="center">
-<img src="https://img.shields.io/github/stars/ohad6k/ditto?style=for-the-badge&color=3a3a3a&labelColor=141414&logo=github&logoColor=white" alt="stars">
-<a href="https://github.com/ohad6k/ditto/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/ohad6k/ditto/tests.yml?branch=main&style=for-the-badge&label=tests&labelColor=141414&color=3a3a3a" alt="tests"></a>
+<img src="https://img.shields.io/github/stars/ohad6k/ditto?style=for-the-badge&color=3a3a3a&labelColor=141414&logo=github&logoColor=white&cacheSeconds=1800" alt="stars">
 <a href="https://discord.gg/VNnMq2U5r"><img src="https://img.shields.io/badge/discord-join-3a3a3a?style=for-the-badge&labelColor=141414&logo=discord&logoColor=white" alt="discord"></a>
 <img src="https://img.shields.io/badge/license-MIT-3a3a3a?style=for-the-badge&labelColor=141414" alt="MIT">
 <img src="https://img.shields.io/badge/python-zero_deps-3a3a3a?style=for-the-badge&labelColor=141414&logo=python&logoColor=white" alt="python, zero deps">
