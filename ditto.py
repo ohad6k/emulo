@@ -280,9 +280,9 @@ CARD_HTML = """<!doctype html>
   .art.noart {{ height: 140px; }}
   .nameplate {{
     position: absolute; left: 0; right: 0; bottom: 0; text-align: center;
-    background: rgba(248,245,236,.94); border-top: 1.5px solid #17160f; padding: 10px 14px 9px;
+    background: rgba(248,245,236,.94); border-top: 1.5px solid #17160f; padding: 14px 14px 12px;
   }}
-  .nameplate b {{ font-size: 27px; font-weight: 700; letter-spacing: .01em; }}
+  .nameplate b {{ font-size: 22px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }}
   .nameplate div {{ font-size: 10px; letter-spacing: .3em; text-transform: uppercase; margin-top: 2px; color: #444033; }}
   .stats {{ display: flex; border-bottom: 1.5px solid #17160f; }}
   .stat {{ flex: 1; text-align: center; padding: 12px 4px 10px; }}
@@ -293,7 +293,7 @@ CARD_HTML = """<!doctype html>
   .laws-head {{ font-size: 9.5px; letter-spacing: .3em; text-transform: uppercase; color: #444033; margin-bottom: 6px; }}
   .law {{ display: flex; align-items: baseline; gap: 10px; padding: 7px 0; }}
   .law + .law {{ border-top: 1px dotted #b5b0a0; }}
-  .law i {{ font-style: normal; width: 22px; font-size: 12px; }}
+  .law i {{ font-style: normal; width: 52px; font-size: 11px; letter-spacing: .12em; }}
   .law p {{ flex: 1; font-size: 14.5px; line-height: 1.35; }}
   .law code {{ font-family: Georgia, serif; font-size: 11px; letter-spacing: .05em;
     border: 1px solid #17160f; padding: 1px 7px; white-space: nowrap; }}
@@ -347,7 +347,7 @@ def render_card_html(card):
     if months:
         stat_cells.append(f"<div class=stat><b>{months}</b><span>months</span></div>")
     laws = []
-    numerals = ["I.", "II.", "III."]
+    numerals = ["LEX I", "LEX II", "LEX III"]
     for i, law in enumerate(card.get("laws", [])[:3]):
         count = f"<code>{esc(law['count'])}</code>" if law.get("count") else ""
         laws.append(f"<div class=law><i>{numerals[i]}</i><p>{esc(law.get('text', ''))}</p>{count}</div>")

@@ -187,7 +187,9 @@ After mining, get your profile as a card:
 python ditto.py --card
 ```
 
-Terminal card + `ditto-out/card.html` — your archetype, your top laws with their receipt counts (how many of the 20 agents independently found each one), your session stats, and the one uncomfortable truth. Screenshot the card, not the profile. The `you.md` is for your agent; the card is for everyone else.
+<p align="center"><img src="assets/card.png" width="480" alt="a ditto profile card: archetype, laws with consensus counts, session stats, and the one uncomfortable truth"></p>
+
+Your archetype, your laws with their receipt counts (how many of the 20 agents independently found each one), your session stats, and the one uncomfortable truth. Rendered in the terminal + as `ditto-out/card.html`. Screenshot the card, not the profile - the `you.md` is for your agent; the card is for everyone else.
 
 ## Privacy (Read This)
 
