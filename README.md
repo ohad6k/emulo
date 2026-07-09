@@ -150,6 +150,8 @@ When it finds something true about you that you never wrote down - [post the wei
 
 ## Install Your you.md (Any Agent)
 
+> **More than one self.** The default `you.md` is your *working self* — laws and taste for doing a task. The same logs also hold a *thinking self* (how you reason) and a *designer self* (how you make taste calls). See [`examples/`](examples/lenses/) for all three mined from one real 8-month history, and [`examples/unified-system.md`](examples/unified-system.md) for how ditto stacks with graph memory (Obsidian) and soul.md.
+
 Your `you.md` is just a context file. Drop it where your agent already looks and it reads it before every task:
 
 | Tool | Where it goes |

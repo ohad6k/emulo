@@ -106,3 +106,40 @@ ALSO write `ditto-out/card.json` — the shareable card. Exact shape:
 Counts are real report counts, never invented. Then tell the user to run
 `python ditto.py --card` to see their card.
 ```
+
+---
+
+## lenses (optional — the same logs, a different self)
+
+The default reducer produces a **working self**: laws, taste, rules — tuned so an
+agent acts like you on a task. But the same raw chunks hold more than one self. Run
+the reducer again with one of these swapped-in framings to mine a different lens from
+the exact same reports. Same material, different cut.
+
+**Thinking self** — how you reason, not what you rule. Replace the reducer's section
+list with:
+```
+- How they break a problem down (first move, how they narrow it)
+- How they debug (what they do when something is wrong)
+- What they do when stuck (escalate, rebuild, step away, ask)
+- How they decide (by reference, by feel, by proof, by analogy)
+- How they verify they were right
+- Their reasoning tics (the questions they ask themselves out loud)
+- The one thing about how they think that they'd never say out loud
+```
+
+**Designer self** — how you make taste calls. Replace the section list with:
+```
+- What they reject on sight (the cardinal design sin, in their words)
+- What "good" looks like to them (the words they reach for)
+- How they brief a look (reference-first? by feel? by spec?)
+- How they tell a real redesign from a reskin
+- Their non-negotiables (contrast, motion, layout, whatever recurs)
+- What they're actually chasing (the feeling, not the pixels)
+- The taste rule they enforce but never wrote down
+```
+
+Keep the same ranking discipline (count how many reports found each), the same
+"no filler a stranger could guess" bar, and write each lens to its own file
+(`you-thinking.md`, `you-designer.md`) so they stack alongside `you.md`.
+See [`examples/`](examples/) for all three mined from one real history.
