@@ -15,13 +15,20 @@ So: **run `ditto.py` on the real logs first.** If it finds no logs, **STOP and a
 
 ## Steps
 
-1. **Extract (deterministic, safe).** Run the bundled extractor. It reads the user's session logs, keeps only their own words, and redacts API keys / tokens / emails / phone numbers BEFORE anything is written. Never skip redaction.
+1. **Extract (deterministic, safe).** Run the extractor. It reads the user's session logs, keeps only their own words, and redacts API keys / tokens / emails / phone numbers BEFORE anything is written. Never skip redaction.
+
+   First locate `ditto.py`. Check in this order:
+   1. `<skill-dir>/../ditto.py` (skill running from inside the cloned repo)
+   2. `./ditto.py` in the current working directory
+   3. Not found → download it: `curl -O https://raw.githubusercontent.com/ohad6k/ditto/main/ditto.py` (or clone the repo). It is a single stdlib-only file with zero network calls at runtime.
+
+   Then run:
    ```
-   python <skill-dir>/../ditto.py --chunks 20 --out ditto-out
+   python ditto.py --chunks 20 --out ditto-out
    ```
    If no logs are found, **STOP and ask** where their logs live (pass `--path <folder>`). Do not proceed without real logs, and never build a profile from their instructions instead. The counts it prints (sessions / messages / tokens / redactions) are your proof it actually read the logs — report them; if sessions is 0, you have nothing to mine.
 
-2. **Mine (fan-out).** Spawn one sub-agent per file in `ditto-out/chunks/`, each running the per-chunk prompt from `MINING_PROMPT.md` on its chunk. Run them in parallel. Each returns a structured profile of one slice.
+2. **Mine (fan-out).** Spawn one sub-agent per file in `ditto-out/chunks/`, each running the per-chunk prompt from `MINING_PROMPT.md` on its chunk (if not next to `ditto.py`, fetch it from `https://raw.githubusercontent.com/ohad6k/ditto/main/MINING_PROMPT.md`). Run them in parallel. Each returns a structured profile of one slice.
    - If the environment can't fan out sub-agents, process chunks sequentially instead — same prompt, one at a time.
 
 3. **Reduce.** Merge all the chunk reports with the reducer prompt in `MINING_PROMPT.md`. Rank every trait by how many chunks independently surfaced it — high-frequency traits are the real person, one-offs are noise. Output a lean `you.md` (deep quotes go in a separate `you-appendix.md`, not in `you.md`).

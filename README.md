@@ -109,11 +109,20 @@ That `you.md` is a skill/context file. Drop it in `.claude/skills/`, `.codex/ski
 
 ## Quickstart
 
+No clone needed - it's one stdlib file:
+
+```bash
+curl -O https://raw.githubusercontent.com/ohad6k/ditto/main/ditto.py
+python ditto.py --dry-run  # preview counts + output paths without writing files.
+python ditto.py            # auto-detects Codex + Claude logs. no deps, stdlib only.
+```
+
+Or the full repo (gets you the mining prompt + skill too):
+
 ```bash
 git clone https://github.com/ohad6k/ditto
 cd ditto
-python ditto.py --dry-run  # preview counts + output paths without writing files.
-python ditto.py            # auto-detects Codex + Claude logs. no deps, stdlib only.
+python ditto.py
 ```
 
 What you can audit before running it:
@@ -134,6 +143,8 @@ wrote: ditto-out/you-corpus.txt  +  20 chunks in ditto-out/chunks/
 ```
 
 Then open your coding agent (Claude Code / Codex / Cursor), paste [`MINING_PROMPT.md`](MINING_PROMPT.md), point it at `ditto-out/chunks/`, and let it build your `you.md`. Example output: [`examples/you.md`](examples/you.md).
+
+When it finds something true about you that you never wrote down - [post the weirdest one](https://github.com/ohad6k/ditto/issues/1). Don't post your full `you.md`, just the one trait that got you.
 
 ## Install Your you.md (Any Agent)
 
