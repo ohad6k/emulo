@@ -19,8 +19,6 @@ It is the most honest record of how you actually think, and you are deleting it.
 Ditto mines it into a <code>you.md</code> your agents read before every task.
 </p>
 
-<p align="center"><img src="assets/card.png" width="480" alt="a ditto profile card: archetype, laws with consensus counts, session stats, and the one uncomfortable truth"></p>
-
 ---
 
 ## Not Memory
@@ -30,6 +28,8 @@ Memory is what you explicitly told the model.
 Ditto mines what your work already proved about you: what you reject, what "done" means, when you ask for proof, how you talk when you're actually working, and the agent behaviors that make you stop the task.
 
 That's why it reads raw session logs, not your `CLAUDE.md` or rules file.
+
+<p align="center"><img src="assets/card.png" width="460" alt="a ditto profile card: archetype, laws with consensus counts, session stats, and the one uncomfortable truth"></p>
 
 ## A Real Run
 
