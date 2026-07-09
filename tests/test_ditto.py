@@ -219,6 +219,43 @@ class DittoCliTest(unittest.TestCase):
             self.assertIn("- keep answers short", rule)
             self.assertNotIn("name: you", rule)
 
+    def test_dedupe_collapses_repeated_long_messages_keeps_short(self):
+        long_spec = "PLEASE IMPLEMENT THIS PLAN: " + ("do the thing carefully. " * 20)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            logs = root / "logs"
+            out = root / "ditto-out"
+            rows = []
+            # same long spec pasted into three sessions + short "yes" repeated three times
+            for i in range(3):
+                rows.append({
+                    "timestamp": f"2026-07-0{i+1}T10:00:00Z",
+                    "payload": {"type": "message", "role": "user", "content": [{"text": long_spec}]},
+                })
+                rows.append({
+                    "timestamp": f"2026-07-0{i+1}T10:01:00Z",
+                    "payload": {"type": "message", "role": "user", "content": [{"text": "yes"}]},
+                })
+            write_jsonl(logs / "codex.jsonl", rows)
+
+            result = subprocess.run(
+                [sys.executable, str(DITTO), "--path", str(logs), "--out", str(out), "--chunks", "1"],
+                check=True, capture_output=True, text=True,
+            )
+            self.assertIn("duplicate specs/rules collapsed: 2", result.stdout)
+            corpus = (out / "you-corpus.txt").read_text(encoding="utf-8")
+            self.assertEqual(corpus.count("PLEASE IMPLEMENT THIS PLAN"), 1)   # long spec kept once
+            self.assertEqual(corpus.count("\nyes"), 3)                        # every short "yes" kept
+
+            # --no-dedupe keeps all three copies
+            out2 = root / "ditto-out2"
+            subprocess.run(
+                [sys.executable, str(DITTO), "--path", str(logs), "--out", str(out2), "--chunks", "1", "--no-dedupe"],
+                check=True, capture_output=True, text=True,
+            )
+            corpus2 = (out2 / "you-corpus.txt").read_text(encoding="utf-8")
+            self.assertEqual(corpus2.count("PLEASE IMPLEMENT THIS PLAN"), 3)
+
     def test_run_writes_stats_json(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

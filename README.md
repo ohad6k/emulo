@@ -116,7 +116,7 @@ No clone needed - it's one stdlib file:
 ```bash
 curl -O https://raw.githubusercontent.com/ohad6k/ditto/main/ditto.py
 python ditto.py --dry-run  # preview counts + output paths without writing files.
-python ditto.py            # auto-detects Codex + Claude logs. no deps, stdlib only.
+python ditto.py            # auto-detects Codex + Claude + Copilot logs. no deps, stdlib only.
 ```
 
 Or the full repo (gets you the mining prompt + skill too):
@@ -144,7 +144,7 @@ secrets/PII redacted: 41
 wrote: ditto-out/you-corpus.txt  +  20 chunks in ditto-out/chunks/
 ```
 
-Then open your coding agent (Claude Code / Codex / Cursor), paste [`MINING_PROMPT.md`](MINING_PROMPT.md), point it at `ditto-out/chunks/`, and let it build your `you.md`. Example output: [`examples/you.md`](examples/you.md).
+Then open your coding agent (Claude Code / Codex / Cursor), paste [`MINING_PROMPT.md`](MINING_PROMPT.md), point it at `ditto-out/chunks/`, and let it build your `you.md`. Size chunks so each is ~70K tokens (`--chunks N`, N ≈ tokens / 70000) — agents genuinely read that; bigger gets skimmed. Example output: [`examples/you.md`](examples/you.md).
 
 When it finds something true about you that you never wrote down - [post the weirdest one](https://github.com/ohad6k/ditto/issues/1). Don't post your full `you.md`, just the one trait that got you.
 
@@ -163,7 +163,7 @@ Your `you.md` is just a context file. Drop it where your agent already looks and
 
 Ditto writes the `you.md` with the right frontmatter already, so on Claude Code, Codex, and Cursor it **registers as a skill the moment you drop it in** - nothing to wire. For Codex, use the native skill path above if you want it everywhere; use `AGENTS.md` if you only want it in one repo. That's it, no plugin, no config.
 
-**Using a coding agent?** Point it at this repo and say *"run ditto and install my you.md"* - the skill in [`skill/`](skill/SKILL.md) walks it through the whole flow (extract, mine, write, place the file) on its own. Works in Claude Code, Cursor, Codex, and Gemini.
+**Using a coding agent?** Point it at this repo and say *"run ditto and install my you.md"* - the skill in [`skills/ditto/`](skills/ditto/SKILL.md) walks it through the whole flow (extract, mine, write, place the file) on its own. Works in Claude Code, Cursor, Codex, and Gemini.
 
 Copy/paste version:
 
@@ -199,7 +199,7 @@ Your archetype, your laws with their receipt counts (how many of the 20 agents i
 
 ## How It Works
 
-Your logs are ~95% noise (tool output, file contents, diffs). The signal is the small slice of words you actually typed. Ditto isolates that, then uses an agent fan-out so no single context has to hold all of it: each agent reads a chunk and pulls how you decide, what you reject, how you talk, where you get stuck. Traits that show up across many chunks are the real you. One-offs are noise. That ranking is the whole trick.
+Your logs are ~95% noise (tool output, file contents, diffs). The signal is the small slice of words you actually typed. Ditto isolates that, drops verbatim-duplicate specs and injected rules you pasted more than once (often ~40% of a heavy history — this is what keeps the token cost down), then uses an agent fan-out so no single context has to hold all of it: each agent reads a chunk and pulls how you decide, what you reject, how you talk, where you get stuck. Traits that show up across many chunks are the real you. One-offs are noise. That ranking is the whole trick.
 
 **It mines your raw sessions, not your `CLAUDE.md` or rules file.** That's the entire point - anything can summarize the rules you already wrote (that's what `/init` does). Ditto surfaces the stuff you *never* wrote down, straight from how you actually worked. If a run builds a profile without reading your real `.jsonl` logs, it isn't Ditto - it's just your rules file reflected back.
 

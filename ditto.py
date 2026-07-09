@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ditto — turn your own AI coding sessions into a model of how you think.
+ditto - turn your own AI coding sessions into a model of how you think.
 
 It reads your local session logs (Codex / Claude Code / Copilot CLI jsonl),
 keeps ONLY the words you typed, redacts secrets + personal info, and writes one
@@ -124,17 +124,27 @@ def session_label(path):
     name = os.path.basename(path)
     return f"{parent}/{name}" if parent else name
 
-def mine_files(files, no_redact=False):
-    sessions = msgs = chars = redactions = 0
+# Messages at/above this length that repeat verbatim are re-pasted specs, logs, or
+# injected AGENTS.md/CLAUDE.md boilerplate - not new signal. Collapse them to the first
+# copy. Short messages ("yes", "push it live") are kept: their repetition IS the signal.
+DEDUPE_MIN_LEN = 200
+
+def mine_files(files, no_redact=False, dedupe=True):
+    sessions = msgs = chars = redactions = duplicates = 0
     blocks = []
     first_date = last_date = ""
+    seen_long = set()
     for f in files:
         ums = user_messages(f)
         if not ums:
             continue
-        sessions += 1
-        buf = [f"\n===== {session_label(f)} ====="]
+        buf = []
         for ts, t in ums:
+            if dedupe and len(t) >= DEDUPE_MIN_LEN:
+                if t in seen_long:
+                    duplicates += 1
+                    continue
+                seen_long.add(t)
             if ts:
                 if not first_date or ts < first_date:
                     first_date = ts
@@ -148,12 +158,16 @@ def mine_files(files, no_redact=False):
             buf.append(f"[{ts}]\n{t}")
             msgs += 1
             chars += len(t)
-        blocks.append("\n".join(buf))
+        if not buf:            # every message was a duplicate of an earlier session
+            continue
+        sessions += 1
+        blocks.append("\n".join([f"\n===== {session_label(f)} ====="] + buf))
     return {
         "sessions": sessions,
         "messages": msgs,
         "chars": chars,
         "redactions": redactions,
+        "duplicates": duplicates,
         "blocks": blocks,
         "first_date": first_date,
         "last_date": last_date,
@@ -220,7 +234,7 @@ def load_card(out_dir, card_path=None):
     if not os.path.exists(path):
         print(f"no card found at {path}")
         print("the card is written by the mining step: run ditto.py, then paste")
-        print("MINING_PROMPT.md into your agent — the reducer emits card.json.")
+        print("MINING_PROMPT.md into your agent - the reducer emits card.json.")
         sys.exit(1)
     with open(path, "r", encoding="utf-8", errors="replace") as fh:
         card = json.load(fh)
@@ -346,7 +360,7 @@ CARD_HTML = """<!doctype html>
       <div class="nameplate"><b>{archetype}</b><div>{range}</div></div>
     </div>
     <div class="stats">{stats}</div>
-    <div class="laws"><div class="laws-head">laws &middot; ranked by how many of the 20 agents found each</div>{laws}</div>
+    <div class="laws"><div class="laws-head">laws &middot; {lawshead}</div>{laws}</div>
     {truth}
   </div>
   <div class="foot"><div>github.com/ohad6k/ditto &middot; run it on your own logs</div><div class="bars"></div></div>
@@ -380,6 +394,13 @@ def render_card_html(card):
                  f"<p>&ldquo;{esc(card['truth'])}&rdquo;</p></div>")
     top_laws = card.get("laws", [])
     grade = esc(top_laws[0]["count"]) if top_laws and top_laws[0].get("count") else "&mdash;"
+    reports = ""
+    for law in top_laws:
+        c = str(law.get("count", ""))
+        if "/" in c:
+            reports = c.split("/", 1)[1].strip()
+            break
+    lawshead = f"ranked by how many of {esc(reports)} agents found each" if reports else "ranked by how many agents found each"
     certline = f"no. {stats['messages']:,} messages on record" if stats.get("messages") else "&nbsp;"
     art_remote = "https://raw.githubusercontent.com/ohad6k/ditto/main/assets/ditto.png"
     art_local = art_remote
@@ -399,6 +420,7 @@ def render_card_html(card):
         archetype=esc(card.get("archetype", "you")),
         stats="".join(stat_cells),
         laws="".join(laws),
+        lawshead=lawshead,
         truth=truth,
     )
 
@@ -421,6 +443,8 @@ def print_counts(result, no_redact=False):
     print(f"sessions: {result['sessions']}")
     print(f"your messages: {result['messages']}")
     print(f"tokens (approx): {result['chars'] // 4:,}")
+    if result.get("duplicates"):
+        print(f"duplicate specs/rules collapsed: {result['duplicates']}  (saves tokens, no signal lost)")
     print(f"secrets/PII redacted: {result['redactions']}" + ("  (redaction OFF)" if no_redact else ""))
 
 def strip_frontmatter(text):
@@ -525,6 +549,7 @@ def main():
     ap.add_argument("--chunks", type=int, default=20)
     ap.add_argument("--dry-run", action="store_true", help="show counts and output paths without writing files")
     ap.add_argument("--no-redact", action="store_true", help="skip redaction (NOT recommended)")
+    ap.add_argument("--no-dedupe", action="store_true", help="keep verbatim-duplicate long messages (re-pasted specs / injected rules)")
     ap.add_argument("--card", nargs="?", const="", metavar="CARD_JSON",
                     help="render your profile card (terminal + card.html) from ditto-out/card.json")
     ap.add_argument("--no-open", action="store_true", help="don't open card.html in the browser")
@@ -556,11 +581,11 @@ def main():
 
     files = discover_files(roots)
     if not files:
-        print("no session logs found. try --path <folder> or --source codex/claude.")
+        print("no session logs found. try --path <folder> or --source codex/claude/copilot.")
         print("looked in:", ", ".join(roots))
         sys.exit(1)
 
-    result = mine_files(files, args.no_redact)
+    result = mine_files(files, args.no_redact, dedupe=not args.no_dedupe)
 
     if args.dry_run:
         print("dry run: no files written")
