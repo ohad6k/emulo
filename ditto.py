@@ -412,6 +412,183 @@ def sync_segments(records, ditto_home, target_tokens, write=True):
         atomic_write_text(index_path, canonical_json(result) + "\n")
     return result
 
+def temporal_queue(items):
+    ordered = sorted(items, key=lambda item: (item["first_date"], item["segment_hash"]))
+    out = []
+    left, right = 0, len(ordered) - 1
+    while left <= right:
+        out.append(ordered[left])
+        left += 1
+        if left <= right:
+            out.append(ordered[right])
+            right -= 1
+    return out
+
+def select_segments(segments, count, max_tokens):
+    grouped = {}
+    for segment in segments:
+        if segment.get("active") and not segment.get("oversize"):
+            grouped.setdefault(segment["source"], []).append(segment)
+    queues = {source: temporal_queue(items) for source, items in grouped.items()}
+    selected, total = [], 0
+    while len(selected) < count:
+        progressed = False
+        for source in sorted(queues):
+            queue = queues[source]
+            while queue:
+                candidate = queue.pop(0)
+                if total + candidate["source_tokens"] <= max_tokens:
+                    selected.append(candidate)
+                    total += candidate["source_tokens"]
+                    progressed = True
+                    break
+            if len(selected) >= count:
+                break
+        if not progressed:
+            break
+    return sorted(selected, key=lambda item: (item["source"], item["first_date"], item["segment_hash"]))
+
+def candidate_config(index):
+    if index not in range(len(STARTER_CANDIDATES)):
+        raise ValueError("candidate must be 0, 1, or 2")
+    return STARTER_CANDIDATES[index]
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+def planned_call_counts(segment_hashes, report_hits, reduction_cache_hit):
+    missing = len(set(segment_hashes) - set(report_hits))
+    return missing, 0 if missing == 0 and reduction_cache_hit else 1
+
+def compute_report_set_hash(report_paths):
+    identity = {
+        "prompt_schema_version": PROMPT_SCHEMA_VERSION,
+        "reports": [
+            {"path": os.path.basename(path), "sha256": sha256_file(path)}
+            for path in sorted(report_paths)
+        ],
+    }
+    return sha256_text(canonical_json(identity))
+
+def report_cache_path(ditto_home, segment_hash_value):
+    return os.path.join(
+        private_paths(ditto_home)["reports"],
+        PROMPT_SCHEMA_VERSION,
+        segment_hash_value + ".json",
+    )
+
+def build_preflight(result, ditto_home, candidate_index, write=False):
+    config = candidate_config(candidate_index)
+    index = sync_segments(
+        result["records"],
+        ditto_home,
+        config["segment_tokens"],
+        write=write,
+    )
+    selected = select_segments(
+        index["segments"],
+        count=config["segments"],
+        max_tokens=STARTER_MAX_SOURCE_TOKENS,
+    )
+    if result["sessions"] and not selected:
+        raise ValueError(
+            "no eligible bounded segment; inspect oversize sessions and explicitly plan deep mode"
+        )
+    selected_hashes = [segment["segment_hash"] for segment in selected]
+    report_hits, report_paths = set(), []
+    for segment in selected:
+        path = report_cache_path(ditto_home, segment["segment_hash"])
+        if os.path.isfile(path):
+            report_hits.add(segment["segment_hash"])
+            report_paths.append(path)
+    report_set_hash = (
+        compute_report_set_hash(report_paths)
+        if selected and len(report_paths) == len(selected)
+        else None
+    )
+    reduction_cache_hit = bool(
+        report_set_hash
+        and os.path.isdir(
+            os.path.join(
+                private_paths(ditto_home)["reductions"],
+                REDUCER_SCHEMA_VERSION,
+                report_set_hash,
+            )
+        )
+    )
+    worker_calls, reducer_calls = planned_call_counts(
+        selected_hashes,
+        report_hits,
+        reduction_cache_hit,
+    )
+    if worker_calls + reducer_calls > STARTER_MAX_MODEL_CALLS:
+        raise ValueError("bounded plan exceeds the model-call ceiling")
+    strata = {
+        f"{segment['source']}:{segment['first_date'][:7]}"
+        for segment in selected
+    }
+    return {
+        "candidate_index": candidate_index,
+        "valid_sessions": result["sessions"],
+        "post_dedupe_source_tokens": result["chars"] // 4,
+        "selected_source_tokens": sum(segment["source_tokens"] for segment in selected),
+        "selected_segments": selected,
+        "cached_segments": len(report_hits),
+        "cached_segment_hashes": sorted(report_hits),
+        "uncached_segments": worker_calls,
+        "planned_worker_calls": worker_calls,
+        "planned_reducer_calls": reducer_calls,
+        "remaining_new_segments": 0,
+        "oversize_sessions": [
+            version["session_id"]
+            for segment in index["segments"]
+            if segment.get("active") and segment.get("oversize")
+            for version in segment["session_versions"]
+        ],
+        "report_set_hash": report_set_hash,
+        "adequate_strata": len(strata) >= 2,
+        "deep_mode": {"available": True, "automatic": False, "selected": False},
+    }
+
+def build_deep_preflight(result, ditto_home, write=False):
+    index = sync_segments(result["records"], ditto_home, DEEP_SEGMENT_TOKENS, write=write)
+    selected = sorted(
+        (segment for segment in index["segments"] if segment.get("active")),
+        key=lambda item: (item["source"], item["first_date"], item["segment_hash"]),
+    )
+    if result["sessions"] and not selected:
+        raise ValueError("no valid segment remained for deep mode")
+    hashes = [segment["segment_hash"] for segment in selected]
+    hits = {
+        value for value in hashes if os.path.isfile(report_cache_path(ditto_home, value))
+    }
+    worker_calls, reducer_calls = planned_call_counts(hashes, hits, False)
+    return {
+        "candidate_index": None,
+        "valid_sessions": result["sessions"],
+        "post_dedupe_source_tokens": result["chars"] // 4,
+        "selected_source_tokens": sum(segment["source_tokens"] for segment in selected),
+        "selected_segments": selected,
+        "cached_segments": len(hits),
+        "cached_segment_hashes": sorted(hits),
+        "uncached_segments": worker_calls,
+        "planned_worker_calls": worker_calls,
+        "planned_reducer_calls": reducer_calls,
+        "remaining_new_segments": 0,
+        "oversize_sessions": [
+            {"session_id": version["session_id"], "source_tokens": segment["source_tokens"]}
+            for segment in selected if segment.get("oversize")
+            for version in segment["session_versions"]
+        ],
+        "report_set_hash": None,
+        "adequate_strata": True,
+        "deep_mode": {"available": True, "automatic": False, "selected": True},
+    }
+
 def atomic_write_bytes(path, data):
     parent = os.path.dirname(path) or "."
     os.makedirs(parent, exist_ok=True)
@@ -903,15 +1080,138 @@ def build_plugin_parser():
     sub = parser.add_subparsers(dest="command", required=True)
     status = sub.add_parser("status")
     status.add_argument("--ditto-home")
+    for name in ("preflight", "prepare"):
+        command = sub.add_parser(name)
+        command.add_argument("--source", choices=["auto", "codex", "claude", "copilot"], default="auto")
+        command.add_argument("--path")
+        command.add_argument("--no-redact", action="store_true")
+        command.add_argument("--no-dedupe", action="store_true")
+        command.add_argument("--ditto-home")
+        mode = command.add_mutually_exclusive_group()
+        mode.add_argument("--candidate", type=int, choices=range(len(STARTER_CANDIDATES)))
+        mode.add_argument("--deep", action="store_true")
+        mode.add_argument("--deepen-domain", choices=["work", "design", "write"])
     return parser
+
+def plugin_source_result(args):
+    if args.path:
+        roots = [args.path]
+    elif args.source == "auto":
+        roots = SOURCES["codex"] + SOURCES["claude"] + SOURCES["copilot"]
+    else:
+        roots = SOURCES[args.source]
+    files = discover_files(roots)
+    if not files:
+        raise ValueError("no session logs found; use --path or select an available source")
+    result = mine_files(files, args.no_redact, dedupe=not args.no_dedupe)
+    if result["sessions"] == 0:
+        raise ValueError("no valid user sessions remained after parsing and filtering")
+    return result
+
+def plugin_plan_for_args(args, write=False):
+    result = plugin_source_result(args)
+    home = resolve_ditto_home(args.ditto_home)
+    if args.deepen_domain:
+        raise ValueError(
+            "targeted deepening requires an active profile; run bounded Ditto setup first"
+        )
+    if args.deep:
+        return build_deep_preflight(result, home, write=write)
+    candidate_index = DEFAULT_CANDIDATE_INDEX if args.candidate is None else args.candidate
+    return build_preflight(result, home, candidate_index, write=write)
+
+def prepare_plugin_run(args):
+    home = resolve_ditto_home(args.ditto_home)
+    plan = plugin_plan_for_args(args, write=True)
+    plan_hash = sha256_text(canonical_json(plan))
+    timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    base_run_id = f"{timestamp}-{plan_hash[:8]}"
+    run_id = base_run_id
+    suffix = 1
+    while os.path.exists(safe_private_child(home, "runs", run_id)):
+        run_id = f"{base_run_id}-{suffix:02d}"
+        suffix += 1
+    run_dir = safe_private_child(home, "runs", run_id)
+    segments_dir = os.path.join(run_dir, "segments")
+    reports_dir = os.path.join(run_dir, "reports")
+    pack_dir = os.path.join(run_dir, "pack")
+    os.makedirs(segments_dir, exist_ok=False)
+    os.makedirs(reports_dir, exist_ok=False)
+    os.makedirs(pack_dir, exist_ok=False)
+
+    selected_with_paths = []
+    cached_report_paths = []
+    for segment in plan["selected_segments"]:
+        segment_hash_value = segment["segment_hash"]
+        source_path = segment_file_path(home, segment_hash_value)
+        assigned_segment = os.path.join(segments_dir, segment_hash_value + ".txt")
+        with open(source_path, "rb") as handle:
+            atomic_write_bytes(assigned_segment, handle.read())
+        assigned_report = os.path.join(reports_dir, segment_hash_value + ".json")
+        cached = segment_hash_value in set(plan["cached_segment_hashes"])
+        assigned = dict(segment)
+        assigned.update({
+            "segment_path": assigned_segment,
+            "report_path": assigned_report,
+            "cached": cached,
+        })
+        selected_with_paths.append(assigned)
+        if cached:
+            cached_report_paths.append(report_cache_path(home, segment_hash_value))
+
+    dates = [
+        value
+        for segment in plan["selected_segments"]
+        for value in (segment["first_date"], segment["last_date"])
+        if value != "undated"
+    ]
+    run_plan = {
+        "schema_version": "1",
+        "run_id": run_id,
+        "run_dir": run_dir,
+        "plan_hash": plan_hash,
+        "mode": "deep" if args.deep else "starter",
+        "candidate_index": plan["candidate_index"],
+        "target_domain": args.deepen_domain,
+        "selected_source_tokens": plan["selected_source_tokens"],
+        "planned_worker_calls": plan["planned_worker_calls"],
+        "planned_reducer_calls": plan["planned_reducer_calls"],
+        "selected_segments": selected_with_paths,
+        "segment_hashes": [item["segment_hash"] for item in selected_with_paths],
+        "source_coverage": {
+            "sources": sorted({segment["source"] for segment in plan["selected_segments"]}),
+            "first_date": min(dates) if dates else "undated",
+            "last_date": max(dates) if dates else "undated",
+        },
+        "adequate_strata": plan["adequate_strata"],
+        "pack_path": pack_dir,
+        "report_paths": sorted(cached_report_paths),
+        "report_set_hash": plan["report_set_hash"],
+    }
+    atomic_write_text(
+        os.path.join(run_dir, "selected-segments.json"),
+        canonical_json({"segments": selected_with_paths}) + "\n",
+    )
+    atomic_write_text(os.path.join(run_dir, "plan.json"), canonical_json(run_plan) + "\n")
+    return run_plan
 
 def plugin_main(argv):
     parser = build_plugin_parser()
     args = parser.parse_args(argv)
-    if args.command == "status":
-        home = resolve_ditto_home(args.ditto_home)
-        payload = {"status": "missing", "ditto_home": home}
-        print(json.dumps(payload, sort_keys=True))
+    try:
+        if args.command == "status":
+            home = resolve_ditto_home(args.ditto_home)
+            payload = {"status": "missing", "ditto_home": home}
+        elif args.command == "preflight":
+            payload = plugin_plan_for_args(args, write=False)
+        elif args.command == "prepare":
+            payload = prepare_plugin_run(args)
+        else:
+            raise ValueError("unsupported plugin command")
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from None
+    print(json.dumps(payload, sort_keys=True))
 
 def legacy_main():
     ap = argparse.ArgumentParser(description="mine your AI sessions into a model of you")

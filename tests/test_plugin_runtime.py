@@ -177,5 +177,111 @@ class SegmentStoreTest(unittest.TestCase):
             self.assertTrue(any(item.name.startswith(path.name + ".corrupt-") for item in path.parent.iterdir()))
 
 
+class PreflightTest(unittest.TestCase):
+    def test_selection_is_deterministic_source_and_time_stratified(self):
+        segments = []
+        for source in ("claude", "codex"):
+            for month in range(1, 7):
+                segments.append({
+                    "segment_hash": f"{source}-{month}",
+                    "active": True,
+                    "source": source,
+                    "first_date": f"2026-{month:02d}-01",
+                    "last_date": f"2026-{month:02d}-28",
+                    "source_tokens": 20_000,
+                    "session_versions": [],
+                })
+        first = ditto.select_segments(segments, count=4, max_tokens=100_000)
+        second = ditto.select_segments(list(reversed(segments)), count=4, max_tokens=100_000)
+        self.assertEqual(first, second)
+        self.assertEqual({"claude", "codex"}, {s["source"] for s in first})
+        self.assertIn("2026-01-01", {s["first_date"] for s in first})
+        self.assertIn("2026-06-01", {s["first_date"] for s in first})
+
+    def test_preflight_writes_nothing_and_never_exceeds_ceiling(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            logs = root / "logs"
+            for i in range(12):
+                write_jsonl(logs / f"{i}.jsonl", [{
+                    "timestamp": f"2026-{(i % 6) + 1:02d}-01T00:00:00Z",
+                    "payload": {
+                        "type": "message",
+                        "role": "user",
+                        "content": [{"text": "signal " * 4000}],
+                    },
+                }])
+            home = root / "private"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "plugin",
+                    "preflight",
+                    "--path",
+                    str(logs),
+                    "--candidate",
+                    "2",
+                    "--ditto-home",
+                    str(home),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            plan = json.loads(result.stdout)
+            self.assertLessEqual(plan["selected_source_tokens"], 160_000)
+            self.assertLessEqual(plan["planned_worker_calls"] + plan["planned_reducer_calls"], 9)
+            self.assertFalse(home.exists())
+
+    def test_call_count_gate_returns_zero_only_for_complete_cache(self):
+        hashes = ["a" * 64, "b" * 64]
+        self.assertEqual((0, 0), ditto.planned_call_counts(hashes, set(hashes), reduction_cache_hit=True))
+        self.assertEqual((1, 1), ditto.planned_call_counts(hashes, {hashes[0]}, reduction_cache_hit=False))
+
+    def test_deep_mode_is_separate_and_never_automatic(self):
+        parser = ditto.build_plugin_parser()
+        starter = parser.parse_args(["preflight"])
+        deep = parser.parse_args(["preflight", "--deep"])
+        targeted = parser.parse_args(["preflight", "--deepen-domain", "design"])
+        self.assertFalse(starter.deep)
+        self.assertTrue(deep.deep)
+        self.assertEqual("design", targeted.deepen_domain)
+
+    def test_only_oversize_history_fails_without_planning_a_reducer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            logs = root / "logs"
+            write_jsonl(logs / "huge.jsonl", [{
+                "timestamp": "2026-01-01T00:00:00Z",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"text": "signal " * 18000}],
+                },
+            }])
+            home = root / "private"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "plugin",
+                    "preflight",
+                    "--path",
+                    str(logs),
+                    "--candidate",
+                    "0",
+                    "--ditto-home",
+                    str(home),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("no eligible bounded segment", result.stderr)
+            self.assertNotIn('"planned_reducer_calls": 1', result.stdout)
+            self.assertFalse(home.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
