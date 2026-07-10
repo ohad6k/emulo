@@ -283,5 +283,179 @@ class PreflightTest(unittest.TestCase):
             self.assertFalse(home.exists())
 
 
+class ReportCacheTest(unittest.TestCase):
+    SEGMENT_HASH = "a" * 64
+
+    def segment(self):
+        return {
+            "segment_hash": self.SEGMENT_HASH,
+            "source": "codex",
+            "first_date": "2026-01-01",
+            "last_date": "2026-02-01",
+            "source_tokens": 20000,
+            "session_versions": [
+                {"session_id": "s1", "content_hash": "1" * 64},
+                {"session_id": "s2", "content_hash": "2" * 64},
+            ],
+            "text": (
+                "===== session:s1 source:codex =====\n[2026-01-01]\ndone means live\n"
+                "===== session:s2 source:codex =====\n[2026-02-01]\nshow me it works\n"
+            ),
+        }
+
+    def valid_report(self):
+        return {
+            "schema_version": "1",
+            "segment_hash": self.SEGMENT_HASH,
+            "coverage": {
+                "session_ids": ["s1", "s2"],
+                "sources": ["codex"],
+                "first_date": "2026-01-01",
+                "last_date": "2026-02-01",
+                "source_tokens": 20000,
+            },
+            "domain_coverage": {"work": "evidence", "design": "no-signal", "write": "no-signal"},
+            "evidence": [{
+                "evidence_id": "ev-aaaaaaaa-done",
+                "domain": "work",
+                "kind": "inferred",
+                "instruction": "Treat done as requiring live proof.",
+                "implication": "Run the relevant verification before reporting completion.",
+                "quotes": [
+                    {"session_id": "s1", "date": "2026-01-01", "text": "done means live"},
+                    {"session_id": "s2", "date": "2026-02-01", "text": "show me it works"},
+                ],
+                "contradictions": [],
+            }],
+        }
+
+    def test_report_rejects_quote_from_unknown_session(self):
+        report = self.valid_report()
+        report["evidence"][0]["quotes"][0]["session_id"] = "not-covered"
+        with self.assertRaisesRegex(ValueError, "unknown session"):
+            ditto.validate_report(report, self.segment())
+
+    def test_report_rejects_invented_quote_text(self):
+        report = self.valid_report()
+        report["evidence"][0]["quotes"][0]["text"] = "a quote that is not in the session"
+        with self.assertRaisesRegex(ValueError, "verbatim"):
+            ditto.validate_report(report, self.segment())
+
+    def test_report_rejects_unbounded_worker_output(self):
+        report = self.valid_report()
+        report["evidence"][0]["instruction"] = "x" * ditto.MAX_REPORT_BYTES
+        with self.assertRaisesRegex(ValueError, "report byte ceiling"):
+            ditto.validate_report(report, self.segment())
+
+    def test_report_requires_an_explicit_state_for_every_domain(self):
+        report = self.valid_report()
+        del report["domain_coverage"]["design"]
+        with self.assertRaisesRegex(ValueError, "domain coverage"):
+            ditto.validate_report(report, self.segment())
+
+    def test_report_can_cache_a_truthful_all_no_signal_result(self):
+        report = self.valid_report()
+        report["domain_coverage"] = {domain: "no-signal" for domain in ("work", "design", "write")}
+        report["evidence"] = []
+        ditto.validate_report(report, self.segment())
+
+    def test_report_cache_path_includes_prompt_schema_and_segment_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = ditto.store_report(self.valid_report(), str(Path(tmp) / "private"), self.segment())
+            self.assertTrue(path.endswith(str(Path("reports") / "1" / (self.SEGMENT_HASH + ".json"))))
+
+    def test_prompt_schema_change_uses_a_new_report_cache_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.object(ditto, "PROMPT_SCHEMA_VERSION", "2"):
+                path = ditto.store_report(self.valid_report(), str(Path(tmp) / "private"), self.segment())
+            self.assertTrue(path.endswith(str(Path("reports") / "2" / (self.SEGMENT_HASH + ".json"))))
+
+    def test_corrupt_report_cache_is_quarantined_and_becomes_a_miss(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "private"
+            path = home / "cache" / "reports" / "1" / (self.SEGMENT_HASH + ".json")
+            path.parent.mkdir(parents=True)
+            path.write_text("not-json", encoding="utf-8")
+            self.assertIsNone(ditto.load_cached_report(str(home), self.segment()))
+            self.assertFalse(path.exists())
+            self.assertTrue(any(item.name.startswith(path.name + ".corrupt-") for item in path.parent.iterdir()))
+
+    def test_mining_prompt_uses_structured_session_evidence(self):
+        prompt = (ROOT / "MINING_PROMPT.md").read_text(encoding="utf-8")
+        self.assertIn("session_ids", prompt)
+        self.assertIn("evidence_id", prompt)
+        self.assertIn('"work"', prompt)
+        self.assertIn('"design"', prompt)
+        self.assertIn('"write"', prompt)
+        self.assertNotIn("18/20", prompt)
+
+    def test_prepare_assigns_and_cache_report_validates_a_complete_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            logs = root / "logs"
+            write_jsonl(logs / "one.jsonl", [{
+                "timestamp": "2026-01-01T00:00:00Z",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"text": "specific signal"}],
+                },
+            }])
+            home = root / "private"
+            prepared = subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "plugin",
+                    "prepare",
+                    "--path",
+                    str(logs),
+                    "--candidate",
+                    "0",
+                    "--ditto-home",
+                    str(home),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            plan = json.loads(prepared.stdout)
+            segment = plan["selected_segments"][0]
+            report = {
+                "schema_version": "1",
+                "segment_hash": segment["segment_hash"],
+                "coverage": {
+                    "session_ids": [item["session_id"] for item in segment["session_versions"]],
+                    "sources": [segment["source"]],
+                    "first_date": segment["first_date"],
+                    "last_date": segment["last_date"],
+                    "source_tokens": segment["source_tokens"],
+                },
+                "domain_coverage": {domain: "no-signal" for domain in ("work", "design", "write")},
+                "evidence": [],
+            }
+            Path(segment["report_path"]).write_text(json.dumps(report), encoding="utf-8")
+            cached = subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "plugin",
+                    "cache-report",
+                    "--run-id",
+                    plan["run_id"],
+                    "--report",
+                    segment["report_path"],
+                    "--ditto-home",
+                    str(home),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            payload = json.loads(cached.stdout)
+            self.assertTrue(payload["report_set_complete"])
+            self.assertRegex(payload["report_set_hash"], r"^[0-9a-f]{64}$")
+
+
 if __name__ == "__main__":
     unittest.main()

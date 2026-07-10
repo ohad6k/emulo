@@ -481,6 +481,134 @@ def report_cache_path(ditto_home, segment_hash_value):
         segment_hash_value + ".json",
     )
 
+VALID_DOMAINS = {"work", "design", "write"}
+VALID_EVIDENCE_KINDS = {"inferred", "explicit"}
+
+def split_segment_sessions(text):
+    marker = re.compile(
+        r"^===== session:([A-Za-z0-9_-]+) source:([a-z0-9_-]+) =====$",
+        re.MULTILINE,
+    )
+    matches = list(marker.finditer(text))
+    sessions = {}
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        sessions[match.group(1)] = text[match.end():end]
+    return sessions
+
+def receipt_is_verbatim(receipt, session_text):
+    date = receipt.get("date", "")
+    quote = receipt.get("text", "").strip()
+    if not date or not quote:
+        return False
+    message = re.compile(
+        r"^\[([^\]]+)\]\n(.*?)(?=^\[[^\]]+\]\n|\Z)",
+        re.MULTILINE | re.DOTALL,
+    )
+    return any(found_date == date and quote in body for found_date, body in message.findall(session_text))
+
+def validate_report(report, segment):
+    if len(canonical_json(report).encode("utf-8")) > MAX_REPORT_BYTES:
+        raise ValueError("report byte ceiling exceeded")
+    if report.get("schema_version") != REPORT_SCHEMA_VERSION:
+        raise ValueError("unsupported report schema")
+    if report.get("segment_hash") != segment["segment_hash"]:
+        raise ValueError("report segment hash mismatch")
+    coverage = report.get("coverage", {})
+    covered = set(coverage.get("session_ids", []))
+    allowed = {item["session_id"] for item in segment["session_versions"]}
+    if covered != allowed:
+        raise ValueError("report coverage must match every segment session")
+    expected_coverage = {
+        "sources": [segment["source"]],
+        "first_date": segment["first_date"],
+        "last_date": segment["last_date"],
+        "source_tokens": segment["source_tokens"],
+    }
+    if any(coverage.get(key) != value for key, value in expected_coverage.items()):
+        raise ValueError("report coverage metadata mismatch")
+    session_texts = split_segment_sessions(segment.get("text", ""))
+    if set(session_texts) != allowed:
+        raise ValueError("segment text does not match session metadata")
+    domain_coverage = report.get("domain_coverage", {})
+    if (
+        set(domain_coverage) != VALID_DOMAINS
+        or any(value not in {"evidence", "no-signal"} for value in domain_coverage.values())
+    ):
+        raise ValueError("domain coverage must state evidence or no-signal for every domain")
+    seen = set()
+    evidence_items = report.get("evidence", [])
+    if not isinstance(evidence_items, list) or len(evidence_items) > MAX_EVIDENCE_PER_REPORT:
+        raise ValueError("evidence count is outside the bounded report contract")
+    for item in evidence_items:
+        if item.get("domain") not in VALID_DOMAINS or item.get("kind") not in VALID_EVIDENCE_KINDS:
+            raise ValueError("invalid evidence domain or kind")
+        evidence_id = item.get("evidence_id", "")
+        required_prefix = "ev-" + report["segment_hash"][:8] + "-"
+        if (
+            not evidence_id.startswith(required_prefix)
+            or not re.fullmatch(r"ev-[a-f0-9]{8}-[a-z0-9-]{3,64}", evidence_id)
+            or evidence_id in seen
+        ):
+            raise ValueError("invalid or duplicate evidence id")
+        seen.add(evidence_id)
+        if not item.get("instruction") or not item.get("implication") or not item.get("quotes"):
+            raise ValueError("evidence requires instruction, implication, and quotes")
+        contradictions = item.get("contradictions")
+        if not isinstance(contradictions, list):
+            raise ValueError("contradictions must be a list")
+        for receipt in item["quotes"] + contradictions:
+            session_id = receipt.get("session_id")
+            if session_id not in covered:
+                raise ValueError("quote references unknown session")
+            if len(receipt.get("text", "")) > MAX_QUOTE_CHARS:
+                raise ValueError("quote exceeds the bounded receipt length")
+            if not receipt_is_verbatim(receipt, session_texts[session_id]):
+                raise ValueError("quote must be verbatim text from the dated session message")
+    evidenced_domains = {item["domain"] for item in evidence_items}
+    if any(
+        (domain_coverage[domain] == "evidence") != (domain in evidenced_domains)
+        for domain in VALID_DOMAINS
+    ):
+        raise ValueError("domain coverage does not match evidence items")
+    return report
+
+def hydrate_segment(ditto_home, segment):
+    hydrated = dict(segment)
+    if "text" not in hydrated:
+        path = segment_file_path(ditto_home, segment["segment_hash"])
+        with open(path, "r", encoding="utf-8", errors="strict", newline="") as handle:
+            hydrated["text"] = handle.read()
+    text_hash = hydrated.get("text_hash")
+    if text_hash and sha256_text(hydrated["text"]) != text_hash:
+        raise ValueError("segment text hash mismatch")
+    return hydrated
+
+def store_report(report, ditto_home, segment):
+    hydrated = hydrate_segment(ditto_home, segment)
+    validate_report(report, hydrated)
+    path = report_cache_path(ditto_home, segment["segment_hash"])
+    atomic_write_text(path, canonical_json(report) + "\n")
+    return path
+
+def load_cached_report(ditto_home, segment, quarantine=True):
+    path = report_cache_path(ditto_home, segment["segment_hash"])
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8", errors="strict") as handle:
+            report = json.load(handle)
+        validate_report(report, hydrate_segment(ditto_home, segment))
+        return report
+    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError):
+        if quarantine and os.path.exists(path):
+            stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+            quarantine_path = path + ".corrupt-" + stamp
+            if os.path.exists(quarantine_path):
+                quarantine_path += "-" + uuid.uuid4().hex[:8]
+            os.replace(path, quarantine_path)
+        return None
+
 def build_preflight(result, ditto_home, candidate_index, write=False):
     config = candidate_config(candidate_index)
     index = sync_segments(
@@ -502,7 +630,7 @@ def build_preflight(result, ditto_home, candidate_index, write=False):
     report_hits, report_paths = set(), []
     for segment in selected:
         path = report_cache_path(ditto_home, segment["segment_hash"])
-        if os.path.isfile(path):
+        if load_cached_report(ditto_home, segment, quarantine=write) is not None:
             report_hits.add(segment["segment_hash"])
             report_paths.append(path)
     report_set_hash = (
@@ -1080,6 +1208,10 @@ def build_plugin_parser():
     sub = parser.add_subparsers(dest="command", required=True)
     status = sub.add_parser("status")
     status.add_argument("--ditto-home")
+    cache_report = sub.add_parser("cache-report")
+    cache_report.add_argument("--run-id", required=True)
+    cache_report.add_argument("--report", required=True)
+    cache_report.add_argument("--ditto-home")
     for name in ("preflight", "prepare"):
         command = sub.add_parser(name)
         command.add_argument("--source", choices=["auto", "codex", "claude", "copilot"], default="auto")
@@ -1092,6 +1224,74 @@ def build_plugin_parser():
         mode.add_argument("--deep", action="store_true")
         mode.add_argument("--deepen-domain", choices=["work", "design", "write"])
     return parser
+
+RUN_ID_PATTERN = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[a-f0-9]{8}(?:-[0-9]{2})?$")
+
+def load_run_plan(ditto_home, run_id):
+    if not RUN_ID_PATTERN.fullmatch(run_id):
+        raise ValueError("invalid Ditto run id")
+    path = safe_private_child(ditto_home, "runs", run_id, "plan.json")
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            plan = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise ValueError("Ditto run plan is missing or corrupt") from exc
+    if plan.get("run_id") != run_id:
+        raise ValueError("Ditto run plan id mismatch")
+    return path, plan
+
+def cache_run_report(args):
+    home = resolve_ditto_home(args.ditto_home)
+    plan_path, plan = load_run_plan(home, args.run_id)
+    requested = os.path.abspath(args.report)
+    selected = next(
+        (
+            item for item in plan.get("selected_segments", [])
+            if os.path.normcase(os.path.abspath(item.get("report_path", "")))
+            == os.path.normcase(requested)
+        ),
+        None,
+    )
+    if selected is None:
+        raise ValueError("report path was not assigned to this Ditto run")
+    reports_root = os.path.realpath(os.path.join(plan["run_dir"], "reports"))
+    if (
+        os.path.realpath(requested) != requested
+        or os.path.commonpath((reports_root, requested)) != reports_root
+        or not os.path.isfile(requested)
+        or os.path.islink(requested)
+    ):
+        raise ValueError("assigned report must be a regular file inside this Ditto run")
+    try:
+        with open(requested, "r", encoding="utf-8", errors="strict") as handle:
+            report = json.load(handle)
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ValueError("assigned report is not valid JSON") from exc
+    if report.get("segment_hash") != selected["segment_hash"]:
+        raise ValueError("report segment was not selected by this Ditto run")
+    segment = dict(selected)
+    with open(selected["segment_path"], "r", encoding="utf-8", errors="strict", newline="") as handle:
+        segment["text"] = handle.read()
+    cached_path = store_report(report, home, segment)
+
+    cached_paths = []
+    complete = True
+    for item in plan["selected_segments"]:
+        if load_cached_report(home, item) is None:
+            complete = False
+            break
+        cached_paths.append(report_cache_path(home, item["segment_hash"]))
+    if complete:
+        plan["report_paths"] = sorted(cached_paths)
+        plan["report_set_hash"] = compute_report_set_hash(plan["report_paths"])
+        atomic_write_text(plan_path, canonical_json(plan) + "\n")
+    return {
+        "status": "cached",
+        "segment_hash": selected["segment_hash"],
+        "cached_report_path": os.path.abspath(cached_path),
+        "report_set_complete": complete,
+        "report_set_hash": plan.get("report_set_hash"),
+    }
 
 def plugin_source_result(args):
     if args.path:
@@ -1206,6 +1406,8 @@ def plugin_main(argv):
             payload = plugin_plan_for_args(args, write=False)
         elif args.command == "prepare":
             payload = prepare_plugin_run(args)
+        elif args.command == "cache-report":
+            payload = cache_run_report(args)
         else:
             raise ValueError("unsupported plugin command")
     except ValueError as exc:
