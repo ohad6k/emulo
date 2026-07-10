@@ -56,6 +56,59 @@ Rules:
 
 ## Reducer contract
 
-Read only the validated JSON report paths supplied by the run plan. Group evidence by domain and by meaning, preserving every referenced `evidence_id` and contradiction. An inferred rule requires corroboration from at least two distinct user sessions and, when the selected history provides it, two source/time strata. One unequivocal explicit instruction may survive with a `low-frequency` confidence label when it is uncontradicted.
+Read only the validated JSON report paths supplied by the run plan. Group evidence by domain and meaning while preserving every referenced `evidence_id` and contradiction. An inferred rule requires corroboration from at least two distinct user sessions and, when the selected history provides it, two source/time strata. One unequivocal explicit instruction may survive with `kind: explicit` and `confidence: low-frequency` when it is uncontradicted.
 
-Write a private profile pack in the exact assigned `pack_path`. The pack contains a core work profile, optional design and writing profiles only when their domains pass, a private receipt appendix, a card whose counts are distinct supporting sessions, and a draft manifest linking every installed rule to validated evidence IDs. Never use worker/report counts as proof and never invent receipts or file hashes.
+Write this complete private pack in the exact assigned `pack_path`:
+
+```text
+you.md
+you-designer.md (only when design passes)
+you-writer.md   (only when write passes)
+appendix.md
+card.json
+draft-manifest.json
+```
+
+Use exact profile frontmatter names: `ditto-work-profile`, `ditto-design-profile`, and `ditto-write-profile`. Every active profile must contain each installed rule and its operational implication.
+
+`draft-manifest.json` uses this shape:
+
+```json
+{
+  "schema_version": "1",
+  "profile_id": "default",
+  "report_set_hash": "<exact run report_set_hash>",
+  "domains": {
+    "work": {
+      "status": "active",
+      "file": "you.md",
+      "rules": [
+        {
+          "text": "<specific rule>",
+          "implication": "<operational behavior>",
+          "kind": "inferred",
+          "evidence_ids": ["<validated id 1>", "<validated id 2>"]
+        }
+      ]
+    },
+    "design": {
+      "status": "inactive",
+      "reason": "insufficient evidence",
+      "deepen_instruction": "run ditto and deepen design"
+    },
+    "write": {
+      "status": "inactive",
+      "reason": "insufficient evidence",
+      "deepen_instruction": "run ditto and deepen write"
+    }
+  }
+}
+```
+
+Work must be active. Activate design or write only when that domain has valid rules, then use its exact filename and the same rule shape. Otherwise keep the exact inactive state above.
+
+`appendix.md` contains every referenced evidence ID and every exact dated private quote or contradiction receipt behind it. Never turn unresolved contradiction into an installed rule.
+
+`card.json` contains an archetype, up to three work-domain laws, and an optional truth. Each law text must exactly match a validated work rule. Its count is the number of distinct supporting sessions, formatted like `12 sessions`, never a worker/report count.
+
+Do not invent file hashes. Python validates this draft pack, computes every file hash and immutable profile version, and refuses incomplete or generic output.

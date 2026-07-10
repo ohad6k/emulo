@@ -20,7 +20,7 @@ Usage:
     python ditto.py --chunks 20         # how many chunks to split into
     python ditto.py --no-redact         # DANGER: skip redaction (not recommended)
 """
-import argparse, glob, hashlib, json, os, re, shutil, sys, tempfile, time, uuid
+import argparse, glob, hashlib, json, os, re, shutil, stat, sys, tempfile, time, uuid
 
 HOME = os.path.expanduser("~")
 SOURCES = {
@@ -483,6 +483,189 @@ def report_cache_path(ditto_home, segment_hash_value):
 
 VALID_DOMAINS = {"work", "design", "write"}
 VALID_EVIDENCE_KINDS = {"inferred", "explicit"}
+GENERIC_RULES = {
+    "be helpful",
+    "be concise",
+    "communicate clearly",
+    "follow best practices",
+    "write clean code",
+    "write good code",
+}
+DOMAIN_FILES = {
+    "work": ("you.md", "ditto-work-profile"),
+    "design": ("you-designer.md", "ditto-design-profile"),
+    "write": ("you-writer.md", "ditto-write-profile"),
+}
+REQUIRED_PACK_FILES = {"appendix.md", "card.json", "draft-manifest.json"}
+WINDOWS_RESERVED_NAMES = {
+    "CON", "PRN", "AUX", "NUL",
+    *(f"COM{value}" for value in range(1, 10)),
+    *(f"LPT{value}" for value in range(1, 10)),
+}
+
+def normalized_rule_text(value):
+    return re.sub(r"[^a-z0-9 ]+", "", value.lower()).strip()
+
+def validate_rule(rule, evidence_by_id, require_cross_strata):
+    text = rule.get("text", "").strip()
+    implication = rule.get("implication", "").strip()
+    if normalized_rule_text(text) in GENERIC_RULES or normalized_rule_text(implication) in GENERIC_RULES:
+        raise ValueError("generic rule is not installable evidence")
+    if len(text.split()) < 3 or len(implication.split()) < 4:
+        raise ValueError("rule requires a specific instruction and operational implication")
+    ids = rule.get("evidence_ids", [])
+    if not ids or any(evidence_id not in evidence_by_id for evidence_id in ids):
+        raise ValueError("rule references missing evidence")
+    evidence = [evidence_by_id[evidence_id] for evidence_id in ids]
+    sessions = set().union(*(item["sessions"] for item in evidence))
+    strata = set().union(*(item["strata"] for item in evidence))
+    quote_count = sum(item["quote_count"] for item in evidence)
+    contradictions = [value for item in evidence for value in item.get("contradictions", [])]
+    if contradictions:
+        raise ValueError("rule has an unresolved contradiction")
+    if rule.get("kind") == "inferred":
+        if any(item["kind"] != "inferred" for item in evidence) or len(sessions) < 2 or quote_count < 2:
+            raise ValueError("inferred rule requires two distinct sessions")
+        if require_cross_strata and len(strata) < 2:
+            raise ValueError("inferred rule requires two source/time strata")
+    elif rule.get("kind") == "explicit":
+        if (
+            any(item["kind"] != "explicit" for item in evidence)
+            or quote_count < 1
+            or rule.get("confidence") != "low-frequency"
+        ):
+            raise ValueError("explicit rule requires low-frequency label and no contradiction")
+    else:
+        raise ValueError("rule kind must be inferred or explicit")
+
+def receipt_stratum(source, date):
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date or ""):
+        return f"{source}:undated"
+    quarter = (int(date[5:7]) - 1) // 3 + 1
+    return f"{source}:{date[:4]}-Q{quarter}"
+
+def flatten_report_evidence(reports):
+    flattened = {}
+    for report in reports:
+        sources = report["coverage"]["sources"]
+        source = sources[0]
+        for item in report["evidence"]:
+            evidence_id = item["evidence_id"]
+            if evidence_id in flattened:
+                raise ValueError("duplicate evidence id across reports")
+            quotes = item["quotes"]
+            flattened[evidence_id] = {
+                "kind": item["kind"],
+                "sessions": {receipt["session_id"] for receipt in quotes},
+                "strata": {receipt_stratum(source, receipt["date"]) for receipt in quotes},
+                "quote_count": len(quotes),
+                "quotes": quotes,
+                "contradictions": item.get("contradictions", []),
+            }
+    return flattened
+
+def is_link_or_reparse(path):
+    info = os.lstat(path)
+    attributes = getattr(info, "st_file_attributes", 0)
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    return os.path.islink(path) or bool(attributes & reparse_flag)
+
+def validate_profile_pack(pack_dir, evidence_by_id, run_plan):
+    pack_root = os.path.realpath(pack_dir)
+    if not os.path.isdir(pack_root) or is_link_or_reparse(pack_root):
+        raise ValueError("profile pack must be a regular local directory")
+    entries = list(os.scandir(pack_root))
+    if any(entry.is_dir(follow_symlinks=False) for entry in entries):
+        raise ValueError("profile pack contains an unexpected directory")
+    for entry in entries:
+        if entry.is_symlink() or is_link_or_reparse(entry.path) or not entry.is_file(follow_symlinks=False):
+            raise ValueError("profile pack contains an unsafe file")
+    names = {entry.name for entry in entries}
+    if not REQUIRED_PACK_FILES.issubset(names):
+        raise ValueError("profile pack is missing required files")
+    try:
+        with open(os.path.join(pack_root, "draft-manifest.json"), "r", encoding="utf-8") as handle:
+            draft = json.load(handle)
+        with open(os.path.join(pack_root, "card.json"), "r", encoding="utf-8") as handle:
+            card = json.load(handle)
+        with open(os.path.join(pack_root, "appendix.md"), "r", encoding="utf-8") as handle:
+            appendix = handle.read()
+    except (OSError, ValueError, TypeError) as exc:
+        raise ValueError("profile pack metadata is invalid") from exc
+    if draft.get("schema_version") != "1":
+        raise ValueError("unsupported profile pack schema")
+    profile_id = draft.get("profile_id", "")
+    if (
+        not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", profile_id)
+        or profile_id.upper() in WINDOWS_RESERVED_NAMES
+    ):
+        raise ValueError("invalid profile_id")
+    if draft.get("report_set_hash") != run_plan.get("report_set_hash"):
+        raise ValueError("profile pack report_set_hash does not match the run")
+    domains = draft.get("domains", {})
+    if set(domains) != VALID_DOMAINS:
+        raise ValueError("profile pack must contain exactly work, design, and write domain states")
+    if domains["work"].get("status") != "active":
+        raise ValueError("work domain must be active")
+
+    allowed_names = set(REQUIRED_PACK_FILES)
+    validated_rules = {}
+    for domain in sorted(VALID_DOMAINS):
+        state = domains[domain]
+        filename, expected_name = DOMAIN_FILES[domain]
+        if state.get("status") == "inactive":
+            if (
+                domain == "work"
+                or state.get("reason") != "insufficient evidence"
+                or state.get("deepen_instruction") != f"run ditto and deepen {domain}"
+                or "file" in state
+            ):
+                raise ValueError(f"invalid inactive {domain} domain state")
+            continue
+        if state.get("status") != "active" or state.get("file") != filename:
+            raise ValueError(f"unsafe profile path for {domain}")
+        candidate = os.path.realpath(os.path.join(pack_root, state["file"]))
+        try:
+            contained = os.path.commonpath((pack_root, candidate)) == pack_root
+        except ValueError:
+            contained = False
+        if not contained or os.path.basename(candidate) != filename:
+            raise ValueError(f"unsafe profile path for {domain}")
+        if not os.path.isfile(candidate) or is_link_or_reparse(candidate):
+            raise ValueError(f"unsafe profile path for {domain}")
+        allowed_names.add(filename)
+        with open(candidate, "r", encoding="utf-8") as handle:
+            profile = handle.read()
+        if not has_skill_frontmatter(profile, expected_name=expected_name):
+            raise ValueError(f"active {domain} profile requires exact name: {expected_name}")
+        rules = state.get("rules", [])
+        if not rules:
+            raise ValueError(f"active {domain} domain requires rules")
+        for rule in rules:
+            validate_rule(rule, evidence_by_id, require_cross_strata=run_plan["adequate_strata"])
+            if rule["text"] not in profile or rule["implication"] not in profile:
+                raise ValueError("profile file omits a validated rule or implication")
+            for evidence_id in rule["evidence_ids"]:
+                evidence = evidence_by_id[evidence_id]
+                if evidence_id not in appendix:
+                    raise ValueError("appendix is missing a referenced evidence id")
+                for receipt in evidence.get("quotes", []):
+                    if receipt["date"] not in appendix or receipt["text"] not in appendix:
+                        raise ValueError("appendix is missing an exact private quote receipt")
+            validated_rules[rule["text"]] = rule
+    if names != allowed_names:
+        raise ValueError("profile pack contains an unexpected file")
+    if not isinstance(card, dict) or not isinstance(card.get("laws"), list) or not card.get("archetype"):
+        raise ValueError("card.json is invalid")
+    work_rules = {rule["text"]: rule for rule in domains["work"]["rules"]}
+    for law in card["laws"]:
+        rule = work_rules.get(law.get("text"))
+        if rule is None:
+            raise ValueError("card law does not match a validated work rule")
+        sessions = set().union(*(evidence_by_id[value]["sessions"] for value in rule["evidence_ids"]))
+        if law.get("count") != f"{len(sessions)} sessions":
+            raise ValueError("card law count must use distinct supporting sessions")
+    return draft
 
 def split_segment_sessions(text):
     marker = re.compile(
@@ -942,7 +1125,7 @@ CARD_HTML = """<!doctype html>
       <div class="setline">working profile &middot; mined from my own sessions</div>
       <div class="certline">{certline}</div>
     </div>
-    <div class="grade"><b>{grade}</b><span>consensus</span></div>
+    <div class="grade"><b>{grade}</b><span>evidence</span></div>
   </div>
   <div class="card">
     <div class="art" id="art">
@@ -984,13 +1167,7 @@ def render_card_html(card):
                  f"<p>&ldquo;{esc(card['truth'])}&rdquo;</p></div>")
     top_laws = card.get("laws", [])
     grade = esc(top_laws[0]["count"]) if top_laws and top_laws[0].get("count") else "&mdash;"
-    reports = ""
-    for law in top_laws:
-        c = str(law.get("count", ""))
-        if "/" in c:
-            reports = c.split("/", 1)[1].strip()
-            break
-    lawshead = f"ranked by how many of {esc(reports)} agents found each" if reports else "ranked by how many agents found each"
+    lawshead = "ranked by distinct session receipts"
     certline = f"no. {stats['messages']:,} messages on record" if stats.get("messages") else "&nbsp;"
     art_remote = "https://raw.githubusercontent.com/ohad6k/ditto/main/assets/ditto.png"
     art_local = art_remote
