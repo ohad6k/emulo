@@ -10,7 +10,7 @@ The release has three connected outcomes:
 2. The default mine is bounded, visible, cached, and incremental so first use does not unexpectedly consume a large model allowance.
 3. A public benchmark is prepared only after the plugin is correct and useful. No benchmark model runs occur during this release work until the final explicit stage.
 
-The full implementation architecture is documented in [the architecture plan](../../../.viberaven/plans/2026-07-10-ditto-plugin-architecture-plan.md).
+The full implementation architecture is documented in [the architecture plan](../plans/2026-07-10-ditto-plugin-architecture-plan.md).
 
 ## Product Promise
 
@@ -48,6 +48,45 @@ Private state lives under `DITTO_HOME`, defaulting to:
 ```
 
 This separation ensures plugin update or uninstall cannot erase the personal profile or mining cache.
+
+## End-to-End User Flow
+
+### First use
+
+The recommended entry point remains as simple as current Ditto:
+
+```text
+run ditto
+```
+
+The plugin routes that phrase to the mining skill. The user does not need to know skill namespaces, Python locations, chunk counts, output folders, or agent-specific install paths.
+
+Ditto then:
+
+1. confirms the plugin is registered without running a model;
+2. finds supported local session sources;
+3. performs redaction and dedupe locally;
+4. shows one compact preflight with real history size, starter selection, planned calls, and cache reuse;
+5. runs the bounded starter mine;
+6. compiles and validates work, design, and writing profiles from one report set;
+7. activates the complete profile atomically;
+8. verifies one real task and returns the card plus exact evidence.
+
+The result tells the user what changed, which skills are active, where private data lives, how much source text and how many calls were used, and whether any domain needs more evidence. There is no manual copy-and-paste installation step.
+
+### Later updates
+
+The user can say:
+
+```text
+update ditto
+```
+
+Ditto checks only new or changed sessions. If nothing changed, it makes zero model calls and says the profile is current. If new evidence exists, it reuses cached reports and activates a new profile version only after the full pack validates.
+
+### Existing CLI path
+
+The current one-file Python flow remains supported. Dry run, extraction, card rendering, and direct installs continue to work. The plugin is the recommended path because it automates orchestration without removing the simple CLI fallback.
 
 ## Installation and Mining Are Separate
 
@@ -236,6 +275,22 @@ Actual model runs remain disabled until the plugin, token contract, quality gate
 
 The initial roster includes all entries supplied from the Codex and Claude model menus. Exact menu labels, underlying model IDs when available, host version, date, mode, tools, and budgets are recorded. Different native agent harnesses are described as system comparisons, not pure model comparisons.
 
+## Changelog and GitHub Releases
+
+Every user-visible Ditto release gets one versioned entry in `CHANGELOG.md` with the same compact structure:
+
+- what changed;
+- why it matters;
+- how to upgrade;
+- what was verified;
+- known limits.
+
+At the end of this plan, after the benchmark is explicitly approved and its results are verified, the matching changelog entry becomes the source for a GitHub Release draft. The release tag, commands, proof links, benchmark artifacts, and limitations must all match the verified commit.
+
+GitHub stars are bookmarks, not release subscriptions. Ditto must not claim that a release reaches everyone who starred the repository. The README instead gives the real notification path: open the repository's `Watch` menu, choose `Custom`, then enable `Releases`. This matches [GitHub's notification documentation](https://docs.github.com/en/subscriptions-and-notifications/get-started/configuring-notifications) and [release documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
+
+The release draft and evidence are prepared as part of the work. Publication remains the final ship gate: Ohad publishes it or explicitly authorizes publication after reviewing the exact draft.
+
 ## Release Boundary
 
 This release is complete only when:
@@ -248,6 +303,8 @@ This release is complete only when:
 - existing profiles migrate without loss;
 - Codex and Claude support are live-verified separately;
 - privacy and cost claims match real behavior;
-- the benchmark is still unrun and all result values remain `--`.
+- benchmark runners stayed disabled until every preceding gate passed and explicit approval was given;
+- approved benchmark results are backed by raw artifacts;
+- the changelog entry and GitHub Release draft match the verified tag and proof.
 
 Watchers, hosted sync, billing, correction ledgers, profile drift, broad workflow compilation, and a public leaderboard remain outside this release.

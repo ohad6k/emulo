@@ -12,6 +12,7 @@ Turn Ditto from a single extractor plus one manually installed `you.md` into one
 - fixes the correctness defects found during the audit before the new packaging is released;
 - preserves current direct install targets while native plugin support is proven first in Codex and Claude;
 - prepares, but does not execute, the public multi-model benchmark until every preceding product and verification gate passes.
+- ends with a versioned changelog entry and GitHub Release draft backed by the real shipped proof.
 
 The release must improve cost, clarity, and usefulness together. A cheaper but generic profile fails. A rich profile that unexpectedly consumes a large subscription allowance also fails.
 
@@ -37,6 +38,27 @@ The user path is:
 10. An identical rerun resolves entirely from content-addressed caches. A later update processes only new or changed sealed segments.
 11. If one domain lacks adequate evidence, Ditto keeps that domain inactive and gives one exact targeted deepen action. It does not invent rules or automatically spend more tokens.
 12. After implementation, automated tests, migration, live plugin activation, and real work/design/writing probes pass, the benchmark harness can be completed. Model runs remain the final stage.
+
+### First-run experience
+
+- The README and plugin page lead with one natural instruction: **`run ditto`**.
+- The plugin routes that phrase to `ditto:mine`; the user does not need to know skill namespaces, Python paths, chunk counts, or install destinations.
+- Ditto installs with zero model calls, then shows one compact preflight when the user starts mining: real sessions, post-dedupe source size, selected starter budget, planned calls, and cache reuse.
+- The bounded starter mine proceeds without a configuration wizard. Only a larger targeted or deep run requires approval.
+- During local scanning and model work, Ditto reports progress at meaningful boundaries so the user is never left wondering whether it stalled.
+- Success returns one result: what Ditto learned, which work/design/write skills activated, where the private profile lives, the real call plan used, the card path, and the proof task result.
+- The user never manually copies profile files into agent folders.
+
+### Returning-user experience
+
+- **`update ditto`** checks only new or changed sessions.
+- No changes means no model calls and a clear `profile already current` result.
+- New evidence reuses sealed reports, stages a new profile version, and switches atomically only after validation.
+- If evidence is insufficient, Ditto names the weak domain and gives one exact targeted deepen command. It never silently expands the budget.
+
+### Existing CLI compatibility
+
+The current no-plugin path remains valid for users who prefer one-file Python. `python ditto.py --dry-run`, extraction, card rendering, and direct install targets continue to work. The plugin becomes the recommended path because it removes manual orchestration while preserving the simple current entry point.
 
 ## User Answers Translated
 
@@ -445,6 +467,31 @@ benchmark model runs last
 
 **Risk/fallback:** if the bounded profile fails a real probe, deepen only the failing domain after showing the additional plan. Do not silently fall back to full history.
 
+### Workstream 8: Changelog and GitHub release handoff
+
+**Purpose:** make every shipped Ditto update visible, understandable, and easy to follow from GitHub.
+
+**User outcome:** users can see exactly what changed, why it matters, how to upgrade, and what was actually verified.
+
+**Areas:** new `CHANGELOG.md`, `README.md`, Git tags, GitHub Releases, release notes.
+
+**Tasks:**
+
+- Add a chronological `CHANGELOG.md` with one versioned entry per user-visible release.
+- Use the same compact structure for every entry: changed, why, upgrade path, proof, and known limits.
+- After the benchmark is explicitly approved and verified, include only real model results and link to raw benchmark artifacts.
+- Draft a GitHub Release from the matching changelog entry and exact release tag.
+- Add a README note explaining that starring bookmarks the repository but does not subscribe to release notifications. Give the exact GitHub path: `Watch` → `Custom` → `Releases`, backed by GitHub's official notification and release documentation.
+- Keep release publication as the final ship gate. Prepare the draft and evidence; Ohad publishes it or explicitly authorizes publication.
+
+**Dependencies:** all product, live verification, and approved benchmark work.
+
+**Acceptance signals:** changelog, tag, release draft, upgrade instructions, proof links, and known limitations all describe the same verified release; no benchmark number is copied without a raw artifact.
+
+**Verification:** preview the GitHub Release draft, confirm its tag resolves to the verified commit, test every command and link, and perform a final claim audit.
+
+**Risk/fallback:** GitHub stars do not notify stargazers. Never promise delivery to all starred users; use GitHub Releases and teach users to watch Releases instead.
+
 ## Execution Tasks
 
 - [ ] Create a git checkpoint before product changes.
@@ -470,6 +517,9 @@ benchmark model runs last
 - [ ] Fix all actionable findings and rerun verification.
 - [ ] Prepare benchmark manifest and empty-results UI without running models.
 - [ ] Ask for explicit approval before any benchmark model run.
+- [ ] Create `CHANGELOG.md` and add the release-notification instructions to the README.
+- [ ] After approved benchmark runs, draft the matching changelog entry and GitHub Release from verified evidence.
+- [ ] Ask for final ship approval before publishing the GitHub Release.
 
 ## Implementation Sequence
 
@@ -486,6 +536,8 @@ benchmark model runs last
 11. Separate reviews, fixes, and re-review.
 12. Benchmark harness and empty-results UI.
 13. Benchmark model runs only after explicit approval.
+14. Verified changelog entry and matching GitHub Release draft.
+15. Final ship approval and GitHub Release publication.
 
 ## Data, Auth, Provider, And Deploy Boundaries
 
@@ -514,6 +566,7 @@ benchmark model runs last
 | Usage budget | Default plans four maps and one reducer | Deep requested, host lacks model selection | Visible plan; no implicit expansion |
 | Regression | Existing card and direct installs work | Existing user updates plugin | Full suite plus legacy command smoke tests |
 | Benchmark | Empty roster/UI exists | Accidental runner invocation | All result values remain `--`; zero runner calls |
+| Changelog/release | Entry, tag, and release draft agree | Missing proof, stale command, unverified metric | Draft preview, tag-to-commit proof, command/link smoke tests |
 
 Unauthorized-access, archived-data, and external-provider-failure cases are not applicable because this release adds no shared accounts, remote database, or hosted provider. Equivalent fail-closed coverage is provided for invalid local paths, corrupt caches, missing profiles, and model-host capability limits.
 
@@ -538,6 +591,8 @@ Unauthorized-access, archived-data, and external-provider-failure cases are not 
 - Inspect preflight output on the current 1.95M-token corpus and confirm the default remains bounded.
 - Verify plugin update and uninstall do not modify `~/.ditto`.
 - Confirm benchmark results remain `--` and no model runner was called.
+- After approved model runs, preview the changelog and GitHub Release together and verify every result link.
+- Confirm the README accurately directs users to `Watch` → `Custom` → `Releases` without claiming stars trigger notifications.
 
 ## Rollout And Rollback
 
@@ -551,6 +606,8 @@ Unauthorized-access, archived-data, and external-provider-failure cases are not 
 6. Switch the active profile pointer only after all three loaders pass.
 7. Keep the legacy skill for one release as a fallback.
 8. Publish updated docs only after behavior matches them.
+9. After explicit benchmark approval and verified results, prepare the final changelog entry and GitHub Release draft.
+10. Publish the release only after the final ship approval.
 
 ### Rollback
 
@@ -595,10 +652,7 @@ The exact public marketplace destination is a later distribution decision and do
 - Chose exact source-token/call disclosure over subscription-percentage claims.
 - Chose Codex and Claude native proof before broader plugin claims.
 - Chose to defer every benchmark model run until all product and verification work is complete.
-
-## VibeRaven Route
-
-This is a local open-source plugin and CLI change. It does not touch VibeRaven providers, auth, billing, migrations, or deploy state. No provider dashboard proof is required. Live proof is limited to actual Codex and Claude plugin registration, fresh-task activation, profile preservation, and real task behavior.
+- Chose `CHANGELOG.md` plus GitHub Releases for updates and rejected the false claim that stars notify every stargazer.
 
 ## Next Skill
 
