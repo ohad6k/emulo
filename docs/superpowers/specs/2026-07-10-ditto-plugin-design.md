@@ -4,11 +4,16 @@
 
 Ditto becomes one plugin that installs a small set of static, namespaced skills and stores each user's generated personal profile outside the plugin cache.
 
-The release has three connected outcomes:
+The plan has two independent release milestones.
+
+The **Plugin release** ships first:
 
 1. `ditto:work`, `ditto:design`, and `ditto:write` make the mined profile useful for execution, UI judgment, and marketing voice.
 2. The default mine is bounded, visible, cached, and incremental so first use does not unexpectedly consume a large model allowance.
-3. A public benchmark is prepared only after the plugin is correct and useful. No benchmark model runs occur during this release work until the final explicit stage.
+
+The **Benchmark release** follows from one exact already-published plugin tag. It contains the 14-entry comparison, leaderboard, and proof videos. It cannot delay or block the Plugin release.
+
+Version numbers are assigned from repository tag state at each ship gate. `Plugin release` and `Benchmark release` are milestone names, not hardcoded `v1` and `v2` tags.
 
 The full implementation architecture is documented in [the architecture plan](../plans/2026-07-10-ditto-plugin-architecture-plan.md).
 
@@ -95,7 +100,7 @@ Ditto checks only new or changed sessions. If nothing changed, it makes zero mod
 
 ### Existing CLI path
 
-The current one-file Python flow remains supported. For this release, `ditto.py` stays the canonical zero-dependency, single-file runtime, including the new cache and profile-store behavior. Dry run, extraction, card rendering, and direct installs continue to work. The plugin is the recommended path because it automates orchestration without removing the simple CLI fallback.
+The current one-file Python flow remains supported. For the Plugin release, `ditto.py` stays the canonical zero-dependency, single-file runtime, including the new cache and profile-store behavior. Dry run, extraction, card rendering, and direct installs continue to work. The plugin is the recommended path because it automates orchestration without removing the simple CLI fallback.
 
 ## Installation and Mining Are Separate
 
@@ -222,9 +227,9 @@ The README and security documentation must not say or imply that cloud model pro
 
 No public artifact contains the full profile, raw logs, or private appendix by default.
 
-## Verification
+## Plugin Release Verification
 
-The release is not called done because manifests and files exist.
+The Plugin release is not called done because manifests and files exist.
 
 Required proof includes:
 
@@ -261,7 +266,7 @@ Marked `AGENTS.md` and `GEMINI.md` context blocks are handled as separate adapte
 
 ## Benchmark Boundary
 
-The benchmark is the final proof layer, not part of installation or default mining.
+The benchmark is a separate second release, not part of installation, default mining, or the Plugin release gate. Benchmark preparation starts from an exact already-published plugin tag.
 
 Before model runs, Ditto may prepare:
 
@@ -272,7 +277,9 @@ Before model runs, Ditto may prepare:
 - raw artifact locations;
 - a thin result schema, deterministic fixtures, and a disabled runner.
 
-Actual model runs remain disabled until the plugin, token contract, quality gates, migration, tests, and live probes are complete and the user gives explicit approval.
+Actual model runs remain disabled until the Plugin release has shipped, its exact tag is frozen for comparison, and the user gives explicit benchmark approval.
+
+If real-user feedback requires a Ditto fix, the fix must be verified and published as a plugin patch before the benchmark tag is frozen. If the plugin tag changes after runs begin, affected comparison cells restart; one leaderboard never mixes plugin versions or unreleased code.
 
 The first approved run validates the result schema against real host/model/mode/tool/budget output. Only after that proof does Ditto build the polished result UI and video-facing leaderboard, avoiding speculative UI work around fields that may change.
 
@@ -290,15 +297,17 @@ Every user-visible Ditto release gets one versioned entry in `CHANGELOG.md` with
 - what was verified;
 - known limits.
 
-At the end of this plan, after the benchmark is explicitly approved and its results are verified, the matching changelog entry becomes the source for a GitHub Release draft. The release tag, commands, proof links, benchmark artifacts, and limitations must all match the verified commit.
+The Plugin release gets the first entry and GitHub Release as soon as the plugin gates pass. It describes the plugin, bounded mining, three domain skills, migration, proof, and known limits. It contains no placeholder benchmark results and does not wait for benchmark production.
+
+The Benchmark release gets a second entry and GitHub Release after approved runs, leaderboard, and videos are verified. It links every reported result to raw artifacts and names the exact published plugin tag used by all `+Ditto` conditions.
 
 GitHub stars are bookmarks, not release subscriptions. Ditto must not claim that a release reaches everyone who starred the repository. The README instead gives the real notification path: open the repository's `Watch` menu, choose `Custom`, then enable `Releases`. This matches [GitHub's notification documentation](https://docs.github.com/en/subscriptions-and-notifications/get-started/configuring-notifications) and [release documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
 
-The release draft and evidence are prepared as part of the work. Publication remains the final ship gate: Ohad publishes it or explicitly authorizes publication after reviewing the exact draft.
+Each release draft and its evidence are prepared separately. Publication remains a separate ship gate for each: Ohad publishes it or explicitly authorizes publication after reviewing that exact draft.
 
-## Release Boundary
+## Plugin Release Boundary
 
-This release is complete only when:
+The Plugin release is complete only when:
 
 - one Ditto plugin exposes the four approved skills;
 - installation performs zero model calls;
@@ -309,8 +318,22 @@ This release is complete only when:
 - existing profiles migrate without loss;
 - every claimed native host passed the viability spike and was live-verified separately;
 - privacy and cost claims match real behavior;
-- benchmark runners stayed disabled until every preceding gate passed and explicit approval was given, and UI polish waited for a schema-valid real result;
-- approved benchmark results are backed by raw artifacts;
-- the changelog entry and GitHub Release draft match the verified tag and proof.
+- separate spec-compliance and code-quality reviews were fixed and re-reviewed;
+- its own changelog entry and GitHub Release match the verified plugin tag and proof;
+- after explicit plugin ship approval, a clean install succeeds from the published tag.
 
-Watchers, hosted sync, billing, correction ledgers, profile drift, broad workflow compilation, and a hosted leaderboard service remain outside this release.
+No benchmark manifest, model run, leaderboard, or video is required to ship the Plugin release.
+
+## Benchmark Release Boundary
+
+The Benchmark release is complete only when:
+
+- it uses one exact already-published plugin tag across every `+Ditto` cell;
+- benchmark runners remained disabled until the Plugin release shipped and explicit benchmark approval was given;
+- the first approved pilot validated the real result schema before bulk runs or UI polish;
+- all 14 cold and `+Ditto` qualifiers and top-four repeated runs follow the frozen manifest;
+- every approved result, leaderboard value, and proof-video claim traces to a raw artifact;
+- its separate changelog entry and GitHub Release name the frozen plugin tag and match the verified benchmark tag;
+- Ohad gives a second explicit ship approval before the benchmark Release, leaderboard, or videos are published.
+
+Watchers, hosted sync, billing, correction ledgers, profile drift, broad workflow compilation, and a hosted leaderboard service remain outside both releases.

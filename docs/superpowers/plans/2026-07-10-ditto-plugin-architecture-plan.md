@@ -11,8 +11,9 @@ Turn Ditto from a single extractor plus one manually installed `you.md` into one
 - reuses prior work so identical reruns make zero model calls and incremental runs process only new or changed stable segments;
 - fixes the correctness defects found during the audit before the new packaging is released;
 - preserves current direct install targets while native plugin support is proven first in Codex and Claude;
-- prepares, but does not execute, the public multi-model benchmark until every preceding product and verification gate passes.
-- ends with a versioned changelog entry and GitHub Release draft backed by the real shipped proof.
+- ships the verified plugin as its own release before benchmark production begins;
+- treats the public multi-model benchmark, leaderboard, and proof videos as a separate second release after the exact plugin tag is frozen;
+- gives each release its own versioned changelog entry and GitHub Release draft backed by that release's real proof.
 
 The release must improve cost, clarity, and usefulness together. A cheaper but generic profile fails. A rich profile that unexpectedly consumes a large subscription allowance also fails.
 
@@ -37,7 +38,8 @@ The user path is:
 9. Future tasks activate `ditto:work`, `ditto:design`, or `ditto:write` as relevant. The static loader reads the active private profile file.
 10. An identical rerun resolves entirely from content-addressed caches. A later update processes only new or changed sealed segments.
 11. If one domain lacks adequate evidence, Ditto keeps that domain inactive and gives one exact targeted deepen action. It does not invent rules or automatically spend more tokens.
-12. After implementation, automated tests, migration, live plugin activation, and real work/design/writing probes pass, the benchmark schema and runner can be completed. Model runs remain the final stage; result-UI polish starts only after the first approved run proves the schema.
+12. After implementation, automated tests, migration, live plugin activation, and real work/design/writing probes pass, Ditto prepares and ships the plugin release. Benchmark work is not a plugin-release gate.
+13. Only after the plugin release is tagged does Ditto freeze the exact released plugin version for the separate benchmark milestone. The schema and runner come first, model runs still require explicit approval, and result-UI polish starts only after the first approved run proves the schema.
 
 ### First-run experience
 
@@ -60,7 +62,7 @@ The user path is:
 
 The current no-plugin path remains valid for users who prefer one-file Python. `python ditto.py --dry-run`, extraction, card rendering, and direct install targets continue to work. The plugin becomes the recommended path because it removes manual orchestration while preserving the simple current entry point.
 
-For this release, `ditto.py` remains the canonical zero-dependency, single-file Python runtime. Segment, cache, profile-store, and migration logic stay in that file; the plugin adds static manifests and skill files but does not turn the CLI into an installed Python package. If maintainability later requires modules, Ditto must first preserve a generated standalone `ditto.py` release artifact or explicitly retire the one-file claim in a separate release.
+For the Plugin release, `ditto.py` remains the canonical zero-dependency, single-file Python runtime. Segment, cache, profile-store, and migration logic stay in that file; the plugin adds static manifests and skill files but does not turn the CLI into an installed Python package. If maintainability later requires modules, Ditto must first preserve a generated standalone `ditto.py` release artifact or explicitly retire the one-file claim in a separate release.
 
 ## User Answers Translated
 
@@ -105,7 +107,7 @@ Temporary-directory reproductions on 2026-07-10 confirmed the key audit findings
 ### In scope
 
 - One canonical Ditto repository.
-- Candidate Codex and Claude plugin manifests, retained as native v1 surfaces only for hosts that pass Workstream 0.
+- Candidate Codex and Claude plugin manifests, retained as native Plugin release surfaces only for hosts that pass Workstream 0.
 - Static namespaced skills: `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`.
 - Durable private storage under `DITTO_HOME`, defaulting to `~/.ditto`.
 - Bounded deterministic starter mining.
@@ -116,9 +118,9 @@ Temporary-directory reproductions on 2026-07-10 confirmed the key audit findings
 - Existing direct Cursor, `AGENTS.md`, Gemini, Codex, and Claude install adapters retained for compatibility.
 - Honest documentation and privacy wording.
 - Automated and live verification proportional to the risk.
-- A thin benchmark manifest, result schema, fixtures, and disabled runner only after the plugin is stable; actual model runs and result-UI polish last.
+- A separate post-plugin-release benchmark milestone containing the manifest, result schema, fixtures, disabled runner, approved model runs, result UI, and proof clips.
 
-### Explicitly out of scope for this release
+### Explicitly out of scope for both releases
 
 - Persistent filesystem watchers or session hooks.
 - Automatic background mining.
@@ -305,13 +307,19 @@ migration + honest docs
         ↓
 automated and live verification
         ↓
+plugin changelog + GitHub Release
+        ↓
+PLUGIN RELEASE SHIPPED
+        ↓
+freeze exact released plugin tag
+        ↓
 benchmark schema + disabled runner
         ↓
-benchmark model runs last
+approved benchmark runs
         ↓
 result UI + proof clips
         ↓
-changelog + release evidence
+benchmark changelog + GitHub Release
 ```
 
 ## Workstreams
@@ -334,11 +342,11 @@ changelog + release evidence
 
 **Dependencies:** none. It runs before the main architecture work; the existing CLI correctness fixes remain conceptually independent but follow it in the implementation sequence so the packaging decision is known first.
 
-**Acceptance signals:** a fresh Codex task discovers and invokes the namespaced skill, local Python runs, and the isolated fixture is read. Claude must pass the same proof before native Claude support remains in v1 scope.
+**Acceptance signals:** a fresh Codex task discovers and invokes the namespaced skill, local Python runs, and the isolated fixture is read. Claude must pass the same proof before native Claude support remains in the Plugin release scope.
 
 **Verification:** host validator output plus fresh-task transcripts and fixture output. Manifest existence alone is not proof.
 
-**Risk/fallback:** if Codex cannot support the shape, stop the plugin architecture and retain the CLI/direct-skill product path. If only Claude fails, v1 is native Codex plus the existing Claude adapter; the docs must not claim a native Claude plugin.
+**Risk/fallback:** if Codex cannot support the shape, stop the plugin architecture and retain the CLI/direct-skill product path. If only Claude fails, the Plugin release is native Codex plus the existing Claude adapter; the docs must not claim a native Claude plugin.
 
 ### Workstream 1: Correctness and usage safety
 
@@ -495,13 +503,13 @@ changelog + release evidence
 
 **Risk/fallback:** if automatic migration detects ambiguous or conflicting installs, stop and show exact paths rather than choosing silently.
 
-### Workstream 7: Verification and benchmark preparation
+### Workstream 7: Plugin release verification
 
-**Purpose:** prove the upgrade before public benchmark execution.
+**Purpose:** prove the plugin upgrade independently of any benchmark or launch-video production.
 
-**User outcome:** Ditto is demonstrably installed, efficient, and behaviorally useful before model-comparison content is produced.
+**User outcome:** Ditto is demonstrably installed, efficient, and behaviorally useful early enough to ship while launch momentum is still active.
 
-**Areas:** tests, isolated homes, plugin development marketplace, benchmark manifest/schema, fixtures, and disabled runner.
+**Areas:** tests, isolated homes, plugin development marketplace, migration fixtures, live activation evidence, and claim review.
 
 **Tasks:**
 
@@ -509,68 +517,94 @@ changelog + release evidence
 - Validate clean installs in fresh tasks for every host still claimed as native after Workstream 0.
 - Run one real `done` probe, one design probe, and one writing probe with human verdicts.
 - Record source-token and call-plan evidence for bounded mining without claiming subscription-percentage savings.
-- Define the 14-entry initial benchmark roster from the supplied model menus.
-- Build only the thin benchmark manifest, result schema, deterministic fixtures, and disabled runner before any real run.
-- Keep every model runner disabled until an explicit final-stage approval.
+- Complete separate read-only spec-compliance and code-quality reviews, fix actionable findings, and re-review.
+- Keep all benchmark runners absent or disabled; benchmark preparation is not required for plugin-release approval.
 
-**Dependencies:** all prior workstreams.
+**Dependencies:** Workstreams 0-6.
 
-**Acceptance signals:** every release gate is backed by output, hashes, screenshots/transcripts, and human verdicts; no benchmark model has run.
+**Acceptance signals:** every plugin-release gate is backed by output, hashes, screenshots/transcripts, and human verdicts; no benchmark model has run and no benchmark artifact is required.
 
-**Verification:** complete release checklist and separate read-only spec/code-quality reviews followed by fixes and re-review.
+**Verification:** complete the plugin release checklist against the exact candidate commit and repeat the clean-install/fresh-task probes from that commit.
 
-**Risk/fallback:** if the chosen bounded candidate fails a real release probe, reopen calibration or block release; do not use targeted deepening to disguise a failed flagship default. For later users with sparse evidence in one domain, show a separate targeted deepen plan.
+**Risk/fallback:** if the chosen bounded candidate fails a real release probe, reopen calibration or block the plugin release; do not use targeted deepening to disguise a failed flagship default. For later users with sparse evidence in one domain, show a separate targeted deepen plan.
 
-### Workstream 8: Approved benchmark execution and visual proof
+### Workstream 8: Plugin release handoff
 
-**Purpose:** produce the public model comparison and viral visual proof only after the product itself has passed every release gate.
+**Purpose:** ship the verified plugin as the first independent distribution moment.
 
-**User outcome:** people can see both whether Ditto improves behavior and how the current Codex/Claude systems compare, with every result traceable to raw evidence.
+**User outcome:** users receive the plugin, bounded mining, and work/design/write skills without waiting for 28 qualifier cells, repeated finals, leaderboard production, or videos.
 
-**Areas:** benchmark runner, raw artifacts, blind verdicts, result UI, leaderboard, and three cold-versus-Ditto proof clips plus one combined hero clip.
+**Areas:** `CHANGELOG.md`, `README.md`, Git tag, GitHub Release, upgrade instructions, and plugin-release proof.
 
 **Tasks:**
 
-- Obtain explicit approval before the first model invocation.
+- Add the plugin release's own versioned changelog entry: what changed, why it matters, how to upgrade, verified proof, and known limits.
+- Assign the next valid repository version at ship time from the existing tag history; `Plugin release` is a milestone name, not a hardcoded `v1` tag.
+- Draft a GitHub Release from the exact verified plugin commit and changelog entry.
+- State that the benchmark is a later release; include no placeholder scores, speculative winner, or promised date.
+- Add the README notification path `Watch` → `Custom` → `Releases` without claiming that stars notify stargazers.
+- Obtain final ship approval before publishing the tag or GitHub Release.
+
+**Dependencies:** Workstreams 0-7 only. Nothing in Workstreams 9-10 may block this release.
+
+**Acceptance signals:** after explicit ship approval, the plugin tag resolves to the verified commit, install/upgrade commands work from that tag, and the GitHub Release contains no benchmark dependency or unverified claim.
+
+**Verification:** preview the release, resolve tag-to-commit, smoke-test every command and link, perform a final claim audit, and repeat one clean install from the tagged artifact.
+
+**Risk/fallback:** if release evidence is incomplete, delay only the plugin release handoff. Do not pull benchmark scope forward as a substitute for missing product proof.
+
+### Workstream 9: Benchmark preparation, approved execution, and visual proof
+
+**Purpose:** create the separate benchmark distribution event on top of an already released Ditto plugin.
+
+**User outcome:** people can see whether Ditto improves behavior and how the current Codex/Claude systems compare, with every result traceable to raw evidence and an installable released product behind it.
+
+**Areas:** benchmark manifest/schema, disabled runner, raw artifacts, blind verdicts, result UI, leaderboard, and three cold-versus-Ditto proof clips plus one combined hero clip.
+
+**Tasks:**
+
+- Freeze the exact already-published plugin tag used by every `+Ditto` condition. Never benchmark a dirty worktree or unreleased plugin commit.
+- If user feedback requires a product fix, verify and publish the patch first, then freeze that new tag before starting or restart affected cells so one result set never mixes plugin versions.
 - Freeze the supplied 14-label roster: Codex `5.5`, `5.6 Sol`, `5.6 Terra`, `5.6 Luna`, `5.4`, `5.4 Mini`, `5.3 Codex Spark`; Claude `Fable 5`, `Opus 4.8`, `Sonnet 5`, `Haiku 4.5`, `Opus 4.7`, `Opus 4.6`, `Sonnet 4.6`.
-- Run one approved pilot cell, validate the schema against the real host/model/mode/tool/budget output, and revise the schema before bulk execution if needed.
-- Run the same cold and `+Ditto` qualifier conditions for all 14 menu entries and retain every raw prompt, output, environment field, timing, and verdict.
+- Build the thin manifest, result schema, deterministic fixtures, and disabled runner before any real model run.
+- Obtain explicit approval before the first model invocation.
+- Run one approved pilot cell, validate the schema against real host/model/mode/tool/budget output, and revise it before bulk execution if needed.
+- Run the same cold and `+Ditto` qualifier conditions for all 14 entries and retain every raw prompt, output, environment field, timing, and verdict.
 - Advance the top four qualifier systems into the repeated full benchmark defined by the frozen manifest; do not change tasks or scoring after seeing results.
 - Build the polished leaderboard only from validated artifacts.
-- Produce separate `done`, design, and writing proof clips plus one combined hero clip from real cold-versus-Ditto outputs. Never reconstruct or improve a weak model result for the video.
+- Produce separate `done`, design, and writing proof clips plus one combined hero clip from real cold-versus-Ditto outputs. Never reconstruct or improve a weak result for the video.
 
-**Dependencies:** every product, migration, quality, and verification gate in Workstreams 0-7 plus explicit user approval.
+**Dependencies:** the published plugin release from Workstream 8; model execution additionally requires explicit user approval.
 
-**Acceptance signals:** all 14 entries have comparable qualifier artifacts; the top-four advancement is reproducible; repeated results link to raw evidence; UI and videos contain no placeholder or hand-entered claims.
+**Acceptance signals:** all 14 entries have comparable qualifier artifacts from one frozen plugin tag; top-four advancement is reproducible; repeated results link to raw evidence; UI and videos contain no placeholder or hand-entered claims.
 
-**Verification:** schema validation on the pilot, runner logs, artifact hashes, blind-verdict records, leaderboard-to-artifact link audit, and frame-by-frame claim audit of the proof clips.
+**Verification:** tag proof, schema validation on the pilot, runner logs, artifact hashes, blind-verdict records, leaderboard-to-artifact link audit, and frame-by-frame claim audit of the proof clips.
 
-**Risk/fallback:** if a menu label disappears or the host changes during execution, stop that system's run, record the drift, and ask before substituting it. Never silently compare a replacement as if it were the captured model.
+**Risk/fallback:** if a menu label or host changes, stop that system's run, record the drift, and ask before substituting it. If the frozen plugin tag changes, restart affected comparison cells rather than combining incomparable versions.
 
-### Workstream 9: Changelog and GitHub release handoff
+### Workstream 10: Benchmark release handoff
 
-**Purpose:** make every shipped Ditto update visible, understandable, and easy to follow from GitHub.
+**Purpose:** ship the verified benchmark and visual proof as the second independent distribution moment.
 
-**User outcome:** users can see exactly what changed, why it matters, how to upgrade, and what was actually verified.
+**User outcome:** the leaderboard and hero story land as a focused release rather than being buried inside plugin packaging notes.
 
-**Areas:** new `CHANGELOG.md`, `README.md`, Git tags, GitHub Releases, release notes.
+**Areas:** second `CHANGELOG.md` entry, benchmark artifacts, README/result links, Git tag, GitHub Release, leaderboard, and proof videos.
 
 **Tasks:**
 
-- Add a chronological `CHANGELOG.md` with one versioned entry per user-visible release.
-- Use the same compact structure for every entry: changed, why, upgrade path, proof, and known limits.
-- After the benchmark is explicitly approved and verified, include only real model results and link to raw benchmark artifacts.
-- Draft a GitHub Release from the matching changelog entry and exact release tag.
-- Add a README note explaining that starring bookmarks the repository but does not subscribe to release notifications. Give the exact GitHub path: `Watch` → `Custom` → `Releases`, backed by GitHub's official notification and release documentation.
-- Keep release publication as the final ship gate. Prepare the draft and evidence; Ohad publishes it or explicitly authorizes publication.
+- Add a separate benchmark-release changelog entry using only verified results and links to raw artifacts.
+- Assign the next valid repository version at ship time; `Benchmark release` is a milestone name, not a hardcoded `v2` tag.
+- Draft a second GitHub Release from the matching changelog entry and exact benchmark commit.
+- Verify that the release names the frozen plugin tag used in every `+Ditto` run and clearly describes cross-host results as system comparisons.
+- Obtain final ship approval before publishing the benchmark tag, Release, leaderboard, or videos.
 
-**Dependencies:** all product, live verification, and approved benchmark work in Workstreams 0-8.
+**Dependencies:** completed and verified Workstream 9 artifacts.
 
-**Acceptance signals:** changelog, tag, release draft, upgrade instructions, proof links, and known limitations all describe the same verified release; no benchmark number is copied without a raw artifact.
+**Acceptance signals:** after explicit ship approval, the benchmark tag, second changelog entry, GitHub Release, leaderboard, proof clips, frozen plugin tag, and raw artifacts all agree.
 
-**Verification:** preview the GitHub Release draft, confirm its tag resolves to the verified commit, test every command and link, and perform a final claim audit.
+**Verification:** preview the second release, resolve both relevant tags, test every link, trace every displayed number to a raw artifact, and perform a final frame-by-frame claim audit.
 
-**Risk/fallback:** GitHub stars do not notify stargazers. Never promise delivery to all starred users; use GitHub Releases and teach users to watch Releases instead.
+**Risk/fallback:** GitHub stars do not notify stargazers. Treat this as a second release and distribution moment, but direct users to `Watch` → `Custom` → `Releases` for reliable notifications.
 
 ## Execution Tasks
 
@@ -596,14 +630,16 @@ changelog + release evidence
 - [ ] Run fresh-task work, design, and writing activation probes.
 - [ ] Complete separate spec-compliance and code-quality reviews.
 - [ ] Fix all actionable findings and rerun verification.
+- [ ] Create the plugin-release changelog entry, README notification instructions, and GitHub Release draft from the verified plugin commit.
+- [ ] Ask for plugin ship approval, then publish the plugin tag and Release before benchmark production begins.
+- [ ] Freeze the exact published plugin tag used by every `+Ditto` benchmark cell.
 - [ ] Prepare a thin benchmark manifest, result schema, fixtures, and disabled runner without running models.
 - [ ] Ask for explicit approval before any benchmark model run.
 - [ ] Validate the schema against one approved pilot cell, then run cold and `+Ditto` qualifiers for all 14 frozen menu entries.
 - [ ] Advance the top four into the repeated full benchmark and retain raw artifacts and blind verdicts.
 - [ ] Build the evidence-linked result UI, leaderboard, three domain proof clips, and combined hero clip.
-- [ ] Create `CHANGELOG.md` and add the release-notification instructions to the README.
-- [ ] After approved benchmark runs, draft the matching changelog entry and GitHub Release from verified evidence.
-- [ ] Ask for final ship approval before publishing the GitHub Release.
+- [ ] Create a separate benchmark-release changelog entry and GitHub Release draft from verified artifacts.
+- [ ] Ask for benchmark ship approval before publishing its tag, Release, leaderboard, or videos.
 
 ## Implementation Sequence
 
@@ -619,12 +655,14 @@ changelog + release evidence
 10. Run bounded-candidate dogfood and select the smallest passing release default.
 11. Run automated verification, failure injection, and real fresh-task quality probes.
 12. Complete separate reviews, fixes, and re-review.
-13. Prepare the benchmark manifest, schema, fixtures, and disabled runner.
-14. After explicit approval, run one pilot cell and validate the result schema.
-15. Complete the frozen 14-entry qualifier and top-four repeated stage.
-16. Build the benchmark UI, leaderboard, and proof clips from verified artifacts.
-17. Create the verified changelog entry and matching GitHub Release draft.
-18. Obtain final ship approval before GitHub Release publication.
+13. Create and verify the plugin changelog entry, tag candidate, upgrade instructions, and GitHub Release draft.
+14. Obtain plugin ship approval and publish the plugin release.
+15. Freeze the exact published plugin tag, then prepare the benchmark manifest, schema, fixtures, and disabled runner.
+16. After explicit benchmark approval, run one pilot cell and validate the result schema.
+17. Complete the frozen 14-entry qualifier and top-four repeated stage.
+18. Build the benchmark UI, leaderboard, and proof clips from verified artifacts.
+19. Create and verify the separate benchmark changelog entry, tag candidate, and GitHub Release draft.
+20. Obtain benchmark ship approval before publishing its release and visual assets.
 
 ## Data, Auth, Provider, And Deploy Boundaries
 
@@ -654,9 +692,10 @@ changelog + release evidence
 | Usage budget | Selected default stays under the calibrated ceiling | No candidate passes, deep requested, host lacks model selection | Visible plan; no implicit expansion; failed calibration blocks claim |
 | Regression | Existing card and direct installs work | Existing user updates plugin | Full suite plus legacy command smoke tests |
 | Benchmark | All 14 qualifiers and top-four repeats follow the frozen manifest | Accidental invocation, schema gap, menu drift, missing artifact | Zero pre-approval calls; raw hashes and blind verdicts before UI/video claims |
-| Changelog/release | Entry, tag, and release draft agree | Missing proof, stale command, unverified metric | Draft preview, tag-to-commit proof, command/link smoke tests |
+| Plugin release | Plugin entry, tag, and Release agree without benchmark data | Benchmark blocks plugin, stale command, unverified claim | Tagged clean-install proof and link/command smoke tests |
+| Benchmark release | Second entry, tag, UI, videos, and raw artifacts agree | Mixed plugin tags, missing proof, unverified metric | Frozen-plugin-tag proof and artifact-to-claim audit |
 
-Unauthorized-access, archived-data, and external-provider-failure cases are not applicable because this release adds no shared accounts, remote database, or hosted provider. Equivalent fail-closed coverage is provided for invalid local paths, corrupt caches, missing profiles, and model-host capability limits.
+Unauthorized-access, archived-data, and external-provider-failure cases are not applicable because this plan adds no shared accounts, remote database, or hosted provider. Equivalent fail-closed coverage is provided for invalid local paths, corrupt caches, missing profiles, and model-host capability limits.
 
 ## Verification Plan
 
@@ -679,15 +718,17 @@ Unauthorized-access, archived-data, and external-provider-failure cases are not 
 - Perform one real task in each domain and collect the artifact plus the user's verdict.
 - Inspect every calibration candidate on the current 1.95M-token corpus, freeze the must-recover checklist before model work, and select the smallest candidate that passes it and the three fresh-task probes.
 - Verify plugin update and uninstall do not modify `~/.ditto`.
-- Confirm the benchmark runner remains disabled and no model runner was called before approval.
-- After approved model runs, preview the changelog and GitHub Release together and verify every result link.
+- Preview the plugin changelog and GitHub Release, then repeat a clean install from the exact plugin tag before publication.
+- Confirm the benchmark runner remains absent or disabled and no benchmark artifact is required for the plugin release.
+- After the plugin is published, freeze its exact tag before benchmark preparation or model approval.
+- After approved model runs, preview the separate benchmark changelog and GitHub Release and verify every result link.
 - Confirm the README accurately directs users to `Watch` → `Custom` → `Releases` without claiming stars trigger notifications.
 
 ## Rollout And Rollback
 
-### Rollout
+### Plugin release rollout
 
-1. Prove the minimum native plugin path per host; remove any host that fails from native v1 claims.
+1. Prove the minimum native plugin path per host; remove any host that fails from native plugin-release claims.
 2. Ship correctness and usage fixes behind the existing CLI without changing the default installed profile.
 3. Add durable profile storage, loaders, routing, and migration tests.
 4. Install the new plugin in a personal development marketplace with its personal loaders inactive.
@@ -696,16 +737,26 @@ Unauthorized-access, archived-data, and external-provider-failure cases are not 
 7. Start a fresh task and prove exactly one personal-profile path is active. On failure, deactivate the new pointer and restore the legacy discovery path.
 8. Keep the legacy backup for one release, but never keep it discoverable while the new profile is active.
 9. Publish updated docs only after behavior matches them.
-10. After explicit benchmark approval and verified results, prepare the final changelog entry and GitHub Release draft.
-11. Publish the release only after the final ship approval.
+10. Prepare the plugin changelog entry and GitHub Release from the verified commit without waiting for benchmark work.
+11. After explicit plugin ship approval, publish the plugin tag and Release.
+
+### Benchmark release rollout
+
+1. Start only from an exact published plugin tag.
+2. Apply user-feedback fixes only through separately verified and published plugin patch releases; freeze the final chosen tag before comparisons.
+3. Prepare the manifest, schema, fixtures, and disabled runner.
+4. Obtain explicit model-run approval, validate one pilot cell, then complete the frozen qualifier and top-four repeated stages.
+5. Build the leaderboard and proof clips only from verified artifacts.
+6. Prepare a separate benchmark changelog entry and GitHub Release draft.
+7. After explicit benchmark ship approval, publish its tag, Release, leaderboard, and videos.
 
 ### Rollback
 
 - Disable or uninstall the plugin without deleting `~/.ditto`.
 - Restore the previous active profile pointer from its backup.
 - Move the backed-up legacy `you` skill from `~/.ditto/legacy/...` back to its original host discovery path before the next fresh task.
-- Revert the release commit if automated or live verification regresses.
-- Do not attempt to migrate benchmark artifacts because benchmark execution is deferred.
+- Revert or supersede the plugin release with a verified patch if live behavior regresses.
+- A benchmark failure never requires rolling back the already working plugin release; stop the benchmark milestone, preserve its raw artifacts, and correct or rerun it under one frozen plugin tag.
 
 ## Risks And Fallbacks
 
@@ -719,18 +770,22 @@ Unauthorized-access, archived-data, and external-provider-failure cases are not 
 - **Usage estimate differs from subscription allowance:** report source tokens and planned calls only. Do not promise a percentage of a proprietary quota.
 - **Legacy migration ambiguity:** preserve every legacy file and require explicit selection rather than overwriting.
 - **Legacy and plugin profiles both trigger:** make discoverability mutually exclusive at cutover and verify in a fresh task; a backup is not left in an active skill directory.
+- **Benchmark production grows or slips:** the plugin release is already shipped and remains independent; cut benchmark scope only through an explicit plan revision, never by weakening evidence.
+- **User feedback changes Ditto before benchmarking:** ship a verified patch first and restart affected comparison cells under the newly frozen tag; never mix plugin versions in one leaderboard.
 - **Scope expands into a living-memory platform:** reject watchers, hosted sync, drift systems, and broad workflow compilation until the focused plugin and benchmark prove demand.
 
 ## Open Questions
 
 No blocking product questions remain for the implementation plan. The following release decisions are deliberately fixed:
 
-- Native plugin v1 targets Codex and Claude only if each passes the front-loaded viability spike; Cursor and Gemini remain adapters until separately proven.
+- The plugin release targets Codex and Claude only if each passes the front-loaded viability spike; Cursor and Gemini remain adapters until separately proven.
 - Four segments near 25K are the first calibration candidate, not a fixed release default. The smallest candidate that passes under the 160K/nine-call ceiling becomes the default.
 - Full-history deep mode is explicit only.
 - Generated profile state lives outside plugin caches.
-- The core CLI remains a zero-dependency, single-file `ditto.py` runtime for this release.
-- The benchmark schema and disabled runner are prepared last; real runs require approval, and result UI follows the first schema-valid run.
+- The core CLI remains a zero-dependency, single-file `ditto.py` runtime for the plugin release.
+- The plugin release ships after Workstreams 0-8 and has no benchmark dependency.
+- The benchmark is a separate release based on one exact already-published plugin tag; real runs require approval, and result UI follows the first schema-valid run.
+- Version numbers are assigned from repository tag state at each ship gate; `Plugin release` and `Benchmark release` are milestone names, not hardcoded `v1`/`v2` tags.
 
 The exact public marketplace destination is a later distribution decision and does not affect the local plugin architecture or implementation tests.
 
@@ -747,10 +802,14 @@ The exact public marketplace destination is a later distribution decision and do
 - Chose exact source-token/call disclosure over subscription-percentage claims.
 - Chose a front-loaded Codex/Claude viability spike before plugin-dependent implementation and per-host claims.
 - Chose mutually exclusive legacy/new profile activation over a one-release double-load window.
-- Chose to preserve `ditto.py` as the canonical zero-dependency single-file runtime for this release.
+- Chose to preserve `ditto.py` as the canonical zero-dependency single-file runtime for the Plugin release.
 - Chose to defer every benchmark model run until all product and verification work is complete.
+- Chose two independent releases so benchmark and video production cannot delay the plugin, creating two honest distribution moments.
+- Chose to benchmark one exact published plugin tag and reject mixed-tag or unreleased comparisons.
 - Chose `CHANGELOG.md` plus GitHub Releases for updates and rejected the false claim that stars notify every stargazer.
 
 ## Next Skill
 
-Next skill: `superpowers:writing-plans`
+Next skill: `superpowers:writing-plans` for Workstreams 0-8, the Plugin release only.
+
+Workstreams 9-10 receive their own implementation plan after the Plugin release ships and its benchmark tag is chosen. This keeps benchmark production from expanding or delaying the first implementation plan and allows real user feedback and current model-menu state to inform the second plan without changing the frozen evidence rules.
