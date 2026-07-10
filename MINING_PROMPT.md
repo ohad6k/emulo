@@ -2,6 +2,16 @@
 
 Ditto uses one bounded worker pass per selected segment, followed by one reducer pass over validated reports. Workers never read another segment and the reducer never reads raw session logs.
 
+## Adaptive packet scout contract
+
+Read only the assigned frozen receipt packet. Maximize recall independently for `work`, `design`, and `write`; do not merge rules across packets. Each domain has its own ceiling of 12 evidence items. Return JSON schema `2` with the exact `packet_hash`, all assigned `receipt_ids`, exact `source_tokens`, and an explicit `evidence` or `no-signal` state for every domain.
+
+Every evidence item includes `domain`, `kind`, `scope`, `context`, `signal_family`, a concrete instruction and implication, plus exact receipt objects shaped as `{receipt_id, session_id, date, text}`. `scope` is either `universal` or `contextual`; contextual evidence must name the context. Quotes and contradictions must copy the packet receipt text and date verbatim. The complete canonical JSON report may not exceed 24,576 bytes.
+
+Before returning, run `python "$DITTO_PY" plugin validate-scout --run-id "$RUN_ID" --packet-hash "$PACKET_HASH" --report "$REPORT_PATH"`. Correct rejected output inside the same scout pass. The orchestrator caches only validated content-addressed reports.
+
+The schema-1 segment contract below exists only for explicitly enabled legacy reproduction.
+
 ## Per-segment worker contract
 
 Read the entire assigned segment. It contains only selected, redacted user messages grouped under stable `session:<id>` headers. Cover all three domains in the same pass:

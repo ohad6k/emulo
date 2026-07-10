@@ -137,6 +137,64 @@ def append_live_message(history, text):
     write_jsonl(history.log, history.rows)
 
 
+def packet_fixture():
+    domains = ("work", "design", "write")
+    receipts = receipt_fixtures(
+        [f"exact receipt {index}" for index in range(36)],
+        sessions=[f"session-{index}" for index in range(36)],
+        domains=[(domains[index // 12],) for index in range(36)],
+    )
+    return {
+        "schema_version": "1",
+        "packet_hash": "a" * 64,
+        "source_tokens": sum(item["tokens"] for item in receipts),
+        "receipt_ids": [item["receipt_id"] for item in receipts],
+        "receipts": receipts,
+        "domain_counts": {domain: 12 for domain in domains},
+        "signal_counts": {"preference": 36},
+        "first_date": min(item["date"] for item in receipts),
+        "last_date": max(item["date"] for item in receipts),
+        "sources": ["claude", "codex"],
+    }
+
+
+def scout_evidence(item, domain, index):
+    return {
+        "evidence_id": f"ev-{domain}-{index:02d}",
+        "domain": domain,
+        "kind": "explicit",
+        "scope": "universal",
+        "context": "",
+        "signal_family": "preference",
+        "instruction": f"specific {domain} instruction {index}",
+        "implication": f"perform the exact {domain} behavior {index}",
+        "quotes": [{
+            "receipt_id": item["receipt_id"], "session_id": item["session_id"],
+            "date": item["date"], "text": item["text"],
+        }],
+        "contradictions": [],
+    }
+
+
+def valid_scout_report(items_per_domain=1):
+    packet = packet_fixture()
+    evidence = []
+    for domain_index, domain in enumerate(("work", "design", "write")):
+        for index in range(items_per_domain):
+            evidence.append(scout_evidence(packet["receipts"][domain_index * 12 + index], domain, index))
+    return {
+        "schema_version": "2",
+        "packet_hash": packet["packet_hash"],
+        "coverage": {"receipt_ids": packet["receipt_ids"], "source_tokens": packet["source_tokens"]},
+        "domain_coverage": {domain: "evidence" for domain in ("work", "design", "write")},
+        "evidence": evidence,
+    }
+
+
+def extra_work_evidence():
+    return scout_evidence(packet_fixture()["receipts"][11], "work", 99)
+
+
 class ReceiptLedgerTest(unittest.TestCase):
     def test_large_session_becomes_individual_stable_receipts(self):
         record = make_record("s1", [
@@ -272,6 +330,31 @@ class AdaptivePlanTest(unittest.TestCase):
         run_plugin_preflight(history, history.home)
 
         self.assertFalse(history.home.exists())
+
+
+class ScoutReportTest(unittest.TestCase):
+    def test_each_domain_has_an_independent_twelve_item_budget(self):
+        report = valid_scout_report(items_per_domain=12)
+        ditto.validate_scout_report(report, packet_fixture())
+        report["evidence"].append(extra_work_evidence())
+
+        with self.assertRaisesRegex(ValueError, "work evidence ceiling"):
+            ditto.validate_scout_report(report, packet_fixture())
+
+    def test_receipt_must_match_exact_packet_text_and_date(self):
+        report = valid_scout_report(items_per_domain=1)
+        report["evidence"][0]["quotes"][0]["receipt_id"] = "rcpt-" + "f" * 20
+
+        with self.assertRaisesRegex(ValueError, "receipt"):
+            ditto.validate_scout_report(report, packet_fixture())
+
+    def test_contextual_evidence_requires_context(self):
+        report = valid_scout_report(items_per_domain=1)
+        report["evidence"][0]["scope"] = "contextual"
+        report["evidence"][0]["context"] = ""
+
+        with self.assertRaisesRegex(ValueError, "context"):
+            ditto.validate_scout_report(report, packet_fixture())
 
 
 if __name__ == "__main__":

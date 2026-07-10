@@ -39,6 +39,8 @@ REDUCER_SCHEMA_VERSION = "1"
 RECEIPT_SCHEMA_VERSION = "1"
 SALIENCE_SCHEMA_VERSION = "1"
 PACKET_SCHEMA_VERSION = "1"
+SCOUT_REPORT_SCHEMA_VERSION = "2"
+MAX_SCOUT_REPORT_BYTES = 24_576
 
 STAGE_CONFIGS = {
     "A": {"packets": 6, "packet_tokens": 50_000, "source_tokens": 300_000},
@@ -1407,6 +1409,92 @@ def validate_report(report, segment):
         raise ValueError("domain coverage does not match evidence items")
     return report
 
+def validate_scout_report(report, packet):
+    if len(canonical_json(report).encode("utf-8")) > MAX_SCOUT_REPORT_BYTES:
+        raise ValueError("scout report byte ceiling exceeded")
+    if report.get("schema_version") != SCOUT_REPORT_SCHEMA_VERSION:
+        raise ValueError("unsupported scout report schema")
+    if report.get("packet_hash") != packet.get("packet_hash"):
+        raise ValueError("scout report packet hash mismatch")
+    coverage = report.get("coverage", {})
+    if coverage.get("receipt_ids") != packet.get("receipt_ids"):
+        raise ValueError("scout report receipt coverage mismatch")
+    if coverage.get("source_tokens") != packet.get("source_tokens"):
+        raise ValueError("scout report token coverage mismatch")
+    domain_coverage = report.get("domain_coverage", {})
+    if (
+        set(domain_coverage) != VALID_DOMAINS
+        or any(value not in {"evidence", "no-signal"} for value in domain_coverage.values())
+    ):
+        raise ValueError("scout domain coverage must include work, design, and write")
+    packet_receipts = {item["receipt_id"]: item for item in packet.get("receipts", [])}
+    evidence_items = report.get("evidence")
+    if not isinstance(evidence_items, list):
+        raise ValueError("scout evidence must be a list")
+    counts = {domain: 0 for domain in VALID_DOMAINS}
+    seen_ids = set()
+    for item in evidence_items:
+        domain = item.get("domain")
+        if domain not in VALID_DOMAINS:
+            raise ValueError("invalid scout evidence domain")
+        counts[domain] += 1
+        if counts[domain] > 12:
+            raise ValueError(f"{domain} evidence ceiling exceeded")
+        evidence_id = item.get("evidence_id", "")
+        if not evidence_id or evidence_id in seen_ids:
+            raise ValueError("invalid or duplicate scout evidence id")
+        seen_ids.add(evidence_id)
+        if item.get("kind") not in VALID_EVIDENCE_KINDS:
+            raise ValueError("invalid scout evidence kind")
+        scope = item.get("scope")
+        if scope not in {"universal", "contextual"}:
+            raise ValueError("invalid scout evidence scope")
+        if scope == "contextual" and not item.get("context", "").strip():
+            raise ValueError("contextual scout evidence requires context")
+        if item.get("signal_family") not in {
+            "directive", "correction", "rejection", "preference", "recurrence", "exploration", "verification"
+        }:
+            raise ValueError("invalid scout signal family")
+        if not item.get("instruction") or not item.get("implication") or not item.get("quotes"):
+            raise ValueError("scout evidence requires instruction, implication, and quotes")
+        contradictions = item.get("contradictions")
+        if not isinstance(contradictions, list):
+            raise ValueError("scout contradictions must be a list")
+        for quote in item["quotes"] + contradictions:
+            receipt = packet_receipts.get(quote.get("receipt_id"))
+            if receipt is None:
+                raise ValueError("scout receipt is not in the assigned packet")
+            if any(quote.get(key) != receipt.get(key) for key in ("session_id", "date", "text")):
+                raise ValueError("scout receipt must match exact packet text and date")
+    evidenced = {item["domain"] for item in evidence_items}
+    if any((domain_coverage[domain] == "evidence") != (domain in evidenced) for domain in VALID_DOMAINS):
+        raise ValueError("scout domain coverage does not match evidence")
+    return report
+
+def scout_report_cache_path(ditto_home, packet_hash):
+    if not re.fullmatch(r"[a-f0-9]{64}", packet_hash or ""):
+        raise ValueError("invalid scout packet hash")
+    return safe_private_child(
+        ditto_home, "cache", "scout-reports", SCOUT_REPORT_SCHEMA_VERSION, packet_hash + ".json"
+    )
+
+def store_scout_report(report, ditto_home, packet):
+    validate_scout_report(report, packet)
+    path = scout_report_cache_path(ditto_home, packet["packet_hash"])
+    atomic_write_text(path, canonical_json(report) + "\n")
+    return path
+
+def load_cached_scout_report(ditto_home, packet):
+    path = scout_report_cache_path(ditto_home, packet["packet_hash"])
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8", errors="strict") as handle:
+            report = json.load(handle)
+        return validate_scout_report(report, packet)
+    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+
 def hydrate_segment(ditto_home, segment):
     hydrated = dict(segment)
     if "text" not in hydrated:
@@ -2045,6 +2133,12 @@ def build_plugin_parser():
     validate_report_command.add_argument("--run-id", required=True)
     validate_report_command.add_argument("--report", required=True)
     validate_report_command.add_argument("--ditto-home")
+    for name in ("validate-scout", "cache-scout"):
+        scout_command = sub.add_parser(name)
+        scout_command.add_argument("--run-id", required=True)
+        scout_command.add_argument("--packet-hash", required=True)
+        scout_command.add_argument("--report", required=True)
+        scout_command.add_argument("--ditto-home")
     validate_pack_command = sub.add_parser("validate-pack")
     validate_pack_command.add_argument("--run-id", required=True)
     validate_pack_command.add_argument("--pack", required=True)
@@ -2147,6 +2241,42 @@ def validate_run_report(args):
         "status": "valid",
         "segment_hash": selected["segment_hash"],
     }
+
+def load_run_packet(home, run_id, packet_hash):
+    plan_path, plan = load_run_plan(home, run_id)
+    try:
+        with open(plan["packet_manifest_path"], "r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        selected = next(item for item in manifest["packets"] if item["packet_hash"] == packet_hash)
+        with open(plan["ledger_path"], "r", encoding="utf-8") as handle:
+            ledger = json.load(handle)["receipts"]
+    except (OSError, ValueError, KeyError, StopIteration, json.JSONDecodeError) as exc:
+        raise ValueError("assigned scout packet is missing or corrupt") from exc
+    by_id = {item["receipt_id"]: item for item in ledger}
+    try:
+        receipts = [by_id[receipt_id] for receipt_id in selected["receipt_ids"]]
+    except KeyError as exc:
+        raise ValueError("assigned scout packet receipt is missing") from exc
+    return plan_path, plan, dict(selected, receipts=receipts)
+
+def validate_run_scout(args, cache=False):
+    home = resolve_ditto_home(args.ditto_home)
+    plan_path, plan, packet = load_run_packet(home, args.run_id, args.packet_hash)
+    try:
+        with open(args.report, "r", encoding="utf-8", errors="strict") as handle:
+            report = json.load(handle)
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError("scout report is not valid JSON") from exc
+    validate_scout_report(report, packet)
+    payload = {"status": "valid", "packet_hash": packet["packet_hash"]}
+    if cache:
+        cached_path = store_scout_report(report, home, packet)
+        paths = set(plan.get("scout_report_paths", []))
+        paths.add(cached_path)
+        plan["scout_report_paths"] = sorted(paths)
+        atomic_write_text(plan_path, canonical_json(plan) + "\n")
+        payload.update({"status": "cached", "cached_report_path": cached_path})
+    return payload
 
 def cache_run_report(args):
     home = resolve_ditto_home(args.ditto_home)
@@ -2514,6 +2644,10 @@ def plugin_main(argv):
             payload = prepare_plugin_run(args)
         elif args.command == "validate-report":
             payload = validate_run_report(args)
+        elif args.command == "validate-scout":
+            payload = validate_run_scout(args, cache=False)
+        elif args.command == "cache-scout":
+            payload = validate_run_scout(args, cache=True)
         elif args.command == "validate-pack":
             payload = validate_plugin_pack(args)
         elif args.command == "cache-report":
