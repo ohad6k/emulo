@@ -173,5 +173,58 @@ class ProfilePackValidationTest(unittest.TestCase):
         self.assertNotIn("how many agents", html)
 
 
+class AtomicProfileStoreTest(unittest.TestCase):
+    def test_activation_failure_preserves_previous_pointer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = str(Path(tmp) / "private")
+            first_hash = "c" * 64
+            first = make_valid_pack(Path(tmp) / "first", report_set_hash=first_hash)
+            ditto.activate_profile_pack(home, first, evidence_fixture(), run_plan_fixture(first_hash), fail_after=None)
+            before = Path(home, "profiles", "default", "current.json").read_bytes()
+            active_before = Path(home, "active-profile.json").read_bytes()
+            for index, failure_point in enumerate(("version-stage", "version-rename", "pointer-write")):
+                second_hash = format(index + 13, "x") * 64
+                second = make_valid_pack(Path(tmp) / failure_point, report_set_hash=second_hash)
+                with self.subTest(failure_point=failure_point):
+                    with self.assertRaisesRegex(RuntimeError, "injected"):
+                        ditto.activate_profile_pack(
+                            home,
+                            second,
+                            evidence_fixture(),
+                            run_plan_fixture(second_hash),
+                            fail_after=failure_point,
+                        )
+                    self.assertEqual(before, Path(home, "profiles", "default", "current.json").read_bytes())
+                    self.assertEqual(active_before, Path(home, "active-profile.json").read_bytes())
+
+    def test_plugin_uninstall_directory_is_never_profile_home(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = ditto.resolve_ditto_home(str(Path(tmp) / "private"))
+            self.assertNotIn("plugins", Path(home).parts)
+
+    def test_cached_reduction_reactivates_same_version(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = str(Path(tmp) / "private")
+            report_set_hash = "e" * 64
+            pack = make_valid_pack(Path(tmp) / "pack", report_set_hash)
+            first = ditto.activate_profile_pack(home, pack, evidence_fixture(), run_plan_fixture(report_set_hash))
+            second = ditto.activate_cached_reduction(home, report_set_hash)
+            self.assertEqual(first["profile_version"], second["profile_version"])
+
+    def test_tampered_reduction_cache_fails_without_pointer_change(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = str(Path(tmp) / "private")
+            report_set_hash = "9" * 64
+            pack = make_valid_pack(Path(tmp) / "pack", report_set_hash)
+            ditto.activate_profile_pack(home, pack, evidence_fixture(), run_plan_fixture(report_set_hash))
+            current = Path(home, "profiles", "default", "current.json")
+            before = current.read_bytes()
+            cached_you = Path(home, "cache", "reductions", "1", report_set_hash, "you.md")
+            cached_you.write_text("tampered", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "hash"):
+                ditto.activate_cached_reduction(home, report_set_hash)
+            self.assertEqual(before, current.read_bytes())
+
+
 if __name__ == "__main__":
     unittest.main()

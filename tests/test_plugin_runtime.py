@@ -65,6 +65,28 @@ class PluginRuntimeCliTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "private state"):
                 ditto.safe_private_child(str(Path(tmp) / "private"), "runs", "..", "outside")
 
+    def test_profile_path_fails_closed_on_corrupt_pointer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "private"
+            home.mkdir()
+            (home / "active-profile.json").write_text("not-json", encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "plugin",
+                    "profile-path",
+                    "--domain",
+                    "work",
+                    "--ditto-home",
+                    str(home),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("corrupt active profile", result.stderr)
+
 
 class SessionRecordTest(unittest.TestCase):
     def test_records_use_stable_hashed_ids_without_raw_paths(self):
@@ -233,6 +255,23 @@ class PreflightTest(unittest.TestCase):
             self.assertLessEqual(plan["selected_source_tokens"], 160_000)
             self.assertLessEqual(plan["planned_worker_calls"] + plan["planned_reducer_calls"], 9)
             self.assertFalse(home.exists())
+
+
+class UpdatePlanningTest(unittest.TestCase):
+    def test_update_selection_retains_history_and_marks_only_new_work(self):
+        active = [
+            {"segment_hash": "a" * 64, "active": True, "source": "codex", "first_date": "2026-01-01", "source_tokens": 20000},
+            {"segment_hash": "b" * 64, "active": True, "source": "codex", "first_date": "2026-02-01", "source_tokens": 20000},
+        ]
+        report_segments, work_segments, remaining = ditto.select_run_segments(
+            active,
+            current_segment_hashes={"a" * 64},
+            count=4,
+            max_tokens=100000,
+        )
+        self.assertEqual(["a" * 64, "b" * 64], [item["segment_hash"] for item in report_segments])
+        self.assertEqual(["b" * 64], [item["segment_hash"] for item in work_segments])
+        self.assertEqual(0, remaining)
 
     def test_call_count_gate_returns_zero_only_for_complete_cache(self):
         hashes = ["a" * 64, "b" * 64]

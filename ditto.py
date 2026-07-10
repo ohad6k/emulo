@@ -667,6 +667,177 @@ def validate_profile_pack(pack_dir, evidence_by_id, run_plan):
             raise ValueError("card law count must use distinct supporting sessions")
     return draft
 
+def file_sha256_map(directory, names):
+    return {name: sha256_file(os.path.join(directory, name)) for name in sorted(names)}
+
+def validate_version_directory(directory, expected_report_set_hash=None):
+    manifest_path = os.path.join(directory, "manifest.json")
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise ValueError("profile manifest is missing or corrupt") from exc
+    if manifest.get("schema_version") != "1" or manifest.get("profile_id") != "default":
+        raise ValueError("profile manifest schema is invalid")
+    if expected_report_set_hash and manifest.get("report_set_hash") != expected_report_set_hash:
+        raise ValueError("profile manifest report set hash mismatch")
+    for name, expected in manifest.get("files", {}).items():
+        path = os.path.join(directory, name)
+        if not os.path.isfile(path) or is_link_or_reparse(path) or sha256_file(path) != expected:
+            raise ValueError("profile file hash mismatch")
+    manifest_bytes = (canonical_json(manifest) + "\n").encode("utf-8")
+    return manifest, sha256_text(manifest_bytes.decode("utf-8"))
+
+def optional_bytes(path):
+    if not os.path.isfile(path):
+        return None
+    with open(path, "rb") as handle:
+        return handle.read()
+
+def restore_optional(path, data):
+    if data is None:
+        if os.path.exists(path):
+            os.remove(path)
+    else:
+        atomic_write_bytes(path, data)
+
+def activate_profile_pack(ditto_home, pack_dir, evidence_by_id, run_plan, fail_after=None):
+    home = resolve_ditto_home(ditto_home)
+    draft = validate_profile_pack(pack_dir, evidence_by_id, run_plan)
+    pack_names = {entry.name for entry in os.scandir(pack_dir) if entry.is_file(follow_symlinks=False)}
+    file_hashes = file_sha256_map(pack_dir, pack_names)
+    manifest = {
+        "schema_version": "1",
+        "profile_id": "default",
+        "profile_version": "",
+        "report_set_hash": draft["report_set_hash"],
+        "prompt_schema_version": PROMPT_SCHEMA_VERSION,
+        "reducer_schema_version": REDUCER_SCHEMA_VERSION,
+        "source_coverage": run_plan["source_coverage"],
+        "selected_source_tokens": run_plan["selected_source_tokens"],
+        "segment_hashes": sorted(run_plan["segment_hashes"]),
+        "domains": draft["domains"],
+        "files": file_hashes,
+    }
+    manifest["profile_version"] = sha256_text(canonical_json(manifest))[:20]
+    manifest_bytes = (canonical_json(manifest) + "\n").encode("utf-8")
+    manifest_hash = hashlib.sha256(manifest_bytes).hexdigest()
+    versions = safe_private_child(home, "profiles", "default", "versions")
+    os.makedirs(versions, exist_ok=True)
+    staged = os.path.join(versions, ".staged-" + manifest["profile_version"] + "-" + uuid.uuid4().hex)
+    os.makedirs(staged)
+    target = os.path.join(versions, manifest["profile_version"])
+    current_path = safe_private_child(home, "profiles", "default", "current.json")
+    active_path = safe_private_child(home, "active-profile.json")
+    previous_current = optional_bytes(current_path)
+    previous_active = optional_bytes(active_path)
+    try:
+        for name in sorted(pack_names):
+            with open(os.path.join(pack_dir, name), "rb") as handle:
+                atomic_write_bytes(os.path.join(staged, name), handle.read())
+        atomic_write_bytes(os.path.join(staged, "manifest.json"), manifest_bytes)
+        validate_version_directory(staged, manifest["report_set_hash"])
+        if fail_after == "version-stage":
+            raise RuntimeError("injected activation failure after version-stage")
+        if os.path.isdir(target):
+            existing, _ = validate_version_directory(target, manifest["report_set_hash"])
+            if existing != manifest:
+                raise ValueError("existing profile version hash mismatch")
+            shutil.rmtree(staged)
+        else:
+            os.replace(staged, target)
+        if fail_after == "version-rename":
+            raise RuntimeError("injected activation failure after version-rename")
+        pointer = {
+            "schema_version": "1",
+            "profile_id": "default",
+            "profile_version": manifest["profile_version"],
+            "manifest_hash": manifest_hash,
+        }
+        atomic_write_text(current_path, canonical_json(pointer) + "\n")
+        if fail_after == "pointer-write":
+            raise RuntimeError("injected activation failure after pointer-write")
+        if previous_active is None:
+            atomic_write_text(
+                active_path,
+                canonical_json({"schema_version": "1", "profile_id": "default"}) + "\n",
+            )
+        reduction_root = safe_private_child(
+            home,
+            "cache",
+            "reductions",
+            REDUCER_SCHEMA_VERSION,
+            manifest["report_set_hash"],
+        )
+        if os.path.isdir(reduction_root):
+            cached, _ = validate_version_directory(reduction_root, manifest["report_set_hash"])
+            if cached != manifest:
+                raise ValueError("existing reduction cache hash mismatch")
+        else:
+            staged_reduction = reduction_root + ".staged-" + uuid.uuid4().hex
+            os.makedirs(os.path.dirname(reduction_root), exist_ok=True)
+            shutil.copytree(target, staged_reduction)
+            validate_version_directory(staged_reduction, manifest["report_set_hash"])
+            os.replace(staged_reduction, reduction_root)
+        return {
+            "status": "active",
+            "profile_id": "default",
+            "profile_version": manifest["profile_version"],
+            "manifest_hash": manifest_hash,
+            "manifest_path": os.path.join(target, "manifest.json"),
+            "card_path": os.path.join(target, "card.json"),
+        }
+    except Exception:
+        restore_optional(current_path, previous_current)
+        restore_optional(active_path, previous_active)
+        raise
+    finally:
+        if os.path.isdir(staged):
+            shutil.rmtree(staged)
+
+def activate_cached_reduction(ditto_home, report_set_hash):
+    if not re.fullmatch(r"[a-f0-9]{64}", report_set_hash or ""):
+        raise ValueError("invalid report set hash")
+    home = resolve_ditto_home(ditto_home)
+    cached = safe_private_child(
+        home, "cache", "reductions", REDUCER_SCHEMA_VERSION, report_set_hash
+    )
+    manifest, manifest_hash = validate_version_directory(cached, report_set_hash)
+    version_dir = safe_private_child(
+        home, "profiles", "default", "versions", manifest["profile_version"]
+    )
+    existing, _ = validate_version_directory(version_dir, report_set_hash)
+    if existing != manifest:
+        raise ValueError("cached reduction profile hash mismatch")
+    current_path = safe_private_child(home, "profiles", "default", "current.json")
+    active_path = safe_private_child(home, "active-profile.json")
+    pointer = {
+        "schema_version": "1",
+        "profile_id": "default",
+        "profile_version": manifest["profile_version"],
+        "manifest_hash": manifest_hash,
+    }
+    atomic_write_text(current_path, canonical_json(pointer) + "\n")
+    if not os.path.exists(active_path):
+        atomic_write_text(active_path, canonical_json({"schema_version": "1", "profile_id": "default"}) + "\n")
+    return {
+        "status": "active",
+        "profile_id": "default",
+        "profile_version": manifest["profile_version"],
+        "manifest_hash": manifest_hash,
+        "manifest_path": os.path.join(version_dir, "manifest.json"),
+        "card_path": os.path.join(version_dir, "card.json"),
+    }
+
+def select_run_segments(segments, current_segment_hashes, count, max_tokens):
+    active = [item for item in segments if item.get("active") and not item.get("oversize")]
+    retained = [item for item in active if item["segment_hash"] in current_segment_hashes]
+    new = [item for item in active if item["segment_hash"] not in current_segment_hashes]
+    work = select_segments(new, count=count, max_tokens=max_tokens)
+    work_hashes = {item["segment_hash"] for item in work}
+    report = sorted(retained + work, key=lambda item: (item["source"], item["first_date"], item["segment_hash"]))
+    return report, work, len([item for item in new if item["segment_hash"] not in work_hashes])
+
 def split_segment_sessions(text):
     marker = re.compile(
         r"^===== session:([A-Za-z0-9_-]+) source:([a-z0-9_-]+) =====$",
@@ -1389,6 +1560,15 @@ def build_plugin_parser():
     cache_report.add_argument("--run-id", required=True)
     cache_report.add_argument("--report", required=True)
     cache_report.add_argument("--ditto-home")
+    activate = sub.add_parser("activate")
+    activate.add_argument("--run-id", required=True)
+    activation_source = activate.add_mutually_exclusive_group(required=True)
+    activation_source.add_argument("--pack")
+    activation_source.add_argument("--cached", action="store_true")
+    activate.add_argument("--ditto-home")
+    profile_path = sub.add_parser("profile-path")
+    profile_path.add_argument("--domain", required=True, choices=["work", "design", "write"])
+    profile_path.add_argument("--ditto-home")
     for name in ("preflight", "prepare"):
         command = sub.add_parser(name)
         command.add_argument("--source", choices=["auto", "codex", "claude", "copilot"], default="auto")
@@ -1469,6 +1649,74 @@ def cache_run_report(args):
         "report_set_complete": complete,
         "report_set_hash": plan.get("report_set_hash"),
     }
+
+def active_profile_state(ditto_home):
+    home = resolve_ditto_home(ditto_home)
+    active_path = safe_private_child(home, "active-profile.json")
+    if not os.path.exists(active_path):
+        return None
+    try:
+        with open(active_path, "r", encoding="utf-8") as handle:
+            active = json.load(handle)
+        if active != {"schema_version": "1", "profile_id": "default"}:
+            raise ValueError
+        current_path = safe_private_child(home, "profiles", "default", "current.json")
+        with open(current_path, "r", encoding="utf-8") as handle:
+            pointer = json.load(handle)
+        version = pointer.get("profile_version", "")
+        if (
+            pointer.get("schema_version") != "1"
+            or pointer.get("profile_id") != "default"
+            or not re.fullmatch(r"[a-f0-9]{20}", version)
+        ):
+            raise ValueError
+        version_dir = safe_private_child(home, "profiles", "default", "versions", version)
+        manifest, manifest_hash = validate_version_directory(version_dir)
+        if manifest["profile_version"] != version or pointer.get("manifest_hash") != manifest_hash:
+            raise ValueError
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        raise ValueError("corrupt active profile; run ditto to recover") from None
+    return {"home": home, "version_dir": version_dir, "manifest": manifest, "pointer": pointer}
+
+def resolve_profile_paths(ditto_home, domain):
+    state = active_profile_state(ditto_home)
+    if state is None:
+        raise ValueError("no active Ditto profile; run ditto")
+    domain_state = state["manifest"]["domains"][domain]
+    if domain_state.get("status") != "active":
+        raise ValueError(domain_state.get("deepen_instruction") or "run ditto")
+    names = [DOMAIN_FILES["work"][0]]
+    if domain != "work":
+        names.append(DOMAIN_FILES[domain][0])
+    paths = [os.path.join(state["version_dir"], name) for name in names]
+    for path in paths:
+        if not os.path.isfile(path) or sha256_file(path) != state["manifest"]["files"].get(os.path.basename(path)):
+            raise ValueError("corrupt active profile; run ditto to recover")
+    return {
+        "status": "active",
+        "domain": domain,
+        "profile_version": state["manifest"]["profile_version"],
+        "paths": paths,
+    }
+
+def activate_plugin_run(args):
+    home = resolve_ditto_home(args.ditto_home)
+    _, plan = load_run_plan(home, args.run_id)
+    if args.cached:
+        if not plan.get("report_set_hash"):
+            raise ValueError("run has no complete cached report set")
+        return activate_cached_reduction(home, plan["report_set_hash"])
+    expected_pack = os.path.realpath(plan["pack_path"])
+    if os.path.realpath(os.path.abspath(args.pack)) != expected_pack:
+        raise ValueError("pack path was not assigned to this Ditto run")
+    reports = []
+    for segment in plan["selected_segments"]:
+        report = load_cached_report(home, segment)
+        if report is None:
+            raise ValueError("run has an uncached or invalid report")
+        reports.append(report)
+    evidence = flatten_report_evidence(reports)
+    return activate_profile_pack(home, expected_pack, evidence, plan)
 
 def plugin_source_result(args):
     if args.path:
@@ -1578,13 +1826,28 @@ def plugin_main(argv):
     try:
         if args.command == "status":
             home = resolve_ditto_home(args.ditto_home)
-            payload = {"status": "missing", "ditto_home": home}
+            active = active_profile_state(home)
+            payload = (
+                {"status": "missing", "ditto_home": home}
+                if active is None
+                else {
+                    "status": "active",
+                    "ditto_home": home,
+                    "profile_version": active["manifest"]["profile_version"],
+                    "domains": active["manifest"]["domains"],
+                    "card_path": os.path.join(active["version_dir"], "card.json"),
+                }
+            )
         elif args.command == "preflight":
             payload = plugin_plan_for_args(args, write=False)
         elif args.command == "prepare":
             payload = prepare_plugin_run(args)
         elif args.command == "cache-report":
             payload = cache_run_report(args)
+        elif args.command == "activate":
+            payload = activate_plugin_run(args)
+        elif args.command == "profile-path":
+            payload = resolve_profile_paths(args.ditto_home, args.domain)
         else:
             raise ValueError("unsupported plugin command")
     except ValueError as exc:
