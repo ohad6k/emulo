@@ -13,3 +13,7 @@ __pycache__/
 *.pyc
 .DS_Store
 .venv/
+
+# local working files, never part of the release
+.superpowers/
+videos/
