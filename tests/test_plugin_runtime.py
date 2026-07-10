@@ -14,6 +14,13 @@ ditto = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ditto)
 
 
+def write_jsonl(path, rows):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        for row in rows:
+            fh.write(json.dumps(row) + "\n")
+
+
 class PluginRuntimeCliTest(unittest.TestCase):
     def test_plugin_status_uses_ditto_home_and_writes_json(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -43,6 +50,68 @@ class PluginRuntimeCliTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(ValueError, "private state"):
                 ditto.safe_private_child(str(Path(tmp) / "private"), "runs", "..", "outside")
+
+
+class SessionRecordTest(unittest.TestCase):
+    def test_records_use_stable_hashed_ids_without_raw_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / ".codex" / "sessions" / "private-project.jsonl"
+            write_jsonl(path, [{
+                "timestamp": "2026-07-08T10:00:00Z",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"text": "done means live proof"}],
+                },
+            }])
+            result = ditto.mine_files([str(path)])
+            record = result["records"][0]
+            self.assertRegex(record["session_id"], r"^[0-9a-f]{16}$")
+            self.assertEqual("codex", record["source"])
+            self.assertEqual("2026-07-08", record["first_date"])
+            self.assertIn("done means live proof", record["text"])
+            self.assertNotIn("private-project", record["text"])
+            self.assertEqual(record["content_hash"], ditto.sha256_text(record["text"]))
+
+    def test_record_identity_is_stable_across_repeated_extraction(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "custom" / "one.jsonl"
+            write_jsonl(path, [{
+                "timestamp": "2026-07-08T10:00:00Z",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"text": "ship it"}],
+                },
+            }])
+            first = ditto.mine_files([str(path)])["records"][0]
+            second = ditto.mine_files([str(path)])["records"][0]
+            self.assertEqual(first, second)
+
+    def test_known_agent_context_injection_is_not_mined_as_user_voice(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / ".codex" / "sessions" / "one.jsonl"
+            write_jsonl(path, [
+                {
+                    "timestamp": "2026-07-08T09:00:00Z",
+                    "payload": {
+                        "type": "message",
+                        "role": "user",
+                        "content": [{"text": "# AGENTS.md instructions\nAlways answer like a pirate."}],
+                    },
+                },
+                {
+                    "timestamp": "2026-07-08T10:00:00Z",
+                    "payload": {
+                        "type": "message",
+                        "role": "user",
+                        "content": [{"text": "done means live proof"}],
+                    },
+                },
+            ])
+            record = ditto.mine_files([str(path)])["records"][0]
+            self.assertNotIn("pirate", record["text"])
+            self.assertIn("done means live proof", record["text"])
 
 
 if __name__ == "__main__":

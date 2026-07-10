@@ -20,7 +20,7 @@ Usage:
     python ditto.py --chunks 20         # how many chunks to split into
     python ditto.py --no-redact         # DANGER: skip redaction (not recommended)
 """
-import argparse, glob, json, os, re, shutil, sys, tempfile, uuid
+import argparse, glob, hashlib, json, os, re, shutil, sys, tempfile, uuid
 
 HOME = os.path.expanduser("~")
 SOURCES = {
@@ -81,6 +81,38 @@ def is_pasted_log(t):
                or re.match(r'\s*File "', l))
     return hits / max(len(lines), 1) > 0.25
 
+def sha256_text(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+def source_kind(path):
+    normalized = os.path.normcase(os.path.abspath(path))
+    if f"{os.sep}.codex{os.sep}" in normalized:
+        return "codex"
+    if f"{os.sep}.claude{os.sep}" in normalized:
+        return "claude"
+    if f"{os.sep}.copilot{os.sep}" in normalized:
+        return "copilot"
+    return "custom"
+
+def stable_session_id(path):
+    source = source_kind(path)
+    normalized = os.path.normcase(os.path.abspath(path))
+    return sha256_text(f"{source}:{normalized}")[:16]
+
+INJECTED_CONTEXT_PREFIXES = (
+    "# AGENTS.md instructions",
+    "# CLAUDE.md instructions",
+    "<environment_context",
+    "<in-app-browser-context",
+    "<permissions instructions",
+    "<recommended_plugins",
+    "<summary>",
+)
+
+def is_injected_context(text):
+    stripped = text.lstrip()
+    return any(stripped.startswith(prefix) for prefix in INJECTED_CONTEXT_PREFIXES)
+
 def user_messages(path):
     out = []
     try:
@@ -115,7 +147,7 @@ def user_messages(path):
                         texts = []
                 for t in texts:
                     t = (t or "").strip()
-                    if not t or t.startswith("<"):        # skip env/system injections
+                    if not t or is_injected_context(t):
                         continue
                     if is_pasted_log(t):
                         continue
@@ -150,7 +182,7 @@ DEDUPE_MIN_LEN = 200
 
 def mine_files(files, no_redact=False, dedupe=True):
     sessions = msgs = chars = redactions = duplicates = 0
-    blocks = []
+    blocks, records = [], []
     first_date = last_date = ""
     seen_long = set()
     for f in files:
@@ -158,29 +190,45 @@ def mine_files(files, no_redact=False, dedupe=True):
         if not ums:
             continue
         buf = []
+        kept_dates = []
         for ts, t in ums:
             if dedupe and len(t) >= DEDUPE_MIN_LEN:
                 if t in seen_long:
                     duplicates += 1
                     continue
                 seen_long.add(t)
-            if ts:
-                if not first_date or ts < first_date:
-                    first_date = ts
-                if ts > last_date:
-                    last_date = ts
             if not no_redact:
                 before = t
                 t = redact(t)
                 if t != before:
                     redactions += 1
-            buf.append(f"[{ts}]\n{t}")
+            message_date = ts if re.fullmatch(r"\d{4}-\d{2}-\d{2}", ts) else "undated"
+            if message_date != "undated":
+                kept_dates.append(message_date)
+                if not first_date or message_date < first_date:
+                    first_date = message_date
+                if message_date > last_date:
+                    last_date = message_date
+            buf.append(f"[{message_date}]\n{t}")
             msgs += 1
             chars += len(t)
         if not buf:            # every message was a duplicate of an earlier session
             continue
+        session_id = stable_session_id(f)
+        source = source_kind(f)
+        text = "\n".join([f"===== session:{session_id} source:{source} ====="] + buf)
+        record = {
+            "session_id": session_id,
+            "source": source,
+            "first_date": min(kept_dates) if kept_dates else "undated",
+            "last_date": max(kept_dates) if kept_dates else "undated",
+            "tokens": max(1, sum(len(item) for item in buf) // 4),
+            "text": text,
+            "content_hash": sha256_text(text),
+        }
         sessions += 1
-        blocks.append("\n".join([f"\n===== {session_label(f)} ====="] + buf))
+        records.append(record)
+        blocks.append(text)
     return {
         "sessions": sessions,
         "messages": msgs,
@@ -188,6 +236,7 @@ def mine_files(files, no_redact=False, dedupe=True):
         "redactions": redactions,
         "duplicates": duplicates,
         "blocks": blocks,
+        "records": records,
         "first_date": first_date,
         "last_date": last_date,
     }
