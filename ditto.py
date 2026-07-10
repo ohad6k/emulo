@@ -455,14 +455,32 @@ def strip_frontmatter(text):
         return text.strip()
     return text[end + 4:].strip()
 
-def has_skill_frontmatter(text):
-    if not text.startswith("---\n"):
+def parse_frontmatter(text):
+    lines = text.replace("\r\n", "\n").split("\n")
+    if not lines or lines[0] != "---":
+        return None
+    try:
+        end = lines.index("---", 1)
+    except ValueError:
+        return None
+    fields = {}
+    for line in lines[1:end]:
+        if not line.strip():
+            continue
+        if ":" not in line:
+            return None
+        key, value = line.split(":", 1)
+        key, value = key.strip(), value.strip()
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", key) or not value or key in fields:
+            return None
+        fields[key] = value
+    return fields
+
+def has_skill_frontmatter(text, expected_name=None):
+    fields = parse_frontmatter(text)
+    if not fields or set(("name", "description")) - set(fields):
         return False
-    end = text.find("\n---", 4)
-    if end == -1:
-        return False
-    head = text[4:end]
-    return "name:" in head and "description:" in head
+    return expected_name is None or fields["name"] == expected_name
 
 def cursor_rule(profile):
     body = strip_frontmatter(profile)
@@ -490,7 +508,10 @@ def install_profile(profile_path, target, repo_dir, home_dir, yes=False, dry_run
         profile = fh.read()
 
     if target in ("claude", "codex") and not has_skill_frontmatter(profile):
-        print("profile must start with skill frontmatter for this target: name + description")
+        print(
+            "profile must start with exact name and description frontmatter fields for this target",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     repo_dir = os.path.abspath(repo_dir)
@@ -586,6 +607,10 @@ def main():
         sys.exit(1)
 
     result = mine_files(files, args.no_redact, dedupe=not args.no_dedupe)
+
+    if result["sessions"] == 0:
+        print("no valid user sessions remained after parsing and filtering", file=sys.stderr)
+        sys.exit(1)
 
     if args.dry_run:
         print("dry run: no files written")

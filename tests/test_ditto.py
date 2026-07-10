@@ -335,6 +335,47 @@ class DittoCliTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("no card found", result.stdout)
 
+    def test_zero_valid_sessions_fails_without_writing_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            logs = root / "logs"
+            logs.mkdir()
+            (logs / "bad.jsonl").write_text("{}\nnot-json\n", encoding="utf-8")
+            out = root / "out"
+            result = subprocess.run(
+                [sys.executable, str(DITTO), "--path", str(logs), "--out", str(out)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("no valid user sessions", result.stderr)
+            self.assertFalse(out.exists())
+
+    def test_install_rejects_substring_frontmatter_keys(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile = root / "bad.md"
+            profile.write_text(
+                "---\nnotname: you\nnotdescription: wrong\n---\nbody\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(DITTO),
+                    "--install",
+                    str(profile),
+                    "--target",
+                    "codex",
+                    "--home",
+                    str(root / "home"),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("exact name and description", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
