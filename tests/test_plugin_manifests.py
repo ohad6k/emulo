@@ -66,5 +66,37 @@ class PluginManifestTest(unittest.TestCase):
         self.assertEqual({"mine", "work", "design", "write"}, native)
 
 
+class DocumentationTruthTest(unittest.TestCase):
+    def test_public_docs_separate_local_extractor_from_model_processing(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
+        sentence = "Selected redacted text is processed by the model provider you choose."
+        self.assertIn(sentence, readme)
+        self.assertIn(sentence, security)
+        self.assertIn("DISABLE_TELEMETRY=1", security)
+        self.assertNotIn("The mining step runs in *your* coding agent, on *your* machine. Nothing gets uploaded", readme)
+
+    def test_npx_bootstrap_is_bounded_and_separate_from_native_routing(self):
+        skill = (ROOT / ".agents" / "skills" / "ditto" / "SKILL.md").read_text(encoding="utf-8").lower()
+        self.assertIn("plugin preflight", skill)
+        self.assertIn("planned_worker_calls", skill)
+        self.assertIn("core profile", skill)
+        self.assertIn("native ditto:mine is not available", skill)
+        self.assertNotIn("depth beats token efficiency", skill)
+        self.assertNotIn("fetch it from main", skill)
+
+    def test_plugin_discovers_exactly_four_skills(self):
+        discovered = {path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")}
+        self.assertEqual({"mine", "work", "design", "write"}, discovered)
+
+    def test_readme_preserves_the_explicit_npx_install(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8").lower()
+        self.assertIn("npx skills add ohad6k/ditto@ditto", readme)
+        self.assertIn("run ditto", readme)
+        self.assertIn("plugin-install command itself", readme)
+        self.assertIn("zero mining model calls", readme)
+        self.assertIn("host interaction", readme)
+
+
 if __name__ == "__main__":
     unittest.main()

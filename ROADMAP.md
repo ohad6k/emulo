@@ -1,63 +1,42 @@
-# roadmap
+# Roadmap
 
-ditto's core is focused: extract real AI coding history, mine the user's working profile, and install it where agents already read context.
+Ditto's current focus is the bounded plugin loop: deterministic extraction, stable caches, exact evidence receipts, private versioned profiles, safe migration, and separate work/design/write routing.
 
-The roadmap is about making that loop safer, easier to install, and portable across more agent tools.
+## Current release
 
-## next
+- Cross-agent selected bootstrap through `npx skills add ohad6k/ditto@ditto`
+- Native Codex plugin with `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`
+- Bounded starter candidates capped at 160K new source tokens and nine planned mining passes
+- Explicit deep mode, never an automatic fallback
+- Content-addressed segments and validated report/reduction reuse
+- Atomic profile activation plus exclusive legacy cutover and rollback
 
-### workflow mining
+## Later work
 
-Your logs don't just hold who you are — they hold what you repeatedly do. The same UI-polish sequence you've run 30 times. Your debug ritual. Your release routine. You invented these workflows and never wrote them down.
+### Benchmark release
 
-Ditto will mine recurring workflows out of your sessions and write each one as its own installable skill, with the same receipts: "this sequence appeared in 23 sessions."
+Run the approved cold-versus-Ditto model matrix, publish the reproducible leaderboard, and produce proof clips as a separate release. No benchmark score belongs in the plugin release.
 
-Goal: `you.md` is the profile; your workflows become a personal skill library, mined not written.
+### Workflow mining
 
-### `--diff` — watch yourself change
+Mine repeated debug, UI-polish, and release sequences into separately reviewable personal skills without bloating the always-loaded core profile.
 
-Re-mine this month against your last profile and show what changed: laws that got stronger, habits you dropped, new failure modes. This is versioning for the profile — your `you.md` becomes something you can track over time, not a one-shot snapshot.
+### Profile drift
 
-### the elicitation pass — spill the beans
+Compare a bounded update against the active profile and show which laws strengthened, weakened, or disappeared.
 
-Your logs show how you work, but not everything about why. An optional interactive pass asks you the handful of questions your sessions can't answer — the calls you make in your head, the constraints you never typed — and folds the answers into your `you.md`. Passive mining plus a short active pass, so the profile catches what the logs alone can't. (Community-suggested.)
+### Optional elicitation
 
-### more log sources
+Ask only the questions session evidence cannot answer, and label those answers separately from mined evidence.
 
-Add adapters for other AI coding tools when their local logs are accessible.
+### More native hosts
 
-Likely targets:
+Add a native host only after its plugin lifecycle, namespaced discovery, private-state boundary, reinstall behavior, and fresh-task loading are proven.
 
-- Cursor
-- Cline
-- Continue
-- Windsurf
+### Hosted sync
 
-Goal: make the profile portable across the tools people already use.
+Any future sync must be opt-in, encrypted, explicit about provider boundaries, and separate from the local-first default.
 
-### counterweight profiles
+### Counterweight profiles
 
-Ditto starts as a mirror: mine how you actually work.
-
-The same profile can also power a counterweight agent: not "act like me", but "protect me from my defaults."
-
-Examples:
-
-- challenge me when I overbuild
-- ask for constraints when I drift
-- force proof when I accept vague "done"
-- catch repeated blind spots
-
-Goal: use the profile to improve the human, not only imitate them.
-
-## contributions wanted
-
-The most useful contributions right now are practical and easy to audit:
-
-- sample JSONL formats from other tools
-- redaction pattern improvements
-- install-path fixes for specific agents
-- better mining prompts
-- examples of useful `you.md` sections
-
-Do not send private logs or a full personal profile unless you really mean to make it public.
+Use the evidence-backed profile to challenge repeated failure modes rather than merely imitate the user.

@@ -1,95 +1,42 @@
-# security model
+# Security model
 
-ditto reads private AI session logs, so the security model has to be easy to audit.
+Ditto reads private AI coding-session logs, so its trust boundaries must stay explicit.
 
-## what it reads
+## Local extraction and private state
 
-By default, `ditto.py` looks for local JSONL logs in:
+`ditto.py` uses Python's standard library and makes no network calls. By default it discovers local JSONL history under Codex, Claude Code, and Copilot CLI paths, or a directory supplied with `--path`.
 
-- `~/.codex/sessions`
-- `~/.claude/projects`
+The extractor keeps only user-authored messages, removes known injected context, deduplicates repeated long text, and applies best-effort secret/PII redaction before writing selected text.
 
-You can point it at another folder with:
+Plugin state lives under `DITTO_HOME` or `~/.ditto`, never inside the installed plugin cache. It includes immutable segments, validated evidence reports, versioned profiles, active pointers, migration records, and private receipt appendices.
 
-```bash
-python ditto.py --path ./some-jsonl-folder
-```
+## Model-provider boundary
 
-Preview what ditto would do without writing output files:
+Ditto's extractor, redaction, caches, and generated profiles stay local. Selected redacted text is processed by the model provider you choose. With a local model, the entire mining flow can remain local.
 
-```bash
-python ditto.py --dry-run
-```
+Workers receive only their assigned selected segment. The reducer receives validated bounded JSON reports rather than raw session logs.
 
-## what it writes
+## Bootstrap downloads
 
-ditto writes only to the output folder you choose. The default is:
+skills.sh downloads the selected `ditto` bootstrap. The skills.sh CLI reports anonymous installation telemetry by default; set `DISABLE_TELEMETRY=1` to opt out.
 
-```text
-ditto-out/
-```
+Outside a repository checkout, the bootstrap downloads only `ditto.py` and `MINING_PROMPT.md` from `raw.githubusercontent.com` at the exact release tag. Both files must match the SHA-256 values shipped in `runtime.json` before the active runtime pointer changes. These fetches happen before log discovery and read no session data.
 
-It creates:
+## Redaction coverage and limits
 
-- `ditto-out/you-corpus.txt`
-- `ditto-out/chunks/chunk-01.txt`
-- more chunk files depending on `--chunks`
+Current patterns cover common API keys, Stripe and webhook secrets, Supabase and GitHub tokens, JWTs, AWS keys, Slack tokens, email addresses, phone numbers, IP addresses, and common secret assignments.
 
-## network
+Redaction is best-effort. Inspect generated private data before sharing anything. `--no-redact` is intentionally dangerous because selected raw text may then be sent to the chosen model provider.
 
-`ditto.py` makes no network calls. It uses only Python stdlib modules.
+## Fail-closed behavior
 
-You can verify that in the source:
+- Empty or malformed history writes no output.
+- Segment, report, reduction, manifest, and pointer hashes are revalidated before reuse.
+- Corrupt cache entries are quarantined and recomputed individually.
+- Profile activation stages a complete immutable version before swapping the pointer.
+- Legacy cutover moves the old discovery directory first and restores exact bytes/pointers on failure.
+- Plugin installation and removal do not create, scan, or delete `DITTO_HOME`.
 
-- no `requests`
-- no `urllib`
-- no `httpx`
-- no SDK client
-- no subprocess upload step
+## Safe sharing
 
-The later mining step happens in your own coding agent, on your own machine. Nothing leaves your machine unless you choose to paste/upload it somewhere.
-
-## redaction
-
-Redaction runs before your text is written to disk.
-
-Current redaction patterns cover:
-
-- OpenAI keys
-- Stripe live keys
-- Stripe webhook secrets
-- Supabase tokens
-- GitHub tokens
-- JWTs
-- AWS access keys
-- Slack tokens
-- emails
-- phone numbers
-- IP addresses
-- common `api_key`, `secret`, `token`, `password`, `passwd` assignments
-
-The patterns live in `REDACTIONS` inside [`ditto.py`](ditto.py).
-
-## important limits
-
-Redaction is best-effort. You should still inspect generated files before sharing anything publicly.
-
-Do not use `--no-redact` unless you know exactly what is in your logs.
-
-Do not commit `ditto-out/`, `you-corpus.txt`, chunks, or your real `you.md`. The `.gitignore` blocks those by default.
-
-## safe sharing
-
-If you want to share results, share a short summary of what ditto found, not your full profile.
-
-Good:
-
-```text
-it noticed i reject "done" unless there is live proof
-```
-
-Bad:
-
-```text
-here is my whole you.md with project names and private workflows
-```
+Share the rendered card or one short non-private trait. Do not commit or post session logs, Ditto caches, the full profile, or the private evidence appendix.
