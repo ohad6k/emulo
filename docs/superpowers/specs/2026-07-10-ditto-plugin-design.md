@@ -42,6 +42,26 @@ Codex and Claude are native-plugin candidates from one canonical repository. Bef
 
 The installed plugin contains only stable product code, prompts, and loader skills. It never contains the user's generated profile.
 
+### Two distribution surfaces, one product
+
+The native plugin remains the complete Ditto experience: four namespaced skills, durable private profiles, and automatic work/design/write routing.
+
+The already-published npx path remains a separate cross-agent bootstrap surface. Its release command becomes `npx skills add ohad6k/ditto@ditto`, which explicitly selects one skill named `ditto`, preserves the simple `run ditto` entry point, performs the same bounded mining contract, and installs the core generated profile through the existing direct adapters. It does not claim native plugin namespacing or automatic three-domain routing.
+
+The repository keeps these discovery surfaces physically separate:
+
+```text
+.agents/skills/ditto/       # skills.sh bootstrap only
+skills/mine/                # native plugin components
+skills/work/
+skills/design/
+skills/write/
+```
+
+The Codex manifest points at `./skills/`. Workstream 0 must prove that the plugin ignores `.agents/skills/ditto` and discovers only the temporary native spike. The npx proof must run `npx skills add . --skill ditto` into a disposable agent home and show that only the bootstrap folder was selected. Task 15 repeats the proof after adding the real companion files. If the native plugin sees the bootstrap or the selected npx install copies native-only skills, packaging stops.
+
+Because a skills.sh installation copies only the selected skill directory, the bootstrap bundles a small deterministic installer plus release metadata. It downloads `ditto.py` and `MINING_PROMPT.md` from the exact pinned Git tag, verifies both SHA-256 hashes, and stores them under `DITTO_HOME/runtime/`; it never drops runtime files into the user's project. The canonical `ditto.py` remains the only mining runtime source file.
+
 Private state lives under `DITTO_HOME`, defaulting to:
 
 ```text
@@ -102,9 +122,11 @@ Ditto checks only new or changed sessions. If nothing changed, it makes zero mod
 
 The current one-file Python flow remains supported. For the Plugin release, `ditto.py` stays the canonical zero-dependency, single-file runtime, including the new cache and profile-store behavior. Dry run, extraction, card rendering, and direct installs continue to work. The plugin is the recommended path because it automates orchestration without removing the simple CLI fallback.
 
+The skills.sh bootstrap is a compatibility and distribution path between the native plugin and raw CLI. On a repo checkout it uses the checked-out runtime. After `npx` installation it uses only the hash-verified pinned runtime under `DITTO_HOME/runtime/`.
+
 ## Installation and Mining Are Separate
 
-Installing or updating the Ditto plugin performs:
+Installing or updating the native Ditto plugin performs:
 
 - zero log scans;
 - zero model calls;
@@ -112,6 +134,8 @@ Installing or updating the Ditto plugin performs:
 - zero writes to private profile state, except explicit migration after the user invokes Ditto.
 
 Mining begins only when the user invokes `ditto:mine`.
+
+The cross-agent `npx` command necessarily downloads the selected skill through skills.sh. Its first `run ditto` may additionally download the two pinned runtime artifacts after hash verification. Those network fetches happen before log discovery, do not read or upload session history, and schedule no mining model calls. The security documentation discloses skills.sh's default anonymous install telemetry and its `DISABLE_TELEMETRY=1` opt-out. `ditto.py` itself still makes no network calls.
 
 The mine starts with a local preflight that shows:
 
@@ -297,7 +321,7 @@ Every user-visible Ditto release gets one versioned entry in `CHANGELOG.md` with
 - what was verified;
 - known limits.
 
-The Plugin release gets the first entry and GitHub Release as soon as the plugin gates pass. It describes the plugin, bounded mining, three domain skills, migration, proof, and known limits. It contains no placeholder benchmark results and does not wait for benchmark production.
+The Plugin release gets the first entry and GitHub Release as soon as the plugin gates pass. It describes the explicitly selected npx bootstrap, full native plugin, bounded mining, three native domain skills, migration, proof, and known limits without blurring the capability boundary. It contains no placeholder benchmark results and does not wait for benchmark production.
 
 The Benchmark release gets a second entry and GitHub Release after approved runs, leaderboard, and videos are verified. It links every reported result to raw artifacts and names the exact published plugin tag used by all `+Ditto` conditions.
 
@@ -310,7 +334,8 @@ Each release draft and its evidence are prepared separately. Publication remains
 The Plugin release is complete only when:
 
 - one Ditto plugin exposes the four approved skills;
-- installation performs zero model calls;
+- native plugin installation performs zero mining model calls;
+- `npx skills add ohad6k/ditto@ditto` selects only the bootstrap, preserves its companion files, and resolves the exact tag-pinned runtime hashes;
 - the starter mine stays within its displayed hard plan;
 - its default is the smallest bounded calibration candidate that passed the frozen recall and fresh-task gates;
 - cached reruns avoid duplicate model work;

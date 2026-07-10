@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship the first Ditto Plugin release with bounded, cached mining; durable private profiles; `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`; safe legacy migration; and an independently publishable GitHub Release.
+**Goal:** Ship the first Ditto Plugin release with bounded, cached mining; durable private profiles; `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`; a preserved cross-agent npx bootstrap; safe legacy migration; and an independently publishable GitHub Release.
 
-**Architecture:** Keep `ditto.py` as the canonical stdlib-only, single-file runtime. Add a backward-compatible `python ditto.py plugin` command family that owns deterministic extraction, stable segments, caches, report validation, profile activation, migration, and loader lookup; static plugin skills orchestrate model work but never store private profiles inside plugin caches. This plan stops after the Plugin release (Workstreams 0-8); benchmark Workstreams 9-10 remain a separate later plan.
+**Architecture:** Keep `ditto.py` as the canonical stdlib-only, single-file mining runtime. Add a backward-compatible `python ditto.py plugin` command family that owns deterministic extraction, stable segments, caches, report validation, profile activation, migration, and loader lookup; static plugin skills orchestrate model work but never store private profiles inside plugin caches. Keep the existing skills.sh `ditto` bootstrap outside native plugin discovery and give it a small hash-verifying installer for the exact release runtime. This plan stops after the Plugin release (Workstreams 0-8); benchmark Workstreams 9-10 remain a separate later plan.
 
-**Tech Stack:** Python 3 stdlib, `unittest`, JSON/Markdown skill files, Codex and conditional Claude plugin manifests, local filesystem state under `DITTO_HOME`, Git/GitHub release tooling.
+**Tech Stack:** Python 3 stdlib, `unittest`, JSON/Markdown skill files, skills.sh CLI, Codex and conditional Claude plugin manifests, local filesystem state under `DITTO_HOME`, Git/GitHub release tooling.
 
 ---
 
@@ -19,7 +19,7 @@ Implement only Workstreams 0-8 from:
 
 Do not create the benchmark runner, execute benchmark models, build the leaderboard, or produce benchmark videos. Do not publish a tag or GitHub Release without Ohad's explicit ship approval at Task 19.
 
-At plan-writing time, the repository's latest tag is `v0.1.2`, the Codex CLI exposes native `plugin marketplace`/`plugin add` commands, and no `claude` executable is available on `PATH`. Workstream 0 must recheck both hosts. Codex failure stops the plugin architecture. Claude unavailability or failure keeps the existing Claude direct adapter and removes native Claude claims from this release.
+At plan-writing time, the repository's latest tag is `v0.1.2`, the Codex CLI exposes native `plugin marketplace`/`plugin add` commands, and no `claude` executable is available on `PATH`. Commit `04b9fbf` already publishes `npx skills add ohad6k/ditto`; live checks confirmed the current repository exposes one `ditto` skill, `owner/repo@skill` selects it directly, selected installs copy only that skill directory, and companion files inside the directory are preserved. Workstream 0 must preserve this surface while rechecking both native hosts. Codex failure stops the plugin architecture. Claude unavailability or failure keeps the skills.sh/direct Claude path and removes native Claude claims from this release.
 
 ## Execution prerequisite
 
@@ -42,15 +42,17 @@ Expected: `Ran 9 tests` and `OK` before the first product edit.
 - Create `tests/test_plugin_runtime.py` — session records, segmentation, selection, preflight, report caches, and plugin CLI integration.
 - Create `tests/test_profile_store.py` — report/profile validation, atomic activation, reduction cache, migration, and rollback.
 - Create `tests/test_plugin_manifests.py` — manifest shape, skill frontmatter/routing, plugin-private-state separation.
+- Create `tests/test_bootstrap.py` — skills.sh companion runtime install, pinning, hash mismatch, and pointer preservation.
 - Create `tests/fixtures/plugin-spike-home/spike.txt` — harmless `DITTO_SPIKE_OK` proof fixture.
 
 ### Plugin surfaces
 
 - Create `.agents/plugins/marketplace.json` — local Codex development marketplace.
+- Move `skills/ditto/SKILL.md` to `.agents/skills/ditto/SKILL.md` — preserve Claude's verified skills.sh bootstrap outside native plugin discovery.
+- Create `.agents/skills/ditto/scripts/bootstrap.py` and `.agents/skills/ditto/runtime.json` — deterministic pinned-runtime installation for copied npx skills.
 - Create `.codex-plugin/plugin.json` — Codex plugin manifest.
 - Conditionally create `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` only if native Claude passes Workstream 0.
 - Create `skills/mine/SKILL.md`, `skills/work/SKILL.md`, `skills/design/SKILL.md`, and `skills/write/SKILL.md` — final namespaced plugin skills.
-- Delete `skills/ditto/SKILL.md` before final packaging and create `skills/ditto/README.md` — migration note for repo-path users. Existing copied legacy installs remain untouched; CLI/direct adapters remain supported.
 - Modify `MINING_PROMPT.md` — one structured evidence report per selected segment plus one three-profile reducer contract.
 
 ### Product truth and release
@@ -109,9 +111,12 @@ Core function signatures are fixed as `sync_segments(records, ditto_home, target
 
 ---
 
-### Task 1: Prove the native host-plugin shape before core implementation
+### Task 1: Separate and prove the native-plugin and skills.sh surfaces
 
 **Files:**
+- Move: `skills/ditto/SKILL.md` → `.agents/skills/ditto/SKILL.md`
+- Create: `skills/.gitkeep` (temporary path keeper; delete in Task 12)
+- Modify: `README.md` (repository skill link only; full copy rewrite remains Task 15)
 - Create: `.agents/plugins/marketplace.json`
 - Create: `.codex-plugin/plugin.json`
 - Create: `skills/spike/SKILL.md` (temporary; delete before commit)
@@ -120,13 +125,54 @@ Core function signatures are fixed as `sync_segments(records, ditto_home, target
 - Conditional create: `.claude-plugin/marketplace.json`
 - Create: `docs/release/plugin-viability.md` after live proof
 
-- [ ] **Step 1: Add the harmless spike fixture**
+- [ ] **Step 1: Move Claude's verified npx bootstrap outside native plugin discovery**
+
+Run:
+
+```powershell
+New-Item -ItemType Directory -Force .agents\skills | Out-Null
+git mv skills\ditto .agents\skills\ditto
+```
+
+Use `apply_patch` to add `skills/.gitkeep` containing `native plugin skills land here in Task 12` and to change the README's repository skill link from `skills/ditto/SKILL.md` to `.agents/skills/ditto/SKILL.md`. Do not rewrite the bootstrap workflow yet; Task 15 makes it bounded after the runtime exists.
+
+Expected: `.agents/skills/ditto/SKILL.md` retains `name: ditto`; no `skills/ditto/SKILL.md` remains for native default discovery.
+
+- [ ] **Step 2: Prove the current one-skill npx selection still works**
+
+Run a list and copy install from the local repository with telemetry disabled:
+
+```powershell
+$env:DISABLE_TELEMETRY = "1"
+$sourceRoot = (Get-Location).Path
+npx -y skills add "$sourceRoot" --list
+$auditRoot = Join-Path $env:TEMP ("ditto-npx-audit-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $auditRoot | Out-Null
+Push-Location $auditRoot
+try {
+    npx -y skills add "$sourceRoot" --skill ditto --agent codex --copy --yes
+    $installed = Join-Path $auditRoot ".agents\skills\ditto"
+    if (-not (Test-Path -LiteralPath (Join-Path $installed "SKILL.md"))) { throw "ditto bootstrap was not copied" }
+    $otherSkills = @(Get-ChildItem -LiteralPath (Join-Path $auditRoot ".agents\skills") -Directory | Where-Object Name -ne "ditto")
+    if ($otherSkills.Count -ne 0) { throw "npx copied a native-only skill" }
+} finally {
+    Pop-Location
+    $resolved = [IO.Path]::GetFullPath($auditRoot)
+    $tempRoot = [IO.Path]::GetFullPath($env:TEMP)
+    if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase)) { throw "unsafe npx audit cleanup path" }
+    Remove-Item -LiteralPath $resolved -Recurse -Force
+}
+```
+
+Expected: list output includes `ditto`; the selected copy install contains only `.agents/skills/ditto/SKILL.md`. The final public shorthand is tested as `ohad6k/ditto@ditto` after publication in Task 19.
+
+- [ ] **Step 3: Add the harmless spike fixture**
 
 ```text
 DITTO_SPIKE_OK
 ```
 
-- [ ] **Step 2: Add the local Codex marketplace**
+- [ ] **Step 4: Add the local Codex marketplace**
 
 ```json
 {
@@ -147,7 +193,7 @@ DITTO_SPIKE_OK
 }
 ```
 
-- [ ] **Step 3: Add the development Codex manifest**
+- [ ] **Step 5: Add the development Codex manifest**
 
 ```json
 {
@@ -177,7 +223,7 @@ DITTO_SPIKE_OK
 }
 ```
 
-- [ ] **Step 4: Add the temporary spike skill**
+- [ ] **Step 6: Add the temporary spike skill**
 
 ```markdown
 ---
@@ -190,7 +236,7 @@ description: Use only when explicitly asked to run the Ditto host viability spik
 Run local Python. Read `$env:DITTO_HOME/spike.txt` on Windows or `$DITTO_HOME/spike.txt` elsewhere. Return only its exact contents. Do not read session logs, run mining, create a profile, or make any benchmark call.
 ```
 
-- [ ] **Step 5: Validate the Codex manifest and marketplace JSON**
+- [ ] **Step 7: Validate the Codex manifest and marketplace JSON**
 
 Run:
 
@@ -202,7 +248,7 @@ python C:\Users\ohad1\.codex\skills\.system\plugin-creator\scripts\validate_plug
 
 Expected: both exit `0`; the validator reports a valid `ditto` plugin.
 
-- [ ] **Step 6: Install the local Codex marketplace and plugin**
+- [ ] **Step 8: Install the local Codex marketplace and plugin**
 
 First inspect configured sources:
 
@@ -221,9 +267,9 @@ codex plugin add ditto@ditto --json
 codex plugin list --marketplace ditto --json
 ```
 
-Expected: JSON identifies marketplace `ditto`, plugin `ditto`, version `0.0.0-dev`, and installed status.
+Expected: JSON identifies marketplace `ditto`, plugin `ditto`, version `0.0.0-dev`, and installed status. Discovery exposes `ditto:spike` and never exposes the relocated bootstrap as `ditto:ditto`.
 
-- [ ] **Step 7: Run exactly one fresh-task Codex spike**
+- [ ] **Step 9: Run exactly one fresh-task Codex spike**
 
 Run with `DITTO_HOME` pointing only at the committed harmless fixture:
 
@@ -236,7 +282,7 @@ Expected: final task output is exactly `DITTO_SPIKE_OK`. This is a bounded devel
 
 If discovery, local Python invocation, isolated `DITTO_HOME` access, or the sentinel result fails, write the actual failure evidence, remove only the development plugin/source installed from this worktree, and stop this implementation plan. Do not continue Tasks 2-19 under an unproven Codex packaging premise.
 
-- [ ] **Step 8: Recheck Claude availability and follow the evidence branch**
+- [ ] **Step 10: Recheck Claude availability and follow the evidence branch**
 
 Run:
 
@@ -290,13 +336,13 @@ $env:DITTO_HOME = "$PWD\tests\fixtures\plugin-spike-home"
 claude -p "Use ditto:spike. Return only the sentinel value."
 ```
 
-Keep native Claude files only if the final command returns exactly `DITTO_SPIKE_OK`.
+Keep native Claude files only if the final command returns exactly `DITTO_SPIKE_OK` and Claude discovery does not expose the relocated skills.sh bootstrap.
 
-- [ ] **Step 9: Remove the temporary spike skill and write the actual evidence record**
+- [ ] **Step 11: Remove the temporary spike skill and write the actual evidence record**
 
-Delete `skills/spike/SKILL.md`. In `docs/release/plugin-viability.md`, record the observed host/CLI version, commands, installed namespace, sentinel output, and the final native/adapter decision for each host. Include no unfinished marker, assumed pass, user logs, or private paths beyond the harmless fixture.
+Delete `skills/spike/SKILL.md` but retain `skills/.gitkeep`. In `docs/release/plugin-viability.md`, record the observed host/CLI version, commands, installed namespace, sentinel output, the skills.sh selected-install result, and the final native/adapter decision for each host. Include no unfinished marker, assumed pass, user logs, or private paths beyond the harmless fixture.
 
-- [ ] **Step 10: Revalidate and commit the proven packaging premise**
+- [ ] **Step 12: Revalidate and commit the proven packaging premise**
 
 Run:
 
@@ -310,7 +356,8 @@ Expected: validator exit `0`; existing tests remain `OK`.
 Commit only the retained host files, fixture, and evidence:
 
 ```powershell
-git add .agents/plugins/marketplace.json .codex-plugin/plugin.json tests/fixtures/plugin-spike-home/spike.txt docs/release/plugin-viability.md
+git add .agents/plugins/marketplace.json .agents/skills/ditto/SKILL.md .codex-plugin/plugin.json skills/.gitkeep README.md tests/fixtures/plugin-spike-home/spike.txt docs/release/plugin-viability.md
+git add skills/ditto/SKILL.md
 git add .claude-plugin/plugin.json .claude-plugin/marketplace.json  # only when Claude passed
 git commit -m "feat: prove Ditto plugin host viability"
 ```
@@ -2110,6 +2157,7 @@ git commit -m "feat: activate and reuse complete Ditto profiles atomically"
 ### Task 12: Add the four routed plugin skills
 
 **Files:**
+- Delete: `skills/.gitkeep`
 - Create: `skills/mine/SKILL.md`
 - Create: `skills/work/SKILL.md`
 - Create: `skills/design/SKILL.md`
@@ -2164,6 +2212,8 @@ python -m unittest tests.test_plugin_manifests.PluginSkillTest -v
 ```
 
 Expected: ERROR because the four skill files do not exist.
+
+Delete `skills/.gitkeep` with `apply_patch` before creating the real skill directories.
 
 - [ ] **Step 3: Create `ditto:work`**
 
@@ -2254,7 +2304,7 @@ Expected: all four skill tests and full suite are `OK`.
 - [ ] **Step 8: Commit**
 
 ```powershell
-git add skills/mine/SKILL.md skills/work/SKILL.md skills/design/SKILL.md skills/write/SKILL.md tests/test_plugin_manifests.py
+git add skills/.gitkeep skills/mine/SKILL.md skills/work/SKILL.md skills/design/SKILL.md skills/write/SKILL.md tests/test_plugin_manifests.py
 git commit -m "feat: add routed Ditto plugin skills"
 ```
 
@@ -2289,6 +2339,12 @@ class PluginManifestTest(unittest.TestCase):
         forbidden = {"active-profile.json", "current.json", "you.md", "you-designer.md", "you-writer.md", "appendix.md"}
         found = {path.name for path in ROOT.rglob("*") if path.is_file() and ".git" not in path.parts and "examples" not in path.parts}
         self.assertTrue(forbidden.isdisjoint(found))
+
+    def test_skills_sh_bootstrap_is_outside_native_plugin_discovery(self):
+        self.assertTrue((ROOT / ".agents" / "skills" / "ditto" / "SKILL.md").is_file())
+        self.assertFalse((ROOT / "skills" / "ditto" / "SKILL.md").exists())
+        native = {path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")}
+        self.assertEqual({"mine", "work", "design", "write"}, native)
 ```
 
 Exclude `examples/you.md` deliberately; it is public sample data, not active state.
@@ -2319,7 +2375,7 @@ python C:\Users\ohad1\.codex\skills\.system\plugin-creator\scripts\validate_plug
 codex plugin list --marketplace ditto --json
 ```
 
-Expected: JSON/validator exit `0`; Codex lists the new mine/work/design/write skills under plugin `ditto`. The temporary legacy `ditto` skill may still appear until Task 15 replaces it with a non-skill migration note; Task 15 owns the exact-four final gate.
+Expected: JSON/validator exit `0`; Codex lists exactly `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`. The relocated `.agents/skills/ditto` bootstrap must not appear in native plugin discovery.
 
 - [ ] **Step 5: Prove install and uninstall do not create or delete private state**
 
@@ -2410,6 +2466,17 @@ class MigrationTest(unittest.TestCase):
             self.assertEqual(original, legacy.read_bytes())
             self.assertFalse((ditto_home / "active-profile.json").exists())
             self.assertFalse((ditto_home / "profiles" / "default" / "current.json").exists())
+
+    def test_stage_accepts_the_skills_sh_core_profile_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            home = root / "home"
+            ditto_home = root / "private"
+            legacy = home / ".codex" / "skills" / "you" / "SKILL.md"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text("---\nname: ditto-work-profile\ndescription: bounded core profile\n---\nbody\n", encoding="utf-8")
+            migration = ditto.stage_legacy_migration("codex", str(home), str(ditto_home))
+            self.assertEqual("skills-sh-core", migration["legacy_origin"])
 ```
 
 - [ ] **Step 2: Add failing adapter-block backup/remove/restore test**
@@ -2442,7 +2509,7 @@ Expected: FAIL with missing migration functions.
 
 - [ ] **Step 4: Stage legacy profiles without activation**
 
-`stage_legacy_migration(target, home_dir, ditto_home)` accepts only `codex` or `claude`, resolves the existing legacy `.codex/skills/you/SKILL.md` or `.claude/skills/you/SKILL.md`, validates `name: you`, hashes the original bytes, and writes a schema-version-1 migration record. The record contains the SHA-256-derived migration ID, target, `staged` status, absolute legacy path, legacy hash, staged version or `deactivate-legacy-only` mode, exact prior pointer bytes as nullable Base64 fields plus their SHA-256 values, and a null backup path until cutover.
+`stage_legacy_migration(target, home_dir, ditto_home)` accepts only `codex` or `claude`, resolves the existing legacy `.codex/skills/you/SKILL.md` or `.claude/skills/you/SKILL.md`, and accepts only exact frontmatter name `you` or `ditto-work-profile`. It records `legacy_origin: classic-you` or `skills-sh-core`, hashes the original bytes, and writes a schema-version-1 migration record. The record contains the SHA-256-derived migration ID, target, `staged` status, absolute legacy path, legacy hash, staged version or `deactivate-legacy-only` mode, exact prior pointer bytes as nullable Base64 fields plus their SHA-256 values, and a null backup path until cutover.
 
 When no valid active Ditto pointer exists, the staged profile version preserves the original `you.md` bytes, sets manifest `origin: legacy-migration`, marks only work active, marks design inactive with `reason: insufficient evidence` and `deepen_instruction: run ditto and deepen design`, marks write inactive with the same reason and `deepen_instruction: run ditto and deepen write`, and does not create either pointer. When a valid evidence-backed Ditto profile is already active, stage the migration as `deactivate-legacy-only`: preserve the current pointer/version and prepare only to move the competing legacy discovery directory. Never replace a newer evidence-backed profile with imported legacy bytes.
 
@@ -2487,88 +2554,339 @@ git add ditto.py tests/test_profile_store.py
 git commit -m "feat: migrate legacy Ditto profiles without double loading"
 ```
 
-### Task 15: Replace legacy orchestration and correct public claims
+### Task 15: Preserve the npx bootstrap and correct public claims
 
 **Files:**
-- Delete: `skills/ditto/SKILL.md`
-- Create: `skills/ditto/README.md`
+- Modify: `.agents/skills/ditto/SKILL.md`
+- Create: `.agents/skills/ditto/runtime.json`
+- Create: `.agents/skills/ditto/scripts/bootstrap.py`
+- Create: `tests/test_bootstrap.py`
 - Modify: `README.md`
 - Modify: `SECURITY.md`
 - Modify: `ROADMAP.md`
 - Modify: `tests/test_plugin_manifests.py`
 
-- [ ] **Step 1: Add failing documentation-claim tests**
+- [ ] **Step 1: Add failing bootstrap and documentation tests**
+
+Create `tests/test_bootstrap.py`:
 
 ```python
-class DocumentationTruthTest(unittest.TestCase):
+import hashlib
+import importlib.util
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+BOOTSTRAP_PATH = ROOT / ".agents" / "skills" / "ditto" / "scripts" / "bootstrap.py"
+SPEC = importlib.util.spec_from_file_location("ditto_bootstrap", BOOTSTRAP_PATH)
+bootstrap = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(bootstrap)
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+def metadata(version="0.0.0-dev", ref=None, py_hash=None, prompt_hash=None):
+    return {
+        "schema_version": "1",
+        "version": version,
+        "ref": ref,
+        "files": {
+            "ditto.py": {"sha256": py_hash},
+            "MINING_PROMPT.md": {"sha256": prompt_hash},
+        },
+    }
+
+class BootstrapTest(unittest.TestCase):
+    def make_source(self, root):
+        source = root / "source"
+        source.mkdir()
+        (source / "ditto.py").write_bytes(b"print('ditto')\n")
+        (source / "MINING_PROMPT.md").write_bytes(b"# prompt\n")
+        return source
+
+    def test_dev_metadata_refuses_network_without_source_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError, "development runtime requires --source-root"):
+                bootstrap.install_runtime(metadata(), str(Path(tmp) / "private"))
+
+    def test_repository_runtime_metadata_is_valid(self):
+        value = bootstrap.load_metadata(ROOT / ".agents" / "skills" / "ditto" / "runtime.json")
+        self.assertEqual(value, bootstrap.validate_metadata(value))
+
+    def test_source_root_installs_both_files_outside_project(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = self.make_source(root)
+            home = root / "private"
+            result = bootstrap.install_runtime(metadata(), str(home), source_root=str(source))
+            runtime = Path(result["runtime_dir"])
+            self.assertEqual(b"print('ditto')\n", (runtime / "ditto.py").read_bytes())
+            self.assertEqual(b"# prompt\n", (runtime / "MINING_PROMPT.md").read_bytes())
+            self.assertTrue(str(runtime).startswith(str(home)))
+            self.assertTrue((home / "runtime" / "current.json").is_file())
+
+    def test_hash_mismatch_preserves_previous_runtime_pointer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = self.make_source(root)
+            home = root / "private"
+            bootstrap.install_runtime(metadata(), str(home), source_root=str(source))
+            pointer = home / "runtime" / "current.json"
+            before = pointer.read_bytes()
+            release = metadata("0.2.0", "v0.2.0", "0" * 64, digest(b"# prompt\n"))
+            with self.assertRaisesRegex(ValueError, "sha256 mismatch for ditto.py"):
+                bootstrap.install_runtime(release, str(home), source_root=str(source))
+            self.assertEqual(before, pointer.read_bytes())
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
+Extend `DocumentationTruthTest` in `tests/test_plugin_manifests.py`:
+
+```python
     def test_public_docs_separate_local_extractor_from_model_processing(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
         sentence = "Selected redacted text is processed by the model provider you choose."
         self.assertIn(sentence, readme)
         self.assertIn(sentence, security)
+        self.assertIn("DISABLE_TELEMETRY=1", security)
         self.assertNotIn("The mining step runs in *your* coding agent, on *your* machine. Nothing gets uploaded", readme)
 
-    def test_legacy_skill_no_longer_requires_unbounded_first_mine(self):
-        old_skill = ROOT / "skills" / "ditto" / "SKILL.md"
-        note = (ROOT / "skills" / "ditto" / "README.md").read_text(encoding="utf-8")
-        self.assertFalse(old_skill.exists())
-        self.assertIn("ditto:mine", note)
-        self.assertIn("python ditto.py", note)
+    def test_npx_bootstrap_is_bounded_and_separate_from_native_routing(self):
+        skill = (ROOT / ".agents" / "skills" / "ditto" / "SKILL.md").read_text(encoding="utf-8").lower()
+        self.assertIn("plugin preflight", skill)
+        self.assertIn("planned_worker_calls", skill)
+        self.assertIn("core profile", skill)
+        self.assertIn("native ditto:mine is not available", skill)
+        self.assertNotIn("depth beats token efficiency", skill)
+        self.assertNotIn("fetch it from main", skill)
 
     def test_plugin_discovers_exactly_four_skills(self):
         discovered = {path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")}
         self.assertEqual({"mine", "work", "design", "write"}, discovered)
 
-    def test_readme_leads_with_run_ditto_after_install(self):
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("run ditto", readme.lower())
-        self.assertIn("plugin-install command itself", readme.lower())
-        self.assertIn("zero mining model calls", readme.lower())
-        self.assertIn("host interaction", readme.lower())
+    def test_readme_preserves_the_explicit_npx_install(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8").lower()
+        self.assertIn("npx skills add ohad6k/ditto@ditto", readme)
+        self.assertIn("run ditto", readme)
+        self.assertIn("plugin-install command itself", readme)
+        self.assertIn("zero mining model calls", readme)
+        self.assertIn("host interaction", readme)
 ```
 
-- [ ] **Step 2: Run and verify the old claims fail**
+- [ ] **Step 2: Run and verify the bootstrap does not exist yet**
 
 Run:
 
 ```powershell
-python -m unittest tests.test_plugin_manifests.DocumentationTruthTest -v
+python -m unittest tests.test_bootstrap tests.test_plugin_manifests.DocumentationTruthTest -v
 ```
 
-Expected: FAIL against current README/security/legacy-skill text.
+Expected: FAIL because `scripts/bootstrap.py`, `runtime.json`, and the bounded bootstrap copy do not exist.
 
-- [ ] **Step 3: Replace the discoverable legacy skill with a non-skill migration note**
+- [ ] **Step 3: Add the deterministic pinned-runtime installer**
 
-Delete `skills/ditto/SKILL.md` so the plugin cannot expose a fifth `ditto:ditto` skill. Create `skills/ditto/README.md` with:
+Create `.agents/skills/ditto/scripts/bootstrap.py`:
+
+```python
+#!/usr/bin/env python3
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import tempfile
+import urllib.parse
+import urllib.request
+import uuid
+from pathlib import Path
+
+MAX_FILE_BYTES = 4_000_000
+REQUIRED_FILES = ("ditto.py", "MINING_PROMPT.md")
+SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$")
+
+def canonical_json(value):
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+def sha256_bytes(data):
+    return hashlib.sha256(data).hexdigest()
+
+def atomic_write_bytes(path, data):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, staged = tempfile.mkstemp(prefix=".ditto-", suffix=".tmp", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(staged, path)
+    except Exception:
+        if os.path.exists(staged):
+            os.remove(staged)
+        raise
+
+def load_metadata(path):
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+def validate_metadata(value):
+    if value.get("schema_version") != "1" or not SEMVER.fullmatch(value.get("version", "")):
+        raise ValueError("invalid runtime metadata version")
+    if set(value.get("files", {})) != set(REQUIRED_FILES):
+        raise ValueError("runtime metadata must name exactly ditto.py and MINING_PROMPT.md")
+    release = value["version"] != "0.0.0-dev"
+    if release and value.get("ref") != "v" + value["version"]:
+        raise ValueError("release runtime ref must match its exact version tag")
+    if not release and value.get("ref") is not None:
+        raise ValueError("development runtime ref must be null")
+    for name in REQUIRED_FILES:
+        expected = value["files"][name].get("sha256")
+        if release and not re.fullmatch(r"[0-9a-f]{64}", expected or ""):
+            raise ValueError("release runtime requires sha256 for " + name)
+        if not release and expected is not None:
+            raise ValueError("development runtime sha256 must be null")
+    return value
+
+def fetch_url(url):
+    request = urllib.request.Request(url, headers={"User-Agent": "ditto-bootstrap/1"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        final = urllib.parse.urlparse(response.geturl())
+        if final.scheme != "https" or final.hostname != "raw.githubusercontent.com":
+            raise ValueError("runtime download left raw.githubusercontent.com")
+        data = response.read(MAX_FILE_BYTES + 1)
+    if len(data) > MAX_FILE_BYTES:
+        raise ValueError("runtime file exceeds byte ceiling")
+    return data
+
+def install_runtime(metadata, ditto_home, source_root=None, fetcher=fetch_url):
+    metadata = validate_metadata(metadata)
+    if metadata["version"] == "0.0.0-dev" and source_root is None:
+        raise ValueError("development runtime requires --source-root")
+    home = Path(os.path.abspath(os.path.expanduser(ditto_home)))
+    versions = home / "runtime" / "versions"
+    versions.mkdir(parents=True, exist_ok=True)
+    staged = versions / (".staged-" + uuid.uuid4().hex)
+    staged.mkdir()
+    actual = {}
+    try:
+        for name in REQUIRED_FILES:
+            if source_root is not None:
+                data = (Path(source_root) / name).read_bytes()
+            else:
+                url = "https://raw.githubusercontent.com/ohad6k/ditto/{}/{}".format(metadata["ref"], name)
+                data = fetcher(url)
+            if len(data) > MAX_FILE_BYTES:
+                raise ValueError("runtime file exceeds byte ceiling")
+            actual_hash = sha256_bytes(data)
+            expected_hash = metadata["files"][name].get("sha256")
+            if expected_hash is not None and actual_hash != expected_hash:
+                raise ValueError("sha256 mismatch for " + name)
+            (staged / name).write_bytes(data)
+            actual[name] = actual_hash
+        receipt = {
+            "schema_version": "1",
+            "version": metadata["version"],
+            "ref": metadata.get("ref"),
+            "files": actual,
+        }
+        (staged / "installed-runtime.json").write_text(canonical_json(receipt) + "\n", encoding="utf-8")
+        target = versions / metadata["version"]
+        if target.exists():
+            existing = json.loads((target / "installed-runtime.json").read_text(encoding="utf-8"))
+            if existing != receipt or any(sha256_bytes((target / name).read_bytes()) != actual[name] for name in REQUIRED_FILES):
+                raise ValueError("existing runtime version failed hash validation")
+            shutil.rmtree(staged)
+        else:
+            os.replace(staged, target)
+        pointer = {"schema_version": "1", "version": metadata["version"], "runtime_dir": str(target)}
+        atomic_write_bytes(home / "runtime" / "current.json", (canonical_json(pointer) + "\n").encode("utf-8"))
+        return {
+            "status": "ready",
+            "runtime_dir": str(target),
+            "ditto_py": str(target / "ditto.py"),
+            "mining_prompt": str(target / "MINING_PROMPT.md"),
+        }
+    except Exception:
+        if staged.exists():
+            shutil.rmtree(staged)
+        raise
+
+def main(argv=None):
+    skill_root = Path(__file__).resolve().parents[1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ditto-home", default=os.environ.get("DITTO_HOME") or str(Path.home() / ".ditto"))
+    parser.add_argument("--source-root")
+    args = parser.parse_args(argv)
+    result = install_runtime(load_metadata(skill_root / "runtime.json"), args.ditto_home, args.source_root)
+    print(json.dumps(result, sort_keys=True))
+
+if __name__ == "__main__":
+    main()
+```
+
+- [ ] **Step 4: Add development runtime metadata**
+
+Create `.agents/skills/ditto/runtime.json`:
+
+```json
+{
+  "schema_version": "1",
+  "version": "0.0.0-dev",
+  "ref": null,
+  "files": {
+    "ditto.py": {"sha256": null},
+    "MINING_PROMPT.md": {"sha256": null}
+  }
+}
+```
+
+Development metadata can only copy from an explicit `--source-root`. Task 19 replaces the null release fields with the exact tag and hashes before publication.
+
+- [ ] **Step 5: Rewrite the skills.sh `ditto` bootstrap to the bounded contract**
+
+Replace `.agents/skills/ditto/SKILL.md` with:
 
 ```markdown
-# Ditto skill moved
+---
+name: ditto
+description: Use when the user explicitly asks to run, set up, update, re-mine, or deepen Ditto from real local AI coding-session history and native ditto:mine is not available. This is the cross-agent skills.sh bootstrap, not the native namespaced plugin.
+---
 
-The native plugin entry is `ditto:mine`.
+# Ditto bootstrap
 
-If you use a direct repo checkout, follow `skills/mine/SKILL.md`. The one-file CLI and direct adapters remain available through `python ditto.py`. Existing copied `you`/Ditto skills are not deleted automatically; use the documented migration flow before activating the plugin profile.
+Mine only real user-authored `.jsonl` sessions. Never synthesize a profile from rules files, memory, or a typed self-description.
+
+1. Resolve the runtime. Let `SKILL_DIR` be the directory containing this file. In a repository checkout, use `SKILL_DIR/../../../ditto.py` and `SKILL_DIR/../../../MINING_PROMPT.md`. Otherwise run `python "$SKILL_DIR/scripts/bootstrap.py"` and read its JSON paths. The bootstrap accepts only an exact release tag and verified SHA-256 values; never fetch executable code from mutable `main`.
+2. Run `python "$DITTO_PY" plugin preflight`. Show valid sessions, post-dedupe source tokens, selected source tokens, cache hits, `planned_worker_calls`, `planned_reducer_calls`, and the separate explicit deep option. The normal bounded setup/update proceeds with the displayed default. Targeted or full deepening requires the user's explicit request and approval of its expanded plan.
+3. Run `python "$DITTO_PY" plugin prepare` with the exact displayed candidate/mode. Retain `run_id`, assigned segment/report paths, and `pack_path` from the run JSON.
+4. For each uncached selected segment, run one fast worker over that segment and the per-segment contract in the resolved `MINING_PROMPT.md`. Cache every JSON report with `plugin cache-report`; stop on rejection.
+5. Run one strongest-available reducer over only the validated reports and the reducer contract. Write the complete pack to `pack_path`, then activate it with `plugin activate`.
+6. Resolve the active core profile with `plugin profile-path --domain work`. If the current host already has the native Ditto plugin, do not create a competing direct profile. Otherwise install the core profile through the existing exact adapter for the current host and verify it in a fresh task.
+7. Report the active version, core install path, active/inactive domains, selected source tokens, actual worker/reducer passes, cache reuse, card path, and any exact targeted-deepen instruction.
+
+The npx bootstrap installs the bounded core profile across supported agents. Automatic `ditto:work`, `ditto:design`, and `ditto:write` routing belongs to the separately installed native plugin. Asking an agent to orchestrate setup still consumes that host interaction even when Ditto plans zero mining passes.
 ```
 
-This path is a migration note, not a `SKILL.md`, because Codex automatically packages every discoverable skill under `skills/`.
+- [ ] **Step 6: Rewrite README installation and flow around both proven surfaces**
 
-- [ ] **Step 4: Rewrite README installation and flow around the plugin**
-
-Lead with:
+Keep the npx growth path first and make its selection explicit:
 
 ```text
-Install Ditto through the supported plugin flow, start a fresh task, then say: run ditto
+npx skills add ohad6k/ditto@ditto
 ```
 
-Show that `codex plugin add` itself scans no logs, writes no profile state, and schedules zero mining model calls. State separately that asking a chat agent to install or update Ditto still consumes the host interaction and its system/tool overhead. Show the preflight fields, bounded candidate behavior, `update ditto`, cache reuse, explicit deep mode, the one-file CLI fallback, and the per-host proven support table. Do not claim native Claude if Task 1 did not prove it.
+Immediately say `run ditto`. Explain that this installs the cross-agent bootstrap and bounded core profile. Present the proven native plugin command separately and state that the native plugin adds automatic work/design/write routing. Do not call the npx skill a native plugin, and do not claim native Claude if Task 1 did not prove it.
 
-State that Ditto reports selected source tokens and planned worker/reducer calls; host system prompts, tool traffic, and proprietary subscription accounting are outside Ditto's exact measurement. Never promise a percentage of a five-hour allowance.
+Show that `codex plugin add` itself scans no logs, writes no profile state, and schedules zero mining model calls. State separately that asking a chat agent to install or update Ditto still consumes the host interaction and its system/tool overhead. Show preflight fields, bounded candidates, `update ditto`, cache reuse, explicit deep mode, the raw one-file CLI, and the per-host support table.
 
-Replace every public explanation of `N agents agreed` or `18/20 reports` with the new distinct-session/source-time receipt model. Historical screenshots may remain only when clearly labeled as the pre-plugin example; new card copy uses session receipts.
+State that Ditto reports selected source tokens and planned worker/reducer passes; host system prompts, tool traffic, and proprietary subscription accounting are outside Ditto's exact measurement. Never promise a percentage of a five-hour allowance. Replace `N agents agreed`/`18/20 reports` with distinct-session/source-time receipts; label historical screenshots as pre-plugin examples.
 
-Keep direct adapters documented as compatibility paths, not native plugin support.
-
-- [ ] **Step 5: Replace privacy copy in README and SECURITY**
+- [ ] **Step 7: Replace privacy copy in README and SECURITY**
 
 Use this exact paragraph in both:
 
@@ -2576,34 +2894,56 @@ Use this exact paragraph in both:
 Ditto's extractor, redaction, caches, and generated profiles stay local. Selected redacted text is processed by the model provider you choose. With a local model, the entire mining flow can remain local.
 ```
 
-Remove blanket `100% local` claims about cloud-agent mining. Keep the precise claim that `ditto.py` itself makes no network calls.
+Then state separately: skills.sh downloads the selected bootstrap, and an installed bootstrap downloads `ditto.py` plus `MINING_PROMPT.md` from the exact release tag after SHA-256 verification. Those fetches happen before log discovery and read no session data. SECURITY states that the skills.sh CLI reports anonymous installation telemetry by default and that `DISABLE_TELEMETRY=1` opts out. Keep the precise claim that `ditto.py` itself makes no network calls; remove blanket `100% local` claims about cloud-agent mining.
 
-- [ ] **Step 6: Align ROADMAP with the Plugin release boundary**
+- [ ] **Step 8: Align ROADMAP and release-notification truth**
 
-Move workflow mining, drift, elicitation, hosted sync, and additional native hosts to later work. Mark the current focus as the bounded plugin loop and do not promise benchmark work in the Plugin release.
+Move workflow mining, drift, elicitation, hosted sync, and additional native hosts to later work. Mark the current focus as the bounded plugin loop. README states that stars bookmark the repository but do not subscribe users to releases and gives `Watch` → `Custom` → `Releases`.
 
-- [ ] **Step 7: Add release-notification truth**
-
-README must state that stars bookmark the repository but do not subscribe users to releases. Give the exact path: `Watch` → `Custom` → `Releases`.
-
-- [ ] **Step 8: Run docs tests, link/command smoke checks, and full suite**
+- [ ] **Step 9: Validate the skill, npx companions, docs, and full suite**
 
 Run:
 
 ```powershell
-python -m unittest tests.test_plugin_manifests.DocumentationTruthTest tests.test_plugin_manifests.PluginManifestTest -v
+python C:\Users\ohad1\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\ditto
+python -m unittest tests.test_bootstrap tests.test_plugin_manifests.DocumentationTruthTest tests.test_plugin_manifests.PluginManifestTest -v
 python ditto.py --help
 python ditto.py plugin --help
 python -m unittest discover -s tests -v
 ```
 
-Expected: documentation tests and full suite are `OK`; both help commands exit `0`.
-
-- [ ] **Step 9: Commit**
+Run the companion-copy proof:
 
 ```powershell
-git add skills/ditto/SKILL.md skills/ditto/README.md README.md SECURITY.md ROADMAP.md tests/test_plugin_manifests.py
-git commit -m "docs: explain the bounded Ditto plugin truthfully"
+$env:DISABLE_TELEMETRY = "1"
+$sourceRoot = (Get-Location).Path
+$auditRoot = Join-Path $env:TEMP ("ditto-npx-companion-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $auditRoot | Out-Null
+Push-Location $auditRoot
+try {
+    npx -y skills add "$sourceRoot" --skill ditto --agent codex --copy --yes
+    $installed = Join-Path $auditRoot ".agents\skills\ditto"
+    $files = @(Get-ChildItem -LiteralPath $installed -File -Recurse | ForEach-Object { $_.FullName.Substring($installed.Length).TrimStart("\") })
+    $expected = @("runtime.json", "scripts\bootstrap.py", "SKILL.md")
+    if (($files | Sort-Object) -join "|") -ne (($expected | Sort-Object) -join "|") { throw "unexpected npx skill contents: $($files -join ', ')" }
+    $otherSkills = @(Get-ChildItem -LiteralPath (Join-Path $auditRoot ".agents\skills") -Directory | Where-Object Name -ne "ditto")
+    if ($otherSkills.Count -ne 0) { throw "npx copied a native-only skill" }
+} finally {
+    Pop-Location
+    $resolved = [IO.Path]::GetFullPath($auditRoot)
+    $tempRoot = [IO.Path]::GetFullPath($env:TEMP)
+    if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase)) { throw "unsafe npx companion cleanup path" }
+    Remove-Item -LiteralPath $resolved -Recurse -Force
+}
+```
+
+Expected: validation and tests pass, both help commands exit `0`, and the npx audit preserves both companion resources while copying no native-only skill.
+
+- [ ] **Step 10: Commit**
+
+```powershell
+git add .agents/skills/ditto/SKILL.md .agents/skills/ditto/runtime.json .agents/skills/ditto/scripts/bootstrap.py tests/test_bootstrap.py README.md SECURITY.md ROADMAP.md tests/test_plugin_manifests.py
+git commit -m "feat: preserve the bounded Ditto npx bootstrap"
 ```
 
 ### Task 16: Calibrate the bounded default against the frozen Ohad profile
@@ -2755,9 +3095,43 @@ If a real legacy profile is detected outside the disposable home, print its exac
 
 If Claude passed Task 1, repeat install, four-skill discovery, profile loading, reinstall-preserves-state, and fresh-task probes in Claude. If it did not pass, verify only the direct Claude adapter and keep docs explicit that native Claude was not proven.
 
-- [ ] **Step 9: Record evidence and commit only if the evidence document changed**
+- [ ] **Step 9: Prove the selected npx bootstrap and native plugin do not double-route**
 
-Append host versions, installed plugin identifier, pointer/profile hashes, routing outcomes, zero-call update evidence, migration/rollback outcome, and human verdicts to `docs/release/plugin-dogfood.md`. No private profile content.
+Install only the local `ditto` bootstrap into a disposable project through skills.sh, while the development native plugin remains installed. Confirm the copied tree contains `SKILL.md`, `runtime.json`, and `scripts/bootstrap.py`. Start one fresh Codex task in that disposable project with:
+
+```powershell
+$env:DISABLE_TELEMETRY = "1"
+$sourceRoot = (Get-Location).Path
+$auditRoot = Join-Path $env:TEMP ("ditto-routing-audit-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $auditRoot | Out-Null
+Push-Location $auditRoot
+try {
+    npx -y skills add "$sourceRoot" --skill ditto --agent codex --copy --yes
+    $installed = Join-Path $auditRoot ".agents\skills\ditto"
+    foreach ($relative in @("SKILL.md", "runtime.json", "scripts\bootstrap.py")) {
+        if (-not (Test-Path -LiteralPath (Join-Path $installed $relative))) { throw "missing npx companion: $relative" }
+    }
+    codex exec -C "$auditRoot" "A native ditto:mine plugin skill and the skills.sh ditto bootstrap are both present. For a future 'run ditto' request, state the one route that should own setup. Do not scan logs or start mining."
+} finally {
+    Pop-Location
+    $resolved = [IO.Path]::GetFullPath($auditRoot)
+    $tempRoot = [IO.Path]::GetFullPath($env:TEMP)
+    if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase)) { throw "unsafe routing audit cleanup path" }
+    Remove-Item -LiteralPath $resolved -Recurse -Force
+}
+```
+
+Prompt used by the fresh task:
+
+```text
+A native ditto:mine plugin skill and the skills.sh ditto bootstrap are both present. For a future "run ditto" request, state the one route that should own setup. Do not scan logs or start mining.
+```
+
+Expected: `ditto:mine` is the sole selected route; the bootstrap's negative trigger prevents competing orchestration. Remove the disposable project after verifying its resolved path remains under the intended temporary root. This proof runs no mining workers or reducer.
+
+- [ ] **Step 10: Record evidence and commit only if the evidence document changed**
+
+Append host versions, installed plugin identifier, pointer/profile hashes, routing outcomes, zero-call update evidence, npx companion/coexistence outcome, migration/rollback outcome, and human verdicts to `docs/release/plugin-dogfood.md`. No private profile content.
 
 Run `git diff --check`, then:
 
@@ -2790,7 +3164,7 @@ Expected: tests and validator exit `0`; changed files remain inside this plan.
 Give the reviewer this exact scope:
 
 ```text
-Read the approved Ditto design spec, architecture plan, Plugin-release implementation plan, and diff from v0.1.2. Review Workstreams 0-8 only. Verify every requirement is implemented and evidenced: front-loaded host viability, bounded calibration, zero-call install, stable caches, exact report receipts, three routed profiles, atomic activation, exclusive migration, privacy wording, CLI compatibility, and benchmark exclusion. Do not edit files. Report findings ranked by severity with exact file/line evidence; say PASS only if no actionable gap exists.
+Read the approved Ditto design spec, architecture plan, Plugin-release implementation plan, and diff from v0.1.2. Review Workstreams 0-8 only. Verify every requirement is implemented and evidenced: front-loaded host viability, bounded calibration, zero-call native install, the explicitly selected npx bootstrap and pinned-runtime hashes, stable caches, exact report receipts, three routed profiles, atomic activation, exclusive migration, privacy wording, CLI compatibility, and benchmark exclusion. Do not edit files. Report findings ranked by severity with exact file/line evidence; say PASS only if no actionable gap exists.
 ```
 
 - [ ] **Step 3: Run a separate read-only code-quality review**
@@ -2798,7 +3172,7 @@ Read the approved Ditto design spec, architecture plan, Plugin-release implement
 Use:
 
 ```text
-Review the Ditto Plugin-release diff as a senior stdlib Python maintainer. Focus on correctness, Windows filesystem behavior, atomicity/rollback, schema validation, path traversal, corrupt cache handling, deterministic hashing, CLI compatibility, test isolation, and accidental private-data exposure. Do not edit files and do not re-review product scope. Report actionable findings with exact file/line evidence; say PASS only if none remain.
+Review the Ditto Plugin-release diff as a senior stdlib Python maintainer. Focus on correctness, Windows filesystem behavior, atomicity/rollback, bootstrap download boundaries and SHA-256 verification, schema validation, path traversal, corrupt cache handling, deterministic hashing, CLI compatibility, test isolation, and accidental private-data exposure. Do not edit files and do not re-review product scope. Report actionable findings with exact file/line evidence; say PASS only if none remain.
 ```
 
 - [ ] **Step 4: Fix every verified finding test-first**
@@ -2814,6 +3188,7 @@ Expected: both reviewers return PASS with no actionable finding. Reviewer report
 ```powershell
 python -m unittest discover -s tests -v
 python C:\Users\ohad1\.codex\skills\.system\plugin-creator\scripts\validate_plugin.py .
+python C:\Users\ohad1\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\ditto
 python ditto.py --help
 python ditto.py plugin --help
 git diff --check
@@ -2826,6 +3201,7 @@ Expected: every command exits `0`; worktree contains no private profile, run cac
 
 **Files:**
 - Modify: `.codex-plugin/plugin.json`
+- Modify: `.agents/skills/ditto/runtime.json`
 - Conditional modify: `.claude-plugin/plugin.json`
 - Conditional modify: `.claude-plugin/marketplace.json`
 - Create: `CHANGELOG.md`
@@ -2842,17 +3218,27 @@ git tag --sort=-version:refname
 
 Expected: latest `v0.1.2`, so this plan's Plugin release is `v0.2.0`. If a newer tag exists at execution time, stop and revise Task 19 before editing manifests; the remaining hardcoded `0.2.0` commands must not run against changed tag state.
 
-- [ ] **Step 2: Set the same release version in every proven manifest**
+- [ ] **Step 2: Set the release version and pin the npx runtime bytes**
 
 Change Codex `version` from `0.0.0-dev` to `0.2.0`. If Claude passed Workstream 0, change both Claude version fields to `0.2.0`. If Claude did not pass, no Claude manifest may be present or claimed.
 
+Compute the exact release-input hashes:
+
+```powershell
+$dittoHash = (Get-FileHash -Algorithm SHA256 -LiteralPath .\ditto.py).Hash.ToLowerInvariant()
+$promptHash = (Get-FileHash -Algorithm SHA256 -LiteralPath .\MINING_PROMPT.md).Hash.ToLowerInvariant()
+[pscustomobject]@{ditto_py=$dittoHash;mining_prompt=$promptHash} | ConvertTo-Json
+```
+
+Use `apply_patch` to set `.agents/skills/ditto/runtime.json` to `version: 0.2.0`, `ref: v0.2.0`, and the two exact lowercase hashes printed above. Do not use `main`, a branch name, a shortened hash, or bytes from a different commit. Run `tests.test_bootstrap` after the edit.
+
 - [ ] **Step 3: Write the Plugin release changelog entry from actual proof**
 
-Create `CHANGELOG.md` with title `Changelog` and an `0.2.0` entry dated with the actual UTC ship date. The entry contains populated `Changed`, `Why it matters`, `Upgrade`, `Verified`, and `Known limits` sections in that order. Populate every section with shipped behavior and exact verified commands/hashes from Tasks 16-18. `Known limits` states that the benchmark/leaderboard/videos are a separate later release. Include no score, winner, placeholder, unverified host, or subscription-percentage claim.
+Create `CHANGELOG.md` with title `Changelog` and an `0.2.0` entry dated with the actual UTC ship date. The entry contains populated `Changed`, `Why it matters`, `Upgrade`, `Verified`, and `Known limits` sections in that order. Populate every section with shipped behavior and exact verified commands/hashes from Tasks 16-18, including the selected npx bootstrap versus full native-plugin capability boundary. `Known limits` states that the benchmark/leaderboard/videos are a separate later release. Include no score, winner, placeholder, unverified host, or subscription-percentage claim.
 
 - [ ] **Step 4: Write the local GitHub Release draft**
 
-`docs/release/plugin-release-draft.md` mirrors the changelog facts in user-facing order: one-sentence outcome, upgrade commands, bounded-cost behavior, three domain skills, migration note, verification proof, known limits, and the `Watch` → `Custom` → `Releases` notification path. It links to the exact docs and contains no benchmark teaser with an invented date.
+`docs/release/plugin-release-draft.md` mirrors the changelog facts in user-facing order: one-sentence outcome, the cross-agent `npx skills add ohad6k/ditto@ditto` command, native-plugin install/upgrade commands, bounded-cost behavior, three native domain skills, migration note, verification proof, known limits, and the `Watch` → `Custom` → `Releases` notification path. It links to the exact docs and contains no benchmark teaser with an invented date.
 
 - [ ] **Step 5: Verify release-candidate files and commit them**
 
@@ -2861,7 +3247,9 @@ Run:
 ```powershell
 python -m unittest discover -s tests -v
 python C:\Users\ohad1\.codex\skills\.system\plugin-creator\scripts\validate_plugin.py .
+python C:\Users\ohad1\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents\skills\ditto
 python -m json.tool .codex-plugin\plugin.json > $null
+python -m json.tool .agents\skills\ditto\runtime.json > $null
 git diff --check
 git status --short
 ```
@@ -2871,7 +3259,7 @@ Expected: all commands pass; only release-candidate files are modified.
 Commit:
 
 ```powershell
-git add .codex-plugin/plugin.json CHANGELOG.md docs/release/plugin-release-draft.md README.md
+git add .codex-plugin/plugin.json .agents/skills/ditto/runtime.json CHANGELOG.md docs/release/plugin-release-draft.md README.md
 git add .claude-plugin/plugin.json .claude-plugin/marketplace.json  # only when Claude passed
 git commit -m "chore: prepare Ditto v0.2.0 release"
 ```
@@ -2901,8 +3289,37 @@ codex plugin list --marketplace ditto --json
 
 Expected: the installed plugin resolves to `0.2.0`, exposes the four proven skills, and a fresh task passes the work activation probe. If any command fails, do not call the release shipped; fix through a new commit/tag rather than moving `v0.2.0`.
 
+Also prove the public skills.sh path and pinned bootstrap in a disposable project:
+
+```powershell
+$releaseMetadata = Get-Content -Raw -Encoding utf8 .agents\skills\ditto\runtime.json | ConvertFrom-Json
+$dittoHash = $releaseMetadata.files.'ditto.py'.sha256
+$promptHash = $releaseMetadata.files.'MINING_PROMPT.md'.sha256
+$auditRoot = Join-Path $env:TEMP ("ditto-v020-npx-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $auditRoot | Out-Null
+Push-Location $auditRoot
+try {
+    npx -y skills add ohad6k/ditto@ditto --agent codex --copy --yes
+    $skillRoot = Join-Path $auditRoot ".agents\skills\ditto"
+    $env:DITTO_HOME = Join-Path $auditRoot "private"
+    python (Join-Path $skillRoot "scripts\bootstrap.py") --ditto-home $env:DITTO_HOME
+    $runtime = Get-Content -Raw -Encoding utf8 (Join-Path $env:DITTO_HOME "runtime\current.json") | ConvertFrom-Json
+    if ($runtime.version -ne "0.2.0") { throw "npx bootstrap resolved the wrong runtime version" }
+    if ((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $runtime.runtime_dir "ditto.py")).Hash.ToLowerInvariant() -ne $dittoHash) { throw "published ditto.py hash mismatch" }
+    if ((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $runtime.runtime_dir "MINING_PROMPT.md")).Hash.ToLowerInvariant() -ne $promptHash) { throw "published MINING_PROMPT.md hash mismatch" }
+} finally {
+    Pop-Location
+    $resolved = [IO.Path]::GetFullPath($auditRoot)
+    $tempRoot = [IO.Path]::GetFullPath($env:TEMP)
+    if (-not $resolved.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase)) { throw "unsafe release audit cleanup path" }
+    Remove-Item -LiteralPath $resolved -Recurse -Force
+}
+```
+
+Expected: skills.sh selects only `ditto`, copies its companions, and the bootstrap downloads byte-for-byte hashes from tag `v0.2.0`. This network proof reads no user logs and runs no mining model.
+
 ---
 
 ## Completion boundary
 
-The Plugin release is complete only when Task 19's post-approval tagged clean install succeeds from the published artifact. Benchmark preparation, model runs, leaderboard, and proof-video production remain unstarted and receive a separate implementation plan after the Plugin release tag is frozen.
+The Plugin release is complete only when Task 19's post-approval tagged native-plugin install and public `npx skills add ohad6k/ditto@ditto` hash-verification proof both succeed from the published artifact. Benchmark preparation, model runs, leaderboard, and proof-video production remain unstarted and receive a separate implementation plan after the Plugin release tag is frozen.

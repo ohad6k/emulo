@@ -66,7 +66,7 @@ For the Plugin release, `ditto.py` remains the canonical zero-dependency, single
 
 ## User Answers Translated
 
-- **What is being built:** one Ditto plugin, patterned after Superpowers' canonical repository plus thin host overlays, containing the mining workflow and task-specific personal skills.
+- **What is being built:** one Ditto plugin, patterned after Superpowers' canonical repository plus thin host overlays, containing the mining workflow and task-specific personal skills, plus one preserved skills.sh bootstrap for cross-agent installation.
 - **Who it serves:** an individual AI-agent user with months of local Codex, Claude, or Copilot session history.
 - **Who can see or change the profile:** the local user and the local agent host. Generated profiles remain private by default. Public artifacts require explicit review.
 - **Where it runs:** deterministic extraction, redaction, selection, caching, and profile storage run locally. Selected redacted text is processed wherever the user-selected model provider runs. The Python extractor itself makes no network calls.
@@ -81,7 +81,8 @@ For the Plugin release, `ditto.py` remains the canonical zero-dependency, single
 - Redaction happens before extracted text is written.
 - Long verbatim duplicates are collapsed, saving substantial input on repeated specifications and injected rules.
 - `MINING_PROMPT.md` already separates per-slice extraction from reduction and includes optional thinking and designer lens guidance.
-- `skills/ditto/SKILL.md` already defines the agent-orchestrated extract, mine, reduce, install, and card flow.
+- `skills/ditto/SKILL.md` already defines the agent-orchestrated extract, mine, reduce, install, and card flow, and commit `04b9fbf` exposes it through `npx skills add ohad6k/ditto`.
+- A live `npx skills add ohad6k/ditto --list` check on 2026-07-10 discovers exactly one `ditto` skill. A disposable copy install proved that skills.sh copies only the selected skill directory, while a separate local fixture proved companion files inside that directory are preserved.
 - The installer supports Codex, Claude, Cursor, `AGENTS.md`, and Gemini destinations.
 - The current automated suite passes 9/9.
 
@@ -164,6 +165,13 @@ Cheaper workers reduce monetary cost when the host supports model selection, but
 
 ```text
 ditto/
+  .agents/
+    skills/
+      ditto/
+        SKILL.md               # skills.sh bootstrap only
+        runtime.json           # release ref + SHA-256 contract
+        scripts/
+          bootstrap.py         # pinned runtime installer
   .codex-plugin/
     plugin.json
   .claude-plugin/
@@ -186,7 +194,9 @@ ditto/
   tests/
 ```
 
-The plugin name is `ditto`; host namespacing yields `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`. The current `skills/ditto` path receives a compatibility wrapper or migration note so existing users are not silently broken.
+The plugin name is `ditto`; host namespacing yields `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`. The manifest points at `./skills/`. The current `skills/ditto/SKILL.md` moves to `.agents/skills/ditto/SKILL.md` so it stays outside native plugin discovery. The public skills.sh command becomes `npx skills add ohad6k/ditto@ditto`, explicitly selecting that bootstrap even though skills.sh can also index the native skill files in the repository.
+
+The skills.sh bootstrap is deliberately narrower than the native plugin. It runs the same bounded mining engine and installs the core generated profile through existing adapters, but it does not claim plugin namespacing or automatic work/design/write routing. Its bundled stdlib bootstrap downloads `ditto.py` and `MINING_PROMPT.md` from the release's exact Git tag, verifies release-pinned SHA-256 hashes, and stores them under `DITTO_HOME/runtime/`. The mining runtime remains the root `ditto.py`; the bootstrap script is packaging glue, not a second extractor.
 
 ### Durable private state
 
@@ -330,11 +340,13 @@ benchmark changelog + GitHub Release
 
 **User outcome:** native host support is based on a working path, not the presence of plausible manifest files.
 
-**Areas:** minimal Codex and Claude development manifests, one temporary namespaced proof skill, an isolated `DITTO_HOME` fixture, and spike notes/tests.
+**Areas:** minimal Codex and Claude development manifests, `skills/spike`, `.agents/skills/ditto`, one isolated `DITTO_HOME` fixture, and spike notes/tests.
 
 **Tasks:**
 
 - Register the smallest valid `ditto:spike` skill in Codex and Claude through each host's supported development flow.
+- Move the existing public bootstrap from `skills/ditto` to `.agents/skills/ditto` before native discovery, and keep the plugin manifest at `./skills/`.
+- Install the local repository through skills.sh with `--skill ditto` into a disposable agent home and prove only the bootstrap is selected, while the native host ignores `.agents/skills` and lists only the temporary namespaced spike during this workstream.
 - In a fresh task, prove the skill can invoke the repository's local Python runtime and read a harmless fixture through `DITTO_HOME`.
 - Record the exact host version, install command, discovered namespace, task transcript, and any shell/filesystem restrictions.
 - Use no real user logs, mining prompts, benchmark models, or generated profiles during the spike.
@@ -342,7 +354,7 @@ benchmark changelog + GitHub Release
 
 **Dependencies:** none. It runs before the main architecture work; the existing CLI correctness fixes remain conceptually independent but follow it in the implementation sequence so the packaging decision is known first.
 
-**Acceptance signals:** a fresh Codex task discovers and invokes the namespaced skill, local Python runs, and the isolated fixture is read. Claude must pass the same proof before native Claude support remains in the Plugin release scope.
+**Acceptance signals:** a fresh Codex task discovers and invokes the namespaced skill, local Python runs, and the isolated fixture is read; an explicitly selected skills.sh install copies only the current `ditto` bootstrap. Task 15 repeats the selected install after adding the real companions. Claude must pass the same proof before native Claude support remains in the Plugin release scope.
 
 **Verification:** host validator output plus fresh-task transcripts and fixture output. Manifest existence alone is not proof.
 
@@ -354,7 +366,7 @@ benchmark changelog + GitHub Release
 
 **User outcome:** Ditto stops before costly work when inputs or outputs are invalid and never mines stale files.
 
-**Areas:** `ditto.py`, `tests/test_ditto.py`, `skills/ditto/SKILL.md`.
+**Areas:** `ditto.py`, `tests/test_ditto.py`, `.agents/skills/ditto/SKILL.md`.
 
 **Tasks:**
 
@@ -455,21 +467,23 @@ benchmark changelog + GitHub Release
 
 **User outcome:** one plugin install reveals the relevant Ditto skills together, like Superpowers.
 
-**Areas:** `.codex-plugin/plugin.json`, `.claude-plugin/plugin.json`, `skills/mine`, `skills/work`, `skills/design`, `skills/write`, assets, plugin validation.
+**Areas:** `.codex-plugin/plugin.json`, `.claude-plugin/plugin.json`, `skills/mine`, `skills/work`, `skills/design`, `skills/write`, `.agents/skills/ditto`, assets, plugin validation.
 
 **Tasks:**
 
 - Scaffold and validate the Codex manifest with real metadata and assets if Codex passed Workstream 0.
 - Add the Claude manifest and local development marketplace overlay only if Claude passed Workstream 0.
-- Move or wrap the current orchestrator as `mine` without breaking current direct-skill users.
+- Build the native `mine` orchestrator under `skills/` without changing the cross-agent bootstrap's public `ditto` name.
 - Create static domain loaders that resolve `DITTO_HOME`, read the active pointer, validate the manifest, and load only the relevant private file.
+- Rewrite the skills.sh bootstrap to the bounded contract, keep its `SKILL.md` lean, and bundle a deterministic `scripts/bootstrap.py` plus `runtime.json` instead of duplicating `ditto.py`.
+- Require the bootstrap to use a repo-local runtime during development or a release-tagged, SHA-256-verified runtime after publication; never fetch mutable `main` as executable code.
 - Give each skill mutually clear positive and negative trigger descriptions and test overlap cases, including design-plus-copy tasks.
 - Ensure missing/corrupt profile state instructs the exact recovery action and never silently uses a stale or partial profile.
 - Keep benchmark capability absent or inert until its final workstream.
 
 **Dependencies:** Workstream 0 and Workstream 4.
 
-**Acceptance signals:** every claimed native host shows the four exact namespaced skills in an isolated clean install; fresh tasks load the expected active profile; plugin reinstall preserves private state.
+**Acceptance signals:** every claimed native host shows the four exact namespaced skills in an isolated clean install; an npx install explicitly selecting `ditto` copies only that bootstrap and both companion files; fresh tasks load the expected active profile; plugin reinstall preserves private state.
 
 **Verification:** Codex plugin validator, Claude manifest validation, isolated marketplace install, cachebuster reinstall, fresh-task activation transcripts.
 
@@ -491,7 +505,9 @@ benchmark changelog + GitHub Release
 - If activation or a fresh-task probe fails, deactivate the new pointer and restore the legacy directory to its original discovery path.
 - Treat marked `AGENTS.md`/`GEMINI.md` blocks as separate adapter migrations; a native plugin migration must not silently leave an always-on legacy context block competing with the new loaders.
 - Distinguish source auto-detection, install adapters, and native plugin support.
+- Distinguish the skills.sh bootstrap from native plugin support: `npx skills add ohad6k/ditto@ditto` is the one-skill cross-agent path, while automatic work/design/write routing belongs to the proven native plugin.
 - State that `ditto.py` makes no network calls while selected redacted mining text is processed by the chosen provider.
+- State that skills.sh and the bootstrap installer fetch code, but the installer reads no logs and accepts only release-tagged artifacts whose hashes match `runtime.json`.
 - Document the zero-call plugin install, bounded default mine, exact preflight fields, explicit deep mode, and incremental reuse.
 - Explain sampled receipts without implying complete-history consensus.
 
@@ -532,13 +548,14 @@ benchmark changelog + GitHub Release
 
 **Purpose:** ship the verified plugin as the first independent distribution moment.
 
-**User outcome:** users receive the plugin, bounded mining, and work/design/write skills without waiting for 28 qualifier cells, repeated finals, leaderboard production, or videos.
+**User outcome:** users keep the one-command cross-agent npx bootstrap and receive the full native plugin with bounded mining and work/design/write skills without waiting for 28 qualifier cells, repeated finals, leaderboard production, or videos.
 
 **Areas:** `CHANGELOG.md`, `README.md`, Git tag, GitHub Release, upgrade instructions, and plugin-release proof.
 
 **Tasks:**
 
 - Add the plugin release's own versioned changelog entry: what changed, why it matters, how to upgrade, verified proof, and known limits.
+- Publish and smoke-test `npx skills add ohad6k/ditto@ditto`, including the tag-pinned runtime hashes, alongside the native plugin commands.
 - Assign the next valid repository version at ship time from the existing tag history; `Plugin release` is a milestone name, not a hardcoded `v1` tag.
 - Draft a GitHub Release from the exact verified plugin commit and changelog entry.
 - State that the benchmark is a later release; include no placeholder scores, speculative winner, or promised date.
@@ -547,7 +564,7 @@ benchmark changelog + GitHub Release
 
 **Dependencies:** Workstreams 0-7 only. Nothing in Workstreams 9-10 may block this release.
 
-**Acceptance signals:** after explicit ship approval, the plugin tag resolves to the verified commit, install/upgrade commands work from that tag, and the GitHub Release contains no benchmark dependency or unverified claim.
+**Acceptance signals:** after explicit ship approval, the plugin tag resolves to the verified commit, native install/upgrade commands and the selected npx bootstrap both work from published artifacts, and the GitHub Release contains no benchmark dependency or unverified claim.
 
 **Verification:** preview the release, resolve tag-to-commit, smoke-test every command and link, perform a final claim audit, and repeat one clean install from the tagged artifact.
 
@@ -610,6 +627,7 @@ benchmark changelog + GitHub Release
 
 - [ ] Create a git checkpoint before product changes.
 - [ ] Run the minimal Codex/Claude plugin viability spike and record the per-host decision before building plugin-dependent architecture.
+- [ ] Preserve the verified skills.sh path by moving its single `ditto` bootstrap outside native plugin discovery and proving companion-file installation.
 - [ ] Add failing tests for stale chunks, zero-session success, malformed frontmatter, Hebrew paths, and partial install rollback.
 - [ ] Fix P0 correctness defects one at a time and keep the existing suite green.
 - [ ] Add a deterministic preflight/run-plan model with no model calls.
@@ -624,6 +642,7 @@ benchmark changelog + GitHub Release
 - [ ] Scaffold and validate the Codex plugin manifest if Codex passed the spike.
 - [ ] Add and validate the Claude plugin overlay if Claude passed the spike.
 - [ ] Add static `mine`, `work`, `design`, and `write` skills.
+- [ ] Add the bounded skills.sh bootstrap, deterministic pinned-runtime installer, and release hash metadata without duplicating the mining runtime.
 - [ ] Add isolated clean-install and cachebuster-reinstall tests.
 - [ ] Correct README and security claims.
 - [ ] Run bounded mining dogfood and compare against the existing deep profile.
@@ -643,7 +662,7 @@ benchmark changelog + GitHub Release
 
 ## Implementation Sequence
 
-1. Checkpoint, then run the minimal Codex/Claude host-plugin viability spike.
+1. Checkpoint, separate the skills.sh bootstrap from native plugin discovery, then run both the minimal Codex/Claude host-plugin spike and the selected one-skill npx install proof.
 2. Add failing tests for current correctness defects.
 3. Fix P0 correctness defects.
 4. Add the preflight plan and stable segmentation.
@@ -668,7 +687,7 @@ benchmark changelog + GitHub Release
 
 - **Data:** raw logs remain at their original local paths. Redacted selected segments, caches, reports, and profiles live under `DITTO_HOME`. Public artifacts never include the full profile or private receipts by default.
 - **Auth:** no new authentication system.
-- **Providers:** `ditto.py` makes no network calls. Agent mining uses the user's chosen model host. Ditto cannot guarantee where that provider processes data, so the preflight and docs must say exactly what selected text will be sent.
+- **Providers:** `ditto.py` makes no network calls. skills.sh and the small bootstrap installer fetch public release files before mining, verify pinned hashes, and read no logs; SECURITY discloses skills.sh's anonymous install telemetry and opt-out. Agent mining uses the user's chosen model host. Ditto cannot guarantee where that provider processes data, so the preflight and docs must say exactly what selected text will be sent.
 - **Secrets:** redaction remains mandatory before selected text is written or handed to an agent. Deep mode does not disable redaction.
 - **Deploy:** no web deployment or provider dashboard action. Codex and Claude plugin installation are local/marketplace packaging operations that require live host verification.
 - **Benchmark:** no model provider calls until the final explicit benchmark stage.
@@ -687,6 +706,7 @@ benchmark changelog + GitHub Release
 | Windows/Unicode | Spaces, CRLF, Hebrew paths | Long paths, reserved names, case collisions | Exact UTF-8 round trip and safe failure |
 | Plugin viability | Namespaced spike invokes local Python and reads `DITTO_HOME` fixture | Host rejects manifest, namespace, shell, or file access | Per-host validator output and fresh-task transcript |
 | Plugin install | Proven host manifests register | Invalid manifest, stale cache, reinstall | Exact version and skill list in fresh task |
+| skills.sh bootstrap | `npx skills add ohad6k/ditto@ditto` selects only the bootstrap and a copy install preserves companions | Native plugin also discovers the bootstrap, selected install copies native-only skills, missing companion, mutable ref, hash mismatch | CLI transcript, installed-tree listing, hash-failure test |
 | Migration | Legacy `you` is backed up then removed from discovery at cutover | Multiple legacy files, activation failure, double-load attempt | Exactly one active path; restoration transcript |
 | Runtime activation | Correct domain skill loads | Missing/corrupt active pointer, overlapping trigger | Transcript shows exact loader/recovery and trigger matrix result |
 | Usage budget | Selected default stays under the calibrated ceiling | No candidate passes, deep requested, host lacks model selection | Visible plan; no implicit expansion; failed calibration blocks claim |
@@ -767,6 +787,8 @@ Unauthorized-access, archived-data, and external-provider-failure cases are not 
 - **Cache corruption:** fail closed, quarantine the corrupt entry, and recompute only that entry.
 - **Plugin cache replaces generated data:** prevented architecturally by storing profiles under `DITTO_HOME`.
 - **Cross-host behavior differs:** claim support per host only after live proof. Keep direct adapters for unproven hosts.
+- **Native and skills.sh discovery overlap:** stop packaging if the native plugin discovers `.agents/skills/ditto` or an explicitly selected npx install copies native-only skills. Keep the discovery roots physically separate and prove both live.
+- **Bootstrap runtime download is tampered with or the tag is unavailable:** fail before extraction, preserve any previously verified runtime, and never fall back to mutable `main` or unverified bytes.
 - **Usage estimate differs from subscription allowance:** report source tokens and planned calls only. Do not promise a percentage of a proprietary quota.
 - **Legacy migration ambiguity:** preserve every legacy file and require explicit selection rather than overwriting.
 - **Legacy and plugin profiles both trigger:** make discoverability mutually exclusive at cutover and verify in a fresh task; a backup is not left in an active skill directory.
@@ -783,6 +805,7 @@ No blocking product questions remain for the implementation plan. The following 
 - Full-history deep mode is explicit only.
 - Generated profile state lives outside plugin caches.
 - The core CLI remains a zero-dependency, single-file `ditto.py` runtime for the plugin release.
+- The verified skills.sh route remains one explicitly selected cross-agent bootstrap skill, published as `npx skills add ohad6k/ditto@ditto`, and does not claim native domain routing.
 - The plugin release ships after Workstreams 0-8 and has no benchmark dependency.
 - The benchmark is a separate release based on one exact already-published plugin tag; real runs require approval, and result UI follows the first schema-valid run.
 - Version numbers are assigned from repository tag state at each ship gate; `Plugin release` and `Benchmark release` are milestone names, not hardcoded `v1`/`v2` tags.
@@ -792,6 +815,8 @@ The exact public marketplace destination is a later distribution decision and do
 ## Decision Log
 
 - Chose one canonical Ditto repository with thin host overlays, following the useful part of the Superpowers pattern.
+- Chose separate discovery roots for the skills.sh bootstrap and native plugin components so the growth path survives without a fifth plugin skill.
+- Chose a small hash-verifying bootstrap script over committing a second copy of `ditto.py` inside the skill bundle.
 - Chose static plugin loaders plus durable external private profile state.
 - Chose bounded starter mining over full-history default mining.
 - Chose dogfood calibration under a hard ceiling over treating 4×25K as an already validated constant.
