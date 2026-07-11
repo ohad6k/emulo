@@ -42,7 +42,7 @@ Here's how I'd play it.
 
 **Title:** I built a local tool that reads your AI coding logs and writes a "you.md" your agents read before every task
 
-<details>
+<details open>
 <summary>full reply</summary>
 
 **Titles (pick per sub):**
@@ -67,7 +67,7 @@ one sub, not five — a skills sub, where people come looking for this instead o
 
 **Title:** I built a Claude skill from 8 months of my own Claude Code sessions
 
-<details>
+<details open>
 <summary>the full post it wrote</summary>
 
 **body:** I use claude code and codex every day. 8 months, solo. every session gets logged and i never really looked back at them.
@@ -97,12 +97,6 @@ I posted it on r/ClaudeSkills, as written:
 
 <p align="center"><strong>168 upvotes &middot; 26 comments &middot; 88K views</strong><br>
 <sub>from an account with no followers. The cold plan was reasonable. The loaded plan knew its user's voice — and it worked.</sub></p>
-
-The same profile drives design judgment. Same model, same bare HTML file, same prompt — "make this landing page look good" — both allowed to iterate on their own screenshots:
-
-<p align="center"><img src="assets/real-run.png" alt="Same agent, same prompt: the cold agent produced a generic template; the agent with a Ditto profile produced a cinematic poster-grade landing page"></p>
-
-The cold agent stopped and reported "this meets my bar." The loaded agent kept rejecting its own work until the page would survive its user's judgment. Ditto doesn't make the model smarter — it changes what the model accepts.
 
 ## What it finds
 
