@@ -26,19 +26,28 @@ That's why it reads raw session logs, not your `CLAUDE.md` or rules file.
 
 ## A real run
 
-I asked an agent to help me launch this repo. One line: **"help me post ditto on reddit."** Same model, once cold, once with my Ditto profile loaded.
+One line to the same agent, twice: **"help me post ditto on reddit."** Once cold, once with the Ditto profile loaded.
 
-<table><tr><td>
-
-**🡒 agent**
+<table>
+<tr>
+<th width="500">🡒 agent</th>
+<th width="500">🡒 agent + ditto</th>
+</tr>
+<tr valign="top">
+<td>
 
 Here's how I'd play it.
 
-**Subreddits:** r/ClaudeAI and r/ChatGPTCoding are your core audience — they've got the .jsonl logs on disk right now. r/LocalLLaMA fits the local angle but is allergic to hype. r/cursor, r/SideProject, r/opensource for reach. Skip r/programming on launch day. Don't blast all at once — post to one, tune the title, repost over a few days.
+**Subreddits:** r/ClaudeAI and r/ChatGPTCoding are your core audience. r/LocalLLaMA fits the local angle. r/cursor, r/SideProject, r/opensource for reach. Don't blast all at once — post to one, tune the title, repost over a few days.
+
+**Title:** I built a local tool that reads your AI coding logs and writes a "you.md" your agents read before every task
+
+<details>
+<summary>full reply</summary>
 
 **Titles (pick per sub):**
 - I built a local tool that reads your AI coding logs and writes a "you.md" your agents read before every task
-- ditto: mine your own Claude Code / Cursor history into a profile so your agent codes like you (local, open source)
+- ditto: mine your own Claude Code history into a profile so your agent codes like you (local, open source)
 
 **Body:**
 > Every fresh agent session starts from zero — it doesn't know how you work, so you re-explain yourself every time. All of that is already in your session logs. So I built **ditto**: it reads your history, mines how you decide and talk, and writes a `you.md` your agents read before every task.
@@ -48,17 +57,18 @@ Here's how I'd play it.
 
 Also: open with the pain not the product, reply fast in the first hour, add a demo gif, and flair it correctly. Want me to write tuned variants for each subreddit?
 
-</td></tr></table>
+</details>
+</td>
+<td>
 
-<table><tr><td>
+the insight first: the mining number is your whole post. "i read 1,656 of my own sessions" is a confession, not a pitch, and nobody scrolls past a confession. lead with the mirror, not the mechanism.
 
-**🡒 agent + ditto**
+one sub, not five — a skills sub, where people come looking for this instead of arguing about it.
 
-the insight first: the mining number is your whole post. "i read 1,656 of my own sessions" is a confession, not a pitch, and nobody scrolls past a confession. lead with the mirror, not the mechanism. the tool is secondary.
+**Title:** I built a Claude skill from 8 months of my own Claude Code sessions
 
-one sub, not five — a skills sub, where people already come looking for this instead of arguing about it. the repo link goes in the body once, plain, and you answer every "how" in the comments with the mining approach, not features.
-
-**title:** I built a Claude skill from 8 months of my own Claude Code sessions
+<details>
+<summary>the full post it wrote</summary>
 
 **body:** I use claude code and codex every day. 8 months, solo. every session gets logged and i never really looked back at them.
 
@@ -76,13 +86,17 @@ the useful part is that it installs as a claude skill. so now instead of startin
 
 not memory exactly. memory is what you told the model. this is more like mining what your work already proved about you.
 
-</td></tr></table>
+</details>
+</td>
+</tr>
+</table>
 
 I posted it on r/ClaudeSkills, as written:
 
 <p align="center"><img src="assets/reddit-proof.png" width="460" alt="The post the Ditto-loaded agent wrote: 168 upvotes, 26 comments, 88K views"></p>
 
-**168 upvotes, 26 comments, 88K views** — from an account with no followers. The cold agent's plan was reasonable. The loaded agent's plan knew its user's voice, and it worked.
+<p align="center"><strong>168 upvotes &middot; 26 comments &middot; 88K views</strong><br>
+<sub>from an account with no followers. The cold plan was reasonable. The loaded plan knew its user's voice — and it worked.</sub></p>
 
 The same profile drives design judgment. Same model, same bare HTML file, same prompt — "make this landing page look good" — both allowed to iterate on their own screenshots:
 
