@@ -9,15 +9,56 @@
 <a href="https://discord.gg/VNnMq2U5r"><img src="https://img.shields.io/badge/discord-join-3a3a3a?style=for-the-badge&labelColor=141414&logo=discord&logoColor=white" alt="discord"></a>
 <img src="https://img.shields.io/badge/license-MIT-3a3a3a?style=for-the-badge&labelColor=141414" alt="MIT">
 <img src="https://img.shields.io/badge/python-zero_deps-3a3a3a?style=for-the-badge&labelColor=141414&logo=python&logoColor=white" alt="Python, zero dependencies">
+<img src="https://img.shields.io/badge/works_with-claude_·_codex_·_cursor_·_copilot-141414?style=for-the-badge&labelColor=3a3a3a" alt="works with claude, codex, cursor, copilot">
 </p>
 
 Your real coding-agent sessions already contain the rules you never wrote down: what “done” means, what you reject on sight, how you debug, how you design UI, and how you write when you are actually working.
 
-Ditto mines selected evidence from those sessions into a private working profile. The native plugin can route work, design, and writing tasks through separate personal layers without making every task load everything.
+Ditto mines selected evidence from those sessions — Claude Code, Codex, and Copilot CLI logs out of the box — into a private working profile your agent reads before every task. Separate layers for work, design, and writing mean the right part of you loads for the right task.
+
+## Not memory
+
+Memory is what you explicitly told the model.
+
+Ditto mines what your work already proved about you: what you reject, what "done" means, when you ask for proof, how you talk when you're actually working, and the agent behaviors that make you stop the task.
+
+That's why it reads raw session logs, not your `CLAUDE.md` or rules file.
+
+## A real run
+
+Same model, same bare HTML file, same prompt: **"make this landing page look good."** Both agents were allowed to iterate on their own screenshots. The only difference: the right one loaded a profile Ditto mined from the author's real history.
+
+<p align="center"><img src="assets/real-run.png" alt="Same agent, same prompt: the cold agent produced a generic template; the agent with a Ditto profile produced a cinematic poster-grade landing page"></p>
+
+The cold agent stopped and reported "this meets my bar." The profile-loaded agent kept rejecting its own work until the page would survive its user's judgment. Ditto doesn't make the model smarter — it changes what the model accepts.
+
+## What it finds
+
+The kind of rules a mine pulls out, each backed by dated verbatim receipts from real sessions:
+
+> **done means it runs live.** never trust "done" off a code edit. show it working first.
+>
+> **fix the one thing.** rewriting or "cleaning up" code that isn't the problem gets rejected every time.
+>
+> **builds faster than they understand what they built** — then asks the agent to explain their own system back.
+>
+> **gets frustrated by repeating the same ask** until it lands, not by escalating.
+
+Nobody wrote those rules down. They came out of one person's own history, with receipts.
+
+> This is an example. Yours is mined from your logs and will read nothing like it.
+
+## The card
+
+After mining, `python ditto.py --card` renders your profile as a shareable card: archetype, top laws ranked by distinct supporting session receipts, coverage stats, and one sharp truth.
+
+<p align="center"><img src="assets/card.png" width="460" alt="A Ditto profile card: archetype, laws with receipts, session stats, and the one uncomfortable truth"></p>
+
+Share the card or one short trait, never your full profile.
 
 ## Quickstart
 
-Install the cross-agent bootstrap:
+Install the cross-agent bootstrap — works in Claude Code, Codex, and Cursor:
 
 ```bash
 npx skills add ohad6k/ditto@ditto
@@ -139,16 +180,6 @@ python ditto.py --install you.md --target cursor --repo .
 python ditto.py --install you.md --target agents --repo .
 python ditto.py --install you.md --target gemini --repo .
 ```
-
-## The card
-
-```bash
-python ditto.py --card
-```
-
-The card contains the archetype, top laws ranked by distinct supporting session receipts, coverage stats, and one sharp truth. Historical screenshots in this repository are pre-plugin examples and may display the old worker/report-count format.
-
-<p align="center"><img src="assets/card.png" width="460" alt="Historical pre-plugin Ditto profile card example"></p>
 
 ## Support matrix
 
