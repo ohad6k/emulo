@@ -58,7 +58,7 @@ Share the card or one short trait, never your full profile.
 
 ## Quickstart
 
-Install the cross-agent bootstrap — works in Claude Code, Codex, and Cursor:
+Install the cross-agent bootstrap — runs in Claude Code and Codex, and installs profiles for Cursor and Gemini through the explicit adapters:
 
 ```bash
 npx skills add ohad6k/ditto@ditto
