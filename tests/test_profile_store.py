@@ -268,6 +268,42 @@ class ProfilePackValidationTest(unittest.TestCase):
 
 
 class AtomicProfileStoreTest(unittest.TestCase):
+    def test_reduction_cache_rejects_tampered_content_derived_version(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = str(Path(tmp) / "private")
+            report_set_hash = "7" * 64
+            pack = make_valid_pack(Path(tmp) / "pack", report_set_hash)
+            ditto.activate_profile_pack(home, pack, evidence_fixture(), run_plan_fixture(report_set_hash))
+            manifest_path = Path(home, "cache", "reductions", "1", report_set_hash, "manifest.json")
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["profile_version"] = "f" * 20
+            manifest_path.write_text(ditto.canonical_json(manifest) + "\n", encoding="utf-8")
+
+            self.assertFalse(ditto.reduction_cache_is_valid(home, report_set_hash))
+
+    def test_reduction_cache_requires_a_usable_work_domain(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = str(Path(tmp) / "private")
+            report_set_hash = "8" * 64
+            pack = make_valid_pack(Path(tmp) / "pack", report_set_hash)
+            ditto.activate_profile_pack(home, pack, evidence_fixture(), run_plan_fixture(report_set_hash))
+            manifest_path = Path(home, "cache", "reductions", "1", report_set_hash, "manifest.json")
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["domains"] = {
+                domain: {
+                    "status": "inactive",
+                    "reason": "insufficient evidence",
+                    "deepen_instruction": f"run ditto and deepen {domain}",
+                }
+                for domain in ("work", "design", "write")
+            }
+            unsigned = dict(manifest)
+            unsigned["profile_version"] = ""
+            manifest["profile_version"] = ditto.sha256_text(ditto.canonical_json(unsigned))[:20]
+            manifest_path.write_text(ditto.canonical_json(manifest) + "\n", encoding="utf-8")
+
+            self.assertFalse(ditto.reduction_cache_is_valid(home, report_set_hash))
+
     def test_activation_failure_preserves_previous_pointer(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = str(Path(tmp) / "private")

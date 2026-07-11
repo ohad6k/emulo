@@ -1128,10 +1128,34 @@ def validate_version_directory(directory, expected_report_set_hash=None):
         raise ValueError("profile manifest schema is invalid")
     if expected_report_set_hash and manifest.get("report_set_hash") != expected_report_set_hash:
         raise ValueError("profile manifest report set hash mismatch")
+    unsigned_manifest = dict(manifest)
+    unsigned_manifest["profile_version"] = ""
+    expected_profile_version = sha256_text(canonical_json(unsigned_manifest))[:20]
+    if manifest["profile_version"] != expected_profile_version:
+        raise ValueError("profile manifest version hash mismatch")
     if expected_report_set_hash:
         domains = manifest.get("domains")
         required_files = {"you.md", "appendix.md", "card.json", "draft-manifest.json"}
-        if not isinstance(domains, dict) or set(domains) != VALID_DOMAINS:
+        selected_source_tokens = manifest.get("selected_source_tokens")
+        segment_hashes = manifest.get("segment_hashes")
+        if (
+            manifest.get("prompt_schema_version") != PROMPT_SCHEMA_VERSION
+            or manifest.get("reducer_schema_version") != REDUCER_SCHEMA_VERSION
+            or not isinstance(manifest.get("source_coverage"), dict)
+            or isinstance(selected_source_tokens, bool)
+            or not isinstance(selected_source_tokens, int)
+            or selected_source_tokens < 0
+            or not isinstance(segment_hashes, list)
+            or not segment_hashes
+            or any(not re.fullmatch(r"[a-f0-9]{64}", value or "") for value in segment_hashes)
+        ):
+            raise ValueError("profile manifest reduction metadata is invalid")
+        if (
+            not isinstance(domains, dict)
+            or set(domains) != VALID_DOMAINS
+            or not isinstance(domains.get("work"), dict)
+            or domains["work"].get("status") != "active"
+        ):
             raise ValueError("profile manifest domains are incomplete")
         for domain, state in domains.items():
             if not isinstance(state, dict) or state.get("status") not in {"active", "inactive"}:
@@ -1141,6 +1165,13 @@ def validate_version_directory(directory, expected_report_set_hash=None):
                 if filename != DOMAIN_FILES[domain][0]:
                     raise ValueError("profile manifest domain file is invalid")
                 required_files.add(filename)
+            elif (
+                domain == "work"
+                or state.get("reason") != "insufficient evidence"
+                or state.get("deepen_instruction") != f"run ditto and deepen {domain}"
+                or "file" in state
+            ):
+                raise ValueError("profile manifest inactive domain state is invalid")
         if not required_files.issubset(manifest["files"]):
             raise ValueError("profile manifest files are incomplete")
     for name, expected in manifest["files"].items():
