@@ -34,14 +34,19 @@ I asked an agent to help me launch this repo. One line: **"help me post ditto on
 
 Here's how I'd play it.
 
-**Subreddits:** r/ClaudeAI and r/ChatGPTCoding are your core audience. r/LocalLLaMA fits the local angle. r/cursor, r/SideProject, r/opensource for reach. Don't blast all at once — post to one, tune the title, repost over a few days.
+**Subreddits:** r/ClaudeAI and r/ChatGPTCoding are your core audience — they've got the .jsonl logs on disk right now. r/LocalLLaMA fits the local angle but is allergic to hype. r/cursor, r/SideProject, r/opensource for reach. Skip r/programming on launch day. Don't blast all at once — post to one, tune the title, repost over a few days.
 
-**Title:** I built a local tool that reads your AI coding logs and writes a "you.md" your agents read before every task
+**Titles (pick per sub):**
+- I built a local tool that reads your AI coding logs and writes a "you.md" your agents read before every task
+- ditto: mine your own Claude Code / Cursor history into a profile so your agent codes like you (local, open source)
 
 **Body:**
-> Every fresh agent session starts from zero — it doesn't know how you work, so you re-explain yourself every time. So I built **ditto**: it reads your history, mines how you decide and talk, and writes a `you.md` your agents read before every task.
+> Every fresh agent session starts from zero — it doesn't know how you work, so you re-explain yourself every time. All of that is already in your session logs. So I built **ditto**: it reads your history, mines how you decide and talk, and writes a `you.md` your agents read before every task.
 > - runs locally, your logs never leave your machine
+> - redacts secrets before processing
 > - open source: [link]
+
+Also: open with the pain not the product, reply fast in the first hour, add a demo gif, and flair it correctly. Want me to write tuned variants for each subreddit?
 
 </td></tr></table>
 
@@ -51,17 +56,29 @@ Here's how I'd play it.
 
 the insight first: the mining number is your whole post. "i read 1,656 of my own sessions" is a confession, not a pitch, and nobody scrolls past a confession. lead with the mirror, not the mechanism. the tool is secondary.
 
-one sub, not five — pick the one that lives in their session logs, they'll get it instantly. the repo link goes in your first comment, not the body.
+one sub, not five — a skills sub, where people already come looking for this instead of arguing about it. the repo link goes in the body once, plain, and you answer every "how" in the comments with the mining approach, not features.
 
-**title:** I had 20 AI agents read 8 months of my claude sessions and build a model of how I think. it was unsettling how accurate it was
+**title:** I built a Claude skill from 8 months of my own Claude Code sessions
 
-**body:** i work with claude and codex every day. 8 months, solo. every session gets logged and i never looked back at them. last night it hit me those logs are the most honest record of how i actually work that exists anywhere. i don't perform in them, i just work. so i mined them. [...]
+**body:** I use claude code and codex every day. 8 months, solo. every session gets logged and i never really looked back at them.
 
-then the move: post it, drop the repo as your own first comment within a minute, and answer every "how" with the mining approach, not features. the comments are where it converts.
+then it hit me that those logs are probably the most honest record of how i actually work. not my CLAUDE.md, not my docs, not the rules i remembered to write down. the real sessions.
+
+so i built ditto.
+
+What I did: pulled every message i typed from my local claude/codex logs. stripped tool output, pasted errors, file dumps, and assistant replies. kept only my words. came out to around 1,656 sessions and almost 3M tokens of just me.
+
+then i split it into chunks and had agents read each slice. each one pulled patterns like how i define done, what kind of code i reject, when i ask for proof, what makes me stop a task, and how i talk when i am actually working.
+
+then i merged the repeated traits into one you.md.
+
+the useful part is that it installs as a claude skill. so now instead of starting every task cold, claude reads my profile first and already knows how i work.
+
+not memory exactly. memory is what you told the model. this is more like mining what your work already proved about you.
 
 </td></tr></table>
 
-I posted what the profile-loaded agent wrote, where it said to post it:
+I posted it on r/ClaudeSkills, as written:
 
 <p align="center"><img src="assets/reddit-proof.png" width="460" alt="The post the Ditto-loaded agent wrote: 168 upvotes, 26 comments, 88K views"></p>
 
