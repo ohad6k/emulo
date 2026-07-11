@@ -405,6 +405,39 @@ class MigrationTest(unittest.TestCase):
             self.assertFalse((ditto_home / "active-profile.json").exists())
             self.assertFalse((ditto_home / "profiles" / "default" / "current.json").exists())
 
+    def test_failed_rollback_restores_cutover_pointers_and_backup_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            host_home = root / "home"
+            ditto_home = root / "private"
+            legacy = host_home / ".codex" / "skills" / "you" / "SKILL.md"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text("---\nname: you\ndescription: legacy\n---\nlegacy body\n", encoding="utf-8")
+            migration = ditto.stage_legacy_migration("codex", str(host_home), str(ditto_home))
+            cutover = ditto.cutover_legacy_migration(migration["migration_id"], str(ditto_home))
+            current = ditto_home / "profiles" / "default" / "current.json"
+            active = ditto_home / "active-profile.json"
+            cutover_current = current.read_bytes()
+            cutover_active = active.read_bytes()
+            real_restore = ditto.restore_optional
+            calls = 0
+
+            def fail_second_pointer(path, data):
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise RuntimeError("injected pointer restore failure")
+                return real_restore(path, data)
+
+            with mock.patch.object(ditto, "restore_optional", side_effect=fail_second_pointer):
+                with self.assertRaisesRegex(RuntimeError, "injected"):
+                    ditto.rollback_legacy_migration(migration["migration_id"], str(ditto_home))
+
+            self.assertFalse(legacy.exists())
+            self.assertTrue(Path(cutover["legacy_backup"]).is_dir())
+            self.assertEqual(cutover_current, current.read_bytes())
+            self.assertEqual(cutover_active, active.read_bytes())
+
     def test_stage_accepts_the_skills_sh_core_profile_name(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

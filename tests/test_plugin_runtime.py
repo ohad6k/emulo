@@ -419,6 +419,29 @@ class UpdatePlanningTest(unittest.TestCase):
         self.assertEqual(0, plan["planned_worker_calls"])
         self.assertEqual(1, plan["planned_reducer_calls"])
 
+    def test_incomplete_reduction_manifest_is_not_a_zero_call_hit(self):
+        segment = {
+            "segment_hash": "a" * 64, "active": True, "source": "codex",
+            "first_date": "2026-01-01", "last_date": "2026-01-01",
+            "source_tokens": 10, "session_versions": [],
+        }
+        result = {"records": [], "sessions": 1, "chars": 40}
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "private"
+            corrupt = home / "cache" / "reductions" / "1" / ("b" * 64)
+            corrupt.mkdir(parents=True)
+            (corrupt / "manifest.json").write_text(json.dumps({
+                "schema_version": "1", "profile_id": "default",
+                "profile_version": "c" * 20, "report_set_hash": "b" * 64,
+                "domains": {}, "files": {},
+            }), encoding="utf-8")
+            with mock.patch.object(ditto, "sync_segments", return_value={"segments": [segment]}), \
+                    mock.patch.object(ditto, "load_cached_report", return_value={}), \
+                    mock.patch.object(ditto, "compute_report_set_hash", return_value="b" * 64):
+                plan = ditto.build_deep_preflight(result, str(home))
+
+        self.assertEqual(1, plan["planned_reducer_calls"])
+
     def test_full_history_preflight_is_zero_call_when_reports_and_reduction_are_cached(self):
         segment = {
             "segment_hash": "a" * 64,

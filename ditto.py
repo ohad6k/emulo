@@ -1118,11 +1118,34 @@ def validate_version_directory(directory, expected_report_set_hash=None):
             manifest = json.load(handle)
     except (OSError, ValueError) as exc:
         raise ValueError("profile manifest is missing or corrupt") from exc
-    if manifest.get("schema_version") != "1" or manifest.get("profile_id") != "default":
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("schema_version") != "1"
+        or manifest.get("profile_id") != "default"
+        or not re.fullmatch(r"[a-f0-9]{20}", manifest.get("profile_version", ""))
+        or not isinstance(manifest.get("files"), dict)
+    ):
         raise ValueError("profile manifest schema is invalid")
     if expected_report_set_hash and manifest.get("report_set_hash") != expected_report_set_hash:
         raise ValueError("profile manifest report set hash mismatch")
-    for name, expected in manifest.get("files", {}).items():
+    if expected_report_set_hash:
+        domains = manifest.get("domains")
+        required_files = {"you.md", "appendix.md", "card.json", "draft-manifest.json"}
+        if not isinstance(domains, dict) or set(domains) != VALID_DOMAINS:
+            raise ValueError("profile manifest domains are incomplete")
+        for domain, state in domains.items():
+            if not isinstance(state, dict) or state.get("status") not in {"active", "inactive"}:
+                raise ValueError("profile manifest domain state is invalid")
+            if state["status"] == "active":
+                filename = state.get("file")
+                if filename != DOMAIN_FILES[domain][0]:
+                    raise ValueError("profile manifest domain file is invalid")
+                required_files.add(filename)
+        if not required_files.issubset(manifest["files"]):
+            raise ValueError("profile manifest files are incomplete")
+    for name, expected in manifest["files"].items():
+        if not re.fullmatch(r"[a-f0-9]{64}", expected or ""):
+            raise ValueError("profile file hash is invalid")
         path = os.path.join(directory, name)
         if not os.path.isfile(path) or is_link_or_reparse(path) or sha256_file(path) != expected:
             raise ValueError("profile file hash mismatch")
@@ -1481,6 +1504,10 @@ def rollback_legacy_migration(migration_id, ditto_home):
         raise ValueError("legacy discovery path already exists; refusing to overwrite it")
     if not backup_dir or not os.path.isdir(backup_dir):
         raise ValueError("legacy backup is missing")
+    current_path = safe_private_child(home, "profiles", "default", "current.json")
+    active_path = safe_private_child(home, "active-profile.json")
+    cutover_current = optional_bytes(current_path)
+    cutover_active = optional_bytes(active_path)
     os.makedirs(os.path.dirname(source_dir), exist_ok=True)
     os.replace(backup_dir, source_dir)
     try:
@@ -1492,6 +1519,12 @@ def rollback_legacy_migration(migration_id, ditto_home):
     except Exception:
         if os.path.isdir(source_dir) and not os.path.exists(backup_dir):
             os.replace(source_dir, backup_dir)
+        for path, data in ((current_path, cutover_current), (active_path, cutover_active)):
+            if data is None:
+                if os.path.exists(path):
+                    os.remove(path)
+            else:
+                atomic_write_bytes(path, data)
         raise
 
 def migrate_adapter_block(target, repo, ditto_home, mode):
@@ -1774,7 +1807,7 @@ def reduction_cache_is_valid(ditto_home, report_set_hash):
     try:
         validate_version_directory(path, report_set_hash)
         return True
-    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+    except (OSError, ValueError, TypeError, AttributeError, json.JSONDecodeError):
         return False
 
 def build_preflight(result, ditto_home, candidate_index, write=False):
