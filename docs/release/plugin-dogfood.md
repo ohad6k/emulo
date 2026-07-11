@@ -85,3 +85,9 @@ Host: Codex CLI `0.142.5` on Windows. Development plugin: `ditto@ditto`, install
 
 - Disposable Codex migration staged, cut over, exposed exactly one profile path, then rolled back. Rollback restored the exact legacy SHA-256 and left the new active pointer absent.
 - Native Claude remains unclaimed because no Claude executable is available. The direct Claude adapter installed an exact profile successfully in a disposable home.
+
+## Task 18 independent reviews
+
+The release diff from `v0.1.2` through `328ecc61` received separate read-only spec-compliance and Python safety/quality reviews. Both reviewers returned `PASS` on the final candidate commit.
+
+Verified findings were fixed test-first across four commits: release safety gates, strict reduction-cache validation, content-derived manifest identity and usable domain invariants, rollback compensation, and exact agreement between zero-call preflight and cached activation. Final local evidence: `127` unit tests passed, the Codex plugin validator passed, the bootstrap skill validator passed, both CLI help surfaces exited `0`, JSON manifests parsed, and `git diff --check` exited `0`.

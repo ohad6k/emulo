@@ -3085,7 +3085,7 @@ Commit only the listed Task 16A files with `feat: make full Ditto mining the qua
 - Modify: `docs/release/plugin-dogfood.md` with live host evidence only
 - No product-code edit unless a failing live probe first receives a regression test
 
-- [ ] **Step 1: Reinstall the development plugin with a cachebuster**
+- [x] **Step 1: Reinstall the development plugin with a cachebuster**
 
 Run:
 
@@ -3100,11 +3100,11 @@ Expected: the installed version/cache identifier changes and the plugin lists ex
 
 After capturing the proof, restore every retained manifest version to `0.0.0-dev` with `apply_patch`, rerun the validator, and confirm no cachebuster-only manifest diff remains. Task 19 is the only task that changes the committed release version.
 
-- [ ] **Step 2: Prove update and uninstall preserve private state**
+- [x] **Step 2: Prove update and uninstall preserve private state**
 
 Hash every file under the isolated proof `DITTO_HOME`, remove/reinstall the plugin, then hash again. The sorted `relative-path sha256` lists must match exactly. Do not run this destructive proof against an unbacked-up real home.
 
-- [ ] **Step 3: Run fresh-task positive routing probes**
+- [x] **Step 3: Run fresh-task positive routing probes**
 
 First compare Task 16's host version, plugin commit, prompt text, and transcript hashes to this task. If they match exactly, reuse those three positive probes. Otherwise run only the missing or stale probes. For any probe that must run, use a separate fresh task and require it to state the loaded Ditto skill before answering:
 
@@ -3116,7 +3116,7 @@ Writing probe: Use my Ditto context. Draft a short launch reply in my voice for 
 
 Expected: execution loads `ditto:work` only; design loads core plus `ditto:design`; writing loads core plus `ditto:write`. Ohad records pass/fail for behavior, not merely skill-name output.
 
-- [ ] **Step 4: Run fresh-task negative/combined routing probes**
+- [x] **Step 4: Run fresh-task negative/combined routing probes**
 
 ```text
 Negative mine probe: Debug this failing unit test. Do not mine or update my history.
@@ -3125,7 +3125,7 @@ Combined probe: Design a launch card and write its one-line caption using my Dit
 
 Expected: negative mine does not load `ditto:mine`; combined loads design and write intentionally without also loading work merely because all mention the profile.
 
-- [ ] **Step 5: Prove identical update is zero-call**
+- [x] **Step 5: Prove identical update is zero-call**
 
 Approved Task 17 evidence route after the full-default fallback:
 
@@ -3135,13 +3135,13 @@ Approved Task 17 evidence route after the full-default fallback:
 
 Expected: each approved proof returns `planned_worker_calls: 0` and `planned_reducer_calls: 0`. Describe this as zero additional Ditto mining calls, not zero host-task tokens, and keep live preview evidence separate from fixture-only full-history evidence.
 
-- [ ] **Step 6: Prove one incremental session plans only uncached work**
+- [x] **Step 6: Prove one incremental session plans only uncached work**
 
 Use an isolated copied log fixture, append one valid user session, and run preflight.
 
 Expected: prior segment/report hashes remain unchanged, exactly the new/rebuilt affected segment is uncached, and only one reducer is planned. Do not mutate real user history for this test.
 
-- [ ] **Step 7: Prove migration in an isolated host home**
+- [x] **Step 7: Prove migration in an isolated host home**
 
 Create a disposable `HOME` with a real legacy `~/.codex/skills/you/SKILL.md`. Run `migrate-stage`, verify the new loaders against an isolated `DITTO_HOME`, then run `migrate-cutover` and start a fresh task.
 
@@ -3149,11 +3149,11 @@ Expected: exactly one personal-profile path is discoverable. Run `migrate-rollba
 
 If a real legacy profile is detected outside the disposable home, print its exact path and request explicit approval before any real cutover.
 
-- [ ] **Step 8: Repeat only proven native-host checks**
+- [x] **Step 8: Repeat only proven native-host checks**
 
 If Claude passed Task 1, repeat install, four-skill discovery, profile loading, reinstall-preserves-state, and fresh-task probes in Claude. If it did not pass, verify only the direct Claude adapter and keep docs explicit that native Claude was not proven.
 
-- [ ] **Step 9: Prove the selected npx bootstrap and native plugin do not double-route**
+- [x] **Step 9: Prove the selected npx bootstrap and native plugin do not double-route**
 
 Install only the local `ditto` bootstrap into a disposable project through skills.sh, while the development native plugin remains installed. Confirm the copied tree contains `SKILL.md`, `runtime.json`, and `scripts/bootstrap.py`. Start one fresh Codex task in that disposable project with:
 
@@ -3187,7 +3187,7 @@ A native ditto:mine plugin skill and the skills.sh ditto bootstrap are both pres
 
 Expected: `ditto:mine` is the sole selected route; the bootstrap's negative trigger prevents competing orchestration. Remove the disposable project after verifying its resolved path remains under the intended temporary root. This proof runs no mining workers or reducer.
 
-- [ ] **Step 10: Record evidence and commit only if the evidence document changed**
+- [x] **Step 10: Record evidence and commit only if the evidence document changed**
 
 Append host versions, installed plugin identifier, pointer/profile hashes, routing outcomes, zero-call update evidence, npx companion/coexistence outcome, migration/rollback outcome, and human verdicts to `docs/release/plugin-dogfood.md`. No private profile content.
 
@@ -3204,7 +3204,7 @@ git commit -m "test: record live Ditto plugin activation proof"
 - Review: all changes since the pre-implementation checkpoint
 - Modify: only files tied to verified actionable findings
 
-- [ ] **Step 1: Capture the exact review scope**
+- [x] **Step 1: Capture the exact review scope**
 
 Run:
 
@@ -3217,7 +3217,7 @@ python C:\Users\ohad1\.codex\skills\.system\plugin-creator\scripts\validate_plug
 
 Expected: tests and validator exit `0`; changed files remain inside this plan.
 
-- [ ] **Step 2: Run a read-only spec-compliance review**
+- [x] **Step 2: Run a read-only spec-compliance review**
 
 Give the reviewer this exact scope:
 
@@ -3225,7 +3225,7 @@ Give the reviewer this exact scope:
 Read the approved Ditto design spec, architecture plan, Plugin-release implementation plan, and diff from v0.1.2. Review Workstreams 0-8 only. Verify every requirement is implemented and evidenced: front-loaded host viability, bounded calibration, zero-call native install, the explicitly selected npx bootstrap and pinned-runtime hashes, stable caches, exact report receipts, three routed profiles, atomic activation, exclusive migration, privacy wording, CLI compatibility, and benchmark exclusion. Do not edit files. Report findings ranked by severity with exact file/line evidence; say PASS only if no actionable gap exists.
 ```
 
-- [ ] **Step 3: Run a separate read-only code-quality review**
+- [x] **Step 3: Run a separate read-only code-quality review**
 
 Use:
 
@@ -3233,15 +3233,15 @@ Use:
 Review the Ditto Plugin-release diff as a senior stdlib Python maintainer. Focus on correctness, Windows filesystem behavior, atomicity/rollback, bootstrap download boundaries and SHA-256 verification, schema validation, path traversal, corrupt cache handling, deterministic hashing, CLI compatibility, test isolation, and accidental private-data exposure. Do not edit files and do not re-review product scope. Report actionable findings with exact file/line evidence; say PASS only if none remain.
 ```
 
-- [ ] **Step 4: Fix every verified finding test-first**
+- [x] **Step 4: Fix every verified finding test-first**
 
 For each finding: reproduce it with one focused failing test, run that test to prove red, apply the smallest fix, rerun focused and full tests, and commit the finding separately. Reject findings that conflict with the approved spec or lack evidence, recording the technical reason.
 
-- [ ] **Step 5: Re-run both reviews on the fixed commit**
+- [x] **Step 5: Re-run both reviews on the fixed commit**
 
 Expected: both reviewers return PASS with no actionable finding. Reviewer reports alone do not replace tests or live host proof.
 
-- [ ] **Step 6: Run final local verification**
+- [x] **Step 6: Run final local verification**
 
 ```powershell
 python -m unittest discover -s tests -v
