@@ -496,6 +496,20 @@ class DomainDraftTest(unittest.TestCase):
 
 
 class DeterministicAssemblyTest(unittest.TestCase):
+    def test_assembly_rejects_pack_path_outside_the_assigned_run(self):
+        run = adaptive_run_fixture(active_domains=("work",))
+        self.addCleanup(run.tmp.cleanup)
+        victim = Path(run.tmp.name) / "victim"
+        victim.mkdir()
+        sentinel = victim / "keep.txt"
+        sentinel.write_text("do not delete", encoding="utf-8")
+        run.plan["pack_path"] = str(victim)
+
+        with self.assertRaisesRegex(ValueError, "assigned run directory"):
+            ditto.assemble_profile_pack(run.home, run.plan, run.domain_drafts)
+
+        self.assertEqual("do not delete", sentinel.read_text(encoding="utf-8"))
+
     def test_assembly_writes_only_exact_active_domain_files(self):
         run = adaptive_run_fixture(active_domains=("work", "write"))
         self.addCleanup(run.tmp.cleanup)

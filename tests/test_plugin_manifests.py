@@ -124,6 +124,13 @@ class DocumentationTruthTest(unittest.TestCase):
         self.assertIn("zero mining model calls", readme)
         self.assertIn("host interaction", readme)
 
+    def test_readme_faq_matches_current_receipts_and_supported_sources(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertNotIn("(18/20)", readme)
+        self.assertNotIn("Claude Code, Codex, and Cursor", readme)
+        self.assertIn("Codex, Claude Code, and Copilot CLI", readme)
+        self.assertIn("distinct supporting sessions", readme)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1014,8 +1014,21 @@ def assemble_profile_pack(ditto_home, run_plan, domain_drafts):
     evidence = run_plan.get("evidence_by_id") or load_adaptive_evidence(run_plan)
     for domain in sorted(VALID_DOMAINS):
         validate_domain_draft(domain_drafts[domain], domain, evidence, run_plan)
-    pack_path = os.path.abspath(run_plan["pack_path"])
+    run_id = run_plan.get("run_id", "")
+    expected_run_dir = safe_private_child(ditto_home, "runs", run_id)
+    run_dir = os.path.abspath(run_plan.get("run_dir", ""))
+    pack_path = os.path.abspath(run_plan.get("pack_path", ""))
+    expected_pack_path = os.path.join(run_dir, "pack")
+    if (
+        os.path.normcase(os.path.realpath(run_dir)) != os.path.normcase(expected_run_dir)
+        or os.path.normcase(pack_path) != os.path.normcase(expected_pack_path)
+    ):
+        raise ValueError("profile pack must stay inside the assigned run directory")
+    if os.path.exists(pack_path) and is_link_or_reparse(pack_path):
+        raise ValueError("assigned profile pack cannot be a link or reparse point")
     os.makedirs(pack_path, exist_ok=True)
+    if is_link_or_reparse(pack_path):
+        raise ValueError("assigned profile pack cannot be a link or reparse point")
     for entry in os.scandir(pack_path):
         if entry.is_dir(follow_symlinks=False) or entry.is_symlink():
             raise ValueError("assigned pack contains unsafe existing content")
@@ -1294,7 +1307,26 @@ def load_migration_record(ditto_home, migration_id):
             record = json.load(handle)
     except (OSError, ValueError) as exc:
         raise ValueError("migration record is missing or corrupt") from exc
-    if record.get("migration_id") != migration_id or record.get("schema_version") != "1":
+    if not isinstance(record, dict):
+        raise ValueError("migration record is invalid")
+    identity = {
+        "target": record.get("target"),
+        "legacy_path": record.get("legacy_path"),
+        "legacy_hash": record.get("legacy_hash"),
+    }
+    expected_backup = safe_private_child(
+        ditto_home, "legacy", record.get("target", ""), migration_id, "you"
+    ) if record.get("target") in {"codex", "claude"} else None
+    if (
+        record.get("migration_id") != migration_id
+        or record.get("schema_version") != "1"
+        or record.get("target") not in {"codex", "claude"}
+        or record.get("status") not in {"staged", "cutover", "rolled-back"}
+        or record.get("mode") not in {"legacy-import", "deactivate-legacy-only"}
+        or not re.fullmatch(r"[a-f0-9]{64}", record.get("legacy_hash", ""))
+        or sha256_text(canonical_json(identity))[:20] != migration_id
+        or (record.get("legacy_backup") is not None and record.get("legacy_backup") != expected_backup)
+    ):
         raise ValueError("migration record is invalid")
     return record
 
@@ -1411,6 +1443,8 @@ def cutover_legacy_migration(migration_id, ditto_home, fail_after=None):
     backup_dir = safe_private_child(home, "legacy", record["target"], migration_id, "you")
     if os.path.exists(backup_dir):
         raise ValueError("legacy backup destination already exists")
+    if os.path.splitdrive(source_dir)[0].lower() != os.path.splitdrive(backup_dir)[0].lower():
+        raise ValueError("legacy migration requires the profile and DITTO_HOME on the same volume")
     os.makedirs(os.path.dirname(backup_dir), exist_ok=True)
     moved = False
     try:
@@ -1430,10 +1464,10 @@ def cutover_legacy_migration(migration_id, ditto_home, fail_after=None):
         record["status"] = "cutover"
         return write_migration_record(home, record)
     except Exception:
-        restore_migration_pointers(home, record)
         if moved and os.path.isdir(backup_dir) and not os.path.exists(source_dir):
             os.makedirs(os.path.dirname(source_dir), exist_ok=True)
             os.replace(backup_dir, source_dir)
+        restore_migration_pointers(home, record)
         raise
 
 def rollback_legacy_migration(migration_id, ditto_home):
@@ -1447,13 +1481,18 @@ def rollback_legacy_migration(migration_id, ditto_home):
         raise ValueError("legacy discovery path already exists; refusing to overwrite it")
     if not backup_dir or not os.path.isdir(backup_dir):
         raise ValueError("legacy backup is missing")
-    restore_migration_pointers(home, record)
     os.makedirs(os.path.dirname(source_dir), exist_ok=True)
     os.replace(backup_dir, source_dir)
-    if sha256_file(record["legacy_path"]) != record["legacy_hash"]:
-        raise ValueError("restored legacy profile hash mismatch")
-    record["status"] = "rolled-back"
-    return write_migration_record(home, record)
+    try:
+        if sha256_file(record["legacy_path"]) != record["legacy_hash"]:
+            raise ValueError("restored legacy profile hash mismatch")
+        restore_migration_pointers(home, record)
+        record["status"] = "rolled-back"
+        return write_migration_record(home, record)
+    except Exception:
+        if os.path.isdir(source_dir) and not os.path.exists(backup_dir):
+            os.replace(source_dir, backup_dir)
+        raise
 
 def migrate_adapter_block(target, repo, ditto_home, mode):
     if target not in {"agents", "gemini"}:
@@ -1495,7 +1534,6 @@ def migrate_adapter_block(target, repo, ditto_home, mode):
     original_hash = sha256_bytes(original)
     backup_path = safe_private_child(home, "legacy", "adapters", original_hash, filename)
     atomic_write_bytes(backup_path, original)
-    atomic_write_text(path, updated)
     removed_bytes = updated.encode("utf-8")
     record = {
         "schema_version": "1",
@@ -1503,11 +1541,14 @@ def migrate_adapter_block(target, repo, ditto_home, mode):
         "target": target,
         "repo": os.path.abspath(repo),
         "path": path,
-        "status": "removed",
+        "status": "staged",
         "original_hash": original_hash,
         "removed_hash": sha256_bytes(removed_bytes),
         "backup_path": backup_path,
     }
+    atomic_write_text(record_path, canonical_json(record) + "\n")
+    atomic_write_text(path, updated)
+    record["status"] = "removed"
     atomic_write_text(record_path, canonical_json(record) + "\n")
     return record
 
@@ -1535,6 +1576,8 @@ def receipt_is_verbatim(receipt, session_text):
     return any(found_date == date and quote in body for found_date, body in message.findall(session_text))
 
 def validate_report(report, segment):
+    if not isinstance(report, dict):
+        raise ValueError("report must be a JSON object")
     if len(canonical_json(report).encode("utf-8")) > MAX_REPORT_BYTES:
         raise ValueError("report byte ceiling exceeded")
     if report.get("schema_version") != REPORT_SCHEMA_VERSION:
@@ -1713,7 +1756,7 @@ def load_cached_report(ditto_home, segment, quarantine=True):
             report = json.load(handle)
         validate_report(report, hydrate_segment(ditto_home, segment))
         return report
-    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError):
+    except (OSError, UnicodeError, ValueError, TypeError, AttributeError, json.JSONDecodeError):
         if quarantine and os.path.exists(path):
             stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
             quarantine_path = path + ".corrupt-" + stamp
@@ -1721,6 +1764,18 @@ def load_cached_report(ditto_home, segment, quarantine=True):
                 quarantine_path += "-" + uuid.uuid4().hex[:8]
             os.replace(path, quarantine_path)
         return None
+
+def reduction_cache_is_valid(ditto_home, report_set_hash):
+    if not re.fullmatch(r"[a-f0-9]{64}", report_set_hash or ""):
+        return False
+    path = safe_private_child(
+        ditto_home, "cache", "reductions", REDUCER_SCHEMA_VERSION, report_set_hash
+    )
+    try:
+        validate_version_directory(path, report_set_hash)
+        return True
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
 
 def build_preflight(result, ditto_home, candidate_index, write=False):
     config = candidate_config(candidate_index)
@@ -1751,16 +1806,7 @@ def build_preflight(result, ditto_home, candidate_index, write=False):
         if selected and len(report_paths) == len(selected)
         else None
     )
-    reduction_cache_hit = bool(
-        report_set_hash
-        and os.path.isdir(
-            os.path.join(
-                private_paths(ditto_home)["reductions"],
-                REDUCER_SCHEMA_VERSION,
-                report_set_hash,
-            )
-        )
-    )
+    reduction_cache_hit = reduction_cache_is_valid(ditto_home, report_set_hash)
     worker_calls, reducer_calls = planned_call_counts(
         selected_hashes,
         report_hits,
@@ -1819,16 +1865,7 @@ def build_deep_preflight(result, ditto_home, write=False):
         if selected and len(report_paths) == len(selected)
         else None
     )
-    reduction_cache_hit = bool(
-        report_set_hash
-        and os.path.isdir(
-            os.path.join(
-                private_paths(ditto_home)["reductions"],
-                REDUCER_SCHEMA_VERSION,
-                report_set_hash,
-            )
-        )
-    )
+    reduction_cache_hit = reduction_cache_is_valid(ditto_home, report_set_hash)
     worker_calls, reducer_calls = planned_call_counts(hashes, hits, reduction_cache_hit)
     return {
         "mode": "full",
@@ -2413,6 +2450,8 @@ def build_plugin_parser():
         mode.add_argument("--candidate", type=int, choices=range(len(STARTER_CANDIDATES)), help=argparse.SUPPRESS)
         mode.add_argument("--deep", action="store_true")
         mode.add_argument("--deepen-domain", choices=["work", "design", "write"])
+        if name == "prepare":
+            command.add_argument("--approved-plan-hash")
     return parser
 
 RUN_ID_PATTERN = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[a-f0-9]{8}(?:-[0-9]{2})?$")
@@ -2909,14 +2948,22 @@ def plugin_plan_for_args(args, write=False):
         return adaptive_preflight(result, args.stage)
     if args.preview or args.candidate is not None:
         candidate_index = DEFAULT_CANDIDATE_INDEX if args.candidate is None else args.candidate
-        return build_preflight(result, home, candidate_index, write=write)
-    return build_deep_preflight(result, home, write=write)
+        plan = build_preflight(result, home, candidate_index, write=write)
+    else:
+        plan = build_deep_preflight(result, home, write=write)
+    identity = {key: value for key, value in plan.items() if key != "approval_hash"}
+    return dict(plan, approval_hash=sha256_text(canonical_json(identity)))
 
 def prepare_plugin_run(args):
     if args.stage is not None:
         return prepare_adaptive_run(args)
     home = resolve_ditto_home(args.ditto_home)
+    approved = plugin_plan_for_args(args, write=False)
+    if args.approved_plan_hash != approved["approval_hash"]:
+        raise ValueError("prepared plan does not match the approved preflight hash; rerun preflight and reapprove")
     plan = plugin_plan_for_args(args, write=True)
+    if args.approved_plan_hash != plan["approval_hash"]:
+        raise ValueError("source or cache changed after approval; rerun preflight and reapprove")
     plan_hash = sha256_text(canonical_json(plan))
     timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
     base_run_id = f"{timestamp}-{plan_hash[:8]}"

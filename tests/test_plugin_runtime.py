@@ -226,6 +226,31 @@ class SegmentStoreTest(unittest.TestCase):
 
 
 class PreflightTest(unittest.TestCase):
+    def test_prepare_requires_the_exact_approved_preflight_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            logs = root / "logs"
+            write_jsonl(logs / "one.jsonl", [{
+                "timestamp": "2026-01-01T00:00:00Z",
+                "payload": {
+                    "type": "message", "role": "user",
+                    "content": [{"text": "specific working preference"}],
+                },
+            }])
+            home = root / "private"
+            result = subprocess.run(
+                [
+                    sys.executable, str(DITTO), "plugin", "prepare",
+                    "--path", str(logs), "--preview", "--ditto-home", str(home),
+                ],
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("approved preflight hash", result.stderr)
+            self.assertFalse(home.exists())
+
     def test_no_flag_preflight_is_the_full_history_quality_default(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -371,6 +396,29 @@ class PreflightTest(unittest.TestCase):
 
 
 class UpdatePlanningTest(unittest.TestCase):
+    def test_empty_reduction_cache_directory_is_not_a_zero_call_hit(self):
+        segment = {
+            "segment_hash": "a" * 64,
+            "active": True,
+            "source": "codex",
+            "first_date": "2026-01-01",
+            "last_date": "2026-01-01",
+            "source_tokens": 10,
+            "session_versions": [],
+        }
+        result = {"records": [], "sessions": 1, "chars": 40}
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "private"
+            corrupt = home / "cache" / "reductions" / "1" / ("b" * 64)
+            corrupt.mkdir(parents=True)
+            with mock.patch.object(ditto, "sync_segments", return_value={"segments": [segment]}), \
+                    mock.patch.object(ditto, "load_cached_report", return_value={}), \
+                    mock.patch.object(ditto, "compute_report_set_hash", return_value="b" * 64):
+                plan = ditto.build_deep_preflight(result, str(home))
+
+        self.assertEqual(0, plan["planned_worker_calls"])
+        self.assertEqual(1, plan["planned_reducer_calls"])
+
     def test_full_history_preflight_is_zero_call_when_reports_and_reduction_are_cached(self):
         segment = {
             "segment_hash": "a" * 64,
@@ -386,7 +434,7 @@ class UpdatePlanningTest(unittest.TestCase):
                 mock.patch.object(ditto, "sync_segments", return_value={"segments": [segment]}), \
                 mock.patch.object(ditto, "load_cached_report", return_value={}), \
                 mock.patch.object(ditto, "compute_report_set_hash", return_value="b" * 64), \
-                mock.patch.object(ditto.os.path, "isdir", return_value=True):
+                mock.patch.object(ditto, "reduction_cache_is_valid", return_value=True):
             plan = ditto.build_deep_preflight(result, str(Path(tmp) / "private"))
 
         self.assertEqual("b" * 64, plan["report_set_hash"])
@@ -557,6 +605,18 @@ class ReportCacheTest(unittest.TestCase):
             self.assertFalse(path.exists())
             self.assertTrue(any(item.name.startswith(path.name + ".corrupt-") for item in path.parent.iterdir()))
 
+    def test_structurally_invalid_report_cache_is_quarantined(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "private"
+            path = home / "cache" / "reports" / "1" / (self.SEGMENT_HASH + ".json")
+            path.parent.mkdir(parents=True)
+            path.write_text("[]", encoding="utf-8")
+
+            self.assertIsNone(ditto.load_cached_report(str(home), self.segment()))
+
+            self.assertFalse(path.exists())
+            self.assertTrue(any(item.name.startswith(path.name + ".corrupt-") for item in path.parent.iterdir()))
+
     def test_mining_prompt_uses_structured_session_evidence(self):
         prompt = (ROOT / "MINING_PROMPT.md").read_text(encoding="utf-8")
         self.assertIn("session_ids", prompt)
@@ -583,6 +643,15 @@ class ReportCacheTest(unittest.TestCase):
                 },
             }])
             home = root / "private"
+            preflight = subprocess.run(
+                [
+                    sys.executable, str(DITTO), "plugin", "preflight", "--path", str(logs),
+                    "--candidate", "0", "--ditto-home", str(home),
+                ],
+                check=True, capture_output=True, text=True,
+                env={**os.environ, "DITTO_ALLOW_LEGACY_CANDIDATES": "1"},
+            )
+            approval_hash = json.loads(preflight.stdout)["approval_hash"]
             prepared = subprocess.run(
                 [
                     sys.executable,
@@ -593,6 +662,8 @@ class ReportCacheTest(unittest.TestCase):
                     str(logs),
                     "--candidate",
                     "0",
+                    "--approved-plan-hash",
+                    approval_hash,
                     "--ditto-home",
                     str(home),
                 ],
@@ -657,6 +728,15 @@ class ReportCacheTest(unittest.TestCase):
                 },
             }])
             home = root / "private"
+            preflight = subprocess.run(
+                [
+                    sys.executable, str(DITTO), "plugin", "preflight", "--path", str(logs),
+                    "--candidate", "0", "--ditto-home", str(home),
+                ],
+                check=True, capture_output=True, text=True,
+                env={**os.environ, "DITTO_ALLOW_LEGACY_CANDIDATES": "1"},
+            )
+            approval_hash = json.loads(preflight.stdout)["approval_hash"]
             prepared = subprocess.run(
                 [
                     sys.executable,
@@ -667,6 +747,8 @@ class ReportCacheTest(unittest.TestCase):
                     str(logs),
                     "--candidate",
                     "0",
+                    "--approved-plan-hash",
+                    approval_hash,
                     "--ditto-home",
                     str(home),
                 ],

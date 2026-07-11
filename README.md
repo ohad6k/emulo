@@ -177,15 +177,15 @@ The three things people push back on, answered once.
 
 **"Why not just ask Claude to summarize my logs?"**
 
-One pass can't do it. My history is 1,656 sessions, about 3M tokens after extraction, and the raw logs are ~95% noise (tool output, file dumps, pasted errors). A single summarize call skims the top of that and burns the window on noise. Ditto keeps only the words you typed, chunks them so an agent can genuinely read every line, fans one agent out per chunk, then keeps only the traits many agents found independently. `(18/20)` next to a law means 18 of 20 agents pulled it out of different months of your life. A summary has no receipts.
+One pass can't do it. My history is 1,656 sessions, about 3M tokens after extraction, and the raw logs are mostly tool output, file dumps, and pasted errors. A single summarize call burns the window on that noise. Ditto keeps only the words you typed, gives each validated segment its own evidence pass, and requires distinct supporting sessions before an inferred rule can survive. The resulting profile keeps session receipts instead of an obsolete worker-count score.
 
 **"Claude already has memory. Why do I need this?"**
 
-Use both. Memory is what you told the model: curated notes, `CLAUDE.md`, and it stays inside one tool. Ditto reads the raw sessions across Claude Code, Codex, and Cursor and pulls out what you never wrote down: what you reject, what "done" means to you, when you demand proof. The output is one plain file you own and can drop into any agent.
+Use both. Memory is what you told the model: curated notes, `CLAUDE.md`, and it stays inside one tool. Ditto reads supported raw sessions from Codex, Claude Code, and Copilot CLI and pulls out what you never wrote down: what you reject, what "done" means to you, and when you demand proof. The output is plain files you own and can load through supported agents.
 
 **"Claude only keeps 30 days of logs. Where did 9 months come from?"**
 
-Claude Code's retention is a setting (`cleanupPeriodDays`, 30 by default), and my 9 months is Claude plus Codex and Cursor history plus archived sessions. But the default is real: your oldest Claude sessions are being deleted right now. Raise the retention today, then mine what's left before it rolls off.
+Claude Code's retention is a setting (`cleanupPeriodDays`, 30 by default), and my longer history combines Claude Code, Codex, and Copilot CLI sessions plus archives. If you keep the default retention, older Claude sessions can roll off before Ditto sees them. Raise the retention, then mine what's left.
 
 ## Roadmap
 

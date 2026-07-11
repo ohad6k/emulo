@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -415,6 +416,30 @@ class MigrationTest(unittest.TestCase):
             migration = ditto.stage_legacy_migration("codex", str(home), str(ditto_home))
             self.assertEqual("skills-sh-core", migration["legacy_origin"])
 
+    def test_cutover_rejects_tampered_migration_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            host_home = root / "home"
+            ditto_home = root / "private"
+            original = b"---\nname: you\ndescription: legacy\n---\nlegacy body\n"
+            legacy = host_home / ".codex" / "skills" / "you" / "SKILL.md"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_bytes(original)
+            migration = ditto.stage_legacy_migration("codex", str(host_home), str(ditto_home))
+            victim = root / "victim" / "SKILL.md"
+            victim.parent.mkdir()
+            victim.write_bytes(original)
+            record_path = ditto_home / "migrations" / (migration["migration_id"] + ".json")
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record["legacy_path"] = str(victim)
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "migration record"):
+                ditto.cutover_legacy_migration(migration["migration_id"], str(ditto_home))
+
+            self.assertTrue(victim.exists())
+            self.assertTrue(legacy.exists())
+
     def test_imported_legacy_profile_is_labeled_unverified(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -448,6 +473,33 @@ class MigrationTest(unittest.TestCase):
             ditto.migrate_adapter_block("agents", str(repo), str(home), "restore")
             self.assertIn("old", agents.read_text(encoding="utf-8"))
             self.assertTrue(Path(removed["backup_path"]).exists())
+
+    def test_adapter_removal_can_restore_after_final_record_write_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = root / "repo"
+            repo.mkdir()
+            agents = repo / "AGENTS.md"
+            original = "# keep\n\n<!-- ditto profile:start -->\nold\n<!-- ditto profile:end -->\n"
+            agents.write_text(original, encoding="utf-8")
+            home = root / "private"
+            real_write = ditto.atomic_write_text
+            record_writes = 0
+
+            def fail_final_record(path, text):
+                nonlocal record_writes
+                if Path(path).name.startswith("adapter-"):
+                    record_writes += 1
+                    if record_writes == 2:
+                        raise RuntimeError("injected final record failure")
+                return real_write(path, text)
+
+            with mock.patch.object(ditto, "atomic_write_text", side_effect=fail_final_record):
+                with self.assertRaisesRegex(RuntimeError, "injected"):
+                    ditto.migrate_adapter_block("agents", str(repo), str(home), "backup-remove")
+
+            ditto.migrate_adapter_block("agents", str(repo), str(home), "restore")
+            self.assertEqual(original, agents.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
