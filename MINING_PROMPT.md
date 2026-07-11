@@ -131,6 +131,8 @@ Work must be active. Activate design or write only when that domain has valid ru
 
 `card.json` contains an archetype, up to three work-domain laws, and an optional truth. Each law text must exactly match a validated work rule. Its count is the number of distinct supporting sessions, formatted like `12 sessions`, never a worker/report count.
 
+The truth must sting. Name the cost, not the habit: what it breaks, when it bites, and what it keeps costing them. If it could pass as a compliment or a LinkedIn strength ("cares deeply about quality"), it failed. Rewrite it until it is the line they would wince at before admitting it is true. Use no softeners such as "sometimes," "can tend to," or "a bit." Calibration for the right sharpness: "Their real bottleneck is trust recovery: once scope gets misread or success gets claimed without proof, they stop building the product and start building the process, until reality is observable again."
+
 Do not invent file hashes. Python validates this draft pack, computes every file hash and immutable profile version, and refuses incomplete or generic output.
 
 Before returning, run the assigned read-only `python "$DITTO_PY" plugin validate-pack --run-id "$RUN_ID" --pack "$PACK_DIR"` command. If it rejects the pack, correct only the assigned pack and run the same validation again inside this reducer pass. Return only after it reports `status: valid`. The orchestrator activates the pack after the reducer exits.

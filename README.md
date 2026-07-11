@@ -151,6 +151,24 @@ A GitHub star bookmarks the repository but does not subscribe you to releases. T
 - Provider token accounting remains outside Ditto's exact measurement.
 - Benchmarks, leaderboard results, and proof videos are a separate later release.
 
+## FAQ
+
+The three things people push back on, answered once.
+
+**"Why not just ask Claude to summarize my logs?"**
+
+One pass can't do it. My history is 1,656 sessions, about 3M tokens after extraction, and the raw logs are ~95% noise (tool output, file dumps, pasted errors). A single summarize call skims the top of that and burns the window on noise. Ditto keeps only the words you typed, chunks them so an agent can genuinely read every line, fans one agent out per chunk, then keeps only the traits many agents found independently. `(18/20)` next to a law means 18 of 20 agents pulled it out of different months of your life. A summary has no receipts.
+
+**"Claude already has memory. Why do I need this?"**
+
+Use both. Memory is what you told the model: curated notes, `CLAUDE.md`, and it stays inside one tool. Ditto reads the raw sessions across Claude Code, Codex, and Cursor and pulls out what you never wrote down: what you reject, what "done" means to you, when you demand proof. The output is one plain file you own and can drop into any agent.
+
+**"Claude only keeps 30 days of logs. Where did 9 months come from?"**
+
+Claude Code's retention is a setting (`cleanupPeriodDays`, 30 by default), and my 9 months is Claude plus Codex and Cursor history plus archived sessions. But the default is real: your oldest Claude sessions are being deleted right now. Raise the retention today, then mine what's left before it rolls off.
+
+## Roadmap
+
 See [ROADMAP.md](ROADMAP.md) for what is intentionally deferred.
 
 ## Community
