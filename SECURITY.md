@@ -24,7 +24,7 @@ Outside a repository checkout, the bootstrap downloads only `ditto.py` and `MINI
 
 ## Redaction coverage and limits
 
-Current patterns cover common API keys, Stripe and webhook secrets, Supabase and GitHub tokens, JWTs, AWS keys, Slack tokens, email addresses, phone numbers, IP addresses, and common secret assignments.
+Current patterns cover common API keys, Stripe and webhook secrets, Supabase and GitHub tokens, JWTs, AWS keys, Slack tokens, email addresses, phone numbers, IP addresses, and common secret assignments — including the spoken forms people actually paste to an agent (`the wifi password is …`, `psk …`), guarded so prose about passwords survives.
 
 Redaction is best-effort. Inspect generated private data before sharing anything. `--no-redact` is intentionally dangerous because selected raw text may then be sent to the chosen model provider.
 

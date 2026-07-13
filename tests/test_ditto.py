@@ -107,6 +107,38 @@ class DittoCliTest(unittest.TestCase):
             self.assertNotIn("assistant output should not appear", corpus)
             self.assertEqual(corpus, chunk)
 
+    def test_redacts_bare_and_is_form_credentials_without_eating_prose(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("ditto", DITTO)
+        ditto = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ditto)
+
+        for secret in ("the password is Hunter2!x", "psk Tr0ub4dor3",
+                       "wifi key abc12345", "password: sekritvalue1"):
+            self.assertIn("[REDACTED]", ditto.redact(secret), secret)
+
+        for prose in ("the password is wrong", "password reset email",
+                      "my token store", "passwd prompt appeared",
+                      "boarding pass QF12345"):
+            self.assertNotIn("[REDACTED]", ditto.redact(prose), prose)
+
+    def test_phone_redaction_does_not_eat_dates_versions_or_part_numbers(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("ditto", DITTO)
+        ditto = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ditto)
+
+        for keep in ("2026-06-14", "07/09/2026", "v0.8.0", "0x04", "4.6 V",
+                     "acer-15-6-aspire-lite-n4500", "18 payments of 150",
+                     "PEX 543 777 2996", "129424534", "1,656 sessions"):
+            self.assertNotIn("[PHONE]", ditto.redact(keep), keep)
+
+        for phone in ("07 5477 4500", "+61 400 123 456", "0400123456",
+                      "052-1234567", "0521234567", "03-1234567",
+                      "+972 52-123-4567", "+14155552671",
+                      "reach me at +972 52-123-4567."):
+            self.assertIn("[PHONE]", ditto.redact(phone), phone)
+
     def test_install_codex_writes_skill_and_refuses_overwrite(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

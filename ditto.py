@@ -68,6 +68,19 @@ MAX_EVIDENCE_PER_REPORT = 12
 MAX_QUOTE_CHARS = 200
 
 # --- redaction: run BEFORE any of your text is written or seen by an agent ---
+
+def _credential_repl(m):
+    """Redact `password is hunter2` / `psk hunter2`, but not `password is wrong`.
+
+    Only treat the trailing token as a secret if it looks like one: long, or
+    containing a digit or a symbol. Plain short English words are left alone so
+    prose about passwords survives.
+    """
+    value = m.group(2)
+    if len(value) >= 12 or any(c.isdigit() for c in value) or not value.isalpha():
+        return f"{m.group(1)}=[REDACTED]"
+    return m.group(0)
+
 REDACTIONS = [
     (re.compile(r"sk-[A-Za-z0-9]{20,}"),                 "[OPENAI_KEY]"),
     (re.compile(r"sk_live_[A-Za-z0-9]{20,}"),            "[STRIPE_KEY]"),
@@ -78,9 +91,19 @@ REDACTIONS = [
     (re.compile(r"AKIA[0-9A-Z]{16}"),                    "[AWS_KEY]"),
     (re.compile(r"xox[baprs]-[A-Za-z0-9\-]{10,}"),       "[SLACK_TOKEN]"),
     (re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"), "[EMAIL]"),
-    (re.compile(r"\+?\d[\d\s\-]{8,}\d"),                 "[PHONE]"),
     (re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"),         "[IP]"),
+    # Phone: an explicit international +CC prefix, or a national trunk 0 plus a
+    # valid area/mobile digit. Anchored so it cannot eat dates (2026-06-14),
+    # versions (v0.8.0), part numbers (n4500) or URL fragments, while trailing
+    # sentence punctuation still matches ("call +972 52-123-4567.").
+    (re.compile(r"(?<![\w.\-/])(?:\+\d{1,3}[\s\-]?\d(?:[\s\-]?\d){7,9}"
+                r"|0[2-9](?:[\s\-]?\d){7,8})(?![\w/]|[.\-]\d)"), "[PHONE]"),
     (re.compile(r"(?i)(api[_-]?key|secret|token|password|passwd)\s*[:=]\s*\S+"), r"\1=[REDACTED]"),
+    # `password is hunter2`, `psk hunter2`, `wifi key hunter2` -- the bare and
+    # `is` forms the [:=] rule above misses entirely. The pass- stem requires a
+    # suffix so "boarding pass QF12345" stays untouched.
+    (re.compile(r"(?i)\b(pass(?:word|wd|phrase)|pwd|psk|passkey|wifi\s+key)\b\s*(?:is\s+|=\s*|:\s*)?['\"]?([^\s'\",;]{6,})"),
+     _credential_repl),
 ]
 
 def redact(text):

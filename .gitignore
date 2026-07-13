@@ -6,6 +6,13 @@ chunks/
 
 # your actual profile — keep it local unless you WANT to share it
 you.md
+# ...and everything the skill and the lenses generate alongside it. The
+# appendix holds your rawest verbatim quotes; it must never be committable
+# by accident, least of all from inside a clone of this repo.
+/you-appendix.md
+/you-thinking.md
+/you-designer.md
+/you-writer.md
 !examples/
 !examples/you.md
 
