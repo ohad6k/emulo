@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "ref": "v0.2.0",
   "files": {
-    "ditto.py": {"sha256": "d8c3026a99af24ceba0f7421e22e9d4dc3cdaf02271370224cfcdfdac09ea776"},
+    "ditto.py": {"sha256": "6e24117916a497ac46e595cb19be8d7340ed493801bb2373c412a88663c9c726"},
     "MINING_PROMPT.md": {"sha256": "633a48bc0eb743cd6f13bf0f6783fcfb2653df4a353b6a303fb0d213c2b068f6"}
   }
 }
