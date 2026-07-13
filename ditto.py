@@ -147,6 +147,12 @@ INJECTED_CONTEXT_PREFIXES = (
     "<permissions instructions",
     "<recommended_plugins",
     "<summary>",
+    "<command-name",
+    "<command-message",
+    "<local-command-stdout",
+    "<task-notification",
+    "<launch-selected-element",
+    "[Request interrupted",
 )
 USER_LINE_MARKERS = (
     '"role":"user"',
@@ -161,6 +167,28 @@ def is_injected_context(text):
     stripped = text.lstrip()
     return any(stripped.startswith(prefix) for prefix in INJECTED_CONTEXT_PREFIXES)
 
+def is_human_turn(record):
+    """Claude Code writes harness traffic into role:user records; keep only the
+    turns a human actually typed.
+
+    Claude Desktop stamps promptSource="sdk" on prompts the human typed (it
+    drives sessions through the Agent SDK), so promptSource alone never
+    disqualifies a record — only a headless sdk-cli entrypoint does. Origin
+    kind, when present, is authoritative.
+    """
+    if record.get("isMeta") or record.get("isSidechain"):
+        return False
+    if "toolUseResult" in record:
+        return False
+    if record.get("isCompactSummary"):
+        return False
+    origin = record.get("origin")
+    if isinstance(origin, dict):
+        return origin.get("kind") == "human"
+    if record.get("promptSource") == "sdk" and record.get("entrypoint") == "sdk-cli":
+        return False
+    return True
+
 def user_messages(path):
     out = []
     try:
@@ -171,6 +199,8 @@ def user_messages(path):
                 try:
                     o = json.loads(line)
                 except Exception:
+                    continue
+                if o.get("type") == "user" and not is_human_turn(o):
                     continue
                 # Copilot CLI: {type:'user.message', data:{content, source}, timestamp}
                 if o.get("type") == "user.message":
@@ -209,6 +239,11 @@ def discover_files(roots):
     files = []
     for r in roots:
         files += glob.glob(os.path.join(r, "**", "*.jsonl"), recursive=True)
+    # Claude Code stores agent-to-agent transcripts under a `subagents/` path
+    # component; every role:user record in them is isSidechain. Skip the files
+    # outright (component match, so a `my-subagents-notes/` directory survives).
+    files = [f for f in files
+             if "subagents" not in os.path.normpath(f).split(os.sep)]
     return sorted(set(files))
 
 def session_label(path):
