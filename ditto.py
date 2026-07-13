@@ -2136,9 +2136,364 @@ def load_card(out_dir, card_path=None):
             card.setdefault("stats", {}).update(json.load(fh))
     return card
 
-def print_card(card):
+def _enable_vt():
+    # let legacy Windows consoles interpret ANSI (Windows Terminal already does)
+    if os.name != "nt":
+        return True
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.GetStdHandle(-11)
+        mode = ctypes.c_uint32()
+        if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            return False
+        return bool(kernel32.SetConsoleMode(handle, mode.value | 0x0004))
+    except Exception:
+        return False
+
+def _card_colors():
+    # ANSI accents when we're on a real terminal and the user hasn't opted out
+    if os.environ.get("NO_COLOR") or not sys.stdout.isatty() or not _enable_vt():
+        return {"bold": "", "dim": "", "red": "", "yellow": "", "cream": "", "reset": ""}
+    return {
+        "bold": "\x1b[1m",
+        "dim": "\x1b[2m",
+        "red": "\x1b[38;5;131m",
+        "yellow": "\x1b[38;5;179m",
+        "cream": "\x1b[38;5;230m",
+        "reset": "\x1b[0m",
+    }
+
+# the fixed brand mark — same in every screenshot, like a distro logo in neofetch.
+# solid blocks only: every UTF-8 byte here survives cp1252 pipes, unlike ═ and ╝.
+_CARD_LOGO = [
+    "██████   ██  ████████  ████████   ██████ ",
+    "██   ██  ██     ██         ██    ██    ██",
+    "██   ██  ██     ██         ██    ██    ██",
+    "██   ██  ██     ██         ██    ██    ██",
+    "██████   ██     ██         ██     ██████ ",
+]
+
+# the engraving, pre-rendered as classic ASCII ramp art at three widths
+# (pure ASCII: safe in every terminal, pipe, and wrapper; colored on capable terminals).
+_CARD_ARTS = {
+    54: [
+        "                          .-\\\\*xXXx=*$X***=/;ii--.",
+        "                      .-----\\-X=X$x**+xx+x$//i**----.",
+        "             .----------$$$*=Xx=/&$*X=ix*--X*=i:ii;:--",
+        "           \\---$$$$*+------XXX$x+/x+:;\\x*:::xx*++i;:,.",
+        "         -\\\\$Xx\\\\--*| /-----//XX*=*//=|XXXx**|:|i,|:,.",
+        "      \\---=+*x\\|;:;+=/:,:-;,--/Xx*/X*i|$\\--/$/;|=i;;,.",
+        "     \\\\--x+**=;\\;++i=+++***//.//*;/xX-\\X//.||X|//i:,,.",
+        "    \\\\&8\\$XxxXx/.;;+i:;ii++*//:=x*==-/$&8/-\\\\X| /i;:,.",
+        "   .\\\\8\\\\-/$|:i----+i;i+\\-**x/-ii==+,//*x$&-X$|-\\\\;:,.",
+        "  \\||&\\\\\\.//x-\\xX--//--\\xX--*xxXx*x/**xxXXx$&|\\+|+;:,.",
+        "  |||8\\\\|  //-&&&&&$$--xx=::\\-==xXx*;;=xX$$X$//,|/i:,.",
+        "   ||\\\\||   --///$X\\-/$X-----8&$=**x$$$XXXX$XX---\\;;,.",
+        "  |//\\\\\\.      //-X*i*$&&&$$$$\\\\**x--;+*XX$$XXXx*+i;,.",
+        " ., /+/         ///$&X$&$$&$$Xx/i++i-\\&&$$$XXX$-------",
+        "  . |\\-----/i;:. ////X8&8&$Xxx&-----$X*x$&&8--\\\\-./-",
+        "    |||@8||i,.,,,.://-/&$&&$$xX&$$XX*=\\\\8@\\\\-/*/-----",
+        "     ///&|//-----i:--///$&&$xxxX&&&&---8\\\\\\.\\\\**+i;:..",
+        "     |///8//*XXx=\\\\  ||xX$8&&&$X$&&$888\\\\\\\\\\-x*=i::,",
+        "    i,/--/&|----.    ||*X$-$$xX&8$&888@||-\\$*$*==i;,-.",
+        "   i, --//-\\\\-       ||XX\\-/$$$$&888@8@|x\\&x$X*x=+;,..",
+        "  ;:     |-\\         ||X*=+|X$8&&88&8&8|xx&XX$**=i;:,.",
+        " ;; ... \\i;|       .\\|/Xx*=*x$-X$&$XXx88/*X&xx*==i;:,.",
+        "--  -.\\\\;:::       .:///xxXX$x-//$$$x$--&X*x$x**=i;:,.",
+        "*+-----=+:,,         ,///x$X\\*++*x$$x--/x$-Xxxx*=i;:,.",
+        "---//&\\\\--:          .,||*X\\\\+=+=*x$/i\\\\\\8@8-Xx=+i;:,.",
+        "    /\\                .|\\xx\\:;++=X$$8--&8&&88&$X-+i;,-",
+        "    |+/---            |||X|i;i++*X$$------/8&$$Xx=+;,.",
+        "    /|X/*x/           |||$/--i+=*xX----==*x/&$X**+i;,.",
+        "     //+| -:        ..:|/-xX/===*x\\+=+i+==*xX$x=*+i;,.",
+        "      /X||        ..-\\;ii+=x$|===-+i+i;i++*XX$X*=+i:,.",
+        "       /\\       ..----i++==xX\\++i-ii\\,;ii=x*x$x*=+i:,.",
+        "      |+      --------+++++*=i;;:,--..:;;i=**===i;;:,.",
+        "       /;-----;;;;i\\-ii-;;;ii::,,.   ..,::/i+;;;;:,,.",
+        "         ..--....../:-/:,,,.,,,|.      ....,,,,,,...",
+    ],
+}
+
+def _law_bar(count, width=26):
+    # "18/20" -> a filled evidence bar; anything else -> None
+    try:
+        num, den = str(count).split("/")
+        frac = max(0.0, min(1.0, int(num) / max(1, int(den))))
+    except (ValueError, AttributeError):
+        return None
+    filled = round(frac * width)
+    return "█" * filled + "░" * (width - filled)
+
+def _animate_card(build, final_lines, c, stats, card, truth_total):
+    # a four-act reveal, played in the terminal's alternate screen so nothing
+    # scrolls or tears, then the static card is printed to the real screen:
+    #   I.   the read     — your real history flickers past, sessions count up
+    #   II.  the etching  — the engraving develops from faint texture to linework
+    #   III. the verdict  — archetype and stats land, evidence bars fill
+    #   IV.  the confession — the uncomfortable one types itself in red
+    import time, shutil, random
+    out = sys.stdout
+    term = shutil.get_terminal_size((80, 24))
+    if term.lines < len(final_lines) + 1 or not sys.stdout.isatty():
+        return False
+
+    def frame(lines):
+        out.write("\x1b[H" + "\n".join(lines))
+        out.flush()
+
+    import math
+    ease = lambda t: 0.5 * (1 - math.cos(math.pi * min(1.0, max(0.0, t))))
+
+    def blank_screen():
+        return [" " * term.columns for _ in range(term.lines - 1)]
+
+    def centered(screen, text, row=None):
+        mid = row if row is not None else (term.lines - 1) // 2
+        pad = max(0, (term.columns - len(text)) // 2)
+        screen[mid] = (" " * pad + text).ljust(term.columns)[: term.columns]
+        return mid
+
+    entered = False
+    try:
+        out.write("\x1b[?1049h\x1b[?25l\x1b[2J")
+        entered = True
+        # title card: a studio beat in the dark
+        frame([c["dim"] + l + c["reset"] for l in blank_screen()])
+        time.sleep(0.5)
+        title = blank_screen()
+        mid = centered(title, "d i t t o")
+        frame([(c["dim"] + l + c["reset"]) if r != mid else (c["cream"] + l + c["reset"]) for r, l in enumerate(title)])
+        time.sleep(1.3)
+        frame([c["dim"] + l + c["reset"] for l in blank_screen()])
+        time.sleep(0.45)
+        # act I: the read — fragments of their own mined laws surface from the dark
+        rng = random.Random(7)
+        frags = [law.get("text", "") for law in card.get("laws", [])[:3] if law.get("text")]
+        frags += [card.get("archetype", ""), "reading your sessions", "keeping only the words you typed"]
+        frags = [f for f in frags if f]
+        sessions = int(stats.get("sessions") or 0)
+        rain = []
+        for _ in range(16):
+            f = frags[rng.randrange(len(frags))]
+            col = rng.randrange(2, max(3, term.columns - len(f) - 2))
+            row = rng.randrange(1, max(2, term.lines - 2))
+            rain.append((row, col, f))
+        steps = 26
+        for s in range(steps):
+            screen = blank_screen()
+            visible = int(len(rain) * ease((s + 1) / steps) * 1.2)
+            for i, (row, col, f) in enumerate(rain):
+                if i < visible and row < len(screen):
+                    line = screen[row]
+                    screen[row] = (line[:col] + f + line[col + len(f):])[: term.columns]
+            n = int(sessions * ease((s + 1) / steps))
+            mid = centered(screen, f"reading {n:,} sessions")
+            styled = []
+            for r, line in enumerate(screen):
+                if r == mid:
+                    styled.append(c["bold"] + c["yellow"] + line + c["reset"])
+                else:
+                    styled.append(c["dim"] + line + c["reset"])
+            frame(styled)
+            time.sleep(0.085)
+        time.sleep(0.6)
+        # cut to black
+        frame([c["dim"] + l + c["reset"] for l in blank_screen()])
+        time.sleep(0.4)
+        out.write("\x1b[2J")
+        # act II: the etching — texture first, ink later, contour strokes last
+        for level in range(1, 16):
+            frame(build(art_level=level, bar_frac=0.0, truth_n=0, show_data=False))
+            time.sleep(0.15)
+        time.sleep(0.65)
+        # act III: the verdict — archetype and stats land, then each bar fills alone
+        frame(build(art_level=99, bar_frac=[0, 0, 0], truth_n=0, show_data=True))
+        time.sleep(0.8)
+        for b in range(3):
+            for s in range(1, 9):
+                fracs = [1.0 if i < b else (ease(s / 8) if i == b else 0.0) for i in range(3)]
+                frame(build(art_level=99, bar_frac=fracs, truth_n=0, show_data=True))
+                time.sleep(0.05)
+            time.sleep(0.25)
+        time.sleep(0.7)
+        # act IV: the confession types itself, one breath first
+        for n in range(0, truth_total + 1):
+            frame(build(art_level=99, bar_frac=1.0, truth_n=n, show_data=True))
+            time.sleep(0.03)
+        frame(final_lines)
+        time.sleep(1.8)
+    except Exception:
+        pass
+    finally:
+        if entered:
+            out.write("\x1b[?25h\x1b[?1049l")
+            out.flush()
+            # land the finished card on the real screen so it stays in scrollback
+            try:
+                print("\n".join(final_lines))
+            except UnicodeEncodeError:
+                pass
+    return entered
+
+def print_card(card, still=False):
+    import textwrap, shutil
     stats = card.get("stats", {})
     months = months_between(stats.get("first_date", ""), stats.get("last_date", ""))
+    c = _card_colors()
+    term_cols = shutil.get_terminal_size((80, 24)).columns
+    inner = max(60, min(term_cols - 3, 126))  # frame interior width
+    wide = inner >= 104  # neofetch layout: art left, data right
+
+    def styled_pairs(bar_frac=1.0, truth_n=None, show=True):
+        # the data column as (styled, visible) pairs.
+        # bar_frac fills the evidence bars partially, truth_n types the
+        # confession out character by character, show=False blanks the column
+        # while keeping the exact same line count (for animation frames).
+        col_w = (inner - 4 - 58) if wide else (inner - 4)
+        pairs = []
+        archetype = card.get("archetype", "").upper()
+        if archetype:
+            for part in textwrap.wrap(archetype, col_w) or [""]:
+                pairs.append((c["bold"] + c["yellow"] + part + c["reset"], part))
+        bits = []
+        if stats.get("sessions"):
+            bits.append(f"{stats['sessions']:,} sessions")
+        if stats.get("tokens"):
+            bits.append(f"{fmt_tokens(stats['tokens'])} tokens")
+        if months:
+            bits.append(f"{months} months")
+        if bits:
+            joined = " · ".join(bits)
+            pairs.append((c["dim"] + joined + c["reset"], joined))
+        pairs.append(("", ""))
+        numerals = ["I", "II", "III"]
+        bar_w = max(18, min(48, col_w - 26))
+        for i, law in enumerate(card.get("laws", [])[:3]):
+            text = law.get("text", "")
+            count = str(law.get("count", "") or "")
+            tag = f"LEX {numerals[i]:<4}"
+            wrapped = textwrap.wrap(text, col_w - 9) or [""]
+            pairs.append((tag + " " + wrapped[0], tag + " " + wrapped[0]))
+            for part in wrapped[1:]:
+                pairs.append((" " * 9 + part, " " * 9 + part))
+            bar = _law_bar(count, width=bar_w)
+            if bar:
+                frac = bar_frac[i] if isinstance(bar_frac, (list, tuple)) else bar_frac
+                filled = bar.count("█")
+                k = min(filled, round(filled * frac))
+                bar = "█" * k + "░" * (len(bar) - k)
+                vis = " " * 9 + bar + f"  {count} sessions"
+                sty = " " * 9 + c["yellow"] + bar + c["reset"] + c["dim"] + f"  {count} sessions" + c["reset"]
+                pairs.append((sty, vis))
+            elif count:
+                pairs.append((c["dim"] + " " * 9 + count + c["reset"], " " * 9 + count))
+            pairs.append(("", ""))
+        truth = card.get("truth", "")
+        if truth:
+            pairs.append((c["red"] + c["bold"] + "THE UNCOMFORTABLE ONE" + c["reset"], "THE UNCOMFORTABLE ONE"))
+            remaining = None if truth_n is None else truth_n
+            for part in textwrap.wrap('"' + truth + '"', col_w):
+                if remaining is None:
+                    shown = part
+                elif remaining <= 0:
+                    shown = ""
+                elif remaining < len(part):
+                    shown = part[:remaining] + "▌"  # typing cursor mid-line
+                else:
+                    shown = part
+                if remaining is not None:
+                    remaining -= len(part)
+                pairs.append((c["red"] + shown + c["reset"], shown))
+        if not show:
+            pairs = [("", "") for _ in pairs]
+        return pairs
+
+    # tier per art character: faint texture first, bright ink later,
+    # directional contour strokes last — the etching finishes with linework
+    _ramp = " .,:;i+=*xX$&8@"
+    def _art_row(row, level):
+        if level >= 99:
+            return row
+        out = []
+        for ch in row:
+            tier = 15 if ch in "|/\\-" else (_ramp.index(ch) if ch in _ramp else 15)
+            out.append(ch if tier <= level else " ")
+        return "".join(out).rstrip()
+
+    art = _CARD_ARTS[54]
+    tagline = "your working profile, mined from your own sessions"
+    footer = "github.com/ohad6k/ditto · run it on your own logs"
+
+    def build(art_level=99, bar_frac=1.0, truth_n=None, show_data=True):
+        lines = []
+
+        def fr(text="", style="", visible=None):
+            v = visible if visible is not None else text
+            pad = " " * max(0, inner - 2 - len(v))
+            lines.append(c["dim"] + "│" + c["reset"] + "  " + style + text + c["reset"] + pad + c["dim"] + "│" + c["reset"])
+
+        def divider():
+            lines.append(c["dim"] + "├" + "─" * inner + "┤" + c["reset"])
+
+        lines.append("")
+        lines.append(c["dim"] + "╭" + "─" * inner + "╮" + c["reset"])
+        fr()
+        logo_pad = " " * max(0, (inner - 2 - len(_CARD_LOGO[0])) // 2)
+        for row in _CARD_LOGO:
+            fr(logo_pad + row, style=c["cream"] + c["bold"], visible=logo_pad + row)
+        fr()
+
+        if wide:
+            # art left, data right
+            data = styled_pairs(bar_frac, truth_n, show_data)
+            art_w = 56
+            n = max(len(art), len(data))
+            for i in range(n):
+                a = _art_row(art[i], art_level) if i < len(art) else ""
+                a_vis = a.ljust(art_w)
+                a_sty = c["cream"] + a + c["reset"] + " " * (art_w - len(a))
+                d_sty, d_vis = data[i] if i < len(data) else ("", "")
+                fr(a_sty + "  " + d_sty, visible=a_vis + "  " + d_vis)
+            fr()
+            divider()
+            combo = tagline + "   " + footer
+            if len(combo) <= inner - 4:
+                fr(combo, style=c["dim"])
+            else:
+                fr(tagline, style=c["dim"])
+                fr(footer, style=c["dim"])
+        else:
+            art_pad = " " * max(0, (inner - 2 - max(len(r) for r in art)) // 2)
+            for row in art:
+                a = _art_row(row, art_level)
+                fr(art_pad + a, style=c["cream"], visible=art_pad + a)
+            fr()
+            fr(tagline, style=c["dim"])
+            divider()
+            fr()
+            for sty, vis in styled_pairs(bar_frac, truth_n, show_data):
+                fr(sty, visible=vis)
+            fr()
+            divider()
+            fr(footer, style=c["dim"])
+        lines.append(c["dim"] + "╰" + "─" * inner + "╯" + c["reset"])
+        lines.append("")
+        return lines
+
+    lines = build()
+    truth_total = len('"' + card.get("truth", "") + '"') if card.get("truth") else 0
+    animate = bool(c["reset"]) and not still and not os.environ.get("DITTO_NO_ANIM")
+    try:
+        if animate and _animate_card(build, lines, c, stats, card, truth_total):
+            pass
+        else:
+            print("\n".join(lines))
+    except UnicodeEncodeError:
+        _print_card_plain(card, stats, months)
+
+def _print_card_plain(card, stats, months):
+    # fallback for consoles that can't draw the blocks
     width = 62
     line = "+" + "-" * width + "+"
     def row(text=""):
@@ -2310,14 +2665,15 @@ def render_card_html(card):
         truth=truth,
     )
 
-def show_card(out_dir, card_path=None, no_open=False):
+def show_card(out_dir, card_path=None, no_open=False, still=False):
     card = load_card(out_dir, card_path)
     card["_out_dir"] = os.path.abspath(out_dir)
-    print_card(card)
+    print_card(card, still=still)
     html_path = os.path.join(out_dir, "card.html")
     with open(html_path, "w", encoding="utf-8") as w:
         w.write(render_card_html(card))
     print(f"\nwrote: {html_path}  (open it, screenshot it, post it)")
+    print("share what it found: https://github.com/ohad6k/ditto/issues/1")
     if not no_open:
         try:
             import webbrowser
@@ -3249,6 +3605,7 @@ def legacy_main():
     ap.add_argument("--card", nargs="?", const="", metavar="CARD_JSON",
                     help="render your profile card (terminal + card.html) from ditto-out/card.json")
     ap.add_argument("--no-open", action="store_true", help="don't open card.html in the browser")
+    ap.add_argument("--still", action="store_true", help="print the card without the reveal animation")
     ap.add_argument("--install", metavar="PROFILE", help="install an existing generated you.md profile")
     ap.add_argument("--target", choices=["claude", "codex", "cursor", "agents", "gemini"], help="where to install --install")
     ap.add_argument("--repo", default=".", help="repo path for cursor/AGENTS.md/GEMINI.md installs")
@@ -3264,7 +3621,7 @@ def legacy_main():
         return
 
     if args.card is not None:
-        show_card(args.out, args.card or None, args.no_open)
+        show_card(args.out, args.card or None, args.no_open, still=args.still)
         return
 
     roots = []

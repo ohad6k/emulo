@@ -314,7 +314,7 @@ class DittoCliTest(unittest.TestCase):
             )
 
             self.assertIn("PROOF-FIRST BUILDER", result.stdout)
-            self.assertIn("[18/20]", result.stdout)
+            self.assertIn("18/20", result.stdout)
             self.assertIn("1,656 sessions", result.stdout)
             self.assertIn("9 months", result.stdout)
             html = (out / "card.html").read_text(encoding="utf-8")

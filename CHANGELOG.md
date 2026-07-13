@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 - 2026-07-13
+
+### Changed
+
+- `--card` terminal render rebuilt as a shareable ASCII card: a solid-block DITTO logotype and the engraving rendered as classic ASCII art with directional stroke shading, in a side-by-side layout on wide terminals (the fixed mark, same in every screenshot), your archetype and mined stats, each law with a filled evidence bar (`████████░░  18/20 sessions`), and the uncomfortable one. ANSI color accents on real terminals; respects `NO_COLOR`; falls back to a plain ASCII box if the console can't draw blocks. The art is pure ASCII, so every glyph survives any pipe or wrapper; box-drawing frame glyphs are chosen from the cp1252-safe set.
+- On a real terminal, `--card` now plays a four-act reveal in the alternate screen (no scrolling or tearing): fragments of your own mined laws flicker past while your session count spins up, the engraving develops from faint texture to contour linework, the verdict lands and the evidence bars fill, and the uncomfortable one types itself out in red. The finished card is then printed to the real screen so it stays in your scrollback. `--still` (or `DITTO_NO_ANIM=1`) skips the animation; piped and captured output is always static.
+- The card output now points somewhere: after `card.html` is written, Ditto prints the community share thread (`github.com/ohad6k/ditto/issues/1`) so a rendered card has a one-line path to being posted. Share the card or one short trait, never your full profile.
+- The `v0.3.1` bootstrap runtime pins `ditto.py` to SHA-256 `176fd02fb07dd77fd1a1dd12cd4c482c7d8c48c8daa6a234628f1a8932aef12f`; `MINING_PROMPT.md` is unchanged.
+
 ## 0.3.0 - 2026-07-13
 
 ### Changed
