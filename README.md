@@ -14,7 +14,7 @@
 
 Your real coding-agent sessions already contain the rules you never wrote down: what “done” means, what you reject on sight, how you debug, how you design UI, and how you write when you are actually working.
 
-Ditto mines selected evidence from those sessions — Claude Code, Codex, and Copilot CLI logs out of the box — into a private working profile your agent reads before every task. Separate layers for work, design, and writing mean the right part of you loads for the right task.
+Ditto mines selected evidence from those sessions — Claude Code, Codex, Copilot CLI, and OpenCode logs out of the box — into a private working profile your agent reads before every task. Separate layers for work, design, and writing mean the right part of you loads for the right task.
 
 ## Not memory
 
@@ -257,7 +257,7 @@ python ditto.py --install you.md --target opencode
 | Claude Code skills.sh/direct adapter | Supported |
 | Claude native plugin | Not claimed; host unavailable during validation |
 | Cursor / Gemini adapters | Supported through explicit install commands |
-| OpenCode | Global-rules adapter verified in a live session (`--target opencode`); project `AGENTS.md` and `~/.claude/skills` also read natively |
+| OpenCode | Both directions verified live: sessions mined from its SQLite store and legacy JSON layout (`--source opencode`), profile installed to its global rules (`--target opencode`) |
 | OpenClaw / Hermes Agent | Profile skill discovery verified locally; [guide](docs/OPENCLAW_HERMES.md) |
 
 ## Updating and notifications

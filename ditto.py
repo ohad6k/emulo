@@ -21,10 +21,14 @@ Usage:
     python ditto.py --chunks 20         # how many chunks to split into
     python ditto.py --no-redact         # DANGER: skip redaction (not recommended)
 """
-import argparse, base64, glob, hashlib, json, os, re, shutil, stat, sys, tempfile, time, unicodedata, uuid
+import argparse, base64, glob, hashlib, json, os, re, shutil, sqlite3, stat, sys, tempfile, time, unicodedata, uuid
 
 HOME = os.path.expanduser("~")
 CODEX_HOME = os.path.expanduser(os.environ.get("CODEX_HOME", os.path.join(HOME, ".codex")))
+OPENCODE_DATA = os.path.join(
+    os.path.expanduser(os.environ.get("XDG_DATA_HOME", os.path.join(HOME, ".local", "share"))),
+    "opencode",
+)
 SOURCES = {
     "codex":   [
         os.path.join(CODEX_HOME, "sessions"),
@@ -32,7 +36,12 @@ SOURCES = {
     ],
     "claude":  [os.path.join(HOME, ".claude", "projects")],
     "copilot": [os.path.join(HOME, ".copilot", "session-state")],
+    "opencode": [OPENCODE_DATA],
 }
+# Separator between a real opencode.db path and a session id inside it. A
+# discovered "file" for the SQLite store is one session, so counts, labels,
+# and cache identity stay per-session like every other source.
+OPENCODE_DB_SESSION_SEP = "::"
 DITTO_START = "<!-- ditto profile:start -->"
 DITTO_END = "<!-- ditto profile:end -->"
 
@@ -141,6 +150,8 @@ def source_kind(path):
         return "claude"
     if f"{os.sep}.copilot{os.sep}" in normalized:
         return "copilot"
+    if "opencode.db" in normalized or f"{os.sep}opencode{os.sep}" in normalized:
+        return "opencode"
     return "custom"
 
 def stable_session_id(path):
@@ -193,6 +204,105 @@ def is_injected_context(text):
     stripped = text.lstrip()
     return any(stripped.startswith(prefix) for prefix in INJECTED_CONTEXT_PREFIXES)
 
+def _opencode_ts(ms):
+    try:
+        return time.strftime("%Y-%m-%d", time.gmtime(int(ms) / 1000))
+    except Exception:
+        return ""
+
+def _opencode_keep(out, ts, text):
+    text = (text or "").strip()
+    if not text or is_injected_context(text) or is_pasted_log(text):
+        return
+    out.append((ts, text))
+
+def opencode_db_messages(db_path, session_id):
+    """One OpenCode session from the current SQLite store, read-only.
+
+    Human text = part rows of type "text" whose parent message row carries
+    role "user". Synthetic parts are harness-injected, never typed.
+    """
+    out = []
+    try:
+        con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        try:
+            rows = con.execute(
+                "select m.time_created, m.data, p.data from message m "
+                "join part p on p.message_id = m.id "
+                "where m.session_id = ? order by m.time_created, m.id, p.time_created, p.id",
+                (session_id,),
+            ).fetchall()
+        finally:
+            con.close()
+    except Exception:
+        return out
+    for ts_ms, message_data, part_data in rows:
+        try:
+            message = json.loads(message_data)
+            part = json.loads(part_data)
+        except Exception:
+            continue
+        if message.get("role") != "user":
+            continue
+        if part.get("type") != "text" or part.get("synthetic"):
+            continue
+        _opencode_keep(out, _opencode_ts(ts_ms), part.get("text"))
+    return out
+
+def opencode_storage_messages(session_json_path):
+    """One OpenCode session from the legacy JSON file layout:
+    storage/session/{project}/{session}.json with sibling message/ and part/
+    directories keyed by session and message ids."""
+    out = []
+    path = os.path.abspath(session_json_path)
+    storage = os.path.dirname(path)
+    while os.path.basename(storage) != "storage":
+        parent = os.path.dirname(storage)
+        if parent == storage:
+            return out
+        storage = parent
+    session_id = os.path.splitext(os.path.basename(path))[0]
+    for message_file in sorted(glob.glob(os.path.join(storage, "message", session_id, "*.json"))):
+        try:
+            with open(message_file, "r", encoding="utf-8", errors="replace") as fh:
+                message = json.load(fh)
+        except Exception:
+            continue
+        if message.get("role") != "user":
+            continue
+        message_id = message.get("id") or os.path.splitext(os.path.basename(message_file))[0]
+        ts = _opencode_ts((message.get("time") or {}).get("created"))
+        for part_file in sorted(glob.glob(os.path.join(storage, "part", message_id, "*.json"))):
+            try:
+                with open(part_file, "r", encoding="utf-8", errors="replace") as fh:
+                    part = json.load(fh)
+            except Exception:
+                continue
+            if part.get("type") != "text" or part.get("synthetic"):
+                continue
+            _opencode_keep(out, ts, part.get("text"))
+    return out
+
+def discover_opencode_sessions(root):
+    """OpenCode entries under a data root: one virtual path per SQLite
+    session, plus legacy per-session JSON files."""
+    entries = []
+    db_path = os.path.join(root, "opencode.db")
+    if os.path.isfile(db_path):
+        try:
+            con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+            try:
+                rows = con.execute(
+                    "select distinct session_id from message"
+                ).fetchall()
+            finally:
+                con.close()
+            entries += [f"{db_path}{OPENCODE_DB_SESSION_SEP}{sid}" for (sid,) in rows if sid]
+        except Exception:
+            pass
+    entries += glob.glob(os.path.join(root, "storage", "session", "**", "*.json"), recursive=True)
+    return entries
+
 def is_human_turn(record):
     """Claude Code writes harness traffic into role:user records; keep only the
     turns a human actually typed.
@@ -216,6 +326,15 @@ def is_human_turn(record):
     return True
 
 def user_messages(path):
+    if OPENCODE_DB_SESSION_SEP in path:
+        db_path, _, session_id = path.rpartition(OPENCODE_DB_SESSION_SEP)
+        if db_path.endswith("opencode.db"):
+            return opencode_db_messages(db_path, session_id)
+    # Route by layout, not by folder name: .json entries only enter discovery
+    # through the storage/session glob, so an exported legacy store under any
+    # --path still mines.
+    if path.endswith(".json") and f"{os.sep}storage{os.sep}session{os.sep}" in os.path.normpath(os.path.abspath(path)):
+        return opencode_storage_messages(path)
     out = []
     try:
         with open(path, "r", encoding="utf-8", errors="replace") as fh:
@@ -267,14 +386,16 @@ def user_messages(path):
 
 def discover_files(roots):
     files = []
+    opencode_entries = []
     for r in roots:
         files += glob.glob(os.path.join(r, "**", "*.jsonl"), recursive=True)
+        opencode_entries += discover_opencode_sessions(r)
     # Claude Code stores agent-to-agent transcripts under a `subagents/` path
     # component; every role:user record in them is isSidechain. Skip the files
     # outright (component match, so a `my-subagents-notes/` directory survives).
     files = [f for f in files
              if "subagents" not in os.path.normpath(f).split(os.sep)]
-    return sorted(set(files))
+    return sorted(set(files) | set(opencode_entries))
 
 def session_label(path):
     """Label a session block by parent dir + filename.
@@ -3013,7 +3134,7 @@ def build_plugin_parser():
     migrate_adapter.add_argument("--ditto-home")
     for name in ("preflight", "prepare"):
         command = sub.add_parser(name)
-        command.add_argument("--source", choices=["auto", "codex", "claude", "copilot"], default="auto")
+        command.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode"], default="auto")
         command.add_argument("--path")
         command.add_argument("--no-redact", action="store_true")
         command.add_argument("--no-dedupe", action="store_true")
@@ -3329,7 +3450,7 @@ def plugin_source_result(args):
     if args.path:
         roots = [args.path]
     elif args.source == "auto":
-        roots = SOURCES["codex"] + SOURCES["claude"] + SOURCES["copilot"]
+        roots = SOURCES["codex"] + SOURCES["claude"] + SOURCES["copilot"] + SOURCES["opencode"]
     else:
         roots = SOURCES[args.source]
     files = discover_files(roots)
@@ -3687,7 +3808,7 @@ def plugin_main(argv):
 
 def legacy_main():
     ap = argparse.ArgumentParser(description="mine your AI sessions into a model of you")
-    ap.add_argument("--source", choices=["auto", "codex", "claude", "copilot"], default="auto")
+    ap.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode"], default="auto")
     ap.add_argument("--path", help="a folder of .jsonl session logs to read instead")
     ap.add_argument("--out", default="ditto-out")
     ap.add_argument("--chunks", type=int, default=20)
@@ -3720,7 +3841,7 @@ def legacy_main():
     if args.path:
         roots = [args.path]
     elif args.source == "auto":
-        roots = SOURCES["codex"] + SOURCES["claude"] + SOURCES["copilot"]
+        roots = SOURCES["codex"] + SOURCES["claude"] + SOURCES["copilot"] + SOURCES["opencode"]
     else:
         roots = SOURCES[args.source]
 

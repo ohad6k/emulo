@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.4 - 2026-07-13
+
+### Added
+
+- OpenCode session mining: `--source opencode` (also included in `auto`) reads OpenCode's current SQLite store (`~/.local/share/opencode/opencode.db`, opened read-only, one mined session per stored session) and the legacy per-file JSON layout (`storage/session/…` with sibling `message/` and `part/` directories). Human text is exactly part rows of type `text` on `role: user` messages; synthetic parts, reasoning, tool output, and assistant text never enter the corpus. `XDG_DATA_HOME` overrides the data root. Verified live against a real OpenCode 1.17.19 store: the mined corpus contained the two typed prompts from real sessions and nothing else. Requested by the same Reddit thread as v0.3.3, about an hour later.
+- The `v0.3.4` bootstrap runtime pins `ditto.py` to SHA-256 `80ab07118cf8cd09a13a23e48cb9a9e1d596864a822efdefdb955486ea108fb9`; `MINING_PROMPT.md` is unchanged.
+
 ## 0.3.3 - 2026-07-13
 
 ### Added
