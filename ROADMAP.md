@@ -1,9 +1,10 @@
 # Roadmap
 
-Ditto's current focus is the bounded plugin loop: deterministic extraction, stable caches, exact evidence receipts, private versioned profiles, safe migration, and separate work/design/write routing.
+Ditto's current focus is the bounded plugin loop: deterministic extraction, stable caches, exact evidence receipts, private versioned profiles, safe migration, and separate work/design/write routing. User feedback and what it changed lives in `docs/FEEDBACK.md`.
 
 ## Current release
 
+- Voice registers in the writing profile: mined `write` evidence carries a `casual`, `professional`, or `shared` register, `you-writer.md` groups rules by register, and `ditto:write` infers the register from task context instead of asking (from user feedback, `docs/FEEDBACK.md`)
 - Cross-agent selected bootstrap through `npx skills add ohad6k/ditto@ditto`
 - Native Codex plugin with `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`
 - Bounded starter candidates capped at 160K new source tokens and nine planned mining passes
@@ -17,9 +18,13 @@ Ditto's current focus is the bounded plugin loop: deterministic extraction, stab
 
 Run the approved cold-versus-Ditto model matrix, publish the reproducible leaderboard, and produce proof clips as a separate release. No benchmark score belongs in the plugin release.
 
+### More session sources
+
+Adapters for more local coding-agent logs (issue #3). The Hermes Agent spec is complete in-thread: read its SQLite `state.db` read-only (WAL-aware), resolve `HERMES_HOME` overrides and per-profile databases, extract user messages only. Cursor and Windsurf storage docs are in progress. Adapter code lands after the ditto.py rewrite.
+
 ### Workflow mining
 
-Mine repeated debug, UI-polish, and release sequences into separately reviewable personal skills without bloating the always-loaded core profile.
+Mine repeated debug, UI-polish, and release sequences into separately reviewable personal skills without bloating the always-loaded core profile. Feedback confirms the appetite: users already hand-mine their session logs for skills and permissions.
 
 ### Profile drift
 
@@ -40,3 +45,7 @@ Any future sync must be opt-in, encrypted, explicit about provider boundaries, a
 ### Counterweight profiles
 
 Use the evidence-backed profile to challenge repeated failure modes rather than merely imitate the user.
+
+### Graph output
+
+Atoms-with-links from issue #7: the reducer emits linkable trait atoms with stable ids and receipt edges, stored local-first (SQLite, no server), with `you.md` as the flattened view. Optional local embeddings for per-task retrieval stay a v2 direction.

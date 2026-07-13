@@ -4,9 +4,9 @@ The Plugin release uses one bounded worker pass per selected segment, followed b
 
 ## Experimental adaptive packet scout contract
 
-Read only the assigned frozen receipt packet. Maximize recall independently for `work`, `design`, and `write`; do not merge rules across packets. Each domain has its own ceiling of 12 evidence items. Return JSON schema `2` with the exact `packet_hash`, all assigned `receipt_ids`, exact `source_tokens`, and an explicit `evidence` or `no-signal` state for every domain.
+Read only the assigned frozen receipt packet. Maximize recall independently for `work`, `design`, and `write`; do not merge rules across packets. Each domain has its own ceiling of 12 evidence items. Return JSON schema `3` with the exact `packet_hash`, all assigned `receipt_ids`, exact `source_tokens`, and an explicit `evidence` or `no-signal` state for every domain.
 
-Every evidence item includes `domain`, `kind`, `scope`, `context`, `signal_family`, a concrete instruction and implication, plus exact receipt objects shaped as `{receipt_id, session_id, date, text}`. `scope` is either `universal` or `contextual`; contextual evidence must name the context. Quotes and contradictions must copy the packet receipt text and date verbatim. The complete canonical JSON report may not exceed 24,576 bytes.
+Every evidence item includes `domain`, `kind`, `scope`, `context`, `signal_family`, a concrete instruction and implication, plus exact receipt objects shaped as `{receipt_id, session_id, date, text}`. `scope` is either `universal` or `contextual`; contextual evidence must name the context. `write` evidence additionally requires a `register` per the register rules below; no other domain may carry one. Quotes and contradictions must copy the packet receipt text and date verbatim. The complete canonical JSON report may not exceed 24,576 bytes.
 
 Before returning, run `python "$DITTO_PY" plugin validate-scout --run-id "$RUN_ID" --packet-hash "$PACKET_HASH" --report "$REPORT_PATH"`. Correct rejected output inside the same scout pass. The orchestrator caches only validated content-addressed reports.
 
@@ -20,11 +20,19 @@ Read the entire assigned segment. It contains only selected, redacted user messa
 - `design`: UI/UX taste, visual hierarchy, structural redesign rules, references, and rejections
 - `write`: voice, marketing, social replies, product copy, phrasing, and tone
 
+Every `write` evidence item must also carry a `register` classifying the voice by audience:
+
+- `casual`: banter, friends, community replies, and the user's messages to the agent itself. Text addressed to the agent is casual signal only; it never supports a professional register.
+- `professional`: writing aimed at a boss, client, customer, formal email, documentation, or official product copy.
+- `shared`: a voice law that holds regardless of audience (a banned phrase, a punctuation rule, a structural tell). If a stranger reading only the receipts could not tell which audience it came from, it is not `shared` by default; classify by the receipts' actual audience.
+
+Classify from the receipts, never from guesswork: who the text addresses, the platform it targets, and the artifact type. `register` is valid only on `write` evidence.
+
 Return JSON only. The complete serialized report must be no more than 8,192 bytes, contain at most 12 evidence items, and use no quote longer than 200 characters.
 
 ```json
 {
-  "schema_version": "1",
+  "schema_version": "2",
   "segment_hash": "<exact assigned segment hash>",
   "coverage": {
     "session_ids": ["<every session id in the segment, exactly once>"],
@@ -63,14 +71,17 @@ Rules:
 5. Record counter-evidence in `contradictions` with the same `{session_id, date, text}` receipt shape. Do not hide it.
 6. Ban generic filler such as “be helpful,” “write good code,” or “values quality.” If a stranger could guess it without the receipts, omit it.
 7. A truthful all-`no-signal` report with an empty `evidence` list is valid. Invented evidence is not.
+8. Every `write` evidence item requires `"register": "casual" | "professional" | "shared"` per the register rules above. No `work` or `design` item may carry a `register`.
 
 Before returning, run the assigned read-only `python "$DITTO_PY" plugin validate-report --run-id "$RUN_ID" --report "$REPORT_PATH"` command. If it rejects the report, correct the report and run the same validation again inside this worker pass. Return only after it reports `status: valid`. The orchestrator caches the report after the worker exits.
 
 ## Experimental adaptive isolated domain reducer contract
 
-Run one reducer for exactly one named domain. Read only that domain's validated evidence projection; never read another domain or raw history. Write one assigned JSON draft using schema `1`, the exact `domain` and `evidence_set_hash`, an `active` or permitted `inactive` status, rules with preserved evidence IDs and scope, discarded conflict records, and coverage counts for evidence items, distinct sessions, strata, and unresolved contradictions.
+Run one reducer for exactly one named domain. Read only that domain's validated evidence projection; never read another domain or raw history. Write one assigned JSON draft using schema `2`, the exact `domain` and `evidence_set_hash`, an `active` or permitted `inactive` status, rules with preserved evidence IDs and scope, discarded conflict records, and coverage counts for evidence items, distinct sessions, strata, and unresolved contradictions.
 
 An inferred rule needs two distinct sessions and two available source/time strata. A single-provider pattern may qualify across two time strata. Contextual evidence cannot become a universal rule. Unresolved contradictions must be discarded, not installed. Work must remain active; inactive design/write drafts use the exact instruction `run ditto and deepen <domain>`.
+
+Every `write` rule carries a `register`. When all referenced evidence shares one register, the rule keeps exactly that register; evidence from mixed registers reduces to `shared`. A rule may never claim a register its evidence does not show.
 
 Before returning, run `python "$DITTO_PY" plugin validate-domain --run-id "$RUN_ID" --domain "$DOMAIN" --draft "$DRAFT_PATH"`. Correct rejected output within the same reducer pass. The orchestrator content-addresses only validated domain drafts.
 
@@ -90,6 +101,8 @@ draft-manifest.json
 ```
 
 Use exact profile frontmatter names: `ditto-work-profile`, `ditto-design-profile`, and `ditto-write-profile`. Every active profile must contain each installed rule and its operational implication.
+
+An active `you-writer.md` groups its rules under exact register headings: `## Voice laws` for `shared` rules, `## Casual register` for `casual`, and `## Professional register` for `professional`. Omit a heading only when no rule carries that register. Every write rule in `draft-manifest.json` carries a `register` following the reducer register rules: a rule keeps its evidence's single shared register, and mixed-register evidence reduces to `shared`.
 
 `draft-manifest.json` uses this shape:
 

@@ -409,7 +409,7 @@ class UpdatePlanningTest(unittest.TestCase):
         result = {"records": [], "sessions": 1, "chars": 40}
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / "private"
-            corrupt = home / "cache" / "reductions" / "1" / ("b" * 64)
+            corrupt = home / "cache" / "reductions" / "2" / ("b" * 64)
             corrupt.mkdir(parents=True)
             with mock.patch.object(ditto, "sync_segments", return_value={"segments": [segment]}), \
                     mock.patch.object(ditto, "load_cached_report", return_value={}), \
@@ -428,7 +428,7 @@ class UpdatePlanningTest(unittest.TestCase):
         result = {"records": [], "sessions": 1, "chars": 40}
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / "private"
-            corrupt = home / "cache" / "reductions" / "1" / ("b" * 64)
+            corrupt = home / "cache" / "reductions" / "2" / ("b" * 64)
             corrupt.mkdir(parents=True)
             (corrupt / "manifest.json").write_text(json.dumps({
                 "schema_version": "1", "profile_id": "default",
@@ -553,7 +553,7 @@ class ReportCacheTest(unittest.TestCase):
 
     def valid_report(self):
         return {
-            "schema_version": "1",
+            "schema_version": "2",
             "segment_hash": self.SEGMENT_HASH,
             "coverage": {
                 "session_ids": ["s1", "s2"],
@@ -610,18 +610,61 @@ class ReportCacheTest(unittest.TestCase):
     def test_report_cache_path_includes_prompt_schema_and_segment_hash(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = ditto.store_report(self.valid_report(), str(Path(tmp) / "private"), self.segment())
-            self.assertTrue(path.endswith(str(Path("reports") / "1" / (self.SEGMENT_HASH + ".json"))))
+            self.assertTrue(path.endswith(str(Path("reports") / "2" / (self.SEGMENT_HASH + ".json"))))
 
     def test_prompt_schema_change_uses_a_new_report_cache_path(self):
         with tempfile.TemporaryDirectory() as tmp:
-            with mock.patch.object(ditto, "PROMPT_SCHEMA_VERSION", "2"):
+            with mock.patch.object(ditto, "PROMPT_SCHEMA_VERSION", "3"):
                 path = ditto.store_report(self.valid_report(), str(Path(tmp) / "private"), self.segment())
-            self.assertTrue(path.endswith(str(Path("reports") / "2" / (self.SEGMENT_HASH + ".json"))))
+            self.assertTrue(path.endswith(str(Path("reports") / "3" / (self.SEGMENT_HASH + ".json"))))
+
+    def write_evidence(self, register="casual"):
+        item = {
+            "evidence_id": "ev-aaaaaaaa-voice",
+            "domain": "write",
+            "kind": "inferred",
+            "instruction": "Prove claims with live output.",
+            "implication": "Attach the real result before claiming the copy works.",
+            "quotes": [
+                {"session_id": "s1", "date": "2026-01-01", "text": "done means live"},
+                {"session_id": "s2", "date": "2026-02-01", "text": "show me it works"},
+            ],
+            "contradictions": [],
+        }
+        if register is not None:
+            item["register"] = register
+        return item
+
+    def test_write_evidence_requires_a_register(self):
+        report = self.valid_report()
+        report["domain_coverage"] = {"work": "no-signal", "design": "no-signal", "write": "evidence"}
+        report["evidence"] = [self.write_evidence(register=None)]
+        with self.assertRaisesRegex(ValueError, "register"):
+            ditto.validate_report(report, self.segment())
+
+    def test_write_evidence_rejects_an_unknown_register(self):
+        report = self.valid_report()
+        report["domain_coverage"] = {"work": "no-signal", "design": "no-signal", "write": "evidence"}
+        report["evidence"] = [self.write_evidence(register="boss")]
+        with self.assertRaisesRegex(ValueError, "register"):
+            ditto.validate_report(report, self.segment())
+
+    def test_register_is_rejected_outside_the_write_domain(self):
+        report = self.valid_report()
+        report["evidence"][0]["register"] = "casual"
+        with self.assertRaisesRegex(ValueError, "only valid on write"):
+            ditto.validate_report(report, self.segment())
+
+    def test_write_evidence_accepts_a_valid_register(self):
+        report = self.valid_report()
+        report["domain_coverage"] = {"work": "no-signal", "design": "no-signal", "write": "evidence"}
+        report["evidence"] = [self.write_evidence(register="professional")]
+        ditto.validate_report(report, self.segment())
 
     def test_corrupt_report_cache_is_quarantined_and_becomes_a_miss(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / "private"
-            path = home / "cache" / "reports" / "1" / (self.SEGMENT_HASH + ".json")
+            path = home / "cache" / "reports" / "2" / (self.SEGMENT_HASH + ".json")
             path.parent.mkdir(parents=True)
             path.write_text("not-json", encoding="utf-8")
             self.assertIsNone(ditto.load_cached_report(str(home), self.segment()))
@@ -631,7 +674,7 @@ class ReportCacheTest(unittest.TestCase):
     def test_structurally_invalid_report_cache_is_quarantined(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / "private"
-            path = home / "cache" / "reports" / "1" / (self.SEGMENT_HASH + ".json")
+            path = home / "cache" / "reports" / "2" / (self.SEGMENT_HASH + ".json")
             path.parent.mkdir(parents=True)
             path.write_text("[]", encoding="utf-8")
 
@@ -698,7 +741,7 @@ class ReportCacheTest(unittest.TestCase):
             plan = json.loads(prepared.stdout)
             segment = plan["selected_segments"][0]
             report = {
-                "schema_version": "1",
+                "schema_version": "2",
                 "segment_hash": segment["segment_hash"],
                 "coverage": {
                     "session_ids": [item["session_id"] for item in segment["session_versions"]],
@@ -733,7 +776,7 @@ class ReportCacheTest(unittest.TestCase):
             payload = json.loads(validated.stdout)
             self.assertEqual(payload["status"], "valid")
             self.assertEqual(payload["segment_hash"], segment["segment_hash"])
-            self.assertFalse((home / "cache" / "reports" / "1" / (segment["segment_hash"] + ".json")).exists())
+            self.assertFalse((home / "cache" / "reports" / "2" / (segment["segment_hash"] + ".json")).exists())
             stored_plan = json.loads((Path(plan["run_dir"]) / "plan.json").read_text(encoding="utf-8"))
             self.assertEqual(stored_plan["report_paths"], [])
             self.assertIsNone(stored_plan["report_set_hash"])
@@ -783,7 +826,7 @@ class ReportCacheTest(unittest.TestCase):
             plan = json.loads(prepared.stdout)
             segment = plan["selected_segments"][0]
             report = {
-                "schema_version": "1",
+                "schema_version": "2",
                 "segment_hash": segment["segment_hash"],
                 "coverage": {
                     "session_ids": [item["session_id"] for item in segment["session_versions"]],

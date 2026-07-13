@@ -93,9 +93,9 @@ not memory exactly. memory is what you told the model. this is more like mining 
 
 I posted it on r/ClaudeSkills, as written:
 
-<p align="center"><img src="assets/reddit-proof.png" width="460" alt="The post the Ditto-loaded agent wrote: 168 upvotes, 26 comments, 88K views"></p>
+<p align="center"><img src="assets/reddit-proof.png" width="460" alt="The post the Ditto-loaded agent wrote: 200 upvotes, 32 comments, 102K views"></p>
 
-<p align="center"><strong>168 upvotes &middot; 26 comments &middot; 88K views</strong><br>
+<p align="center"><strong>200 upvotes &middot; 32 comments &middot; 102K views</strong><br>
 <sub>from an account with no followers. The cold plan was reasonable. The loaded plan knew its user's voice — and it worked.</sub></p>
 
 ## What it finds
@@ -143,7 +143,7 @@ That installs the bootstrap and creates a read-only full-history mining plan. Yo
 The native plugin adds `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`:
 
 ```bash
-codex plugin marketplace add ohad6k/ditto --ref v0.2.0 --json
+codex plugin marketplace add ohad6k/ditto --ref v0.3.0 --json
 codex plugin add ditto@ditto --json
 ```
 
@@ -232,7 +232,7 @@ See [SECURITY.md](SECURITY.md) for the exact boundary.
 The legacy extractor remains available and backward compatible:
 
 ```bash
-curl -O https://raw.githubusercontent.com/ohad6k/ditto/v0.2.0/ditto.py
+curl -O https://raw.githubusercontent.com/ohad6k/ditto/v0.3.0/ditto.py
 python ditto.py --dry-run
 python ditto.py --chunks 4 --out ditto-out
 ```

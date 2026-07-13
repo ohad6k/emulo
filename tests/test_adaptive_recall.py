@@ -160,7 +160,7 @@ def packet_fixture():
 
 
 def scout_evidence(item, domain, index):
-    return {
+    evidence = {
         "evidence_id": f"ev-{domain}-{index:02d}",
         "domain": domain,
         "kind": "explicit",
@@ -175,6 +175,9 @@ def scout_evidence(item, domain, index):
         }],
         "contradictions": [],
     }
+    if domain == "write":
+        evidence["register"] = "casual"
+    return evidence
 
 
 def valid_scout_report(items_per_domain=1):
@@ -184,7 +187,7 @@ def valid_scout_report(items_per_domain=1):
         for index in range(items_per_domain):
             evidence.append(scout_evidence(packet["receipts"][domain_index * 12 + index], domain, index))
     return {
-        "schema_version": "2",
+        "schema_version": "3",
         "packet_hash": packet["packet_hash"],
         "coverage": {"receipt_ids": packet["receipt_ids"], "source_tokens": packet["source_tokens"]},
         "domain_coverage": {domain: "evidence" for domain in ("work", "design", "write")},
@@ -207,20 +210,26 @@ def evidence_fixture(domains=("work",)):
                             "date": "2026-01-01", "text": f"{domain} receipt {suffix}"}],
                 "contradictions": [],
             }
+            if domain == "write":
+                out[f"ev-{domain}-{suffix}"]["register"] = "casual"
     return out
 
 
 def valid_domain_draft(domain, evidence_ids=None, scope="universal", evidence=None):
     evidence = evidence or evidence_fixture((domain,))
     evidence_ids = evidence_ids or [f"ev-{domain}-a", f"ev-{domain}-b"]
+    rule = {"text": f"Specific {domain} rule", "implication": f"Perform the specific {domain} action",
+            "kind": "inferred", "scope": scope,
+            "context": "named product" if scope == "contextual" else "",
+            "evidence_ids": evidence_ids}
+    if domain == "write":
+        registers = {evidence[evidence_id].get("register", "shared") for evidence_id in evidence_ids if evidence_id in evidence}
+        rule["register"] = next(iter(registers)) if len(registers) == 1 else "shared"
     return {
-        "schema_version": "1", "domain": domain,
+        "schema_version": "2", "domain": domain,
         "evidence_set_hash": ditto.compute_domain_evidence_hash(domain, evidence),
         "status": "active",
-        "rules": [{"text": f"Specific {domain} rule", "implication": f"Perform the specific {domain} action",
-                   "kind": "inferred", "scope": scope,
-                   "context": "named product" if scope == "contextual" else "",
-                   "evidence_ids": evidence_ids}],
+        "rules": [rule],
         "discarded": [],
         "coverage": {"evidence_items": 2, "distinct_sessions": 2, "strata": 2,
                      "unresolved_contradictions": 0},
@@ -265,7 +274,7 @@ def adaptive_run_fixture(active_domains=("work",), shared_receipts=False):
         else:
             domain_evidence = evidence_fixture((domain,))
             drafts[domain] = {
-                "schema_version": "1", "domain": domain,
+                "schema_version": "2", "domain": domain,
                 "evidence_set_hash": ditto.compute_domain_evidence_hash(domain, evidence),
                 "status": "inactive", "reason": "insufficient evidence",
                 "deepen_instruction": f"run ditto and deepen {domain}", "rules": [], "discarded": [],

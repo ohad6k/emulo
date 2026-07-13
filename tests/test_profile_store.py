@@ -115,7 +115,7 @@ class ProfilePackValidationTest(unittest.TestCase):
                 segment_path.parent.mkdir(parents=True, exist_ok=True)
                 segment_path.write_bytes(text.encode("utf-8"))
                 report = {
-                    "schema_version": "1",
+                    "schema_version": "2",
                     "segment_hash": segment_hash,
                     "coverage": {
                         "session_ids": [session_id],
@@ -186,12 +186,12 @@ class ProfilePackValidationTest(unittest.TestCase):
         }
         rule = {"text": "Always prove done.", "implication": "Run verification before reporting completion.", "kind": "inferred", "evidence_ids": ["ev-a", "ev-b"]}
         with self.assertRaisesRegex(ValueError, "two distinct sessions"):
-            ditto.validate_rule(rule, reports, require_cross_strata=True)
+            ditto.validate_rule(rule, reports, require_cross_strata=True, domain="work")
 
     def test_explicit_rule_allows_one_uncontradicted_receipt(self):
         reports = {"ev-a": {"kind": "explicit", "sessions": {"s1"}, "strata": {"codex:2026-Q1"}, "quote_count": 1, "contradictions": []}}
         rule = {"text": "Never use em dashes.", "implication": "Replace em dashes before returning public copy.", "kind": "explicit", "confidence": "low-frequency", "evidence_ids": ["ev-a"]}
-        ditto.validate_rule(rule, reports, require_cross_strata=False)
+        ditto.validate_rule(rule, reports, require_cross_strata=False, domain="work")
 
     def test_rule_with_contradiction_cannot_be_installed(self):
         reports = {
@@ -200,7 +200,7 @@ class ProfilePackValidationTest(unittest.TestCase):
         }
         rule = {"text": "Always prove done.", "implication": "Run verification before reporting completion.", "kind": "inferred", "evidence_ids": ["ev-a", "ev-b"]}
         with self.assertRaisesRegex(ValueError, "unresolved contradiction"):
-            ditto.validate_rule(rule, reports, require_cross_strata=True)
+            ditto.validate_rule(rule, reports, require_cross_strata=True, domain="work")
 
     def test_generic_rule_cannot_be_installed(self):
         reports = {
@@ -209,7 +209,79 @@ class ProfilePackValidationTest(unittest.TestCase):
         }
         rule = {"text": "Follow best practices.", "implication": "Write good code.", "kind": "inferred", "evidence_ids": ["ev-a", "ev-b"]}
         with self.assertRaisesRegex(ValueError, "generic"):
-            ditto.validate_rule(rule, reports, require_cross_strata=True)
+            ditto.validate_rule(rule, reports, require_cross_strata=True, domain="work")
+
+    def write_register_evidence(self, first="casual", second="casual"):
+        return {
+            "ev-a": {"kind": "inferred", "sessions": {"s1"}, "strata": {"codex:2026-Q1"}, "quote_count": 1, "contradictions": [], "register": first},
+            "ev-b": {"kind": "inferred", "sessions": {"s2"}, "strata": {"codex:2026-Q2"}, "quote_count": 1, "contradictions": [], "register": second},
+        }
+
+    def test_write_rule_requires_a_register(self):
+        rule = {"text": "Never open with fair.", "implication": "Rewrite any reply that starts with the banned opener.", "kind": "inferred", "evidence_ids": ["ev-a", "ev-b"]}
+        with self.assertRaisesRegex(ValueError, "register"):
+            ditto.validate_rule(rule, self.write_register_evidence(), require_cross_strata=True, domain="write")
+
+    def test_write_rule_keeps_its_evidence_register(self):
+        rule = {"text": "Never open with fair.", "implication": "Rewrite any reply that starts with the banned opener.", "kind": "inferred", "register": "casual", "evidence_ids": ["ev-a", "ev-b"]}
+        ditto.validate_rule(rule, self.write_register_evidence(), require_cross_strata=True, domain="write")
+
+    def test_write_rule_cannot_claim_a_register_its_evidence_lacks(self):
+        rule = {"text": "Never open with fair.", "implication": "Rewrite any reply that starts with the banned opener.", "kind": "inferred", "register": "professional", "evidence_ids": ["ev-a", "ev-b"]}
+        with self.assertRaisesRegex(ValueError, "match its evidence"):
+            ditto.validate_rule(rule, self.write_register_evidence(), require_cross_strata=True, domain="write")
+
+    def test_mixed_register_evidence_reduces_to_shared(self):
+        rule = {"text": "Never open with fair.", "implication": "Rewrite any reply that starts with the banned opener.", "kind": "inferred", "register": "shared", "evidence_ids": ["ev-a", "ev-b"]}
+        ditto.validate_rule(rule, self.write_register_evidence(second="professional"), require_cross_strata=True, domain="write")
+
+    def test_register_is_rejected_outside_the_write_domain(self):
+        evidence = self.write_register_evidence()
+        for item in evidence.values():
+            del item["register"]
+        rule = {"text": "Always prove done.", "implication": "Run verification before reporting completion.", "kind": "inferred", "register": "casual", "evidence_ids": ["ev-a", "ev-b"]}
+        with self.assertRaisesRegex(ValueError, "only valid on write"):
+            ditto.validate_rule(rule, evidence, require_cross_strata=True, domain="work")
+
+    def test_write_profile_renders_register_sections(self):
+        rules = [
+            {"text": "Never open with fair.", "implication": "Rewrite the banned opener.", "register": "shared"},
+            {"text": "Keep replies builder-to-builder.", "implication": "Drop formal framing in community threads.", "register": "casual"},
+            {"text": "Lead with the concrete result.", "implication": "Open boss updates with the verified outcome.", "register": "professional"},
+        ]
+        profile = ditto.render_domain_profile("write", rules)
+        self.assertIn("## Voice laws", profile)
+        self.assertIn("## Casual register", profile)
+        self.assertIn("## Professional register", profile)
+        self.assertLess(profile.index("## Voice laws"), profile.index("## Casual register"))
+        self.assertLess(profile.index("## Casual register"), profile.index("## Professional register"))
+
+    def test_write_profile_omits_empty_register_sections(self):
+        rules = [{"text": "Never open with fair.", "implication": "Rewrite the banned opener.", "register": "shared"}]
+        profile = ditto.render_domain_profile("write", rules)
+        self.assertIn("## Voice laws", profile)
+        self.assertNotIn("## Casual register", profile)
+        self.assertNotIn("## Professional register", profile)
+
+    def test_write_rule_rejects_evidence_without_a_register(self):
+        evidence = self.write_register_evidence()
+        del evidence["ev-b"]["register"]
+        rule = {"text": "Never open with fair.", "implication": "Rewrite any reply that starts with the banned opener.", "kind": "inferred", "register": "shared", "evidence_ids": ["ev-a", "ev-b"]}
+        with self.assertRaisesRegex(ValueError, "write evidence that carries a register"):
+            ditto.validate_rule(rule, evidence, require_cross_strata=True, domain="write")
+
+    def test_write_profile_sections_split_on_register_headings(self):
+        rules = [
+            {"text": "Never open with fair.", "implication": "Rewrite the banned opener.", "register": "shared"},
+            {"text": "Keep replies builder-to-builder.", "implication": "Drop formal framing in community threads.", "register": "casual"},
+            {"text": "Lead with the concrete result.", "implication": "Open boss updates with the verified outcome.", "register": "professional"},
+        ]
+        sections = ditto.write_profile_sections(ditto.render_domain_profile("write", rules))
+        self.assertIn("Never open with fair.", sections["shared"])
+        self.assertNotIn("Never open with fair.", sections["casual"])
+        self.assertIn("Keep replies builder-to-builder.", sections["casual"])
+        self.assertNotIn("Keep replies builder-to-builder.", sections["professional"])
+        self.assertIn("Lead with the concrete result.", sections["professional"])
 
     def test_active_domain_requires_exact_profile_frontmatter(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -275,7 +347,7 @@ class AtomicProfileStoreTest(unittest.TestCase):
             report_set_hash = "7" * 64
             pack = make_valid_pack(Path(tmp) / "pack", report_set_hash)
             ditto.activate_profile_pack(home, pack, evidence_fixture(), run_plan_fixture(report_set_hash))
-            manifest_path = Path(home, "cache", "reductions", "1", report_set_hash, "manifest.json")
+            manifest_path = Path(home, "cache", "reductions", "2", report_set_hash, "manifest.json")
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             manifest["profile_version"] = "f" * 20
             manifest_path.write_text(ditto.canonical_json(manifest) + "\n", encoding="utf-8")
@@ -288,7 +360,7 @@ class AtomicProfileStoreTest(unittest.TestCase):
             report_set_hash = "8" * 64
             pack = make_valid_pack(Path(tmp) / "pack", report_set_hash)
             ditto.activate_profile_pack(home, pack, evidence_fixture(), run_plan_fixture(report_set_hash))
-            manifest_path = Path(home, "cache", "reductions", "1", report_set_hash, "manifest.json")
+            manifest_path = Path(home, "cache", "reductions", "2", report_set_hash, "manifest.json")
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             manifest["domains"] = {
                 domain: {
@@ -365,7 +437,7 @@ class AtomicProfileStoreTest(unittest.TestCase):
             ditto.activate_profile_pack(home, pack, evidence_fixture(), run_plan_fixture(report_set_hash))
             current = Path(home, "profiles", "default", "current.json")
             before = current.read_bytes()
-            cached_you = Path(home, "cache", "reductions", "1", report_set_hash, "you.md")
+            cached_you = Path(home, "cache", "reductions", "2", report_set_hash, "you.md")
             cached_you.write_text("tampered", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "hash"):
                 ditto.activate_cached_reduction(home, report_set_hash)

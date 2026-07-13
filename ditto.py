@@ -34,14 +34,14 @@ DITTO_END = "<!-- ditto profile:end -->"
 
 EXTRACTION_SCHEMA_VERSION = "1"
 SEGMENT_SCHEMA_VERSION = "1"
-REPORT_SCHEMA_VERSION = "1"
-PROMPT_SCHEMA_VERSION = "1"
-REDUCER_SCHEMA_VERSION = "1"
+REPORT_SCHEMA_VERSION = "2"
+PROMPT_SCHEMA_VERSION = "2"
+REDUCER_SCHEMA_VERSION = "2"
 RECEIPT_SCHEMA_VERSION = "1"
 SALIENCE_SCHEMA_VERSION = "1"
 PACKET_SCHEMA_VERSION = "1"
-SCOUT_REPORT_SCHEMA_VERSION = "2"
-DOMAIN_DRAFT_SCHEMA_VERSION = "1"
+SCOUT_REPORT_SCHEMA_VERSION = "3"
+DOMAIN_DRAFT_SCHEMA_VERSION = "2"
 MAX_SCOUT_REPORT_BYTES = 24_576
 
 STAGE_CONFIGS = {
@@ -727,6 +727,12 @@ def report_cache_path(ditto_home, segment_hash_value):
 
 VALID_DOMAINS = {"work", "design", "write"}
 VALID_EVIDENCE_KINDS = {"inferred", "explicit"}
+VALID_REGISTERS = {"casual", "professional", "shared"}
+REGISTER_SECTIONS = (
+    ("shared", "## Voice laws"),
+    ("casual", "## Casual register"),
+    ("professional", "## Professional register"),
+)
 GENERIC_RULES = {
     "be helpful",
     "be concise",
@@ -750,7 +756,14 @@ WINDOWS_RESERVED_NAMES = {
 def normalized_rule_text(value):
     return re.sub(r"[^a-z0-9 ]+", "", value.lower()).strip()
 
-def validate_rule(rule, evidence_by_id, require_cross_strata):
+def validate_register(domain, register, subject):
+    if domain == "write":
+        if register not in VALID_REGISTERS:
+            raise ValueError(f"write {subject} requires a casual, professional, or shared register")
+    elif register is not None:
+        raise ValueError(f"register is only valid on write {subject}")
+
+def validate_rule(rule, evidence_by_id, require_cross_strata, domain):
     text = rule.get("text", "").strip()
     implication = rule.get("implication", "").strip()
     if normalized_rule_text(text) in GENERIC_RULES or normalized_rule_text(implication) in GENERIC_RULES:
@@ -761,6 +774,15 @@ def validate_rule(rule, evidence_by_id, require_cross_strata):
     if not ids or any(evidence_id not in evidence_by_id for evidence_id in ids):
         raise ValueError("rule references missing evidence")
     evidence = [evidence_by_id[evidence_id] for evidence_id in ids]
+    register = rule.get("register")
+    validate_register(domain, register, "rules")
+    if domain == "write":
+        evidence_registers = {item.get("register") for item in evidence}
+        if None in evidence_registers:
+            raise ValueError("write rule requires write evidence that carries a register")
+        expected = next(iter(evidence_registers)) if len(evidence_registers) == 1 else "shared"
+        if register != expected:
+            raise ValueError("write rule register must match its evidence registers")
     sessions = set().union(*(item["sessions"] for item in evidence))
     strata = set().union(*(item["strata"] for item in evidence))
     quote_count = sum(item["quote_count"] for item in evidence)
@@ -806,6 +828,8 @@ def flatten_report_evidence(reports):
                 "quotes": quotes,
                 "contradictions": item.get("contradictions", []),
             }
+            if item.get("register") is not None:
+                flattened[evidence_id]["register"] = item["register"]
     return flattened
 
 def json_safe_evidence(value):
@@ -866,7 +890,7 @@ def validate_domain_draft(draft, domain, evidence_by_id, run_plan):
             raise ValueError("rule scope cannot broaden contextual evidence")
         if rule.get("scope") == "contextual" and not rule.get("context", "").strip():
             raise ValueError("contextual rule requires context")
-        validate_rule(rule, evidence_by_id, require_cross_strata=run_plan.get("adequate_strata", True))
+        validate_rule(rule, evidence_by_id, require_cross_strata=run_plan.get("adequate_strata", True), domain=domain)
     coverage = draft.get("coverage", {})
     if set(coverage) != {"evidence_items", "distinct_sessions", "strata", "unresolved_contradictions"}:
         raise ValueError("domain draft coverage is incomplete")
@@ -965,10 +989,15 @@ def validate_profile_pack(pack_dir, evidence_by_id, run_plan):
         rules = state.get("rules", [])
         if not rules:
             raise ValueError(f"active {domain} domain requires rules")
+        sections = write_profile_sections(profile) if domain == "write" else None
         for rule in rules:
-            validate_rule(rule, evidence_by_id, require_cross_strata=run_plan["adequate_strata"])
+            validate_rule(rule, evidence_by_id, require_cross_strata=run_plan["adequate_strata"], domain=domain)
             if rule["text"] not in profile or rule["implication"] not in profile:
                 raise ValueError("profile file omits a validated rule or implication")
+            if sections is not None:
+                section = sections.get(rule["register"], "")
+                if rule["text"] not in section or rule["implication"] not in section:
+                    raise ValueError("write rule must appear under its own register section")
             for evidence_id in rule["evidence_ids"]:
                 evidence = evidence_by_id[evidence_id]
                 if evidence_id not in appendix:
@@ -997,6 +1026,18 @@ def validate_profile_pack(pack_dir, evidence_by_id, run_plan):
 def escape_private_markdown(value):
     return re.sub(r"([\\`*_{}\[\]<>#])", r"\\\1", value)
 
+def write_profile_sections(profile):
+    marks = sorted(
+        (profile.find(heading), register)
+        for register, heading in REGISTER_SECTIONS
+        if heading in profile
+    )
+    sections = {}
+    for position, (start, register) in enumerate(marks):
+        end = marks[position + 1][0] if position + 1 < len(marks) else len(profile)
+        sections[register] = profile[start:end]
+    return sections
+
 def render_domain_profile(domain, rules):
     _, skill_name = DOMAIN_FILES[domain]
     lines = [
@@ -1004,6 +1045,19 @@ def render_domain_profile(domain, rules):
         f"description: Evidence-backed Ditto {domain} profile", "---", "",
         f"# Ditto {domain} profile", "",
     ]
+    if domain == "write":
+        lines.extend([
+            "Pick one register per task from the audience in front of you; voice laws always apply.", "",
+        ])
+        for register, heading in REGISTER_SECTIONS:
+            selected = [rule for rule in rules if rule.get("register", "shared") == register]
+            if not selected:
+                continue
+            lines.extend([heading, ""])
+            for rule in sorted(selected, key=lambda item: (item["text"], item["implication"])):
+                lines.extend([f"- {rule['text']}", f"  - Action: {rule['implication']}"])
+            lines.append("")
+        return "\n".join(lines).rstrip("\n") + "\n"
     for rule in sorted(rules, key=lambda item: (item["text"], item["implication"])):
         lines.extend([f"- {rule['text']}", f"  - Action: {rule['implication']}"])
     return "\n".join(lines) + "\n"
@@ -1056,6 +1110,8 @@ def assemble_profile_pack(ditto_home, run_plan, domain_drafts):
             }
             if "confidence" in rule:
                 rendered["confidence"] = rule["confidence"]
+            if "register" in rule:
+                rendered["register"] = rule["register"]
             rendered_rules.append(rendered)
             referenced_ids.update(rule["evidence_ids"])
         domain_states[domain] = {"status": "active", "file": filename, "rules": rendered_rules}
@@ -1677,6 +1733,7 @@ def validate_report(report, segment):
     for item in evidence_items:
         if item.get("domain") not in VALID_DOMAINS or item.get("kind") not in VALID_EVIDENCE_KINDS:
             raise ValueError("invalid evidence domain or kind")
+        validate_register(item["domain"], item.get("register"), "evidence")
         evidence_id = item.get("evidence_id", "")
         required_prefix = "ev-" + report["segment_hash"][:8] + "-"
         if (
@@ -1744,6 +1801,7 @@ def validate_scout_report(report, packet):
         seen_ids.add(evidence_id)
         if item.get("kind") not in VALID_EVIDENCE_KINDS:
             raise ValueError("invalid scout evidence kind")
+        validate_register(domain, item.get("register"), "evidence")
         scope = item.get("scope")
         if scope not in {"universal", "contextual"}:
             raise ValueError("invalid scout evidence scope")
@@ -2634,6 +2692,8 @@ def load_adaptive_evidence(plan):
                 report = json.load(handle)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             raise ValueError("cached scout report is missing or corrupt") from exc
+        if report.get("schema_version") != SCOUT_REPORT_SCHEMA_VERSION:
+            raise ValueError("cached scout report uses an outdated schema; run ditto again to re-mine")
         for item in report.get("evidence", []):
             evidence_id = item["evidence_id"]
             if evidence_id in flattened:
@@ -2654,6 +2714,8 @@ def load_adaptive_evidence(plan):
                 "contradictions": item.get("contradictions", []),
                 "instruction": item.get("instruction", ""), "implication": item.get("implication", ""),
             }
+            if item.get("register") is not None:
+                flattened[evidence_id]["register"] = item["register"]
     return flattened
 
 def validate_run_domain(args, cache=False):

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0 - 2026-07-13
+
+### Changed
+
+- Added voice registers to the writing profile. Every mined `write` evidence item and rule now carries a `register`: `casual`, `professional`, or `shared`. Ditto used to average every voice you use into one blend, which made agent-drafted messages to a boss or client read too casual; registers keep those voices separate. Requested by a user who ran Ditto on ~120 sessions (see `docs/FEEDBACK.md`).
+- An active `you-writer.md` is now grouped under `## Voice laws` (always apply), `## Casual register`, and `## Professional register`. A rule keeps its evidence's single register; mixed-register evidence reduces to a shared voice law. A rule can never claim a register its receipts do not show.
+- The `ditto:write` skill now picks the register from task context instead of asking: an explicit audience statement wins, otherwise the pasted thread, recipient, or artifact type decides, and the pick is stated in one correctable line. Existing flat writing profiles still load unchanged.
+- Register classification happens at mining time from the receipts (audience, platform, artifact type). Messages addressed to the agent count as casual signal only and never support a professional register.
+- Schema bumps for the contract change: report `1` -> `2`, mining prompt `1` -> `2`, reducer `1` -> `2`, scout report `2` -> `3`, domain draft `1` -> `2`. Existing installed profiles keep loading; the next mining run re-mines under the new contract instead of reusing pre-register caches.
+- The `v0.3.0` bootstrap runtime pins `ditto.py` to SHA-256 `1eb0f2698f284ee3983a055b9dcf95af131e7c6d0a448e524df271fb2d38102d` and `MINING_PROMPT.md` to SHA-256 `878454ad853b0b9730e852d66267230627ad3141de478cf16716062c11fab8b2`.
+- Added `docs/FEEDBACK.md`, a running log of user feedback and what each item changed.
+
+### Why it matters
+
+One voice profile was the wrong shape: people write differently to a boss than to a subreddit, and the profile flattened that. Registers are mined, not asked, so the split costs the user nothing, and the loader infers the audience from context so using it costs nothing either.
+
 ## 0.2.0 - 2026-07-11
 
 ### Changed
