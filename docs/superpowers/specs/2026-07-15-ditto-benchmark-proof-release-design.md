@@ -10,7 +10,7 @@
 
 **Frozen starting point:** Ditto plugin `v0.3.7` at `5f4008b0c0df40dcadb92c8fd1ba4dcf3aee40d0`
 
-## Review changelog (A1-A11)
+## Review changelog (A1-A12)
 
 - **A1:** Sections 6.3, 8.3, 8.4, and 8.5 now treat writing voice as structurally de-blindable. Writing uses pre-registered mechanism checks; any public preference verdict comes only from reviewers unfamiliar with the operator.
 - **A2:** New Section 8.4 defines the independent reviewer role, disqualifies Ohad from blind preference judging, and makes consent and blinding evidence mandatory in Section 11.
@@ -22,7 +22,8 @@
 - **A8 (superseded by A10):** Section 18 originally kept the top-down traffic estimate as a non-binding scenario before the additional distribution review removed it entirely.
 - **A9:** Section 9 retains exact captured labels, allows attrition, and forbids substitution or backfilling of unavailable systems.
 - **A10:** Section 18 was rebuilt from fixed operator channel constraints and live research captured on 2026-07-15. The top-down 17% conversion and 4,900-visitor scenario is removed. The new plan uses dated per-channel evidence, marks unsupported reach and star conversion unknown, assigns execution ownership, stages channel-native copy/assets, gives a conditional dated calendar, sets Hacker News planned traffic to zero, and keeps every external action behind a separate approval.
-- **A11:** A live launch-readiness audit on 2026-07-15 separated ClawHub downloads, installs, PyPI packages, GitHub clones, and stars instead of treating them as one adoption number. It also found that the public Discord invite expires before the proposed launch window and that GitHub `v0.3.8` is newer than PyPI `0.3.6`; Section 18 now fails closed on both release-surface and community-link drift.
+- **A11:** A live launch-readiness audit on 2026-07-15 separated ClawHub downloads, installs, PyPI packages, GitHub clones, and stars instead of treating them as one adoption number. It also found that the public Discord invite is broken and that GitHub `v0.3.8` is newer than PyPI `0.3.6`; Section 18 now fails closed on both release-surface and community-link drift.
+- **A12:** A read-only release review on 2026-07-15 confirmed that `v0.3.8` still pins MCP `server.json` to PyPI `0.3.6`, has no PyPI publish workflow, and has no repository-secret or local-credential evidence for an approved upload path. Section 18 now separates the repository changes, PyPI dashboard/trusted-publisher action, credential boundary, and provider receipt required to align those surfaces.
 
 ## 1. Outcome
 
@@ -420,7 +421,7 @@ Research was refreshed on **2026-07-15**. Private provider evidence comes from G
 Marketplace and package counters are a separate evidence class from channel reach:
 
 - The public [ClawHub API receipt](https://clawhub.ai/api/v1/skills/ditto-profile) returned `42` cumulative downloads, `0` installs, `1` ClawHub star, and a clean moderation verdict on 2026-07-15. The earlier `41` was a real value of that counter before it incremented, but the API exposes no unique-person or successful-use denominator. Report it only as **42 ClawHub download requests**, never as 42 users or installations.
-- The official [PyPI project record](https://pypi.org/pypi/ditto-cli/json) still returned `0.3.6` while the public [GitHub release](https://github.com/ohad6k/ditto/releases/tag/v0.3.8) was `v0.3.8`. PyPI's project JSON reports download fields as `-1`, so it does not validate a download total. This version drift must be resolved or named explicitly before any copy implies that every install surface serves the current release.
+- The official [PyPI project record](https://pypi.org/pypi/ditto-cli/json) still returned `0.3.6` while the public [GitHub release](https://github.com/ohad6k/ditto/releases/tag/v0.3.8) was `v0.3.8`. PyPI's project JSON reports download fields as `-1`, so it does not validate a download total. The tagged `v0.3.8` `server.json` also deliberately points the MCP Registry package record at `ditto-cli==0.3.6`. The repository has test and scanner workflows but no PyPI publish workflow, repository publishing secret, or local publishing-credential indicator. This version drift must be resolved or named explicitly before any copy implies that every install surface serves the current release.
 - GitHub Traffic reported `965` clones from `371` unique cloners over its 14-day window. Those are Git clone events, not GitHub release downloads, package installs, active users, or retained users. The repository had `179` stars at the same audit point, with `15` timestamped stars in the preceding 24 hours; that is an observed baseline, not a channel forecast.
 
 There is **no aggregate visitor or star forecast**. Product Hunt is the only channel with a sourced prospective visit scenario, and the other channels remain unknown; summing one scenario with unknowns would create fake precision. The former `17%` repository-wide visitor-to-star ratio and `4,900` visitor line are removed because repository-wide uniques mix channels, repeat exposure, and self-selected launch traffic while GitHub does not attribute stars to referrers.
@@ -452,6 +453,8 @@ GitHub is the conversion and inspection surface, not a traffic forecast.
 The proof hub must be live before any distribution item. It opens with the frozen comparison question, raw win/tie/loss denominators, hard failures, exclusions, and `small-n, directional only`; every clip and post links to the same evidence URL.
 
 The benchmark may remain frozen at `v0.3.7` while the product advances, but every public install path must name what it actually serves. Before staging, the agent records the current GitHub, plugin, PyPI, registry, and marketplace versions and runs the exact public install commands in clean temporary homes. A mismatch is allowed only when the copy states it precisely and the intended path still passes; otherwise distribution stops. No channel may use `latest`, `current`, or `v0.3.8` as interchangeable labels while PyPI still resolves `0.3.6`.
+
+PyPI alignment is a separate approved release action, not an implied consequence of the GitHub tag. The recommended durable route is a SHA-pinned GitHub Actions publish workflow plus [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/adding-a-publisher/) scoped to `ohad6k/ditto`, the exact workflow filename, and a protected publishing environment. That route requires both a reviewed repository change and a human PyPI dashboard receipt. A one-off local upload is an explicit fallback only; credentials stay in the local keyring/environment or an interactive provider prompt and are never pasted into chat, committed, logged, or written into the staging package. After either route, the agent verifies the public PyPI JSON, exact wheel/sdist hashes, a clean pinned `uvx --from ditto-cli==0.3.8 ditto-cli mcp` initialization whose `serverInfo.version` is `0.3.8`, and updated `server.json` before distribution can claim alignment.
 
 ### 18.5 Reddit: two manual, native posts
 
@@ -682,7 +685,7 @@ Launch checklist:
 - [ ] every displayed install command resolves to the intended release and has a clean smoke receipt in `release-surfaces.json`; the GitHub `v0.3.8` / PyPI `0.3.6` drift is resolved or disclosed before approval;
 - [ ] first comment, FAQ replies, privacy answer, prior-art answer, and negative-result answer are staged;
 - [ ] audience mobilization is limited to the approved X/YouTube/Reddit sequence and one evidence-first notice to the existing Discord; no unsolicited DM, vote request, coordinated upvote, or promised endorsement is used;
-- [ ] the Discord link remains valid through the `+7 days` measurement window. The current invite expires at `2026-08-07 12:37 UTC`, before the proposed launch; Ohad must manually create or select a durable invite after separate approval, or Discord is removed from the launch. The agent validates and stages the link but does not create or send invites autonomously;
+- [ ] the Discord link remains valid through the `+7 days` measurement window. The invite linked from live `main` returned Discord `Unknown Invite` / HTTP `404` on 2026-07-15; the older worktree invite was also unavailable. Ohad must manually create or select a durable invite after separate approval using Discord's [Edit Invite Link](https://support.discord.com/hc/en-us/articles/208866998-Invites-101) controls with no expiry and no use limit, or Discord is removed from the launch. The agent validates and stages the link but does not create or send invites autonomously;
 - [ ] launch date/time is verified in the Product Hunt dashboard and captured in the approval receipt;
 - [ ] no hunter-email, rank, homepage, traffic, upvote, signup, or star projection appears in copy;
 - [ ] launch-day owner sheet covers moderation, support, real replies, evidence corrections, and stop conditions;
