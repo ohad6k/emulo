@@ -1,0 +1,13 @@
+# Ditto
+
+> Ditto mines your real AI coding sessions (Claude Code, Codex, Cursor, Copilot CLI, OpenCode) into a you.md working profile your agent reads before every task. It reads raw local session logs and writes a private profile of how you decide, what you reject, what "done" means to you, and how you talk when you are actually working.
+
+Ditto is open source (MIT), runs locally, and redacts secrets before writing anything. It installs as an agent skill, so the profile loads before every task instead of the agent starting cold each session.
+
+It is not memory. Memory is what you told the model. Ditto mines what your work already proved about you, which is why it reads raw session logs rather than a CLAUDE.md or rules file.
+
+Install: `npx skills add ohad6k/ditto`
+
+## Links
+- [GitHub repository](https://github.com/ohad6k/ditto): source, README, and install instructions
+- [Discord](https://discord.gg/QMnYtVcxk2): community and support

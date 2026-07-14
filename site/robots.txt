@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ditto-mauve.vercel.app/sitemap.xml
