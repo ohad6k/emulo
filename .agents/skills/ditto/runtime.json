@@ -1,10 +1,10 @@
 {
  "schema_version": "1",
- "version": "0.3.6",
- "ref": "v0.3.6",
+ "version": "0.3.7",
+ "ref": "v0.3.7",
  "files": {
   "ditto.py": {
-   "sha256": "2428e5acc7dc5f87cd87182ce946705a7c4ec0dd7f2f221b3d61f9ceec5c49b2"
+   "sha256": "c892992a3c5162b6308afe8f72383e273923bb322ac0102f9434f34aa35d8b60"
   },
   "MINING_PROMPT.md": {
    "sha256": "878454ad853b0b9730e852d66267230627ad3141de478cf16716062c11fab8b2"
