@@ -48,7 +48,7 @@ class BootstrapTest(unittest.TestCase):
 
     def test_release_runtime_hashes_match_canonical_repository_bytes(self):
         value = bootstrap.load_metadata(ROOT / ".agents" / "skills" / "ditto" / "runtime.json")
-        self.assertEqual("v0.3.7", value["ref"])
+        self.assertEqual("v0.3.8", value["ref"])
         for name in ("ditto.py", "MINING_PROMPT.md"):
             canonical = (ROOT / name).read_bytes().replace(b"\r\n", b"\n")
             self.assertEqual(digest(canonical), value["files"][name]["sha256"])

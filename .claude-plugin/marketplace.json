@@ -8,7 +8,7 @@
       "source": "./",
       "displayName": "Ditto",
       "description": "Mine real AI coding sessions into a bounded, evidence-backed personal layer.",
-      "version": "0.3.7",
+      "version": "0.3.8",
       "author": {"name": "Ohad"},
       "homepage": "https://github.com/ohad6k/ditto",
       "repository": "https://github.com/ohad6k/ditto",

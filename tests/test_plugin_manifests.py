@@ -69,7 +69,7 @@ class PluginManifestTest(unittest.TestCase):
             self.assertTrue((ROOT / relative).is_dir(), relative)
 
     def test_patch_release_versions_match_across_public_surfaces(self):
-        expected = "0.3.7"
+        expected = "0.3.8"
         manifests = [
             ROOT / ".github" / "plugin" / "plugin.json",
             ROOT / ".claude-plugin" / "plugin.json",
@@ -192,7 +192,9 @@ class DocumentationTruthTest(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertNotIn("(18/20)", readme)
         self.assertNotIn("Claude Code, Codex, and Cursor", readme)
-        self.assertIn("Codex, Claude Code, and Copilot CLI", readme)
+        self.assertIn(
+            "Codex, Claude Code, Copilot CLI, OpenCode, and Google Antigravity", readme
+        )
         self.assertIn("distinct supporting sessions", readme)
 
 

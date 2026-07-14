@@ -2,7 +2,7 @@
 """
 ditto - turn your own AI coding sessions into a model of how you think.
 
-It reads your local session logs (Codex / Claude Code / Copilot CLI jsonl),
+It reads your local session logs (Codex / Claude Code / Copilot CLI / Antigravity jsonl),
 keeps ONLY the words you typed, redacts secrets + personal info, and writes one
 clean corpus + chunks. You then point a coding agent at the chunks with
 MINING_PROMPT.md to produce your `you.md`.
@@ -17,6 +17,7 @@ Usage:
     python ditto.py --install you.md --target codex
     python ditto.py --source codex      # only ~/.codex/sessions
     python ditto.py --source copilot    # only ~/.copilot/session-state
+    python ditto.py --source antigravity # only ~/.gemini/antigravity/brain
     python ditto.py --path ./logs       # a folder of jsonl you point at
     python ditto.py --chunks 20         # how many chunks to split into
     python ditto.py --no-redact         # DANGER: skip redaction (not recommended)
@@ -37,6 +38,7 @@ SOURCES = {
     "claude":  [os.path.join(HOME, ".claude", "projects")],
     "copilot": [os.path.join(HOME, ".copilot", "session-state")],
     "opencode": [OPENCODE_DATA],
+    "antigravity": [os.path.join(HOME, ".gemini", "antigravity", "brain")],
 }
 # Separator between a real opencode.db path and a session id inside it. A
 # discovered "file" for the SQLite store is one session, so counts, labels,
@@ -150,6 +152,8 @@ def source_kind(path):
         return "claude"
     if f"{os.sep}.copilot{os.sep}" in normalized:
         return "copilot"
+    if f"{os.sep}antigravity{os.sep}" in normalized:
+        return "antigravity"
     if "opencode.db" in normalized or f"{os.sep}opencode{os.sep}" in normalized:
         return "opencode"
     return "custom"
@@ -191,6 +195,12 @@ CODEX_CONTROL_ENVELOPE = re.compile(
 # markers, keep the human text around them. ('>' is illegal in Windows file
 # names, so [^>]* is safe for the attribute span.)
 CODEX_IMAGE_MARKER = re.compile(r"</?image\b[^>]*>?")
+# Antigravity (Google) wraps the typed prompt in a <USER_REQUEST> envelope and
+# appends a harness-injected <ADDITIONAL_METADATA> block (local time, active
+# document). Keep only the text inside the envelope; the metadata drops out.
+ANTIGRAVITY_USER_REQUEST = re.compile(
+    r"<USER_REQUEST>\s*(.*?)\s*</USER_REQUEST>", re.DOTALL
+)
 USER_LINE_MARKERS = (
     '"role":"user"',
     '"role": "user"',
@@ -198,6 +208,8 @@ USER_LINE_MARKERS = (
     '"type": "user"',
     '"type":"user.message"',
     '"type": "user.message"',
+    '"type":"USER_INPUT"',
+    '"type": "USER_INPUT"',
 )
 
 def is_injected_context(text):
@@ -348,8 +360,17 @@ def user_messages(path):
                 codex_record = o.get("type") == "response_item"
                 if o.get("type") == "user" and not is_human_turn(o):
                     continue
+                # Antigravity: {type:'USER_INPUT', source:'USER_EXPLICIT',
+                # content:'<USER_REQUEST>...</USER_REQUEST>...', created_at}.
+                # Any other source value is harness traffic, never typed.
+                if o.get("type") == "USER_INPUT":
+                    if o.get("source") != "USER_EXPLICIT":
+                        continue
+                    content = o.get("content", "") or ""
+                    wrapped = ANTIGRAVITY_USER_REQUEST.findall(content)
+                    texts = wrapped if wrapped else [content]
                 # Copilot CLI: {type:'user.message', data:{content, source}, timestamp}
-                if o.get("type") == "user.message":
+                elif o.get("type") == "user.message":
                     data = o.get("data", {})
                     if data.get("source") == "system":   # steering/system injections
                         continue
@@ -378,7 +399,7 @@ def user_messages(path):
                         continue
                     if is_pasted_log(t):
                         continue
-                    ts = (o.get("timestamp", "") or "")[:10]
+                    ts = (o.get("timestamp") or o.get("created_at") or "")[:10]
                     out.append((ts, t))
     except Exception:
         pass
@@ -389,6 +410,12 @@ def discover_files(roots):
     opencode_entries = []
     for r in roots:
         files += glob.glob(os.path.join(r, "**", "*.jsonl"), recursive=True)
+        # Antigravity hides transcripts under a dot-directory
+        # (brain/<id>/.system_generated/logs/), which "**" never descends
+        # into. Glob that exact layout explicitly.
+        files += glob.glob(
+            os.path.join(r, "*", ".system_generated", "logs", "*.jsonl")
+        )
         opencode_entries += discover_opencode_sessions(r)
     # Claude Code stores agent-to-agent transcripts under a `subagents/` path
     # component; every role:user record in them is isSidechain. Skip the files
@@ -404,7 +431,16 @@ def session_label(path):
     the bare filename collapses every block header to the same string. Prefix
     the parent directory (the session id for Copilot, the project for Claude)
     to keep sessions distinguishable in the corpus.
+
+    Antigravity buries every transcript at
+    brain/<conversation-id>/.system_generated/logs/transcript.jsonl, so the
+    parent dir is always "logs"; label with the conversation id instead.
     """
+    parts = os.path.normpath(os.path.abspath(path)).split(os.sep)
+    if ".system_generated" in parts:
+        idx = parts.index(".system_generated")
+        if idx > 0:
+            return f"{parts[idx - 1]}/{os.path.basename(path)}"
     parent = os.path.basename(os.path.dirname(path))
     name = os.path.basename(path)
     return f"{parent}/{name}" if parent else name
@@ -3134,7 +3170,7 @@ def build_plugin_parser():
     migrate_adapter.add_argument("--ditto-home")
     for name in ("preflight", "prepare"):
         command = sub.add_parser(name)
-        command.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode"], default="auto")
+        command.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode", "antigravity"], default="auto")
         command.add_argument("--path")
         command.add_argument("--no-redact", action="store_true")
         command.add_argument("--no-dedupe", action="store_true")
@@ -3450,7 +3486,7 @@ def plugin_source_result(args):
     if args.path:
         roots = [args.path]
     elif args.source == "auto":
-        roots = SOURCES["codex"] + SOURCES["claude"] + SOURCES["copilot"] + SOURCES["opencode"]
+        roots = SOURCES["codex"] + SOURCES["claude"] + SOURCES["copilot"] + SOURCES["opencode"] + SOURCES["antigravity"]
     else:
         roots = SOURCES[args.source]
     files = discover_files(roots)
@@ -3806,7 +3842,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-DITTO_VERSION = "0.3.7"
+DITTO_VERSION = "0.3.8"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 
 def mcp_tool_definitions():
@@ -3917,7 +3953,7 @@ def mcp_main(argv):
 
 def legacy_main():
     ap = argparse.ArgumentParser(description="mine your AI sessions into a model of you")
-    ap.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode"], default="auto")
+    ap.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode", "antigravity"], default="auto")
     ap.add_argument("--path", help="a folder of .jsonl session logs to read instead")
     ap.add_argument("--out", default="ditto-out")
     ap.add_argument("--chunks", type=int, default=20)
@@ -3950,7 +3986,7 @@ def legacy_main():
     if args.path:
         roots = [args.path]
     elif args.source == "auto":
-        roots = SOURCES["codex"] + SOURCES["claude"] + SOURCES["copilot"] + SOURCES["opencode"]
+        roots = SOURCES["codex"] + SOURCES["claude"] + SOURCES["copilot"] + SOURCES["opencode"] + SOURCES["antigravity"]
     else:
         roots = SOURCES[args.source]
 

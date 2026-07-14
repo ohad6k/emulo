@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.8 - 2026-07-15
+
+### Added
+
+- Google Antigravity session mining: `--source antigravity` (also included in `auto`) reads Antigravity's local transcripts (`~/.gemini/antigravity/brain/<conversation-id>/.system_generated/logs/transcript.jsonl`). Human text is exactly `USER_INPUT` records with source `USER_EXPLICIT`; the `<USER_REQUEST>` envelope and the harness-injected `<ADDITIONAL_METADATA>` block are stripped, and model/system records never enter the corpus. Discovery globs the `.system_generated` dot-directory explicitly because recursive `**` never descends into it. Session labels carry the conversation id (every transcript file shares the same name). Verified live against a real local Antigravity install (14 sessions, 31 typed messages mined) and against a simulated fresh user home via auto-detect, explicit source, and a full corpus write. Antigravity only persists transcripts when interaction logging is enabled in its privacy settings. Requested by a Reddit comment on the launch thread.
+- The `v0.3.8` bootstrap runtime pins `ditto.py` to SHA-256 `105035541d4d0edb5153e61abaadbf9f7f819492f24c80b5d2a06480eb1c6ab4`; `MINING_PROMPT.md` is unchanged.
+
 ## 0.3.6 - 2026-07-14
 
 ### Added

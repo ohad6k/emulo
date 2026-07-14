@@ -15,7 +15,7 @@
 
 Your real coding-agent sessions already contain the rules you never wrote down: what “done” means, what you reject on sight, how you debug, how you design UI, and how you write when you are actually working.
 
-Ditto mines selected evidence from those sessions — Claude Code, Codex, Copilot CLI, and OpenCode logs out of the box — into a private working profile your agent reads before every task. Separate layers for work, design, and writing mean the right part of you loads for the right task.
+Ditto mines selected evidence from those sessions — Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box — into a private working profile your agent reads before every task. Separate layers for work, design, and writing mean the right part of you loads for the right task.
 
 ## Not memory
 
@@ -144,7 +144,7 @@ That installs the bootstrap and creates a read-only full-history mining plan. Yo
 The native plugin adds `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`:
 
 ```bash
-codex plugin marketplace add ohad6k/ditto --ref v0.3.7 --json
+codex plugin marketplace add ohad6k/ditto --ref v0.3.8 --json
 codex plugin add ditto@ditto --json
 ```
 
@@ -256,7 +256,7 @@ See [SECURITY.md](SECURITY.md) for the exact boundary.
 The legacy extractor remains available and backward compatible:
 
 ```bash
-curl -O https://raw.githubusercontent.com/ohad6k/ditto/v0.3.7/ditto.py
+curl -O https://raw.githubusercontent.com/ohad6k/ditto/v0.3.8/ditto.py
 python ditto.py --dry-run
 python ditto.py --chunks 4 --out ditto-out
 ```
@@ -282,6 +282,7 @@ python ditto.py --install you.md --target opencode
 | Claude native plugin | Not claimed; host unavailable during validation |
 | Cursor / Gemini adapters | Supported through explicit install commands |
 | OpenCode | Both directions verified live: sessions mined from its SQLite store and legacy JSON layout (`--source opencode`), profile installed to its global rules (`--target opencode`) |
+| Google Antigravity | Mining verified live against a real local install (`--source antigravity`): typed prompts extracted from `~/.gemini/antigravity/brain` transcripts, harness envelopes stripped. Antigravity only writes transcripts when interaction logging is enabled in its privacy settings |
 | OpenClaw / Hermes Agent | Profile skill discovery verified locally; [guide](docs/OPENCLAW_HERMES.md) |
 
 ## Updating and notifications
@@ -307,7 +308,7 @@ One pass can't do it. My history is 1,656 sessions, about 3M tokens after extrac
 
 **"Claude already has memory. Why do I need this?"**
 
-Use both. Memory is what you told the model: curated notes, `CLAUDE.md`, and it stays inside one tool. Ditto reads supported raw sessions from Codex, Claude Code, and Copilot CLI and pulls out what you never wrote down: what you reject, what "done" means to you, and when you demand proof. The output is plain files you own and can load through supported agents.
+Use both. Memory is what you told the model: curated notes, `CLAUDE.md`, and it stays inside one tool. Ditto reads supported raw sessions from Codex, Claude Code, Copilot CLI, OpenCode, and Google Antigravity and pulls out what you never wrote down: what you reject, what "done" means to you, and when you demand proof. The output is plain files you own and can load through supported agents.
 
 **"Claude only keeps 30 days of logs. Where did 9 months come from?"**
 
