@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -38,6 +39,23 @@ class PluginSkillTest(unittest.TestCase):
 
 
 class PluginManifestTest(unittest.TestCase):
+    def test_github_actions_are_sha_pinned_and_hol_scanner_is_enforced(self):
+        scanner_path = ROOT / ".github" / "workflows" / "hol-plugin-scanner.yml"
+        self.assertTrue(scanner_path.is_file(), "HOL marketplace submissions require scanner CI")
+        scanner = scanner_path.read_text(encoding="utf-8")
+        self.assertIn("min_score: 80", scanner)
+        self.assertIn("fail_on_severity: high", scanner)
+        self.assertIn("security-events: write", scanner)
+
+        for workflow_path in (ROOT / ".github" / "workflows").glob("*.yml"):
+            workflow = workflow_path.read_text(encoding="utf-8")
+            for match in re.finditer(r"uses:\s+[^\s@]+@([^\s#]+)", workflow):
+                self.assertRegex(
+                    match.group(1),
+                    r"^[0-9a-f]{40}$",
+                    f"{workflow_path.name} must pin actions by full commit SHA",
+                )
+
     def test_copilot_manifest_uses_recognized_location_and_four_skills(self):
         path = ROOT / ".github" / "plugin" / "plugin.json"
         self.assertTrue(path.is_file(), "GitHub Copilot requires a recognized plugin.json location")
