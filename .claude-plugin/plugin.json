@@ -1,0 +1,11 @@
+{
+  "name": "ditto",
+  "displayName": "Ditto",
+  "version": "0.3.5",
+  "description": "Mine real AI coding sessions into a bounded, evidence-backed personal layer.",
+  "author": {"name": "Ohad"},
+  "homepage": "https://github.com/ohad6k/ditto",
+  "repository": "https://github.com/ohad6k/ditto",
+  "license": "MIT",
+  "keywords": ["personalization", "skills", "session-mining", "agents"]
+}

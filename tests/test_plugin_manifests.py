@@ -50,6 +50,19 @@ class PluginManifestTest(unittest.TestCase):
         plugin = next(item for item in market["plugins"] if item["name"] == "ditto")
         self.assertEqual("./", plugin["source"]["path"])
 
+    def test_claude_manifest_is_static_and_leak_free(self):
+        manifest = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+        self.assertEqual("ditto", manifest["name"])
+        self.assertEqual("MIT", manifest["license"])
+        self.assertFalse(any(".ditto" in json.dumps(value) for value in manifest.values()))
+
+    def test_claude_marketplace_points_to_repository_root(self):
+        market = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
+        self.assertEqual("ditto", market["name"])
+        plugin = next(item for item in market["plugins"] if item["name"] == "ditto")
+        self.assertEqual("./", plugin["source"])
+        self.assertFalse(plugin["source"].startswith(".."))
+
     def test_plugin_tree_contains_no_generated_profile(self):
         forbidden = {"active-profile.json", "current.json", "you.md", "you-designer.md", "you-writer.md", "appendix.md"}
         found = {

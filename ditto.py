@@ -3806,6 +3806,115 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
+DITTO_VERSION = "0.3.5"
+MCP_PROTOCOL_VERSION = "2025-06-18"
+
+def mcp_tool_definitions():
+    return [
+        {
+            "name": "load_ditto_profile",
+            "description": (
+                "Load the user's Ditto profile so you act like them instead of starting cold. "
+                "Call this before working on their task. domain 'work' covers execution, "
+                "debugging, planning, and shipping; 'design' covers UI/UX and visual taste; "
+                "'write' covers their writing voice. Returns the mined profile text, or a "
+                "recovery instruction if no profile is active yet."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "enum": sorted(VALID_DOMAINS),
+                        "description": "Which profile to load. Defaults to work.",
+                    }
+                },
+                "required": [],
+            },
+        }
+    ]
+
+def mcp_load_profile_text(ditto_home, domain):
+    payload = resolve_profile_paths(ditto_home, domain)
+    parts = []
+    for path in payload["paths"]:
+        with open(path, "r", encoding="utf-8", errors="replace") as handle:
+            text = handle.read().strip()
+        if text:
+            parts.append(text)
+    header = "# Ditto {0} profile (version {1})".format(domain, payload["profile_version"])
+    body = "\n\n".join(parts)
+    if payload.get("legacy_unverified"):
+        body += "\n\n(legacy-migration profile, unverified: {0})".format(
+            payload.get("recovery_instruction", "")
+        )
+    return header + "\n\n" + body
+
+def mcp_result(msg_id, result):
+    return {"jsonrpc": "2.0", "id": msg_id, "result": result}
+
+def mcp_error(msg_id, code, message):
+    return {"jsonrpc": "2.0", "id": msg_id, "error": {"code": code, "message": message}}
+
+def mcp_tool_text(msg_id, text, is_error=False):
+    return mcp_result(msg_id, {"content": [{"type": "text", "text": text}], "isError": is_error})
+
+def mcp_handle(message, ditto_home):
+    if not isinstance(message, dict) or message.get("jsonrpc") != "2.0":
+        return mcp_error(None, -32600, "invalid request")
+    if "id" not in message:
+        return None  # a JSON-RPC notification is never answered
+    msg_id = message.get("id")
+    method = message.get("method")
+    params = message.get("params") or {}
+    if method == "initialize":
+        requested = params.get("protocolVersion")
+        protocol = requested if isinstance(requested, str) else MCP_PROTOCOL_VERSION
+        return mcp_result(msg_id, {
+            "protocolVersion": protocol,
+            "capabilities": {"tools": {}},
+            "serverInfo": {"name": "ditto", "version": DITTO_VERSION},
+        })
+    if method == "ping":
+        return mcp_result(msg_id, {})
+    if method == "tools/list":
+        return mcp_result(msg_id, {"tools": mcp_tool_definitions()})
+    if method == "tools/call":
+        if params.get("name") != "load_ditto_profile":
+            return mcp_error(msg_id, -32602, "unknown tool: {0}".format(params.get("name")))
+        domain = (params.get("arguments") or {}).get("domain") or "work"
+        if domain not in VALID_DOMAINS:
+            return mcp_tool_text(msg_id, "unknown domain: {0}".format(domain), is_error=True)
+        try:
+            text = mcp_load_profile_text(ditto_home, domain)
+        except ValueError as exc:
+            return mcp_tool_text(msg_id, str(exc), is_error=True)
+        except OSError:
+            return mcp_tool_text(msg_id, "corrupt active profile; run ditto to recover", is_error=True)
+        return mcp_tool_text(msg_id, text)
+    return mcp_error(msg_id, -32601, "method not found: {0}".format(method))
+
+def mcp_main(argv):
+    parser = argparse.ArgumentParser(prog="ditto.py mcp")
+    parser.add_argument("--ditto-home")
+    args = parser.parse_args(argv)
+    ditto_home = resolve_ditto_home(args.ditto_home)
+    out = sys.stdout
+    for raw in sys.stdin:
+        line = raw.strip()
+        if not line:
+            continue
+        try:
+            message = json.loads(line)
+        except ValueError:
+            out.write(json.dumps(mcp_error(None, -32700, "parse error")) + "\n")
+            out.flush()
+            continue
+        response = mcp_handle(message, ditto_home)
+        if response is not None:
+            out.write(json.dumps(response) + "\n")
+            out.flush()
+
 def legacy_main():
     ap = argparse.ArgumentParser(description="mine your AI sessions into a model of you")
     ap.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode"], default="auto")
@@ -3875,6 +3984,9 @@ def main():
     configure_console()
     if len(sys.argv) > 1 and sys.argv[1] == "plugin":
         plugin_main(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "mcp":
+        mcp_main(sys.argv[2:])
         return
     legacy_main()
 

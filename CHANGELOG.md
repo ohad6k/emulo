@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.5 - 2026-07-14
+
+### Added
+
+- Native Claude Code plugin packaging: `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` expose the existing four skills (`mine`, `work`, `design`, `write`) through Claude Code's native plugin system, installable with `/plugin marketplace add ohad6k/ditto` then `/plugin install ditto@ditto`. Skills auto-discover from `skills/`, so the same folders serve both Codex and Claude. Manifest correctness is gated by the same static-manifest tests as the Codex plugin. Not yet verified against a live `/plugin install` (no Claude executable in the build environment) — the same boundary the 0.2.0 Codex plugin had before a real CLI confirmed discovery.
+- MCP server: `python ditto.py mcp` runs a stdlib-only stdio JSON-RPC server exposing one tool, `load_ditto_profile`, which returns the active work/design/write profile so any MCP client (Claude Desktop, Cursor, and others) can load the user's profile before a task. No dependency was added; `ditto.py` stays one stdlib file. Verified by 11 tests including a real subprocess round-trip (`initialize`, `tools/list`, `tools/call` over stdio). Not yet verified against a live third-party MCP client.
+- The `v0.3.5` bootstrap runtime pins `ditto.py` to SHA-256 `6e869021115dca0a8eb0f14c968ea2f854f8124bfc0915a6fd64a63276fcbbd4`; `MINING_PROMPT.md` is unchanged.
+
+### Why it matters
+
+The MCP server reaches the MCP client and registry ecosystem (Claude Desktop, Cursor, mcp.so, and similar) that a skill-only tool could not, and native Claude plugin packaging closes the last gap in the "install Ditto in your agent" matrix. Both are additive: the mining core, caches, and profile contract are unchanged.
+
 ## 0.3.4 - 2026-07-13
 
 ### Added
