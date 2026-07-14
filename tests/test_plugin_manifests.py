@@ -38,6 +38,39 @@ class PluginSkillTest(unittest.TestCase):
 
 
 class PluginManifestTest(unittest.TestCase):
+    def test_copilot_manifest_uses_recognized_location_and_four_skills(self):
+        path = ROOT / ".github" / "plugin" / "plugin.json"
+        self.assertTrue(path.is_file(), "GitHub Copilot requires a recognized plugin.json location")
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual("ditto", manifest["name"])
+        self.assertEqual(
+            ["./skills/mine", "./skills/work", "./skills/design", "./skills/write"],
+            manifest["skills"],
+        )
+        for relative in manifest["skills"]:
+            self.assertTrue((ROOT / relative).is_dir(), relative)
+
+    def test_patch_release_versions_match_across_public_surfaces(self):
+        expected = "0.3.7"
+        manifests = [
+            ROOT / ".github" / "plugin" / "plugin.json",
+            ROOT / ".claude-plugin" / "plugin.json",
+            ROOT / ".codex-plugin" / "plugin.json",
+        ]
+        self.assertEqual(expected, ditto.DITTO_VERSION)
+        for path in manifests:
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(expected, manifest["version"], str(path.relative_to(ROOT)))
+        marketplace = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
+        plugin = next(item for item in marketplace["plugins"] if item["name"] == "ditto")
+        self.assertEqual(expected, plugin["version"])
+        runtime = json.loads((ROOT / ".agents" / "skills" / "ditto" / "runtime.json").read_text(encoding="utf-8"))
+        self.assertEqual(expected, runtime["version"])
+        self.assertEqual("v" + expected, runtime["ref"])
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("--ref v" + expected, readme)
+        self.assertIn("/v" + expected + "/ditto.py", readme)
+
     def test_codex_manifest_exposes_only_static_skills(self):
         manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual("ditto", manifest["name"])

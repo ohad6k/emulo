@@ -144,7 +144,7 @@ That installs the bootstrap and creates a read-only full-history mining plan. Yo
 The native plugin adds `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`:
 
 ```bash
-codex plugin marketplace add ohad6k/ditto --ref v0.3.2 --json
+codex plugin marketplace add ohad6k/ditto --ref v0.3.7 --json
 codex plugin add ditto@ditto --json
 ```
 
@@ -256,7 +256,7 @@ See [SECURITY.md](SECURITY.md) for the exact boundary.
 The legacy extractor remains available and backward compatible:
 
 ```bash
-curl -O https://raw.githubusercontent.com/ohad6k/ditto/v0.3.2/ditto.py
+curl -O https://raw.githubusercontent.com/ohad6k/ditto/v0.3.7/ditto.py
 python ditto.py --dry-run
 python ditto.py --chunks 4 --out ditto-out
 ```
