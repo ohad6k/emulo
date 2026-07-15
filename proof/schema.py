@@ -158,8 +158,9 @@ def validate_review_record(value):
 
 
 def validate_publication_record(value):
+    if value.get("headline_metric") == "profile_rubric_adherence":
+        raise ValueError("profile rubric adherence is mechanism only")
     require_exact_keys(value, PUBLICATION_KEYS, "publication record")
     if value["schema"] != "ditto-proof-publication/1":
         raise ValueError("unsupported publication schema")
     return value
-
