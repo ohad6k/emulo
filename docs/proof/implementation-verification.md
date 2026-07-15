@@ -4,16 +4,18 @@ Observed on 2026-07-15 in the isolated `codex/ditto-benchmark-proof-release` wor
 
 ## Receipt
 
-- Verified harness commit: `e49a3317f87ac547496a28588774acbdb02069f1`
+- Verified harness commit: `7b584430dc6f0df33cd6ce3453e70f496d1ca3e0`
 - Runtime: Python 3.11.4
 - Operating system: Microsoft Windows NT 10.0.26200.0
 - Command: `python -m unittest discover -s tests -v`
-- Result: 249 tests passed in 24.568s; one symlink test skipped because Windows did not grant symlink privilege. The real Windows junction/reparse-point rejection test passed.
+- Result: 266 tests passed in 26.333s; one symlink test skipped because Windows did not grant symlink privilege. The real Windows junction/reparse-point rejection test passed.
+- Fresh-checkout command: clone the committed branch into a new temporary directory, then run `python -m unittest discover -s tests -p "test_proof_*.py" -v`.
+- Fresh-checkout result: 90 proof tests passed in 8.015s from a fresh Windows clone; the same privilege-only symlink test was skipped and the junction test passed.
 - Synthetic pilot-package SHA-256: `e08c4e23921065839a234530261aae3f466c517fa0b93214669990f4dbdbe9ab`
 - Integrity command: `git diff --check`
 - Integrity result: clean output at the verified harness commit.
 
-The end-to-end synthetic test sealed six clean temporary Git fixtures outside the repository, froze two harmless synthetic host identities, constructed 24 pairs, prepared 48 different homes and workspaces, appended synthetic attempts/evaluations/reviews, recalculated the exact publication digest, rejected a seeded privacy leak, and produced byte-identical clean packages.
+The end-to-end synthetic test sealed six clean temporary Git fixtures outside the repository, froze two harmless synthetic host identities, constructed 24 pairs, prepared 48 different homes and workspaces, appended synthetic attempts/evaluations/reviews, recalculated the exact publication digest, rejected a seeded privacy leak, and produced byte-identical clean packages. The hardened pass additionally proved tracked-only fixture sealing, cross-checkout LF stability, deep manifest validation, exact installed-context and instruction hashes, stored evidence/review provenance, complete ship-digest binding, and mandatory manual privacy inputs.
 
 ## Boundaries
 

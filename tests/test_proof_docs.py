@@ -85,10 +85,12 @@ class ProofDocumentationTest(unittest.TestCase):
             encoding="utf-8"
         )
         for phrase in (
-            "e49a3317f87ac547496a28588774acbdb02069f1",
+            "7b584430dc6f0df33cd6ce3453e70f496d1ca3e0",
             "Python 3.11.4",
-            "249 tests",
-            "24.568s",
+            "266 tests",
+            "26.333s",
+            "90 proof tests",
+            "fresh Windows clone",
             "e08c4e23921065839a234530261aae3f466c517fa0b93214669990f4dbdbe9ab",
             "no provider execution",
             "no scored fixture execution",
