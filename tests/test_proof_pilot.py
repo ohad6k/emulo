@@ -1,14 +1,56 @@
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from proof.fixtures import reset_fixture, tree_hash
+from proof.canonical import canonical_bytes, sha256_bytes, write_once_json
+from proof.evaluate import build_blind_pair, reveal_verdict, validate_review
+from proof.fixtures import (
+    load_fixture_lock,
+    reset_fixture,
+    seal_fixture,
+    tree_hash,
+    verify_fixture,
+)
+from proof.manifest import build_manifest, build_pairs, build_system_freeze
 from proof.pilot import build_pilot_package, build_pilot_plan, load_pilot_registry
+from proof.privacy import scan_public_tree
+from proof.publish import build_publication, publication_approval_digest, render_index
+from proof.runner import prepare_cell
+from proof.store import EvidenceStore
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PILOT_ROOT = ROOT / "proof" / "fixtures" / "pilot"
+
+
+def _init_fixture_repo(path, files):
+    path.mkdir()
+    for name, content in files.items():
+        destination = path / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(content, encoding="utf-8", newline="\n")
+    subprocess.run(["git", "init", "-q", str(path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(path), "config", "user.email", "proof@example.invalid"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(path), "config", "user.name", "Proof Test"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(path), "config", "core.autocrlf", "false"],
+        check=True,
+    )
+    subprocess.run(["git", "-C", str(path), "add", "."], check=True)
+    subprocess.run(
+        ["git", "-C", str(path), "commit", "-q", "-m", "synthetic fixture"],
+        check=True,
+    )
+    return path
 
 
 class PilotFixtureTest(unittest.TestCase):
@@ -91,6 +133,200 @@ class PilotFixtureTest(unittest.TestCase):
         records[0]["public_note"] = "CANARY-PRIVATE"
         with self.assertRaisesRegex(ValueError, "privacy scan failed"):
             build_pilot_package(records, canaries={"private": "CANARY-PRIVATE"})
+
+    def test_full_v1_synthetic_dry_run_without_provider_execution(self):
+        task_ids = [
+            f"{family}-{variant}"
+            for family in ("work", "design", "write")
+            for variant in ("primary", "held-out")
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            run_root = base / "private-run"
+            fixture_hashes = {}
+            instruction_hashes = {}
+            for index, task_id in enumerate(task_ids):
+                source = _init_fixture_repo(
+                    base / f"source-{task_id}",
+                    {
+                        "brief.md": f"Synthetic bounded task {index}.\n",
+                        "policy.json": json.dumps(
+                            {"task_id": task_id, "synthetic": True}, sort_keys=True
+                        )
+                        + "\n",
+                        "checks.json": json.dumps(
+                            {"required_outputs": ["result.txt"]}, sort_keys=True
+                        )
+                        + "\n",
+                        "start.txt": "fictional input\n",
+                    },
+                )
+                sealed = seal_fixture(source, run_root, task_id)
+                lock = load_fixture_lock(run_root, task_id)
+                self.assertEqual(lock["fixture_sha256"], verify_fixture(sealed))
+                fixture_hashes[task_id] = lock["fixture_sha256"]
+                instruction_hashes[task_id] = sha256_bytes(
+                    (source / "brief.md").read_bytes()
+                )
+
+            systems = []
+            for host, marker in (("codex", "a"), ("claude", "d")):
+                systems.append(
+                    build_system_freeze(
+                        host=host,
+                        menu_label=f"Synthetic {host.title()} Full",
+                        model_id=f"synthetic-{host}",
+                        host_version="test-only",
+                        run_argv=[sys.executable, "-c", "print('not executed')"],
+                        ditto_install_argv=[
+                            sys.executable,
+                            "-c",
+                            "print('not executed')",
+                        ],
+                        screenshot_sha256=marker * 64,
+                        tool_policy_sha256="b" * 64,
+                        permission_policy_sha256="c" * 64,
+                        quota_snapshot="synthetic; no provider quota",
+                        expected_cost="zero; command is never executed",
+                    )
+                )
+            pairs = build_pairs(
+                systems,
+                fixture_hashes,
+                instruction_hashes,
+                profile_manifest_sha256="9" * 64,
+                budgets={
+                    "work": {"time_seconds": 30, "max_turns": 2},
+                    "design": {"time_seconds": 30, "max_turns": 2},
+                    "write": {"time_seconds": 30, "max_turns": 2},
+                },
+                seed="8" * 64,
+            )
+            manifest = build_manifest(
+                systems,
+                pairs,
+                profile_manifest_sha256="9" * 64,
+                private_rubric_sha256="7" * 64,
+                public_rubric_sha256="6" * 64,
+                limitations=["synthetic dry run; no provider execution"],
+                created_at="2026-07-15T00:00:00Z",
+            )
+
+            prepared = [
+                prepare_cell(manifest, cell, run_root)
+                for pair in manifest["pairs"]
+                for cell in pair["cells"]
+            ]
+            self.assertEqual(48, len({item.workspace for item in prepared}))
+            self.assertEqual(48, len({item.home for item in prepared}))
+
+            store = EvidenceStore(run_root)
+            records = []
+            for pair in manifest["pairs"]:
+                outputs = {}
+                pair_records = []
+                for cell in pair["cells"]:
+                    attempt = {
+                        "schema": "ditto-proof-attempt/1",
+                        "cell_id": cell["cell_id"],
+                        "meaningful_output": True,
+                        "exit_status": "synthetic",
+                    }
+                    attempt_receipt = store.record_attempt(cell["cell_id"], attempt)
+                    evaluation_sha256 = store.record_evaluation(
+                        cell["cell_id"],
+                        {
+                            "schema": "ditto-proof-evaluation/1",
+                            "cell_id": cell["cell_id"],
+                            "checks": {"synthetic_contract": True},
+                            "hard_failures": [],
+                        },
+                    )
+                    artifact_sha256 = sha256_bytes(
+                        canonical_bytes({"synthetic_cell": cell["cell_id"]})
+                    )
+                    outputs[cell["review_id"]] = {
+                        "artifact_sha256": artifact_sha256,
+                        "sanitized_output": "fictional synthetic output",
+                    }
+                    pair_records.append(
+                        {
+                            "cell_id": cell["cell_id"],
+                            "pair_id": cell["pair_id"],
+                            "condition": cell["condition"],
+                            "family": cell["family"],
+                            "publication_status": "eligible",
+                            "hard_failures": [],
+                            "objective_result_sha256": evaluation_sha256,
+                            "artifact_hashes": [artifact_sha256],
+                            "retry_history": [],
+                            "review_status": "valid",
+                            "preference": None,
+                            "invalidation_reason": "",
+                            "attempt_sha256": attempt_receipt["sha256"],
+                        }
+                    )
+                packet = build_blind_pair(pair, outputs)
+                self.assertEqual("paired-review/1", packet["schema"])
+                ordered = sorted(pair["cells"], key=lambda item: item["order"])
+                review = validate_review(
+                    {
+                        "reviewer_role": "independent",
+                        "consent_reference": "synthetic-consent",
+                        "eligibility_attestation": "synthetic independent reviewer",
+                        "unfamiliar_with_operator_voice": True,
+                        "blinding_confirmed": True,
+                        "verdict": "tie",
+                        "left_review_id": ordered[0]["review_id"],
+                        "right_review_id": ordered[1]["review_id"],
+                    },
+                    pair["family"],
+                )
+                review_path = run_root / "reviews" / f"{pair['pair_id']}.json"
+                write_once_json(review_path, review)
+                pair_records[0]["preference"] = reveal_verdict(review, pair)
+                records.extend(pair_records)
+
+            approval = publication_approval_digest(manifest, records)
+            publication = build_publication(manifest, records, approval)
+            expected_hashes = {
+                item["cell_id"]: sha256_bytes(canonical_bytes(item)) for item in records
+            }
+            self.assertEqual(
+                expected_hashes,
+                {
+                    item["cell_id"]: item["sha256"]
+                    for item in publication["record_hashes"]
+                },
+            )
+
+            leaked = dict(records[0])
+            leaked["cell_id"] = "excluded-synthetic-leak"
+            leaked["publication_status"] = "superseded"
+            leaked["retry_history"] = [{"reason": "SEEDED-PRIVATE-CANARY"}]
+            leaked_publication = build_publication(
+                manifest,
+                records + [leaked],
+                publication_approval_digest(manifest, records + [leaked]),
+            )
+            with self.assertRaisesRegex(ValueError, "privacy scan failed"):
+                render_index(
+                    leaked_publication,
+                    base / "rejected-publication",
+                    canaries={"seeded": "SEEDED-PRIVATE-CANARY"},
+                )
+
+            first = base / "public-a"
+            second = base / "public-b"
+            render_index(publication, first, canaries={})
+            render_index(publication, second, canaries={})
+            self.assertEqual(
+                (first / "results.json").read_bytes(),
+                (second / "results.json").read_bytes(),
+            )
+            scanned = scan_public_tree(first, canaries={}, manual_review_approved=True)
+            self.assertTrue(scanned["passed"])
+            self.assertEqual(48, publication["cell_count"])
 
 
 if __name__ == "__main__":
