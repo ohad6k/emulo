@@ -1,0 +1,2 @@
+# Pilot hashes commit to exact bytes and must survive Windows checkouts.
+proof/fixtures/pilot/** text eol=lf

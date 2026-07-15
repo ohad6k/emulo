@@ -8,6 +8,8 @@ from unittest import mock
 
 from proof.cli import main
 from proof.manifest import build_manifest, build_pairs, build_system_freeze
+from proof.publish import publication_approval_digest
+from proof.store import EvidenceStore
 
 
 TASK_IDS = (
@@ -37,6 +39,88 @@ def frozen_manifest():
         systems, pairs, "9" * 64, "7" * 64, "6" * 64,
         ["synthetic CLI test"], "2026-07-15T00:00:00Z"
     )
+
+
+def publication_records(manifest, evidence_root):
+    records = []
+    store = EvidenceStore(
+        evidence_root,
+        {
+            cell["cell_id"]: cell
+            for pair in manifest["pairs"]
+            for cell in pair["cells"]
+        },
+    )
+    for index, pair in enumerate(manifest["pairs"]):
+        ordered = sorted(pair["cells"], key=lambda item: item["order"])
+        review = {
+            "schema": "ditto-proof-review/1",
+            "review_id": f"decision-{index}",
+            "pair_id": pair["pair_id"],
+            "family": pair["family"],
+            "reviewer_role": "independent",
+            "consent_reference": f"consent-{index}",
+            "eligibility_attestation": "independent synthetic reviewer",
+            "unfamiliar_with_operator_voice": True,
+            "blinding_confirmed": True,
+            "verdict": "tie",
+            "left_review_id": ordered[0]["review_id"],
+            "right_review_id": ordered[1]["review_id"],
+            "invalidation_reason": "",
+            "created_at": "2026-07-15T00:00:00Z",
+        }
+        for cell in pair["cells"]:
+            artifacts = [f"{index + 201:064x}"]
+            attempt_receipt = store.record_attempt(
+                cell["cell_id"],
+                {
+                    "schema": "ditto-proof-attempt/1",
+                    **{
+                        field: cell[field]
+                        for field in (
+                            "cell_id", "pair_id", "system_id", "fixture_sha256",
+                            "instruction_sha256", "profile_manifest_sha256",
+                            "tool_policy_sha256", "permission_policy_sha256", "budget",
+                        )
+                    },
+                    "meaningful_output": True,
+                    "exit_status": "synthetic",
+                },
+            )
+            evaluation_sha256 = store.record_evaluation(
+                cell["cell_id"],
+                {
+                    "schema": "ditto-proof-evaluation/1",
+                    "cell_id": cell["cell_id"],
+                    "hard_failures": [],
+                    "artifact_hashes": artifacts,
+                    "redaction_state": "passed",
+                },
+            )
+            review_sha256 = None
+            if cell["order"] == 1:
+                review_sha256 = store.record_review(cell["cell_id"], review)
+            records.append(
+                {
+                    "cell_id": cell["cell_id"],
+                    "pair_id": cell["pair_id"],
+                    "condition": cell["condition"],
+                    "family": cell["family"],
+                    "publication_status": "eligible",
+                    "hard_failures": [],
+                    "objective_result_sha256": evaluation_sha256,
+                    "artifact_hashes": artifacts,
+                    "retry_history": [],
+                    "review_status": "valid",
+                    "preference": "tie" if cell["order"] == 1 else None,
+                    "invalidation_reason": "",
+                    "attempt_sha256": attempt_receipt["sha256"],
+                    "evaluation_sha256": evaluation_sha256,
+                    "review_sha256": review_sha256,
+                    "redaction_state": "passed",
+                }
+            )
+    return records
 
 
 class ProofCliTest(unittest.TestCase):
@@ -79,6 +163,51 @@ class ProofCliTest(unittest.TestCase):
             self.assertEqual(2, code)
             self.assertIn("--execute", stderr.getvalue())
             execute.assert_not_called()
+
+    def test_package_requires_real_privacy_inputs_and_blocks_seeded_leak(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = frozen_manifest()
+            manifest["limitations"] = ["PROFILE-CANARY-do-not-publish"]
+            evidence_root = root / "evidence"
+            records = publication_records(manifest, evidence_root)
+            manifest_path = root / "manifest.json"
+            records_path = root / "records.json"
+            privacy_path = root / "privacy.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            records_path.write_text(json.dumps(records), encoding="utf-8")
+            privacy_path.write_text(
+                json.dumps(
+                    {
+                        "canaries": {"profile": "PROFILE-CANARY-do-not-publish"},
+                        "private_roots": [str(evidence_root)],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                code = main(
+                    [
+                        "package",
+                        "--manifest",
+                        str(manifest_path),
+                        "--records",
+                        str(records_path),
+                        "--destination",
+                        str(root / "public"),
+                        "--ship-approval",
+                        publication_approval_digest(manifest, records),
+                        "--evidence-root",
+                        str(evidence_root),
+                        "--privacy-inputs",
+                        str(privacy_path),
+                        "--manual-review-approved",
+                    ]
+                )
+            self.assertEqual(2, code)
+            self.assertIn("privacy scan failed", stderr.getvalue())
+            self.assertFalse((root / "public").exists())
 
 
 if __name__ == "__main__":

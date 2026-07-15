@@ -65,6 +65,9 @@ def _parser():
     package.add_argument("--records", required=True)
     package.add_argument("--destination", required=True)
     package.add_argument("--ship-approval", required=True)
+    package.add_argument("--evidence-root", required=True)
+    package.add_argument("--privacy-inputs", required=True)
+    package.add_argument("--manual-review-approved", action="store_true")
     return parser
 
 
@@ -127,14 +130,64 @@ def _dispatch(args):
 
         return evaluate_objective(_read_json(args.record), _read_json(args.policy))
     if args.command == "package":
+        from proof.privacy import scan_public_tree
         from proof.publish import build_publication, render_index
+        from proof.store import EvidenceStore
 
+        if not args.manual_review_approved:
+            raise PermissionError("package requires explicit manual privacy review")
+        privacy = _read_json(args.privacy_inputs)
+        if set(privacy) != {"canaries", "private_roots"}:
+            raise ValueError("privacy inputs require canaries and private_roots")
+        if not isinstance(privacy["canaries"], dict) or not all(
+            isinstance(key, str) and isinstance(value, str)
+            for key, value in privacy["canaries"].items()
+        ):
+            raise ValueError("privacy canaries must be a string map")
+        if (
+            not isinstance(privacy["private_roots"], list)
+            or not privacy["private_roots"]
+            or not all(
+            isinstance(value, str) and value for value in privacy["private_roots"]
+            )
+        ):
+            raise ValueError("privacy private_roots must be a nonempty string list")
+        evidence_root = Path(args.evidence_root).resolve()
+        resolved_private_roots = [
+            Path(value).resolve() for value in privacy["private_roots"]
+        ]
+        if not any(
+            evidence_root == root or root in evidence_root.parents
+            for root in resolved_private_roots
+        ):
+            raise ValueError("privacy private_roots must include the evidence root")
+        manifest = validate_manifest(_read_json(args.manifest))
+        store = EvidenceStore(
+            args.evidence_root,
+            {
+                cell["cell_id"]: cell
+                for pair in manifest["pairs"]
+                for cell in pair["cells"]
+            },
+        )
         publication = build_publication(
-            validate_manifest(_read_json(args.manifest)),
+            manifest,
             _read_json(args.records),
             args.ship_approval,
+            evidence_store=store,
         )
-        render_index(publication, args.destination, canaries={})
+        render_index(
+            publication,
+            args.destination,
+            canaries=privacy["canaries"],
+            private_roots=privacy["private_roots"],
+        )
+        scan_public_tree(
+            args.destination,
+            canaries=privacy["canaries"],
+            private_roots=privacy["private_roots"],
+            manual_review_approved=True,
+        )
         return {
             "packaged": True,
             "evidence_digest": publication["evidence_digest"],

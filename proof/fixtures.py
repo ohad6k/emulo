@@ -40,13 +40,17 @@ def tree_manifest(root):
     rows = []
     for current, directories, files in os.walk(root, followlinks=False):
         current_path = Path(current)
-        directories[:] = sorted(name for name in directories if name != ".git")
+        directories[:] = sorted(
+            name for name in directories if name not in {".git", "__pycache__"}
+        )
         for name in tuple(directories):
             if _is_link_or_reparse(current_path / name):
                 raise ValueError("fixture tree must not contain a symlink or reparse point")
         for name in sorted(files):
             path = current_path / name
             if ".git" in path.relative_to(root).parts:
+                continue
+            if path.suffix.casefold() in {".pyc", ".pyo"}:
                 continue
             if _is_link_or_reparse(path):
                 raise ValueError("fixture tree must not contain a symlink or reparse point")
@@ -81,6 +85,21 @@ def _git_text(source, *args):
         raise ValueError("fixture source must be a clean Git commit") from exc
 
 
+def _git_tracked_files(source):
+    try:
+        payload = subprocess.check_output(
+            ["git", "-C", str(source), "ls-files", "-z", "--cached"],
+            stderr=subprocess.STDOUT,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise ValueError("fixture source must be a clean Git commit") from exc
+    return {
+        item.decode("utf-8")
+        for item in payload.split(b"\0")
+        if item
+    }
+
+
 def seal_fixture(source, private_root, task_id, repository_root=None):
     """Copy one clean committed fixture into an immutable private run root."""
     if not TASK_ID_RE.fullmatch(task_id):
@@ -99,6 +118,8 @@ def seal_fixture(source, private_root, task_id, repository_root=None):
     source_files = tree_manifest(source)
     if not source_files:
         raise ValueError("fixture source must contain at least one file")
+    if {item["path"] for item in source_files} != _git_tracked_files(source):
+        raise ValueError("fixture source contains untracked or ignored files")
 
     destination = safe_child(private_root, "sealed-fixtures", task_id)
     if destination.exists():

@@ -127,5 +127,22 @@ def scan_public_tree(root, canaries, manual_review_approved, private_roots=()):
                     raise ValueError(
                         "privacy scan failed in binary artifact: " + ", ".join(leaked)
                     )
+                decoded = [payload.decode("utf-8", errors="ignore")]
+                if len(payload) % 2 == 0:
+                    decoded.append(payload.decode("utf-16le", errors="ignore"))
+                findings = sorted(
+                    {
+                        finding
+                        for candidate in decoded
+                        for finding in scan_public_text(
+                            candidate, canaries, private_roots
+                        )["findings"]
+                    }
+                )
+                if findings:
+                    raise ValueError(
+                        "privacy scan failed in binary artifact: "
+                        + ", ".join(findings)
+                    )
             records.append({"path": relative, "sha256": sha256_file(path)})
     return {"passed": True, "files": sorted(records, key=lambda item: item["path"])}

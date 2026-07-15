@@ -76,6 +76,23 @@ class PrivacyTest(unittest.TestCase):
             self.assertFalse(result["passed"])
             self.assertIn("private-root", result["findings"])
 
+    def test_binary_artifact_blocks_secret_path_and_private_root_without_canary(self):
+        samples = (
+            b"png-prefix api_key=super-secret-value png-suffix",
+            rb"png-prefix C:\Users\private-canary\vault png-suffix",
+        )
+        for payload in samples:
+            with self.subTest(payload=payload), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                (root / "frame.png").write_bytes(payload)
+                with self.assertRaisesRegex(ValueError, "binary artifact"):
+                    scan_public_tree(
+                        root,
+                        {},
+                        manual_review_approved=True,
+                        private_roots=[r"C:\Users\private-canary\vault"],
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

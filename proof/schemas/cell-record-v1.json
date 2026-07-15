@@ -30,7 +30,7 @@
     "home_audit_sha256": {"type": "string"}, "installed_context_sha256": {"type": ["string", "null"]},
     "exit_status": {"type": "string"}, "exit_code": {"type": ["integer", "null"]},
     "meaningful_output": {"type": "boolean"}, "stdout_sha256": {"type": "string"},
-    "stderr_sha256": {"type": "string"}, "artifact_hashes": {"type": "object"},
+    "stderr_sha256": {"type": "string"}, "artifact_hashes": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
     "objective_result_sha256": {"type": ["string", "null"]},
     "hard_failures": {"type": "array", "items": {"type": "string"}},
     "redaction_state": {"type": "string"}, "publication_status": {"type": "string"}

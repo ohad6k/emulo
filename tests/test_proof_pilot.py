@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from proof.canonical import canonical_bytes, sha256_bytes, write_once_json
+from proof.canonical import canonical_bytes, sha256_bytes
 from proof.evaluate import build_blind_pair, reveal_verdict, validate_review
 from proof.fixtures import (
     load_fixture_lock,
@@ -54,6 +54,17 @@ def _init_fixture_repo(path, files):
 
 
 class PilotFixtureTest(unittest.TestCase):
+    def test_committed_pilot_bytes_force_lf_across_checkouts(self):
+        target = PILOT_ROOT / "design" / "contract.json"
+        result = subprocess.run(
+            ["git", "check-attr", "eol", "--", str(target)],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertIn("eol: lf", result.stdout)
+
     def test_pilot_has_three_non_scored_families(self):
         registry = load_pilot_registry(PILOT_ROOT / "registry.json")
         self.assertEqual(
@@ -220,7 +231,14 @@ class PilotFixtureTest(unittest.TestCase):
             self.assertEqual(48, len({item.workspace for item in prepared}))
             self.assertEqual(48, len({item.home for item in prepared}))
 
-            store = EvidenceStore(run_root)
+            store = EvidenceStore(
+                run_root,
+                {
+                    cell["cell_id"]: cell
+                    for pair in manifest["pairs"]
+                    for cell in pair["cells"]
+                },
+            )
             records = []
             for pair in manifest["pairs"]:
                 outputs = {}
@@ -228,11 +246,21 @@ class PilotFixtureTest(unittest.TestCase):
                 for cell in pair["cells"]:
                     attempt = {
                         "schema": "ditto-proof-attempt/1",
-                        "cell_id": cell["cell_id"],
+                        **{
+                            field: cell[field]
+                            for field in (
+                                "cell_id", "pair_id", "system_id", "fixture_sha256",
+                                "instruction_sha256", "profile_manifest_sha256",
+                                "tool_policy_sha256", "permission_policy_sha256", "budget",
+                            )
+                        },
                         "meaningful_output": True,
                         "exit_status": "synthetic",
                     }
                     attempt_receipt = store.record_attempt(cell["cell_id"], attempt)
+                    artifact_sha256 = sha256_bytes(
+                        canonical_bytes({"synthetic_cell": cell["cell_id"]})
+                    )
                     evaluation_sha256 = store.record_evaluation(
                         cell["cell_id"],
                         {
@@ -240,10 +268,9 @@ class PilotFixtureTest(unittest.TestCase):
                             "cell_id": cell["cell_id"],
                             "checks": {"synthetic_contract": True},
                             "hard_failures": [],
+                            "artifact_hashes": [artifact_sha256],
+                            "redaction_state": "passed",
                         },
-                    )
-                    artifact_sha256 = sha256_bytes(
-                        canonical_bytes({"synthetic_cell": cell["cell_id"]})
                     )
                     outputs[cell["review_id"]] = {
                         "artifact_sha256": artifact_sha256,
@@ -264,31 +291,41 @@ class PilotFixtureTest(unittest.TestCase):
                             "preference": None,
                             "invalidation_reason": "",
                             "attempt_sha256": attempt_receipt["sha256"],
+                            "evaluation_sha256": evaluation_sha256,
+                            "review_sha256": None,
+                            "redaction_state": "passed",
                         }
                     )
                 packet = build_blind_pair(pair, outputs)
                 self.assertEqual("paired-review/1", packet["schema"])
                 ordered = sorted(pair["cells"], key=lambda item: item["order"])
-                review = validate_review(
-                    {
-                        "reviewer_role": "independent",
-                        "consent_reference": "synthetic-consent",
-                        "eligibility_attestation": "synthetic independent reviewer",
-                        "unfamiliar_with_operator_voice": True,
-                        "blinding_confirmed": True,
-                        "verdict": "tie",
-                        "left_review_id": ordered[0]["review_id"],
-                        "right_review_id": ordered[1]["review_id"],
-                    },
-                    pair["family"],
+                review_record = {
+                    "schema": "ditto-proof-review/1",
+                    "review_id": f"decision-{pair['pair_id']}",
+                    "pair_id": pair["pair_id"],
+                    "family": pair["family"],
+                    "reviewer_role": "independent",
+                    "consent_reference": "synthetic-consent",
+                    "eligibility_attestation": "synthetic independent reviewer",
+                    "unfamiliar_with_operator_voice": True,
+                    "blinding_confirmed": True,
+                    "verdict": "tie",
+                    "left_review_id": ordered[0]["review_id"],
+                    "right_review_id": ordered[1]["review_id"],
+                    "invalidation_reason": "",
+                    "created_at": "2026-07-15T00:00:00Z",
+                }
+                checked_review = validate_review(review_record, pair["family"])
+                pair_records[0]["review_sha256"] = store.record_review(
+                    pair_records[0]["cell_id"], review_record
                 )
-                review_path = run_root / "reviews" / f"{pair['pair_id']}.json"
-                write_once_json(review_path, review)
-                pair_records[0]["preference"] = reveal_verdict(review, pair)
+                pair_records[0]["preference"] = reveal_verdict(checked_review, pair)
                 records.extend(pair_records)
 
             approval = publication_approval_digest(manifest, records)
-            publication = build_publication(manifest, records, approval)
+            publication = build_publication(
+                manifest, records, approval, evidence_store=store
+            )
             expected_hashes = {
                 item["cell_id"]: sha256_bytes(canonical_bytes(item)) for item in records
             }
@@ -308,6 +345,7 @@ class PilotFixtureTest(unittest.TestCase):
                 manifest,
                 records + [leaked],
                 publication_approval_digest(manifest, records + [leaked]),
+                evidence_store=store,
             )
             with self.assertRaisesRegex(ValueError, "privacy scan failed"):
                 render_index(

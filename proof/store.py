@@ -36,9 +36,19 @@ def validate_attempt_identity(value, frozen_cell):
 
 
 class EvidenceStore:
-    def __init__(self, run_root):
+    def __init__(self, run_root, frozen_cells):
         self.root = Path(run_root).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
+        if not isinstance(frozen_cells, dict) or not frozen_cells:
+            raise ValueError("evidence store requires frozen cells")
+        self.frozen_cells = dict(frozen_cells)
+
+    def _frozen_cell(self, cell_id):
+        _require_cell_id(cell_id)
+        try:
+            return self.frozen_cells[cell_id]
+        except KeyError as exc:
+            raise ValueError("cell ID is not in the frozen manifest") from exc
 
     def _event_files(self, cell_id, kind):
         _require_cell_id(cell_id)
@@ -70,11 +80,12 @@ class EvidenceStore:
         return [event["value"] for event in self.events(cell_id, "attempts")]
 
     def record_attempt(self, cell_id, value):
-        _require_cell_id(cell_id)
+        frozen_cell = self._frozen_cell(cell_id)
         if value.get("schema") != "ditto-proof-attempt/1":
             raise ValueError("unsupported attempt schema")
         if value.get("cell_id") != cell_id:
             raise ValueError("attempt cell ID mismatch")
+        validate_attempt_identity(value, frozen_cell)
         attempts = self.attempts(cell_id)
         if len(attempts) >= 2:
             raise ValueError("cell already has the maximum two attempts")
@@ -83,6 +94,7 @@ class EvidenceStore:
         return self._append(cell_id, "attempts", value)
 
     def authorize_retry(self, cell_id, reason):
+        self._frozen_cell(cell_id)
         attempts = self.attempts(cell_id)
         if len(attempts) != 1 or self.events(cell_id, "retry-authorizations"):
             raise ValueError("one retry requires exactly one prior attempt")
@@ -103,18 +115,50 @@ class EvidenceStore:
         )
 
     def record_evaluation(self, cell_id, value):
+        self._frozen_cell(cell_id)
         if value.get("schema") != "ditto-proof-evaluation/1":
             raise ValueError("unsupported evaluation schema")
         if value.get("cell_id") != cell_id:
             raise ValueError("evaluation cell ID mismatch")
         return self._append(cell_id, "evaluations", value)["sha256"]
 
+    def record_review(self, cell_id, value):
+        from proof.evaluate import validate_review
+        from proof.schema import validate_review_record
+
+        frozen = self._frozen_cell(cell_id)
+        validate_review_record(value)
+        pair_cells = [
+            cell
+            for cell in self.frozen_cells.values()
+            if cell.get("pair_id") == frozen.get("pair_id")
+        ]
+        if len(pair_cells) != 2:
+            raise ValueError("review pair is not frozen exactly once")
+        if value["pair_id"] != frozen["pair_id"] or value["family"] != frozen.get(
+            "family"
+        ):
+            raise ValueError("review identity does not match frozen pair")
+        ordered = sorted(pair_cells, key=lambda item: item["order"])
+        if value["left_review_id"] != ordered[0]["review_id"] or value[
+            "right_review_id"
+        ] != ordered[1]["review_id"]:
+            raise ValueError("review IDs do not match frozen blind order")
+        checked = validate_review(value, frozen["family"])
+        if checked["invalidation_reason"] != value["invalidation_reason"]:
+            raise ValueError("review invalidation reason does not match eligibility")
+        return self._append(cell_id, "reviews", value)["sha256"]
+
     def supersede_evaluation(self, cell_id, prior_sha256, reason, value):
         if not isinstance(reason, str) or not reason.strip():
             raise ValueError("supersession reason is required")
-        prior = self.load(prior_sha256)
-        if prior.get("cell_id") != cell_id:
-            raise ValueError("superseded evaluation belongs to another cell")
+        prior_events = {
+            event["sha256"]: event["value"]
+            for event in self.events(cell_id, "evaluations")
+        }
+        if prior_sha256 not in prior_events:
+            raise ValueError("supersession target must be a prior evaluation")
+        prior = prior_events[prior_sha256]
         corrected = dict(
             value,
             supersedes_sha256=prior_sha256,
@@ -123,6 +167,7 @@ class EvidenceStore:
         return self.record_evaluation(cell_id, corrected)
 
     def record_invalidation(self, cell_id, reason, scope):
+        self._frozen_cell(cell_id)
         if scope not in ("cell", "pair", "review"):
             raise ValueError("invalidation scope must be cell, pair, or review")
         if not isinstance(reason, str) or not reason.strip():

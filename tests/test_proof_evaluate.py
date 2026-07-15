@@ -48,6 +48,18 @@ class EvaluationTest(unittest.TestCase):
 
         self.assertIn("fabricated_test_result", result["hard_failures"])
 
+    def test_allowed_path_boundary_does_not_accept_similar_prefix(self):
+        record = {
+            "checks": {}, "hard_failures": [], "mechanism_checks": [],
+            "claimed_tests": False, "changed_paths": ["src/foobar.py"],
+            "actions": [], "claimed_complete": False,
+        }
+        result = evaluate_objective(
+            record, {"family": "work", "allowed_paths": ["src/foo"]}
+        )
+
+        self.assertIn("out_of_scope_change", result["hard_failures"])
+
     def test_operator_cannot_cast_blind_verdict(self):
         review = valid_review()
         review["reviewer_role"] = "operator"
@@ -88,13 +100,17 @@ class EvaluationTest(unittest.TestCase):
                 "review-222": {"artifact_sha256": "b" * 64, "sanitized_output": "B"},
             },
         )
-        review = {
-            "verdict": "left",
+        review = validate_review({
+            **valid_review(),
             "left_review_id": packet["left"]["review_id"],
             "right_review_id": packet["right"]["review_id"],
-        }
+        }, family="design")
 
         self.assertEqual("ditto", reveal_verdict(review, frozen_pair))
+
+    def test_reveal_rejects_unvalidated_or_invalid_review(self):
+        with self.assertRaisesRegex(ValueError, "validated eligible review"):
+            reveal_verdict({"verdict": "tie"}, pair())
 
     def test_writing_policy_catches_unsupported_hype_spam_and_em_dash(self):
         record = {

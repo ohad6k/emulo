@@ -67,6 +67,8 @@ python -m proof.cli validate --manifest 'D:\ditto-proof-runs\v1-live\manifest.js
 
 The returned `manifest_sha256` is the only token that can satisfy the execution gate. Ohad reviews the systems, fixtures, budgets, quota, and expected cost, then supplies that exact digest as the explicit cost approval.
 
+The frozen `profile_manifest_sha256` is the exact tree hash of the dedicated home after the v0.3.7 installer finishes, including every skill, profile, instruction adapter, and version receipt expected there. A no-op installer, a missing file, a changed byte, or any extra persistent-context file fails before the provider command starts. Each sealed task's `brief.md` must also hash to its frozen `instruction_sha256` after reset.
+
 ## Non-scored pilot
 
 Before any scored cell, load `proof/fixtures/pilot/registry.json`, build six cells with `proof.pilot.build_pilot_plan`, and simulate/capture the evidence lifecycle. The pilot must remain labelled `pilot`, `non-scored`, and `non-comparable`. Its job is to detect isolation, reset, review, and redaction failures. It cannot be merged into the v1 matrix or quoted as a product result.
@@ -146,9 +148,9 @@ Only the anonymous verdict and its eligibility state enter the public aggregate.
 Recalculate, never copy numbers into prose. The records file contains eligible cell summaries plus retained exclusions/invalidations. Compute the digest with `proof.publish.publication_approval_digest`, then ask Ohad for the exact, separate ship approval:
 
 ```powershell
-python -m proof.cli package --manifest 'D:\ditto-proof-runs\v1-live\manifest.json' --records 'D:\ditto-proof-runs\v1-live\public-records.json' --destination 'D:\ditto-proof-runs\v1-live\candidate-publication' --ship-approval '<exact evidence digest approved by Ohad>'
+python -m proof.cli package --manifest 'D:\ditto-proof-runs\v1-live\manifest.json' --records 'D:\ditto-proof-runs\v1-live\public-records.json' --evidence-root 'D:\ditto-proof-runs\v1-live' --destination 'D:\ditto-proof-runs\v1-live\candidate-publication' --ship-approval '<exact evidence digest approved by Ohad>' --privacy-inputs 'D:\ditto-proof-runs\v1-live\privacy-inputs.json' --manual-review-approved
 ```
 
-Run `proof.privacy.scan_public_tree(..., manual_review_approved=True)` after a human checks every candidate file. Every seeded canary, private root, secret pattern, local user path, raw profile, transcript, receipt, hidden file, symlink/reparse point, or unknown file type blocks shipping.
+The private `privacy-inputs.json` has exactly `canaries` (a name-to-marker string map) and `private_roots` (a nonempty list containing the evidence and fixture roots). `package` resolves every attempt, final evaluation, and independent review hash from the append-only evidence root before recalculating. It refuses to write unless the manual-review flag, real canaries, private roots, exact evidence digest, and all 48 frozen identities agree. It then runs `proof.privacy.scan_public_tree(..., manual_review_approved=True)`. Every seeded canary, private root, secret pattern, local user path, raw profile, transcript, receipt, hidden file, symlink/reparse point, or unknown file type blocks shipping.
 
 Real evidence, clips, README claims, website changes, launch copy, and a benchmark GitHub release require all 48 cells, passing objective checks, eligible review or disclosed invalidations, recomputed denominators, complete limitations, privacy approval, and Ohad's evidence-digest approval. Any partial run must use an explicitly non-v1 label. Media must trace to exact cell and artifact hashes and cannot hide losses, ties, exclusions, or unavailable systems.

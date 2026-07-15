@@ -5,7 +5,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from proof.canonical import canonical_bytes, safe_child, sha256_bytes
+from proof.canonical import canonical_bytes, safe_child, sha256_bytes, sha256_file
 from proof.fixtures import reset_fixture, tree_hash
 
 
@@ -73,6 +73,11 @@ def prepare_cell(manifest, cell, run_root):
     home_audit_sha256 = audit_clean_home(home)
     sealed = safe_child(root, "sealed-fixtures", cell["task_id"])
     reset_fixture(sealed, workspace, cell["fixture_sha256"])
+    instruction = safe_child(workspace, "brief.md")
+    if not instruction.is_file() or sha256_file(instruction) != cell.get(
+        "instruction_sha256"
+    ):
+        raise ValueError("frozen instruction hash mismatch")
     environment = {
         "HOME": str(home),
         "USERPROFILE": str(home),
@@ -130,6 +135,10 @@ def execute_cell(manifest, cell, run_root, execute, approval):
         if installation.returncode != 0:
             raise RuntimeError("frozen Ditto installation failed before provider execution")
         installed_context_sha256 = tree_hash(prepared.home)
+        if installed_context_sha256 != cell.get("profile_manifest_sha256"):
+            raise ValueError(
+                "installed context does not match the frozen profile manifest"
+            )
     elif cell["condition"] != "cold":
         raise ValueError("cell condition must be cold or ditto")
 

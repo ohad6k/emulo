@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from proof.canonical import canonical_bytes
+from proof.canonical import canonical_bytes, sha256_bytes
 from proof.evaluate import wilson_interval
 from proof.manifest import build_manifest, build_pairs, build_system_freeze
 from proof.publish import (
@@ -71,32 +71,140 @@ def _manifest():
     )
 
 
+class MemoryEvidence:
+    def __init__(self):
+        self._events = {}
+        self._values = {}
+
+    def add(self, cell_id, kind, value):
+        digest = sha256_bytes(canonical_bytes(value) + b"\n")
+        event = {"sha256": digest, "value": value}
+        self._events.setdefault((cell_id, kind), []).append(event)
+        self._values[digest] = value
+        return digest
+
+    def events(self, cell_id, kind):
+        return list(self._events.get((cell_id, kind), []))
+
+    def load(self, digest):
+        return self._values[digest]
+
+
+class EvidenceRecords(list):
+    pass
+
+
 def _records(manifest, count=48):
-    values = []
-    cells = [cell for pair in manifest["pairs"] for cell in pair["cells"]]
-    for index, cell in enumerate(cells[:count]):
-        record = {
-            "cell_id": cell["cell_id"],
-            "pair_id": cell["pair_id"],
-            "condition": cell["condition"],
-            "family": cell["family"],
-            "publication_status": "eligible",
-            "hard_failures": (["unsupported_claim"] if index == 3 else []),
-            "objective_result_sha256": f"{index + 101:064x}",
-            "artifact_hashes": [f"{index + 201:064x}"],
-            "retry_history": [],
-            "review_status": "valid",
-            "preference": None,
+    values = EvidenceRecords()
+    values.evidence_store = MemoryEvidence()
+    index = 0
+    for pair_index, pair in enumerate(manifest["pairs"]):
+        desired = ("ditto", "cold", "tie")[pair_index % 3]
+        ordered = sorted(pair["cells"], key=lambda item: item["order"])
+        if desired == "tie":
+            blind_verdict = "tie"
+        else:
+            selected = next(cell for cell in ordered if cell["condition"] == desired)
+            blind_verdict = "left" if selected["order"] == 1 else "right"
+        review = {
+            "schema": "ditto-proof-review/1",
+            "review_id": f"decision-{pair_index:02d}",
+            "pair_id": pair["pair_id"],
+            "family": pair["family"],
+            "reviewer_role": "independent",
+            "consent_reference": f"consent-{pair_index:02d}",
+            "eligibility_attestation": "independent synthetic reviewer",
+            "unfamiliar_with_operator_voice": True,
+            "blinding_confirmed": True,
+            "verdict": blind_verdict,
+            "left_review_id": ordered[0]["review_id"],
+            "right_review_id": ordered[1]["review_id"],
             "invalidation_reason": "",
+            "created_at": "2026-07-15T00:00:00Z",
         }
-        # One frozen preference per pair, never one vote per cell.
-        if cell["order"] == 1:
-            record["preference"] = ("ditto", "cold", "tie")[index % 3]
-        values.append(record)
+        for cell in pair["cells"]:
+            failures = ["unsupported_claim"] if index == 3 else []
+            artifacts = [f"{index + 201:064x}"]
+            attempt = {
+                "schema": "ditto-proof-attempt/1",
+                **{
+                    field: cell[field]
+                    for field in (
+                        "cell_id", "pair_id", "system_id", "fixture_sha256",
+                        "instruction_sha256", "profile_manifest_sha256",
+                        "tool_policy_sha256", "permission_policy_sha256", "budget",
+                    )
+                },
+                "meaningful_output": True,
+                "exit_status": "synthetic",
+            }
+            attempt_sha256 = values.evidence_store.add(
+                cell["cell_id"], "attempts", attempt
+            )
+            evaluation = {
+                "schema": "ditto-proof-evaluation/1",
+                "cell_id": cell["cell_id"],
+                "hard_failures": failures,
+                "artifact_hashes": artifacts,
+                "redaction_state": "passed",
+            }
+            evaluation_sha256 = values.evidence_store.add(
+                cell["cell_id"], "evaluations", evaluation
+            )
+            review_sha256 = None
+            preference = None
+            if cell["order"] == 1:
+                review_sha256 = values.evidence_store.add(
+                    cell["cell_id"], "reviews", review
+                )
+                preference = desired
+            values.append(
+                {
+                    "cell_id": cell["cell_id"],
+                    "pair_id": cell["pair_id"],
+                    "condition": cell["condition"],
+                    "family": cell["family"],
+                    "publication_status": "eligible",
+                    "hard_failures": failures,
+                    "objective_result_sha256": evaluation_sha256,
+                    "artifact_hashes": artifacts,
+                    "retry_history": [],
+                    "review_status": "valid",
+                    "preference": preference,
+                    "invalidation_reason": "",
+                    "attempt_sha256": attempt_sha256,
+                    "evaluation_sha256": evaluation_sha256,
+                    "review_sha256": review_sha256,
+                    "redaction_state": "passed",
+                }
+            )
+            index += 1
+    del values[count:]
     return values
 
 
 class PublishTest(unittest.TestCase):
+    def test_publication_requires_hash_bound_evidence_store(self):
+        manifest = _manifest()
+        records = _records(manifest)
+        with self.assertRaisesRegex(ValueError, "evidence store"):
+            build_publication(
+                manifest,
+                list(records),
+                publication_approval_digest(manifest, records),
+            )
+
+    def test_publication_rejects_unstored_retry_history(self):
+        manifest = _manifest()
+        records = _records(manifest)
+        records[0]["retry_history"] = [{"reason": "invented retry"}]
+        with self.assertRaisesRegex(ValueError, "retry history"):
+            build_publication(
+                manifest,
+                records,
+                publication_approval_digest(manifest, records),
+            )
+
     def test_preference_excludes_ties_and_keeps_tie_count(self):
         result = aggregate_preferences(["ditto", "cold", "tie", "ditto"])
         self.assertEqual(
@@ -128,6 +236,31 @@ class PublishTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "frozen 48-cell matrix"):
             publication_approval_digest(manifest, records)
 
+    def test_package_refuses_forged_frozen_identity_fields(self):
+        manifest = _manifest()
+        for field, value in (
+            ("pair_id", "pair-forged"),
+            ("family", "write"),
+            ("condition", "ditto"),
+        ):
+            records = _records(manifest)
+            target = next(
+                record for record in records if record[field] != value
+            )
+            target[field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(
+                ValueError, "frozen cell identity"
+            ):
+                publication_approval_digest(manifest, records)
+
+    def test_every_frozen_pair_has_one_review_contribution(self):
+        manifest = _manifest()
+        records = _records(manifest)
+        contribution = next(item for item in records if item["preference"] is not None)
+        contribution["preference"] = None
+        with self.assertRaisesRegex(ValueError, "one review contribution"):
+            publication_approval_digest(manifest, records)
+
     def test_package_refuses_profile_rubric_as_headline(self):
         manifest = _manifest()
         records = _records(manifest)
@@ -146,6 +279,24 @@ class PublishTest(unittest.TestCase):
         with self.assertRaisesRegex(PermissionError, "exact evidence digest"):
             build_publication(manifest, records, "0" * 64)
 
+    def test_ship_digest_binds_exclusions_and_is_record_order_independent(self):
+        manifest = _manifest()
+        records = _records(manifest)
+        excluded = dict(records[0])
+        excluded["cell_id"] = "superseded-attempt"
+        excluded["publication_status"] = "superseded"
+        excluded["retry_history"] = [{"reason": "provider outage"}]
+        with_exclusion = records + [excluded]
+        digest = publication_approval_digest(manifest, with_exclusion)
+
+        changed = [dict(item) for item in with_exclusion]
+        changed[-1]["retry_history"] = [{"reason": "different reason"}]
+        self.assertNotEqual(digest, publication_approval_digest(manifest, changed))
+        self.assertEqual(
+            digest,
+            publication_approval_digest(manifest, list(reversed(with_exclusion))),
+        )
+
     def test_public_outcomes_keep_failures_invalidations_and_exclusions(self):
         manifest = _manifest()
         records = _records(manifest)
@@ -154,8 +305,15 @@ class PublishTest(unittest.TestCase):
             for item in records
             if item["family"] == "write" and item["preference"] is not None
         )
+        invalid_review = dict(records.evidence_store.load(writing["review_sha256"]))
+        invalid_review["unfamiliar_with_operator_voice"] = False
+        invalid_review["verdict"] = None
+        writing["review_sha256"] = records.evidence_store.add(
+            writing["cell_id"], "reviews", invalid_review
+        )
         writing["review_status"] = "invalid"
-        writing["invalidation_reason"] = "reviewer recognized operator voice"
+        writing["preference"] = None
+        writing["invalidation_reason"] = "reviewer familiar with operator voice"
         excluded = dict(records[0])
         excluded["cell_id"] = "superseded-attempt"
         excluded["publication_status"] = "superseded"
@@ -166,6 +324,7 @@ class PublishTest(unittest.TestCase):
             manifest,
             all_records,
             publication_approval_digest(manifest, all_records),
+            evidence_store=records.evidence_store,
         )
 
         self.assertEqual(48, result["cell_count"])

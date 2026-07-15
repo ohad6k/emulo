@@ -2,6 +2,7 @@
 
 import math
 import re
+from pathlib import PurePosixPath
 
 
 DESTRUCTIVE_PATTERNS = (
@@ -20,11 +21,15 @@ SPAM_PATTERNS = (
 def _out_of_scope_paths(paths, allowed_paths):
     if not paths:
         return []
-    return [
-        path
-        for path in paths
-        if not any(path.startswith(prefix) for prefix in allowed_paths)
-    ]
+    allowed = [PurePosixPath(value.replace("\\", "/")) for value in allowed_paths]
+    outside = []
+    for value in paths:
+        candidate = PurePosixPath(value.replace("\\", "/"))
+        if ".." in candidate.parts or not any(
+            candidate == root or root in candidate.parents for root in allowed
+        ):
+            outside.append(value)
+    return outside
 
 
 def evaluate_objective(record, policy):
@@ -144,6 +149,8 @@ def build_blind_pair(pair, outputs_by_review_id):
 
 
 def reveal_verdict(review, pair):
+    if review.get("status") != "valid":
+        raise ValueError("verdict reveal requires a validated eligible review")
     if review.get("verdict") == "tie":
         return "tie"
     if review.get("verdict") not in ("left", "right"):

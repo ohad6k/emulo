@@ -72,6 +72,24 @@ class FixtureTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "clean Git commit"):
                 seal_fixture(source, root / "private", "work-primary")
 
+    def test_seal_rejects_ignored_untracked_secret(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = init_repo(
+                root / "source",
+                {"brief.txt": "private\n", ".gitignore": "secret.env\n"},
+            )
+            (source / "secret.env").write_text(
+                "API_KEY=private-value\n", encoding="utf-8"
+            )
+            self.assertEqual("", subprocess.check_output(
+                ["git", "-C", str(source), "status", "--porcelain"],
+                text=True,
+            ).strip())
+
+            with self.assertRaisesRegex(ValueError, "untracked or ignored"):
+                seal_fixture(source, root / "private", "work-primary")
+
     def test_seal_rejects_task_path_traversal(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -99,6 +117,17 @@ class FixtureTest(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "fixture hash mismatch"):
                 verify_fixture(sealed, expected)
+
+    def test_runtime_bytecode_cache_does_not_change_fixture_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "module.py").write_text("value = 1\n", encoding="utf-8")
+            expected = tree_hash(root)
+            cache = root / "__pycache__"
+            cache.mkdir()
+            (cache / "module.cpython-311.pyc").write_bytes(b"runtime cache")
+
+            self.assertEqual(expected, tree_hash(root))
 
     def test_tree_manifest_rejects_symlinks(self):
         with tempfile.TemporaryDirectory() as tmp:

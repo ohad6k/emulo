@@ -52,7 +52,7 @@ class EvidenceStoreTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
-        self.store = EvidenceStore(self.root)
+        self.store = EvidenceStore(self.root, {"cell-a": cell()})
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -97,6 +97,16 @@ class EvidenceStoreTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "fixture_sha256 mismatch"):
             validate_attempt_identity(changed, cell())
+        with self.assertRaisesRegex(ValueError, "fixture_sha256 mismatch"):
+            self.store.record_attempt("cell-a", changed)
+
+    def test_evaluation_can_only_supersede_prior_evaluation(self):
+        attempt_receipt = self.store.record_attempt("cell-a", attempt())
+
+        with self.assertRaisesRegex(ValueError, "prior evaluation"):
+            self.store.supersede_evaluation(
+                "cell-a", attempt_receipt["sha256"], "wrong event kind", evaluation()
+            )
 
     def test_cell_id_cannot_escape_run_root(self):
         with self.assertRaisesRegex(ValueError, "cell ID"):

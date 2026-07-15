@@ -63,6 +63,15 @@ class ProofSchemaTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exactly 2 systems"):
             validate_manifest(minimal_manifest())
 
+    def test_manifest_rejects_structurally_empty_systems_pairs_and_bad_time(self):
+        value = minimal_manifest()
+        value["systems"] = [{}, {}]
+        value["pairs"] = [{"cells": []} for _ in range(24)]
+        value["created_at"] = "garbage"
+
+        with self.assertRaisesRegex(ValueError, "system|created_at"):
+            validate_manifest(value)
+
     def test_cell_requires_clean_host_state(self):
         with self.assertRaisesRegex(ValueError, "persistent context"):
             validate_cell(
@@ -100,6 +109,16 @@ class ProofSchemaTest(unittest.TestCase):
         self.assertEqual(2, manifest_schema["properties"]["systems"]["maxItems"])
         self.assertEqual(24, manifest_schema["properties"]["pairs"]["minItems"])
         self.assertEqual(24, manifest_schema["properties"]["pairs"]["maxItems"])
+        self.assertFalse(
+            manifest_schema["properties"]["systems"]["items"][
+                "additionalProperties"
+            ]
+        )
+        self.assertFalse(
+            manifest_schema["properties"]["pairs"]["items"][
+                "additionalProperties"
+            ]
+        )
 
 
 if __name__ == "__main__":
