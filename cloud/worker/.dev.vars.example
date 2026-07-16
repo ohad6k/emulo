@@ -1,0 +1,2 @@
+# Placeholder only. Never commit a real Polar webhook secret.
+POLAR_WEBHOOK_SECRET=replace-with-polar-sandbox-webhook-secret

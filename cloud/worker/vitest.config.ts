@@ -14,8 +14,8 @@ export default defineConfig({
       miniflare: {
         bindings: {
           APP_ENV: "test",
-          POLAR_MONTHLY_PRODUCT_ID: "prod_monthly_test",
-          POLAR_YEARLY_PRODUCT_ID: "prod_yearly_test",
+          POLAR_MONTHLY_PRODUCT_ID: "11111111-1111-4111-8111-111111111111",
+          POLAR_YEARLY_PRODUCT_ID: "22222222-2222-4222-a222-222222222222",
           POLAR_WEBHOOK_SECRET: "test-only-placeholder",
           TEST_MIGRATIONS: await readD1Migrations(
             fileURLToPath(new URL("./migrations", import.meta.url)),

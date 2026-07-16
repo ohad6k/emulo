@@ -1,20 +1,23 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BillingConfigurationError,
   BillingEventError,
   normalizePolarSubscriptionEvent,
 } from "../src/billing";
 
+const MONTHLY_PRODUCT_ID = "11111111-1111-4111-8111-111111111111";
+const YEARLY_PRODUCT_ID = "22222222-2222-4222-a222-222222222222";
 const products = {
-  monthlyProductId: "prod_monthly_test",
-  yearlyProductId: "prod_yearly_test",
+  monthlyProductId: MONTHLY_PRODUCT_ID,
+  yearlyProductId: YEARLY_PRODUCT_ID,
 };
 
 function event(overrides: Record<string, unknown> = {}) {
   const data = {
     id: "sub_123",
     customer_id: "customer_123",
-    product_id: "prod_monthly_test",
+    product_id: MONTHLY_PRODUCT_ID,
     status: "active",
     modified_at: "2026-07-16T12:00:00Z",
     current_period_end: "2026-08-16T12:00:00Z",
@@ -84,7 +87,7 @@ describe("normalizePolarSubscriptionEvent", () => {
     );
     expect(
       normalizePolarSubscriptionEvent(
-        event({ data: { product_id: "prod_yearly_test" } }),
+        event({ data: { product_id: YEARLY_PRODUCT_ID } }),
         products,
       )?.productCode,
     ).toBe("founding-yearly");
@@ -98,6 +101,24 @@ describe("normalizePolarSubscriptionEvent", () => {
   ])("fails closed for %s", (_label, value) => {
     expect(() => normalizePolarSubscriptionEvent(value, products)).toThrow(
       BillingEventError,
+    );
+  });
+
+  it.each([
+    ["placeholder", { monthlyProductId: "not-configured", yearlyProductId: YEARLY_PRODUCT_ID }],
+    ["duplicate", { monthlyProductId: MONTHLY_PRODUCT_ID, yearlyProductId: MONTHLY_PRODUCT_ID }],
+    ["malformed", { monthlyProductId: "bad id", yearlyProductId: YEARLY_PRODUCT_ID }],
+    ["uppercase", { monthlyProductId: "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA", yearlyProductId: YEARLY_PRODUCT_ID }],
+    [
+      "case-equivalent duplicate",
+      {
+        monthlyProductId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        yearlyProductId: "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
+      },
+    ],
+  ])("rejects %s product configuration", (_label, configuration) => {
+    expect(() => normalizePolarSubscriptionEvent(event(), configuration)).toThrow(
+      BillingConfigurationError,
     );
   });
 

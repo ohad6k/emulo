@@ -17,6 +17,8 @@ const SUBSCRIPTION_EVENTS = new Set([
 
 const ACCOUNT_PATTERN = /^acct_[a-f0-9]{32}$/;
 const PROVIDER_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+const POLAR_PRODUCT_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -24,6 +26,13 @@ export class BillingEventError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "BillingEventError";
+  }
+}
+
+export class BillingConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BillingConfigurationError";
   }
 }
 
@@ -67,14 +76,14 @@ function productCode(
   value: unknown,
   configuration: ProductConfiguration,
 ): ProductCode {
-  const productId = identifier(value, "Polar product ID");
   if (
-    !configuration.monthlyProductId ||
-    !configuration.yearlyProductId ||
+    !POLAR_PRODUCT_ID_PATTERN.test(configuration.monthlyProductId) ||
+    !POLAR_PRODUCT_ID_PATTERN.test(configuration.yearlyProductId) ||
     configuration.monthlyProductId === configuration.yearlyProductId
   ) {
-    throw new BillingEventError("Polar product configuration is invalid");
+    throw new BillingConfigurationError("Polar product configuration is invalid");
   }
+  const productId = identifier(value, "Polar product ID");
   if (productId === configuration.monthlyProductId) {
     return "founding-monthly";
   }

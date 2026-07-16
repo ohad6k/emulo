@@ -16,6 +16,7 @@
     "@cloudflare/vitest-pool-workers": "0.18.5",
     "@cloudflare/workers-types": "5.20260716.1",
     "@types/node": "^26.1.1",
+    "standardwebhooks": "1.0.0",
     "typescript": "7.0.2",
     "vitest": "4.1.10",
     "wrangler": "4.111.0"

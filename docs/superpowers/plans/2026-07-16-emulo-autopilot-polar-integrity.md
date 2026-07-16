@@ -56,16 +56,18 @@
 
 **Files:**
 - Create: `cloud/worker/src/polar.ts`
-- Create: `cloud/worker/src/index.ts`
+- Modify: `cloud/worker/src/index.ts`
 - Create: `cloud/worker/test/worker.test.ts`
 - Create: `cloud/worker/.dev.vars.example`
 - Create: `cloud/worker/README.md`
+- Modify: `cloud/worker/package.json`
+- Modify: `cloud/worker/package-lock.json`
 
-- [ ] Add failing signed-request tests for valid lifecycle processing, invalid signature/no writes, malformed/oversize body, unsupported route/method, duplicate delivery, and unknown product/account.
-- [ ] Verify raw bytes and headers with `validateEvent` from `@polar-sh/sdk/webhooks`; normalize errors to safe responses with no payload logging.
-- [ ] Expose only `GET /healthz` and `POST /v1/billing/webhooks/polar`; return 202 for verified handled/ignored events and 403 for signature refusal.
-- [ ] Document exact repo-code completion versus future dashboard actions. Example vars contain names/placeholders only.
-- [ ] Run typecheck, Worker tests, local migration, full Python suite, and secret-pattern scan; commit `feat: verify Polar webhooks on Cloudflare Worker`.
+- [x] Add failing signed-request tests for valid lifecycle processing, invalid signature/no writes, malformed/oversize body, unsupported route/method, duplicate delivery, and unknown product/account.
+- [x] Verify raw bytes and headers with `validateEvent` from `@polar-sh/sdk/webhooks`; normalize errors to safe responses with no payload logging.
+- [x] Expose only `GET /healthz` and `POST /v1/billing/webhooks/polar`; return 202 for verified handled/ignored events and 403 for signature refusal.
+- [x] Document exact repo-code completion versus future dashboard actions. Example vars contain names/placeholders only.
+- [x] Run typecheck, Worker tests, local migration, full Python suite, and secret-pattern scan; commit `feat: verify Polar webhooks on Cloudflare Worker`.
 
 ## Completion gate
 
