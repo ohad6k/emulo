@@ -24,6 +24,7 @@
     {
       "binding": "DB",
       "database_name": "emulo-autopilot-beta",
+      "database_id": "63f95387-b248-4332-8bd7-3ef44bd3628a",
       "migrations_dir": "migrations"
     }
   ]
