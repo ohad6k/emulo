@@ -2,6 +2,17 @@
 
 ## Current Release / Change Window
 
+### 2026-07-17 - Public Emulo Pro pricing boundary
+
+- Change: Add an honest Free-versus-Emulo Pro pricing section to the Vercel site and route paid intent to the authenticated production Worker account boundary.
+- Evidence: The page shows open-source Emulo at `$0`, Emulo Pro at `$9/month` and `$79/year`, and a visible `Private beta` state. Both Pro actions target `/account` on the production Worker; no direct Polar checkout URL or production product ID is embedded.
+- Boundary: The static site explains and routes. GitHub OAuth authenticates in the Worker, Polar hosts payment, signed webhooks write normalized D1 entitlement state, and only that database state may display Pro as active.
+- Danger: Publishing a direct Polar link, embedding provider identifiers/secrets, promising unfinished cloud capabilities, or showing checkout as live before production proof would bypass the verified billing boundary.
+- Repo fix: Add a responsive asymmetric pricing ledger, explicit open-source guarantees, server-side payment-truth copy, and focused regression tests for prices, URLs, beta state, and secret/provider-ID absence.
+- Verification: Pricing tests pass 5/5 after failing against the previous site; desktop and 390px browser checks show two-column and single-column layouts with no horizontal overflow; full Python tests pass 353 with 2 expected skips; Worker tests pass 91/91 plus 6/6 production guards; typecheck, production config validation, dry-run bundle, diff check, and production dependency audit all pass.
+- Provider/MCP proof: No production checkout, customer, subscription, charge, webhook, or entitlement was created by this change. Committed production checkout remains disabled.
+- Open action: Deploy the Worker with checkout disabled, prove production OAuth and empty D1 state, install the scoped Polar token and raw webhook secret interactively, then request explicit approval before a real-money lifecycle.
+
 ### 2026-07-17 - Emulo Pro production products
 
 - Change: Create and bind the two private recurring Emulo Pro products in Polar production.

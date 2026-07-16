@@ -38,6 +38,7 @@ This plan covers the customer-facing account and billing experience plus the pro
 - The deployed Worker has `PAID_CHECKOUT_ENABLED=false`. A live POST returns `503 checkout-disabled`; an unsigned webhook returns `403 rejected`.
 - `assets/emulo-oauth.png` is the real compact Emulo identity asset and is below 1 MB.
 - The Worker currently has focused auth, billing, repository, and integration tests. There is no authenticated account-status endpoint or state-aware receipt-page test.
+- `site/index.html` is the deployed Vercel marketing surface. It currently explains only the free local product, has no pricing or account entry point, and cannot initiate the authenticated Worker purchase path.
 
 ## Architecture Boundaries
 
@@ -105,6 +106,7 @@ The current account script expands to handle checkout, portal, and receipt polli
 4. Same-origin checkout, portal, and verification interactions.
 5. Local integration, accessibility, and security verification.
 6. Sandbox-safe deploy, live evidence, and production provider handoff.
+7. Public-site Free versus Emulo Pro decision surface and safe account handoff.
 
 ## Workstreams
 
@@ -203,6 +205,29 @@ Tasks:
 
 Acceptance: the runbook contains no secrets and makes every unproven provider state explicit.
 
+### 7. Public-site pricing and account handoff
+
+Purpose: let a visitor understand what stays free, what Emulo Pro adds, and where an authenticated purchase begins without turning the static Vercel site into a billing authority.
+
+User outcome: visitors can choose the open-source local product or Emulo Pro from one clear, honest comparison. The Pro action enters the Cloudflare account flow, where GitHub authentication, server-owned product selection, Polar checkout, signed webhooks, and D1 entitlement truth remain enforced.
+
+Files: modify `site/index.html`; add `tests/test_site_pricing.py`; update `.viberaven/production-context.md` after verification.
+
+Dependencies: the production Worker account URL must be stable; committed production checkout remains disabled until the provider and lifecycle gates pass.
+
+Tasks:
+
+- [x] Add a visible `Pricing` navigation target and one asymmetric Free-versus-Pro section consistent with the existing editorial Emulo site.
+- [x] State that local mining and `you.md` remain free, local, and open source.
+- [x] State only the approved current Pro value: managed cloud continuity, cross-agent orchestration/sync, recovery, and founding support. Do not claim unfinished capabilities are already active.
+- [x] Show exact `$9 monthly` and `$79 yearly` production prices without fake urgency, fabricated savings, or a fake trial.
+- [x] Send Pro intent to the production Worker `/account` route. Do not embed Polar product IDs, tokens, customer IDs, or a direct checkout link in the site.
+- [x] Keep the GitHub action as the primary free path and add truthful disabled/beta language until public checkout is enabled.
+- [x] Add a focused source-level regression test for pricing, URLs, open-source guarantees, and absence of secret-shaped values or direct Polar checkout URLs.
+- [ ] Verify desktop and mobile rendering from a local static server, then verify the Vercel preview after push. Local desktop and 390px checks are complete; preview proof remains open.
+
+Acceptance: the public site clearly separates free local Emulo from paid Emulo Pro, all billing authority remains server-side, tests prevent price/link/privacy drift, and no CTA claims a purchase is live while production checkout is disabled.
+
 ## Execution Tasks
 
 - [ ] Write account-status tests and observe expected failures.
@@ -215,6 +240,7 @@ Acceptance: the runbook contains no secrets and makes every unproven provider st
 - [ ] Deploy only with checkout disabled.
 - [ ] Collect live route, D1, and provider evidence.
 - [ ] Prepare but do not silently perform live-money provider actions.
+- [x] Add and locally verify the public-site pricing/account handoff while checkout remains disabled. Vercel preview proof remains a release action.
 
 ## Implementation Sequence
 
@@ -226,7 +252,8 @@ Acceptance: the runbook contains no secrets and makes every unproven provider st
 6. Run typecheck, complete Worker suite, and secret/config diff review.
 7. Update production context and the production activation runbook.
 8. Deploy the safe configuration and collect live proof.
-9. Only after owner/provider evidence, execute a bounded production purchase/refund test and then decide whether to open public checkout.
+9. Publish the pricing surface with an honest beta/account handoff while checkout remains disabled.
+10. Only after owner/provider evidence, execute a bounded production purchase/refund test and then decide whether to open public checkout.
 
 ## Data, Auth, Provider, And Deploy Boundaries
 
@@ -297,6 +324,7 @@ No product question blocks the sandbox-safe UI slice. Production activation stil
 - Deploy UI with checkout disabled first.
 - Treat production provider setup as a separate evidence-gated action.
 - Prefer one strong account surface and one focused verification surface over a generic multi-card dashboard.
+- Keep the Vercel site presentational only; route paid intent to the authenticated Worker instead of duplicating checkout logic or provider identifiers in static HTML.
 
 ## VibeRaven Route
 

@@ -33,7 +33,11 @@
   "description": "Emulo mines your real Claude Code, Codex, Cursor and Copilot sessions into a you.md working profile your agent reads before every task. It reads raw session logs locally and writes a private profile of how you decide, what you reject, and how you work.",
   "license": "https://opensource.org/licenses/MIT",
   "programmingLanguage": "Python",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "offers": [
+    { "@type": "Offer", "name": "Open-source Emulo", "price": "0", "priceCurrency": "USD" },
+    { "@type": "Offer", "name": "Emulo Pro Monthly", "price": "9", "priceCurrency": "USD" },
+    { "@type": "Offer", "name": "Emulo Pro Annual", "price": "79", "priceCurrency": "USD" }
+  ],
   "author": { "@type": "Person", "name": "ohad6k", "url": "https://github.com/ohad6k" }
 }
 </script>
@@ -297,6 +301,62 @@ h2{
 .privacy{margin-top:26px;font-size:16px;color:var(--cream-dim);max-width:72ch}
 .privacy b{font-weight:600;color:var(--paper-2)}
 
+/* pricing ledger */
+.pricing{background:var(--paper-2)}
+.pricing .sec-head{align-items:flex-start}
+.pricing .sec-head .label{display:block;margin:4px 0 12px}
+.price-ledger{
+  display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
+  border:1px solid var(--ink);background:var(--paper);
+}
+.price-pane{padding:48px;position:relative}
+.price-free{border-right:1px solid var(--ink)}
+.price-pro{background:var(--ink);color:var(--paper-2)}
+.price-pane h3{
+  font-family:var(--serif);font-size:clamp(28px,3vw,38px);font-weight:600;
+  line-height:1.08;margin:16px 0 18px;
+}
+.price-pane > p{color:var(--ink-soft);max-width:44ch}
+.price-pro > p{color:var(--cream-dim)}
+.price-mark{display:flex;align-items:baseline;gap:10px;margin:34px 0 28px}
+.price-mark strong{font-family:var(--serif);font-size:48px;line-height:1}
+.price-mark span{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+.price-list{list-style:none;margin:28px 0 34px;border-top:1px dotted var(--rule)}
+.price-list li{padding:11px 0;border-bottom:1px dotted var(--rule);color:var(--ink-soft)}
+.price-list li::before{content:"+";font-family:var(--mono);color:var(--red);margin-right:12px}
+.price-link{
+  display:inline-flex;align-items:center;justify-content:space-between;gap:24px;
+  min-width:230px;border-bottom:1px solid var(--ink);padding:11px 0;
+  font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+  text-decoration:none;transition:color .2s ease,padding .2s ease;
+}
+.price-link:hover{color:var(--red);padding-left:6px}
+.price-link::after{content:"→";font-size:17px}
+.beta-line{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:30px}
+.beta-line .label{color:var(--gold)}
+.beta-state{
+  border:1px solid var(--ink-2);padding:6px 10px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--cream-dim);
+}
+.pro-plans{margin:32px 0 26px;border-top:1px solid var(--ink-2)}
+.pro-plan{
+  display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:20px;
+  padding:20px 0;border-bottom:1px solid var(--ink-2);
+}
+.pro-plan strong{font-family:var(--serif);font-size:25px;font-weight:600}
+.pro-plan small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--cream-dim)}
+.pro-plan .amount{font-family:var(--serif);font-size:31px;line-height:1;white-space:nowrap}
+.pro-plan .amount span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--cream-dim)}
+.pro-plan a{
+  border:1px solid var(--paper-2);padding:10px 13px;color:var(--paper-2);text-decoration:none;
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  transition:background .2s ease,color .2s ease,transform .2s ease;
+}
+.pro-plan a:hover{background:var(--paper-2);color:var(--ink)}
+.pro-plan a:active{transform:translateY(1px)}
+.billing-proof{font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--cream-dim);max-width:64ch}
+.billing-proof b{color:var(--paper-2);font-weight:500}
+
 /* works with — slow marquee */
 .works{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:24px 0;overflow:hidden;position:relative;z-index:3;background:var(--paper)}
 .works .lane{display:flex;width:max-content;animation:lane 28s linear infinite}
@@ -385,6 +445,8 @@ footer a:hover{color:var(--red)}
   .steps{grid-template-columns:1fr}
   .step{border-right:0;border-bottom:1px solid var(--ink-2)}
   .step:last-child{border-bottom:0}
+  .price-ledger{grid-template-columns:1fr}
+  .price-free{border-right:0;border-bottom:1px solid var(--ink)}
   .law{grid-template-columns:64px 1fr;grid-template-rows:auto auto;align-items:start}
   .law .lex{padding-top:5px}
   .law .score{grid-column:2;justify-self:start}
@@ -393,12 +455,16 @@ footer a:hover{color:var(--red)}
 @media (max-width: 560px){
   .wrap{padding:0 20px}
   nav{padding:20px}
+  .nav-links{gap:14px;flex-wrap:wrap;justify-content:flex-end}
   .stats .wrap{grid-template-columns:1fr}
   .stat + .stat::before{display:none}
   .stat{border-top:1px dotted var(--rule)}
   .cta-row{flex-direction:column;align-items:stretch}
   .btn-star,.cmd{justify-content:center}
   .cmd{font-size:12.5px;gap:10px;padding:14px 12px 14px 14px}
+  .price-pane{padding:32px 24px}
+  .pro-plan{grid-template-columns:1fr auto}
+  .pro-plan a{grid-column:1 / -1;text-align:center}
 }
 </style>
 </head>
@@ -411,6 +477,7 @@ footer a:hover{color:var(--red)}
   <a class="wordmark" href="#">EMULO</a>
   <div class="nav-links">
     <a href="/bench">Bench</a>
+    <a href="#pricing">Pricing</a>
     <a href="https://github.com/ohad6k/emulo">GitHub</a>
     <a href="https://discord.gg/QMnYtVcxk2">Discord</a>
   </div>
@@ -529,6 +596,55 @@ footer a:hover{color:var(--red)}
       </div>
     </div>
     <p class="privacy reveal"><b>Emulo reads your private session logs, so it is built to never move them.</b> Everything runs on your machine, secrets are redacted before a single line is written, and the profile stays in a local file you can open, edit, or delete.</p>
+  </div>
+</section>
+
+<section class="pricing" id="pricing" data-checkout-state="private-beta">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="num">IV.</span>
+      <div>
+        <span class="label">One engine · two ways to run it</span>
+        <h2>Keep the local engine. Add the managed layer when you need it.</h2>
+      </div>
+    </div>
+    <div class="price-ledger reveal">
+      <article class="price-pane price-free">
+        <span class="label">Open-source Emulo</span>
+        <h3>Free, local, yours.</h3>
+        <p>Mine your own sessions and keep the resulting you.md on your machine. The core product stays useful without a cloud account.</p>
+        <div class="price-mark"><strong>$0</strong><span>forever</span></div>
+        <ul class="price-list">
+          <li>Local session mining</li>
+          <li>Editable, portable you.md</li>
+          <li>MIT licensed source</li>
+          <li>No subscription</li>
+        </ul>
+        <a class="price-link" href="https://github.com/ohad6k/emulo">Install from GitHub</a>
+      </article>
+
+      <article class="price-pane price-pro">
+        <div class="beta-line">
+          <span class="label">Emulo Pro</span>
+          <span class="beta-state">Private beta</span>
+        </div>
+        <h3>Continuity for agents that already know you.</h3>
+        <p>The managed layer is opening for solo power users who want cross-agent continuity, reviewed orchestration, recovery, and direct founding support. Capabilities open only after they are verified.</p>
+        <div class="pro-plans">
+          <div class="pro-plan">
+            <div><strong>Monthly</strong><small>Flexible access</small></div>
+            <div class="amount">$9 <span>/ month</span></div>
+            <a href="https://emulo-production.ohad1306.workers.dev/account" aria-label="Open the Emulo Pro monthly account flow">Open account</a>
+          </div>
+          <div class="pro-plan">
+            <div><strong>Annual</strong><small>One year</small></div>
+            <div class="amount">$79 <span>/ year</span></div>
+            <a href="https://emulo-production.ohad1306.workers.dev/account" aria-label="Open the Emulo Pro annual account flow">Open account</a>
+          </div>
+        </div>
+        <p class="billing-proof"><b>Payment truth stays server-side.</b> GitHub signs you in, Polar hosts checkout, and Emulo activates Pro only after a signed payment event is stored in its database. Checkout remains private while that production path is verified.</p>
+      </article>
+    </div>
   </div>
 </section>
 
