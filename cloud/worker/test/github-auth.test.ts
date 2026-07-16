@@ -47,7 +47,18 @@ async function seedFlow() {
 
 describe("GitHub OAuth", () => {
   beforeEach(async () => {
+    await testEnv.DB.prepare(
+      `CREATE TABLE IF NOT EXISTS oauth_diagnostics (
+         diagnostic_id INTEGER PRIMARY KEY AUTOINCREMENT,
+         provider TEXT NOT NULL,
+         stage TEXT NOT NULL,
+         status_code INTEGER,
+         error_code TEXT,
+         created_at TEXT NOT NULL
+       )`,
+    ).run();
     await testEnv.DB.batch([
+      testEnv.DB.prepare("DELETE FROM oauth_diagnostics"),
       testEnv.DB.prepare("DELETE FROM browser_sessions"),
       testEnv.DB.prepare("DELETE FROM oauth_identities"),
       testEnv.DB.prepare("DELETE FROM oauth_flows"),
@@ -174,6 +185,79 @@ describe("GitHub OAuth", () => {
       "__Host-emulo_session=",
     );
     expect(await response.text()).not.toContain("no");
+  });
+
+  it("records a sanitized token-exchange diagnostic without credentials", async () => {
+    await seedFlow();
+    const response = await completeGitHubOAuth(
+      new Request(
+        `https://api.example/v1/auth/github/callback?code=temporary-code&state=${STATE}`,
+        { headers: { cookie: `__Host-emulo_oauth=${BROWSER_BINDING}` } },
+      ),
+      testEnv,
+      dependencies(
+        vi.fn().mockResolvedValue(
+          Response.json(
+            { error: "incorrect_client_credentials", error_description: "private detail" },
+            { status: 401 },
+          ),
+        ),
+      ),
+    );
+    expect(response.status).toBe(502);
+    const diagnostic = await testEnv.DB.prepare(
+      `SELECT provider, stage, status_code, error_code
+       FROM oauth_diagnostics ORDER BY diagnostic_id DESC LIMIT 1`,
+    ).first<{
+      provider: string;
+      stage: string;
+      status_code: number;
+      error_code: string;
+    }>();
+    expect(diagnostic).toEqual({
+      provider: "github",
+      stage: "token_exchange",
+      status_code: 401,
+      error_code: "incorrect_client_credentials",
+    });
+    expect(JSON.stringify(diagnostic)).not.toContain("private detail");
+    expect(JSON.stringify(diagnostic)).not.toContain("temporary-code");
+  });
+
+  it("records a sanitized GitHub user-lookup diagnostic", async () => {
+    await seedFlow();
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ access_token: "test-token" }))
+      .mockResolvedValueOnce(
+        Response.json({ message: "private upstream detail" }, { status: 401 }),
+      );
+    const response = await completeGitHubOAuth(
+      new Request(
+        `https://api.example/v1/auth/github/callback?code=temporary-code&state=${STATE}`,
+        { headers: { cookie: `__Host-emulo_oauth=${BROWSER_BINDING}` } },
+      ),
+      testEnv,
+      dependencies(fetcher),
+    );
+    expect(response.status).toBe(502);
+    const diagnostic = await testEnv.DB.prepare(
+      `SELECT provider, stage, status_code, error_code
+       FROM oauth_diagnostics ORDER BY diagnostic_id DESC LIMIT 1`,
+    ).first<{
+      provider: string;
+      stage: string;
+      status_code: number;
+      error_code: string | null;
+    }>();
+    expect(diagnostic).toEqual({
+      provider: "github",
+      stage: "user_lookup",
+      status_code: 401,
+      error_code: null,
+    });
+    expect(JSON.stringify(diagnostic)).not.toContain("private upstream detail");
+    expect(JSON.stringify(diagnostic)).not.toContain("test-token");
   });
 
   it("rejects a callback from a different browser without consuming the flow", async () => {

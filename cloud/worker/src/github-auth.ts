@@ -163,9 +163,6 @@ export async function beginGitHubOAuth(
 async function upstreamJson(
   response: Response,
 ): Promise<Record<string, unknown> | null> {
-  if (!response.ok) {
-    return null;
-  }
   try {
     const parsed: unknown = await response.json();
     return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
@@ -174,6 +171,33 @@ async function upstreamJson(
   } catch {
     return null;
   }
+}
+
+async function recordOAuthDiagnostic(
+  env: Env,
+  input: {
+    stage: "token_exchange" | "user_lookup";
+    statusCode: number;
+    errorCode: string | null;
+    createdAt: string;
+  },
+): Promise<void> {
+  await env.DB.batch([
+    env.DB
+      .prepare(
+        `INSERT INTO oauth_diagnostics
+         (provider, stage, status_code, error_code, created_at)
+         VALUES ('github', ?, ?, ?, ?)`,
+      )
+      .bind(input.stage, input.statusCode, input.errorCode, input.createdAt),
+    env.DB.prepare(
+      `DELETE FROM oauth_diagnostics
+       WHERE diagnostic_id NOT IN (
+         SELECT diagnostic_id FROM oauth_diagnostics
+         ORDER BY diagnostic_id DESC LIMIT 100
+       )`,
+    ),
+  ]);
 }
 
 function accountId(bytes: Uint8Array): string {
@@ -236,6 +260,12 @@ export async function completeGitHubOAuth(
     const tokenPayload = await upstreamJson(tokenResponse);
     const accessToken = tokenPayload?.access_token;
     if (typeof accessToken !== "string" || accessToken.length < 8 || accessToken.length > 512) {
+      await recordOAuthDiagnostic(env, {
+        stage: "token_exchange",
+        statusCode: tokenResponse.status,
+        errorCode: upstreamErrorCode(tokenPayload),
+        createdAt: now.toISOString(),
+      });
       console.warn("github_oauth_failure", {
         stage: "token_exchange",
         status: tokenResponse.status,
@@ -258,6 +288,12 @@ export async function completeGitHubOAuth(
       !Number.isSafeInteger(user.id) ||
       user.id <= 0
     ) {
+      await recordOAuthDiagnostic(env, {
+        stage: "user_lookup",
+        statusCode: userResponse.status,
+        errorCode: null,
+        createdAt: now.toISOString(),
+      });
       console.warn("github_oauth_failure", {
         stage: "user_lookup",
         status: userResponse.status,
