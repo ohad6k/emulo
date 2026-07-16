@@ -57,3 +57,40 @@ def decision_fixture(
     }
     value["decision_id"] = contracts.decision_identity(value)
     return value
+
+
+def checkpoint_fixture():
+    return {
+        "schema_version": contracts.CHECKPOINT_SCHEMA,
+        "path_hash": "d" * 64,
+        "source": "codex",
+        "identity": {"size": 1234, "mtime_ns": 1784192400000000000},
+        "unchanged_since": 1784192400,
+        "processed_fingerprint": None,
+    }
+
+
+def inbox_fixture(session_id="1" * 16, fingerprint="e" * 64):
+    receipts = [
+        {
+            "receipt_id": "rcpt_" + format(index + 1, "020x"),
+            "session_id": session_id,
+            "message_sha256": format(index + 1, "064x"),
+            "observed_at": "2026-0{0}-16T00:00:00Z".format(index + 6),
+            "time_stratum": "2026-0{0}".format(index + 6),
+        }
+        for index in range(2)
+    ]
+    value = {
+        "schema_version": contracts.INBOX_SCHEMA,
+        "inbox_id": "",
+        "session_id": session_id,
+        "source": "codex",
+        "session_fingerprint": fingerprint,
+        "receipts": receipts,
+        "message_count": len(receipts),
+        "truncated_message_count": 0,
+        "created_at": "2026-07-16T10:00:00Z",
+    }
+    value["inbox_id"] = contracts.inbox_identity(value)
+    return value

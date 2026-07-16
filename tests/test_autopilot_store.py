@@ -7,7 +7,12 @@ from unittest import mock
 
 from emulo_autopilot.contracts import canonical_json
 from emulo_autopilot.store import AutopilotStore
-from tests.autopilot_helpers import candidate_fixture, decision_fixture
+from tests.autopilot_helpers import (
+    candidate_fixture,
+    checkpoint_fixture,
+    decision_fixture,
+    inbox_fixture,
+)
 
 
 class AutopilotStoreTest(unittest.TestCase):
@@ -21,7 +26,14 @@ class AutopilotStoreTest(unittest.TestCase):
         root = Path(self.store.initialize())
         self.assertEqual(self.home / "autopilot", root)
         self.assertEqual(
-            {"candidates", "decisions", "inbox", "generations", "operations"},
+            {
+                "candidates",
+                "checkpoints",
+                "decisions",
+                "inbox",
+                "generations",
+                "operations",
+            },
             {item.name for item in root.iterdir()},
         )
 
@@ -150,6 +162,76 @@ class AutopilotStoreTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "escapes"):
             self.store.atomic_write_json(str(outside), {"unsafe": True})
         self.assertFalse(outside.exists())
+
+    def test_checkpoint_missing_then_round_trips_and_updates(self):
+        checkpoint = checkpoint_fixture()
+        self.assertIsNone(self.store.get_checkpoint(checkpoint["path_hash"]))
+        self.store.put_checkpoint(checkpoint)
+        self.assertEqual(
+            checkpoint,
+            self.store.get_checkpoint(checkpoint["path_hash"]),
+        )
+
+        changed = dict(
+            checkpoint,
+            identity={"size": 2000, "mtime_ns": 1784192500000000000},
+            unchanged_since=1784192500,
+        )
+        self.store.put_checkpoint(changed)
+        self.assertEqual(
+            changed,
+            self.store.get_checkpoint(checkpoint["path_hash"]),
+        )
+
+    def test_corrupt_checkpoint_fails_closed(self):
+        checkpoint = checkpoint_fixture()
+        self.store.put_checkpoint(checkpoint)
+        path = self.home / "autopilot" / "checkpoints" / (
+            checkpoint["path_hash"] + ".json"
+        )
+        path.write_text("{}\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "checkpoint is corrupt"):
+            self.store.get_checkpoint(checkpoint["path_hash"])
+
+    def test_same_inbox_is_idempotent_but_conflicting_bytes_fail(self):
+        inbox = inbox_fixture()
+        first = self.store.put_inbox(inbox)
+        second = self.store.put_inbox(inbox)
+        self.assertEqual(first, second)
+
+        Path(first).write_text("{}\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "existing inbox"):
+            self.store.put_inbox(inbox)
+
+    def test_list_inbox_is_sorted_and_rejects_unexpected_files(self):
+        first = inbox_fixture(session_id="1" * 16, fingerprint="e" * 64)
+        second = inbox_fixture(session_id="2" * 16, fingerprint="f" * 64)
+        self.store.put_inbox(second)
+        self.store.put_inbox(first)
+        listed = self.store.list_inbox()
+        self.assertEqual(
+            sorted([first["inbox_id"], second["inbox_id"]]),
+            [item["inbox_id"] for item in listed],
+        )
+
+        inbox_root = self.home / "autopilot" / "inbox"
+        (inbox_root / "notes.txt").write_text("not an inbox", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "unexpected inbox"):
+            self.store.list_inbox()
+
+    def test_persisted_checkpoint_and_inbox_have_no_path_or_message_text(self):
+        private_path = "C:/Users/private/.codex/sessions/session.jsonl"
+        raw_text = "verify this private deployment"
+        redacted_text = "verify this [REDACTED] deployment"
+        self.store.put_checkpoint(checkpoint_fixture())
+        self.store.put_inbox(inbox_fixture())
+        payload = b"".join(
+            path.read_bytes()
+            for path in (self.home / "autopilot").rglob("*.json")
+        ).decode("utf-8")
+        self.assertNotIn(private_path, payload)
+        self.assertNotIn(raw_text, payload)
+        self.assertNotIn(redacted_text, payload)
 
 
 if __name__ == "__main__":

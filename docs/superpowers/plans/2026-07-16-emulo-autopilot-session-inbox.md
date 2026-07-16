@@ -180,17 +180,17 @@ git commit -m "feat: define private Autopilot inbox contracts"
 - Modify: `emulo_autopilot/store.py`
 - Modify: `tests/test_autopilot_store.py`
 
-- [ ] **Step 1: Write failing persistence tests**
+- [x] **Step 1: Write failing persistence tests**
 
 Test missing checkpoint, round-trip checkpoint, changed checkpoint overwrite, corrupt checkpoint failure, idempotent inbox write, conflicting same-ID bytes, sorted inbox listing, and a recursive byte scan proving seeded raw/redacted phrases do not appear anywhere under the Autopilot root.
 
-- [ ] **Step 2: Run and verify red state**
+- [x] **Step 2: Run and verify red state**
 
 Run: `python -m unittest tests.test_autopilot_store -v`
 
 Expected: FAIL because checkpoint/inbox store methods do not exist.
 
-- [ ] **Step 3: Implement checkpoint and inbox methods**
+- [x] **Step 3: Implement checkpoint and inbox methods**
 
 ```python
     def checkpoint_path(self, path_hash):
@@ -236,13 +236,13 @@ Expected: FAIL because checkpoint/inbox store methods do not exist.
 
 Add `checkpoints` to the exact initialized directory set. Import the new validators.
 
-- [ ] **Step 4: Run store and contract tests**
+- [x] **Step 4: Run store and contract tests**
 
 Run: `python -m unittest tests.test_autopilot_store tests.test_autopilot_contracts -v`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add emulo_autopilot/store.py tests/test_autopilot_store.py

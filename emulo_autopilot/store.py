@@ -8,7 +8,13 @@ import tempfile
 import time
 import uuid
 
-from .contracts import canonical_json, validate_candidate, validate_decision
+from .contracts import (
+    canonical_json,
+    validate_candidate,
+    validate_checkpoint,
+    validate_decision,
+    validate_inbox,
+)
 
 
 LOCK_SCHEMA = "emulo.autopilot-lock/v1"
@@ -82,6 +88,7 @@ class AutopilotStore:
         self._assert_not_link(self.root)
         for name in (
             "candidates",
+            "checkpoints",
             "decisions",
             "inbox",
             "generations",
@@ -254,3 +261,50 @@ class AutopilotStore:
             decisions,
             key=lambda item: (item["decided_at"], item["decision_id"]),
         )
+
+    def checkpoint_path(self, path_hash):
+        if not isinstance(path_hash, str) or not re.fullmatch(
+            r"[a-f0-9]{64}", path_hash
+        ):
+            raise ValueError("path_hash is invalid")
+        return self._child("checkpoints", path_hash + ".json")
+
+    def get_checkpoint(self, path_hash):
+        path = self.checkpoint_path(path_hash)
+        if not os.path.exists(path):
+            return None
+        try:
+            with open(path, "r", encoding="utf-8", errors="strict") as handle:
+                return validate_checkpoint(json.load(handle))
+        except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+            raise ValueError("checkpoint is corrupt") from exc
+
+    def put_checkpoint(self, checkpoint):
+        checkpoint = validate_checkpoint(checkpoint)
+        path = self.checkpoint_path(checkpoint["path_hash"])
+        return self.atomic_write_json(path, checkpoint)
+
+    def put_inbox(self, inbox):
+        inbox = validate_inbox(inbox)
+        path = self._child("inbox", inbox["inbox_id"] + ".json")
+        expected = (canonical_json(inbox) + "\n").encode("utf-8")
+        if os.path.exists(path):
+            with open(path, "rb") as handle:
+                if handle.read() != expected:
+                    raise ValueError("existing inbox bytes do not match identity")
+            return path
+        return self.atomic_write_json(path, inbox)
+
+    def list_inbox(self):
+        self.initialize()
+        values = []
+        for name in os.listdir(self._child("inbox")):
+            if not re.fullmatch(r"inbox_[a-f0-9]{20}\.json", name):
+                raise ValueError("unexpected inbox file")
+            path = self._child("inbox", name)
+            try:
+                with open(path, "r", encoding="utf-8", errors="strict") as handle:
+                    values.append(validate_inbox(json.load(handle)))
+            except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+                raise ValueError("inbox is corrupt") from exc
+        return sorted(values, key=lambda item: item["inbox_id"])
