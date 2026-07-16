@@ -22,9 +22,9 @@
 - Modify: `emulo_autopilot/store.py`
 - Modify: `tests/test_autopilot_store.py`
 
-- [ ] Add failing tests for sorted candidate and generation inventory, unexpected files, corrupt records, and missing/valid/corrupt lock inspection.
-- [ ] Implement `list_candidates()`, `list_generations()`, and `get_lock()` using existing validators, exact filename patterns, regular non-link paths, and fail-closed errors.
-- [ ] Run `python -m unittest tests.test_autopilot_store -v` and commit `feat: expose strict Autopilot local inventory`.
+- [x] Add failing tests for sorted candidate and generation inventory, unexpected files, corrupt records, and missing/valid/corrupt lock inspection.
+- [x] Implement `list_candidates()`, `list_generations()`, and `get_lock()` using existing validators, exact filename patterns, regular non-link paths, and fail-closed errors.
+- [x] Run `python -m unittest tests.test_autopilot_store -v` and commit `feat: expose strict Autopilot local inventory`.
 
 ### Task 2: Review and status service
 

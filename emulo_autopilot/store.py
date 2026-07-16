@@ -224,6 +224,19 @@ class AutopilotStore:
         os.unlink(path)
         return value
 
+    def get_lock(self):
+        path = self._child("lock.json")
+        if not os.path.lexists(path):
+            return None
+        try:
+            self._assert_not_link(path)
+            if not os.path.isfile(path):
+                raise ValueError("lock record is invalid")
+            with open(path, "r", encoding="utf-8", errors="strict") as handle:
+                return self._validate_lock(json.load(handle))
+        except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+            raise ValueError("lock record is invalid") from exc
+
     def put_candidate(self, candidate):
         candidate = validate_candidate(candidate)
         path = self._child("candidates", candidate["candidate_id"] + ".json")
@@ -247,6 +260,16 @@ class AutopilotStore:
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise ValueError("candidate is missing or corrupt") from exc
         return validate_candidate(value)
+
+    def list_candidates(self):
+        self.initialize()
+        values = []
+        root = self._child("candidates")
+        for name in os.listdir(root):
+            if not re.fullmatch(r"cand_[a-f0-9]{20}\.json", name):
+                raise ValueError("unexpected candidate file")
+            values.append(self.get_candidate(name[:-5]))
+        return sorted(values, key=lambda item: item["candidate_id"])
 
     def append_decision(self, decision):
         decision = validate_decision(decision)
@@ -385,6 +408,16 @@ class AutopilotStore:
             return generation
         except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
             raise ValueError("Autopilot generation is corrupt") from exc
+
+    def list_generations(self):
+        self.initialize()
+        values = []
+        root = self._child("generations")
+        for name in os.listdir(root):
+            if not re.fullmatch(r"gen_[a-f0-9]{20}", name):
+                raise ValueError("unexpected generation entry")
+            values.append(self.get_generation(name))
+        return sorted(values, key=lambda item: item["generation_id"])
 
     def read_domain(self, generation_id, domain):
         if domain not in DOMAINS:

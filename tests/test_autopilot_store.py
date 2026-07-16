@@ -414,6 +414,54 @@ class AutopilotStoreTest(unittest.TestCase):
         self.assertTrue((generations / second["generation_id"]).is_dir())
         self.assertTrue((generations / rolled_back["generation_id"]).is_dir())
 
+    def test_candidate_inventory_is_sorted_and_fails_closed(self):
+        second = candidate_fixture(statement="Second inventory rule.")
+        first = candidate_fixture(statement="First inventory rule.")
+        self.store.put_candidate(second)
+        self.store.put_candidate(first)
+        self.assertEqual(
+            sorted([first["candidate_id"], second["candidate_id"]]),
+            [item["candidate_id"] for item in self.store.list_candidates()],
+        )
+
+        root = self.home / "autopilot" / "candidates"
+        (root / "notes.txt").write_text("unexpected", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "unexpected candidate"):
+            self.store.list_candidates()
+
+    def test_generation_inventory_is_sorted_and_fails_closed(self):
+        first_candidate = self._approved_candidate(statement="Inventory one.")
+        first = self.store.activate(
+            [first_candidate["candidate_id"]], "2026-07-16T12:00:00Z"
+        )
+        second_candidate = self._approved_candidate(statement="Inventory two.")
+        second = self.store.activate(
+            [second_candidate["candidate_id"]], "2026-07-16T12:01:00Z"
+        )
+        self.assertEqual(
+            sorted([first["generation_id"], second["generation_id"]]),
+            [item["generation_id"] for item in self.store.list_generations()],
+        )
+
+        root = self.home / "autopilot" / "generations"
+        (root / "notes.txt").write_text("unexpected", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "unexpected generation"):
+            self.store.list_generations()
+
+    def test_lock_inventory_is_missing_visible_and_corrupt_safe(self):
+        self.assertIsNone(self.store.get_lock())
+        context = self.store.lock("activate")
+        record = context.__enter__()
+        try:
+            self.assertEqual(record, self.store.get_lock())
+        finally:
+            context.__exit__(None, None, None)
+
+        lock = self.home / "autopilot" / "lock.json"
+        lock.write_text("{}\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "lock record"):
+            self.store.get_lock()
+
 
 if __name__ == "__main__":
     unittest.main()
