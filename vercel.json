@@ -3,6 +3,7 @@
   "buildCommand": null,
   "installCommand": null,
   "outputDirectory": "site",
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/assets/(.*)",
