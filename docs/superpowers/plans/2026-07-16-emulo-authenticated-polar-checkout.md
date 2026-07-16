@@ -25,10 +25,10 @@
 - Create: `cloud/worker/test/auth-store.test.ts`
 - Modify: `cloud/worker/test/apply-migrations.ts`
 
-- [ ] Add failing tests for single-use state consumption, expiry, identity reuse, hashed session lookup, expiry, revocation, and absence of raw session tokens.
-- [ ] Add `oauth_flows`, `oauth_identities`, and `browser_sessions` with strict constraints and point-query indexes.
-- [ ] Implement prepared-statement persistence and atomic state consumption.
-- [ ] Apply only to local D1; run focused tests and commit `feat: persist secure OAuth sessions`.
+- [x] Add failing tests for single-use state consumption, expiry, identity reuse, hashed session lookup, expiry, revocation, and absence of raw session tokens.
+- [x] Add `oauth_flows`, `oauth_identities`, and `browser_sessions` with strict constraints and point-query indexes.
+- [x] Implement prepared-statement persistence and atomic state consumption.
+- [x] Apply only to local D1; run focused tests and commit `feat: persist secure OAuth sessions`.
 
 ### Task 2: GitHub OAuth start and callback
 
