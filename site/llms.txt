@@ -11,3 +11,11 @@ Install: `npx skills add ohad6k/emulo`
 ## Links
 - [GitHub repository](https://github.com/ohad6k/emulo): source, README, and install instructions
 - [Discord](https://discord.gg/QMnYtVcxk2): community and support
+
+## Bench
+
+https://emulo.vercel.app/bench - Rule adherence benchmark. Claude Opus 4.8 ran eight
+tasks twice with identical prompts; the only difference was whether it first read a real
+Emulo profile. Violations of the profile's own stated rules were counted, not judged.
+Result: 12 violations for the plain model, 1 with Emulo. It does not claim better work,
+only that the plain model breaks rules you gave it and the profiled one mostly does not.

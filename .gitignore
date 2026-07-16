@@ -48,3 +48,6 @@ emulo-proof-runs/
 
 # local tool, not part of the project
 mcp-publisher.exe
+
+# render temp (puppeteer profiles, compiled comps)
+.scratch/
