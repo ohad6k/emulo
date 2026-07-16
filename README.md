@@ -121,7 +121,7 @@ Nobody wrote those rules down. They came out of one person's own history, with r
 
 After mining, `python emulo.py --card` renders your profile as a shareable card: archetype, top laws ranked by distinct supporting session receipts, coverage stats, and one sharp truth.
 
-<p align="center"><img src="assets/card.png" width="460" alt="A Emulo profile card: archetype, laws with receipts, session stats, and the one uncomfortable truth"></p>
+<p align="center"><img src="assets/card.png" width="460" alt="An Emulo profile card: archetype, laws with receipts, session stats, and the one uncomfortable truth"></p>
 
 Share the card or one short trait, never your full profile.
 

@@ -1,6 +1,6 @@
 <svg width="320" viewBox="0 0 470 470" role="img" xmlns="http://www.w3.org/2000/svg">
 <title>emulo mascot</title>
-<desc>A friendly flat robot whose eyes are emulo marks, with a faded copy of itself behind it.</desc>
+<desc>A friendly flat robot with double-stroke eyes, with a faded copy of itself behind it.</desc>
 <ellipse cx="306" cy="392" rx="150" ry="20" fill="#0f766e" opacity="0.14"/>
 <g opacity="0.28" transform="translate(30,-22)">
 <rect x="224" y="96" width="212" height="210" rx="52" fill="#14b8a6"/>
