@@ -45,7 +45,7 @@ class McpHandlerTest(unittest.TestCase):
         tools = response["result"]["tools"]
         self.assertEqual(["load_ditto_profile"], [tool["name"] for tool in tools])
         self.assertEqual(
-            ["design", "work", "write"],
+            ["design", "video", "work", "write"],
             tools[0]["inputSchema"]["properties"]["domain"]["enum"],
         )
 

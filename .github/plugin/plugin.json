@@ -1,11 +1,24 @@
 {
   "name": "ditto",
-  "version": "0.3.8",
+  "version": "0.4.0",
   "description": "Mine real AI coding sessions into a bounded, evidence-backed personal layer.",
-  "author": {"name": "Ohad"},
+  "author": {
+    "name": "Ohad"
+  },
   "homepage": "https://github.com/ohad6k/ditto",
   "repository": "https://github.com/ohad6k/ditto",
   "license": "MIT",
-  "keywords": ["personalization", "skills", "session-mining", "agents"],
-  "skills": ["./skills/mine", "./skills/work", "./skills/design", "./skills/write"]
+  "keywords": [
+    "personalization",
+    "skills",
+    "session-mining",
+    "agents"
+  ],
+  "skills": [
+    "./skills/mine",
+    "./skills/work",
+    "./skills/design",
+    "./skills/write",
+    "./skills/video"
+  ]
 }

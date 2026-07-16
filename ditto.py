@@ -567,6 +567,7 @@ DOMAIN_MARKERS = {
     "work": ("done", "verify", "test", "production", "release", "deploy", "plan", "debug", "commit", "proof", "workflow"),
     "design": ("ui", "ux", "design", "visual", "layout", "screenshot", "color", "pixel", "animation", "premium", "gradient", "icon", "figma", "css", "עיצוב", "ממשק", "צבע"),
     "write": ("write", "copy", "tweet", "reddit", "marketing", "title", "tone", "voice", "post", "reply", "launch", "lowercase", "em dash", "wording", "כתיבה", "פוסט", "שיווק"),
+    "video": ("video", "remotion", "hyperframes", "render", "footage", "caption", "subtitle", "scene", "timeline", "gsap", "keyframe", "mp4", "shorts", "trailer", "storyboard", "voiceover", "chatterbox", "musicgen", "sfx", "biosrios", "youtube", "thumbnail", "composition", "וידאו", "סרטון"),
 }
 SALIENCE_WEIGHTS = {"directive": 24, "correction": 20, "rejection": 18, "preference": 12, "verification": 10}
 
@@ -708,7 +709,7 @@ def pack_selected_receipts(receipts, packet_limit, packet_token_limit):
         receipt_ids = [item["receipt_id"] for item in group]
         domain_counts = {
             domain: sum(domain in item.get("domain_hints", []) for item in group)
-            for domain in ("work", "design", "write")
+            for domain in ("work", "design", "write", "video")
         }
         signal_counts = {}
         for item in group:
@@ -970,7 +971,7 @@ def report_cache_path(ditto_home, segment_hash_value):
         segment_hash_value + ".json",
     )
 
-VALID_DOMAINS = {"work", "design", "write"}
+VALID_DOMAINS = {"work", "design", "write", "video"}
 VALID_EVIDENCE_KINDS = {"inferred", "explicit"}
 VALID_REGISTERS = {"casual", "professional", "shared"}
 REGISTER_SECTIONS = (
@@ -990,6 +991,7 @@ DOMAIN_FILES = {
     "work": ("you.md", "ditto-work-profile"),
     "design": ("you-designer.md", "ditto-design-profile"),
     "write": ("you-writer.md", "ditto-write-profile"),
+    "video": ("you-video.md", "ditto-video-profile"),
 }
 REQUIRED_PACK_FILES = {"appendix.md", "card.json", "draft-manifest.json"}
 WINDOWS_RESERVED_NAMES = {
@@ -1197,7 +1199,7 @@ def validate_profile_pack(pack_dir, evidence_by_id, run_plan):
         raise ValueError("profile pack report_set_hash does not match the run")
     domains = draft.get("domains", {})
     if set(domains) != VALID_DOMAINS:
-        raise ValueError("profile pack must contain exactly work, design, and write domain states")
+        raise ValueError("profile pack must contain exactly " + ", ".join(sorted(VALID_DOMAINS)) + " domain states")
     if domains["work"].get("status") != "active":
         raise ValueError("work domain must be active")
 
@@ -1309,7 +1311,7 @@ def render_domain_profile(domain, rules):
 
 def assemble_profile_pack(ditto_home, run_plan, domain_drafts):
     if set(domain_drafts) != VALID_DOMAINS:
-        raise ValueError("assembly requires exactly three domain drafts")
+        raise ValueError("assembly requires exactly four domain drafts")
     evidence = run_plan.get("evidence_by_id") or load_adaptive_evidence(run_plan)
     for domain in sorted(VALID_DOMAINS):
         validate_domain_draft(domain_drafts[domain], domain, evidence, run_plan)
@@ -1729,6 +1731,7 @@ def stage_legacy_migration(target, home_dir, ditto_home):
                 "work": {"status": "active", "file": "you.md", "legacy_unverified": True},
                 "design": {"status": "inactive", "reason": "insufficient evidence", "deepen_instruction": "run ditto and deepen design"},
                 "write": {"status": "inactive", "reason": "insufficient evidence", "deepen_instruction": "run ditto and deepen write"},
+                "video": {"status": "inactive", "reason": "insufficient evidence", "deepen_instruction": "run ditto and deepen video"},
             },
             "files": {"you.md": legacy_hash},
         }
@@ -2026,7 +2029,7 @@ def validate_scout_report(report, packet):
         set(domain_coverage) != VALID_DOMAINS
         or any(value not in {"evidence", "no-signal"} for value in domain_coverage.values())
     ):
-        raise ValueError("scout domain coverage must include work, design, and write")
+        raise ValueError("scout domain coverage must include " + ", ".join(sorted(VALID_DOMAINS)))
     packet_receipts = {item["receipt_id"]: item for item in packet.get("receipts", [])}
     evidence_items = report.get("evidence")
     if not isinstance(evidence_items, list):
@@ -3151,7 +3154,7 @@ def build_plugin_parser():
     activation_source.add_argument("--cached", action="store_true")
     activate.add_argument("--ditto-home")
     profile_path = sub.add_parser("profile-path")
-    profile_path.add_argument("--domain", required=True, choices=["work", "design", "write"])
+    profile_path.add_argument("--domain", required=True, choices=["work", "design", "write", "video"])
     profile_path.add_argument("--ditto-home")
     migrate_stage = sub.add_parser("migrate-stage")
     migrate_stage.add_argument("--target", required=True, choices=["codex", "claude"])
@@ -3180,7 +3183,7 @@ def build_plugin_parser():
         mode.add_argument("--preview", action="store_true", help="create a bounded starter profile, not the full profile")
         mode.add_argument("--candidate", type=int, choices=range(len(STARTER_CANDIDATES)), help=argparse.SUPPRESS)
         mode.add_argument("--deep", action="store_true")
-        mode.add_argument("--deepen-domain", choices=["work", "design", "write"])
+        mode.add_argument("--deepen-domain", choices=["work", "design", "write", "video"])
         if name == "prepare":
             command.add_argument("--approved-plan-hash")
     return parser
@@ -3419,7 +3422,9 @@ def resolve_profile_paths(ditto_home, domain):
     state = active_profile_state(ditto_home)
     if state is None:
         raise ValueError("no active Ditto profile; run ditto")
-    domain_state = state["manifest"]["domains"][domain]
+    domain_state = state["manifest"]["domains"].get(domain)
+    if domain_state is None:
+        raise ValueError("run ditto and deepen " + domain)
     if domain_state.get("status") != "active":
         raise ValueError(domain_state.get("deepen_instruction") or "run ditto")
     names = [DOMAIN_FILES["work"][0]]
@@ -3511,8 +3516,8 @@ def build_adaptive_plan(result, stage="A"):
         "selected_source_tokens": sum(item["tokens"] for item in selected),
         "selected_receipt_ids": [item["receipt_id"] for item in selected],
         "planned_scout_calls": len(packets),
-        "planned_domain_reducer_calls": 3,
-        "planned_domains": ["design", "work", "write"],
+        "planned_domain_reducer_calls": 4,
+        "planned_domains": ["design", "video", "work", "write"],
         "corpus_snapshot_hash": sha256_text(canonical_json([
             {"receipt_id": item["receipt_id"], "content_hash": item["content_hash"]}
             for item in ledger
@@ -3842,7 +3847,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-DITTO_VERSION = "0.3.8"
+DITTO_VERSION = "0.4.0"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 
 def mcp_tool_definitions():

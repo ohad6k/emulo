@@ -4,6 +4,7 @@ Ditto's current focus is the bounded plugin loop: deterministic extraction, stab
 
 ## Current release
 
+- Fourth mined domain `video` (`ditto:video`): mining loads motion, caption, voiceover, and edit taste before video work, alongside work, design, and write
 - Voice registers in the writing profile: mined `write` evidence carries a `casual`, `professional`, or `shared` register, `you-writer.md` groups rules by register, and `ditto:write` infers the register from task context instead of asking (from user feedback, `docs/FEEDBACK.md`)
 - Cross-agent selected bootstrap through `npx skills add ohad6k/ditto@ditto`
 - Native Codex plugin with `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`

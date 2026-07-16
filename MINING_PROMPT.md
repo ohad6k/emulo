@@ -4,7 +4,7 @@ The Plugin release uses one bounded worker pass per selected segment, followed b
 
 ## Experimental adaptive packet scout contract
 
-Read only the assigned frozen receipt packet. Maximize recall independently for `work`, `design`, and `write`; do not merge rules across packets. Each domain has its own ceiling of 12 evidence items. Return JSON schema `3` with the exact `packet_hash`, all assigned `receipt_ids`, exact `source_tokens`, and an explicit `evidence` or `no-signal` state for every domain.
+Read only the assigned frozen receipt packet. Maximize recall independently for `work`, `design`, `write`, and `video`; do not merge rules across packets. Each domain has its own ceiling of 12 evidence items. Return JSON schema `3` with the exact `packet_hash`, all assigned `receipt_ids`, exact `source_tokens`, and an explicit `evidence` or `no-signal` state for every domain.
 
 Every evidence item includes `domain`, `kind`, `scope`, `context`, `signal_family`, a concrete instruction and implication, plus exact receipt objects shaped as `{receipt_id, session_id, date, text}`. `scope` is either `universal` or `contextual`; contextual evidence must name the context. `write` evidence additionally requires a `register` per the register rules below; no other domain may carry one. Quotes and contradictions must copy the packet receipt text and date verbatim. The complete canonical JSON report may not exceed 24,576 bytes.
 
@@ -14,11 +14,12 @@ The schema-1 segment contract below exists only for explicitly enabled legacy re
 
 ## Per-segment worker contract
 
-Read the entire assigned segment. It contains only selected, redacted user messages grouped under stable `session:<id>` headers. Cover all three domains in the same pass:
+Read the entire assigned segment. It contains only selected, redacted user messages grouped under stable `session:<id>` headers. Cover all four domains in the same pass:
 
 - `work`: execution laws, verification habits, planning, debugging, shipping, and failure modes
 - `design`: UI/UX taste, visual hierarchy, structural redesign rules, references, and rejections
 - `write`: voice, marketing, social replies, product copy, phrasing, and tone
+- `video`: motion and pacing taste, caption style, voiceover and clarity choices, character and shot selection, render and tooling decisions, and rejections
 
 Every `write` evidence item must also carry a `register` classifying the voice by audience:
 
@@ -44,7 +45,8 @@ Return JSON only. The complete serialized report must be no more than 8,192 byte
   "domain_coverage": {
     "work": "evidence",
     "design": "no-signal",
-    "write": "no-signal"
+    "write": "no-signal",
+    "video": "no-signal"
   },
   "evidence": [
     {
@@ -64,14 +66,14 @@ Return JSON only. The complete serialized report must be no more than 8,192 byte
 
 Rules:
 
-1. `domain_coverage` must contain exactly `work`, `design`, and `write`. Use `evidence` only when at least one evidence item exists for that domain; otherwise use `no-signal`.
+1. `domain_coverage` must contain exactly `work`, `design`, `write`, and `video`. Use `evidence` only when at least one evidence item exists for that domain; otherwise use `no-signal`.
 2. Use only `session_ids` present in the selected segment. Coverage must list every session in the segment even when it has no useful signal.
 3. Every quote and contradiction receipt must be short, dated, and verbatim from the named session. Set `date` from the exact containing `[YYYY-MM-DD]` message header, not another message or the session date range. Never paraphrase inside `text`.
 4. Use `kind: inferred` for a pattern the user demonstrates. Use `kind: explicit` only when the user directly states the instruction as a rule or unambiguous command.
 5. Record counter-evidence in `contradictions` with the same `{session_id, date, text}` receipt shape. Do not hide it.
 6. Ban generic filler such as “be helpful,” “write good code,” or “values quality.” If a stranger could guess it without the receipts, omit it.
 7. A truthful all-`no-signal` report with an empty `evidence` list is valid. Invented evidence is not.
-8. Every `write` evidence item requires `"register": "casual" | "professional" | "shared"` per the register rules above. No `work` or `design` item may carry a `register`.
+8. Every `write` evidence item requires `"register": "casual" | "professional" | "shared"` per the register rules above. No `work`, `design`, or `video` item may carry a `register`.
 
 Before returning, run the assigned read-only `python "$DITTO_PY" plugin validate-report --run-id "$RUN_ID" --report "$REPORT_PATH"` command. If it rejects the report, correct the report and run the same validation again inside this worker pass. Return only after it reports `status: valid`. The orchestrator caches the report after the worker exits.
 
@@ -79,7 +81,7 @@ Before returning, run the assigned read-only `python "$DITTO_PY" plugin validate
 
 Run one reducer for exactly one named domain. Read only that domain's validated evidence projection; never read another domain or raw history. Write one assigned JSON draft using schema `2`, the exact `domain` and `evidence_set_hash`, an `active` or permitted `inactive` status, rules with preserved evidence IDs and scope, discarded conflict records, and coverage counts for evidence items, distinct sessions, strata, and unresolved contradictions.
 
-An inferred rule needs two distinct sessions and two available source/time strata. A single-provider pattern may qualify across two time strata. Contextual evidence cannot become a universal rule. Unresolved contradictions must be discarded, not installed. Work must remain active; inactive design/write drafts use the exact instruction `run ditto and deepen <domain>`.
+An inferred rule needs two distinct sessions and two available source/time strata. A single-provider pattern may qualify across two time strata. Contextual evidence cannot become a universal rule. Unresolved contradictions must be discarded, not installed. Work must remain active; inactive design/write/video drafts use the exact instruction `run ditto and deepen <domain>`.
 
 Every `write` rule carries a `register`. When all referenced evidence shares one register, the rule keeps exactly that register; evidence from mixed registers reduces to `shared`. A rule may never claim a register its evidence does not show.
 
@@ -95,12 +97,13 @@ Write this complete private pack in the exact assigned `pack_path`:
 you.md
 you-designer.md (only when design passes)
 you-writer.md   (only when write passes)
+you-video.md    (only when video passes)
 appendix.md
 card.json
 draft-manifest.json
 ```
 
-Use exact profile frontmatter names: `ditto-work-profile`, `ditto-design-profile`, and `ditto-write-profile`. Every active profile must contain each installed rule and its operational implication.
+Use exact profile frontmatter names: `ditto-work-profile`, `ditto-design-profile`, `ditto-write-profile`, and `ditto-video-profile`. Every active profile must contain each installed rule and its operational implication.
 
 An active `you-writer.md` groups its rules under exact register headings: `## Voice laws` for `shared` rules, `## Casual register` for `casual`, and `## Professional register` for `professional`. Omit a heading only when no rule carries that register. Every write rule in `draft-manifest.json` carries a `register` following the reducer register rules: a rule keeps its evidence's single shared register, and mixed-register evidence reduces to `shared`.
 
@@ -133,12 +136,17 @@ An active `you-writer.md` groups its rules under exact register headings: `## Vo
       "status": "inactive",
       "reason": "insufficient evidence",
       "deepen_instruction": "run ditto and deepen write"
+    },
+    "video": {
+      "status": "inactive",
+      "reason": "insufficient evidence",
+      "deepen_instruction": "run ditto and deepen video"
     }
   }
 }
 ```
 
-Work must be active. Activate design or write only when that domain has valid rules, then use its exact filename and the same rule shape. Otherwise keep the exact inactive state above.
+Work must be active. Activate design, write, or video only when that domain has valid rules, then use its exact filename and the same rule shape. Otherwise keep the exact inactive state above.
 
 `appendix.md` contains every referenced evidence ID and every exact dated private quote or contradiction receipt behind it. Never turn unresolved contradiction into an installed rule.
 

@@ -81,6 +81,7 @@ def make_valid_pack(path, report_set_hash):
             },
             "design": {"status": "inactive", "reason": "insufficient evidence", "deepen_instruction": "run ditto and deepen design"},
             "write": {"status": "inactive", "reason": "insufficient evidence", "deepen_instruction": "run ditto and deepen write"},
+            "video": {"status": "inactive", "reason": "insufficient evidence", "deepen_instruction": "run ditto and deepen video"},
         },
     }
     (path / "draft-manifest.json").write_text(json.dumps(draft), encoding="utf-8")
@@ -124,7 +125,7 @@ class ProfilePackValidationTest(unittest.TestCase):
                         "last_date": date,
                         "source_tokens": 10,
                     },
-                    "domain_coverage": {"work": "evidence", "design": "no-signal", "write": "no-signal"},
+                    "domain_coverage": {"work": "evidence", "design": "no-signal", "write": "no-signal", "video": "no-signal"},
                     "evidence": [{
                         "evidence_id": f"ev-{segment_hash[:8]}-{slug}",
                         "domain": "work",
@@ -310,14 +311,14 @@ class ProfilePackValidationTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "profile_id"):
                 ditto.validate_profile_pack(str(pack), evidence_fixture(), run_plan_fixture("c" * 64))
 
-    def test_profile_pack_requires_all_three_domain_states(self):
+    def test_profile_pack_requires_all_four_domain_states(self):
         with tempfile.TemporaryDirectory() as tmp:
             pack = Path(make_valid_pack(Path(tmp) / "pack", "c" * 64))
             draft_path = pack / "draft-manifest.json"
             draft = json.loads(draft_path.read_text(encoding="utf-8"))
             del draft["domains"]["write"]
             draft_path.write_text(json.dumps(draft), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "exactly work, design, and write"):
+            with self.assertRaisesRegex(ValueError, "profile pack must contain exactly"):
                 ditto.validate_profile_pack(str(pack), evidence_fixture(), run_plan_fixture("c" * 64))
 
     def test_appendix_requires_the_exact_private_quote_receipts(self):

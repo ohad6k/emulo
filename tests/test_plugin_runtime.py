@@ -562,7 +562,7 @@ class ReportCacheTest(unittest.TestCase):
                 "last_date": "2026-02-01",
                 "source_tokens": 20000,
             },
-            "domain_coverage": {"work": "evidence", "design": "no-signal", "write": "no-signal"},
+            "domain_coverage": {"work": "evidence", "design": "no-signal", "write": "no-signal", "video": "no-signal"},
             "evidence": [{
                 "evidence_id": "ev-aaaaaaaa-done",
                 "domain": "work",
@@ -603,7 +603,7 @@ class ReportCacheTest(unittest.TestCase):
 
     def test_report_can_cache_a_truthful_all_no_signal_result(self):
         report = self.valid_report()
-        report["domain_coverage"] = {domain: "no-signal" for domain in ("work", "design", "write")}
+        report["domain_coverage"] = {domain: "no-signal" for domain in ("work", "design", "write", "video")}
         report["evidence"] = []
         ditto.validate_report(report, self.segment())
 
@@ -637,14 +637,14 @@ class ReportCacheTest(unittest.TestCase):
 
     def test_write_evidence_requires_a_register(self):
         report = self.valid_report()
-        report["domain_coverage"] = {"work": "no-signal", "design": "no-signal", "write": "evidence"}
+        report["domain_coverage"] = {"work": "no-signal", "design": "no-signal", "write": "evidence", "video": "no-signal"}
         report["evidence"] = [self.write_evidence(register=None)]
         with self.assertRaisesRegex(ValueError, "register"):
             ditto.validate_report(report, self.segment())
 
     def test_write_evidence_rejects_an_unknown_register(self):
         report = self.valid_report()
-        report["domain_coverage"] = {"work": "no-signal", "design": "no-signal", "write": "evidence"}
+        report["domain_coverage"] = {"work": "no-signal", "design": "no-signal", "write": "evidence", "video": "no-signal"}
         report["evidence"] = [self.write_evidence(register="boss")]
         with self.assertRaisesRegex(ValueError, "register"):
             ditto.validate_report(report, self.segment())
@@ -657,7 +657,7 @@ class ReportCacheTest(unittest.TestCase):
 
     def test_write_evidence_accepts_a_valid_register(self):
         report = self.valid_report()
-        report["domain_coverage"] = {"work": "no-signal", "design": "no-signal", "write": "evidence"}
+        report["domain_coverage"] = {"work": "no-signal", "design": "no-signal", "write": "evidence", "video": "no-signal"}
         report["evidence"] = [self.write_evidence(register="professional")]
         ditto.validate_report(report, self.segment())
 
@@ -750,7 +750,7 @@ class ReportCacheTest(unittest.TestCase):
                     "last_date": segment["last_date"],
                     "source_tokens": segment["source_tokens"],
                 },
-                "domain_coverage": {domain: "no-signal" for domain in ("work", "design", "write")},
+                "domain_coverage": {domain: "no-signal" for domain in ("work", "design", "write", "video")},
                 "evidence": [],
             }
             Path(segment["report_path"]).write_text(json.dumps(report), encoding="utf-8")
@@ -835,7 +835,7 @@ class ReportCacheTest(unittest.TestCase):
                     "last_date": segment["last_date"],
                     "source_tokens": segment["source_tokens"],
                 },
-                "domain_coverage": {domain: "no-signal" for domain in ("work", "design", "write")},
+                "domain_coverage": {domain: "no-signal" for domain in ("work", "design", "write", "video")},
                 "evidence": [],
             }
             Path(segment["report_path"]).write_text(json.dumps(report), encoding="utf-8")

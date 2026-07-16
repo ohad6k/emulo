@@ -62,13 +62,13 @@ def receipt_fixtures(texts, sessions=None, domains=None):
 
 
 def scored_history_fixture(tokens=600_000):
-    domains = ("work", "design", "write")
+    domains = ("work", "design", "write", "video")
     per_receipt = 500
     count = tokens // per_receipt
     receipts = receipt_fixtures(
-        [f"always preserve exact {domains[index % 3]} preference " + "x" * 1950 for index in range(count)],
+        [f"always preserve exact {domains[index % len(domains)]} preference " + "x" * 1950 for index in range(count)],
         sessions=[f"session-{index}" for index in range(count)],
-        domains=[(domains[index % 3],) for index in range(count)],
+        domains=[(domains[index % len(domains)],) for index in range(count)],
     )
     for index, item in enumerate(receipts):
         item["tokens"] = per_receipt
@@ -139,11 +139,11 @@ def append_live_message(history, text):
 
 
 def packet_fixture():
-    domains = ("work", "design", "write")
+    domains = ("work", "design", "write", "video")
     receipts = receipt_fixtures(
-        [f"exact receipt {index}" for index in range(36)],
-        sessions=[f"session-{index}" for index in range(36)],
-        domains=[(domains[index // 12],) for index in range(36)],
+        [f"exact receipt {index}" for index in range(48)],
+        sessions=[f"session-{index}" for index in range(48)],
+        domains=[(domains[index // 12],) for index in range(48)],
     )
     return {
         "schema_version": "1",
@@ -152,7 +152,7 @@ def packet_fixture():
         "receipt_ids": [item["receipt_id"] for item in receipts],
         "receipts": receipts,
         "domain_counts": {domain: 12 for domain in domains},
-        "signal_counts": {"preference": 36},
+        "signal_counts": {"preference": 48},
         "first_date": min(item["date"] for item in receipts),
         "last_date": max(item["date"] for item in receipts),
         "sources": ["claude", "codex"],
@@ -183,14 +183,14 @@ def scout_evidence(item, domain, index):
 def valid_scout_report(items_per_domain=1):
     packet = packet_fixture()
     evidence = []
-    for domain_index, domain in enumerate(("work", "design", "write")):
+    for domain_index, domain in enumerate(("work", "design", "write", "video")):
         for index in range(items_per_domain):
             evidence.append(scout_evidence(packet["receipts"][domain_index * 12 + index], domain, index))
     return {
         "schema_version": "3",
         "packet_hash": packet["packet_hash"],
         "coverage": {"receipt_ids": packet["receipt_ids"], "source_tokens": packet["source_tokens"]},
-        "domain_coverage": {domain: "evidence" for domain in ("work", "design", "write")},
+        "domain_coverage": {domain: "evidence" for domain in ("work", "design", "write", "video")},
         "evidence": evidence,
     }
 
@@ -268,7 +268,7 @@ def adaptive_run_fixture(active_domains=("work",), shared_receipts=False):
         "evidence_by_id": evidence,
     }
     drafts = {}
-    for domain in ("work", "design", "write"):
+    for domain in ("work", "design", "write", "video"):
         if domain in active_domains:
             drafts[domain] = valid_domain_draft(domain, evidence=evidence)
         else:
@@ -298,7 +298,7 @@ def load_assembled_card(run):
 
 
 def completed_stage_a_fixture(weak_domains):
-    active = tuple(domain for domain in ("work", "design", "write") if domain not in weak_domains)
+    active = tuple(domain for domain in ("work", "design", "write", "video") if domain not in weak_domains)
     run = adaptive_run_fixture(active_domains=active)
     run.run_id = run.plan["run_id"]
     run.plan.pop("evidence_by_id", None)
@@ -408,7 +408,7 @@ class PacketSelectionTest(unittest.TestCase):
         self.assertLessEqual(sum(item["tokens"] for item in selected), 300_000)
         self.assertLessEqual(len(packets), 6)
         self.assertTrue(all(packet["source_tokens"] <= 50_000 for packet in packets))
-        for domain in ("work", "design", "write"):
+        for domain in ("work", "design", "write", "video"):
             self.assertTrue(any(domain in item["domain_hints"] for item in selected))
         self.assertEqual(packets, ditto.pack_selected_receipts(selected, 6, 50_000))
 
@@ -435,8 +435,8 @@ class AdaptivePlanTest(unittest.TestCase):
         prepared = run_plugin_prepare(history, stage="A")
 
         self.assertEqual(6, prepared["planned_scout_calls"])
-        self.assertEqual(3, prepared["planned_domain_reducer_calls"])
-        self.assertEqual(["design", "work", "write"], prepared["planned_domains"])
+        self.assertEqual(4, prepared["planned_domain_reducer_calls"])
+        self.assertEqual(["design", "video", "work", "write"], prepared["planned_domains"])
         self.assertTrue(all(Path(path).is_file() for path in prepared["packet_paths"]))
 
     def test_live_history_change_does_not_change_prepared_run(self):
@@ -531,7 +531,7 @@ class DeterministicAssemblyTest(unittest.TestCase):
         )
 
     def test_assembly_is_byte_deterministic(self):
-        run = adaptive_run_fixture(active_domains=("work", "design", "write"))
+        run = adaptive_run_fixture(active_domains=("work", "design", "write", "video"))
         self.addCleanup(run.tmp.cleanup)
 
         first = directory_hash(ditto.assemble_profile_pack(run.home, run.plan, run.domain_drafts)["pack_path"])

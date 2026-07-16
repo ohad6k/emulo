@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0 - 2026-07-16
+
+### Added
+
+- Fourth mined domain `video` (`ditto:video`), alongside work, design, and write. Mining now scouts, reduces, and assembles a `you-video.md` layer that an agent loads before video work, resolved by `python ditto.py plugin profile-path --domain video` (returns the core `you.md` plus `you-video.md`, integrity-checked against the version manifest). A new `skills/video/SKILL.md` launcher follows the exact work/design/write convention. The seed profile at `examples/you-video.md` distills a real BiosRios YouTube build into evidence-backed rules: a single paused GSAP HyperFrames timeline, the dark orange house style, the real live Claude app UI, 2 to 4 word captions that match the voiceover, one centered card per item, character-face cut-ins over emoji, the cloned-voice pipeline with a whisper clarity gate and accent-faithful params, the three-layer audio mix, and the fixed gates (exact install CTA, `@biosrios` handle, tension in frame 1, aspect per platform).
+
+### Changed
+
+- `VALID_DOMAINS` widens to four, so every scout report, per-segment worker report, and assembled profile pack must now state evidence or no-signal for `video` and carry a `video` draft. The `MINING_PROMPT.md` scout, worker, and reducer contracts and the legacy-migration manifest all enumerate the new domain. `video` is register-less (only `write` carries casual, professional, or shared registers). `resolve_profile_paths` now returns the deepen instruction instead of crashing when an older profile predates a domain. This is a contract-level change to the domain set, hence the minor bump.
+
+### Verified
+
+- Full `python -m unittest discover -s tests` passes (180 tests) with the widened domain set, the five-skill Copilot manifest, and the 0.4.0 version pinned across every public surface. `plugin profile-path --domain video` returns the `run ditto and deepen video` instruction until a mine populates an active `you-video.md`; a real end-to-end mine that activates the domain from history is the follow-up.
+- The `v0.4.0` bootstrap runtime pins `ditto.py` to SHA-256 `c61e328a5c869646963b09e33aa103efe8a3a02d1f187e6a90d45a249c21b619` and `MINING_PROMPT.md` to SHA-256 `a62a28f02abb5a3ef81937e96e362972b0a617aa4f858eb4dcd12bfd1e99bcd7`.
+
 ## 0.3.8 - 2026-07-15
 
 ### Added

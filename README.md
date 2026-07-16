@@ -15,7 +15,7 @@
 
 Your real coding-agent sessions already contain the rules you never wrote down: what “done” means, what you reject on sight, how you debug, how you design UI, and how you write when you are actually working.
 
-Ditto mines selected evidence from those sessions — Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box — into a private working profile your agent reads before every task. Separate layers for work, design, and writing mean the right part of you loads for the right task.
+Ditto mines selected evidence from those sessions — Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box — into a private working profile your agent reads before every task. Separate layers for work, design, writing, and video mean the right part of you loads for the right task.
 
 ## Not memory
 
@@ -141,10 +141,10 @@ That installs the bootstrap and creates a read-only full-history mining plan. Yo
 
 ### Native Codex plugin
 
-The native plugin adds `ditto:mine`, `ditto:work`, `ditto:design`, and `ditto:write`:
+The native plugin adds `ditto:mine`, `ditto:work`, `ditto:design`, `ditto:write`, and `ditto:video`:
 
 ```bash
-codex plugin marketplace add ohad6k/ditto --ref v0.3.8 --json
+codex plugin marketplace add ohad6k/ditto --ref v0.4.0 --json
 codex plugin add ditto@ditto --json
 ```
 
@@ -226,7 +226,7 @@ The receipt-salience and scout pipeline remains available to developers through 
 ## What makes the result trustworthy
 
 - Only real user-authored `.jsonl` messages are mined. `AGENTS.md`, `CLAUDE.md`, memory files, and typed self-descriptions are rejected as source evidence.
-- Every bounded worker covers work, design, and writing in one validated report.
+- Every bounded worker covers work, design, writing, and video in one validated report.
 - Quotes must be short, dated, verbatim receipts from known session IDs.
 - Inferred rules require at least two distinct sessions and, when available, two source/time strata.
 - One uncontradicted explicit instruction may survive as low-frequency evidence.
@@ -239,6 +239,7 @@ The native loaders are deliberately separate:
 | `ditto:work` | Core working profile |
 | `ditto:design` | Core + design taste |
 | `ditto:write` | Core + writing voice |
+| `ditto:video` | Core + video taste |
 | `ditto:mine` | Only explicit setup, update, or deepen requests |
 
 ## Privacy
@@ -256,7 +257,7 @@ See [SECURITY.md](SECURITY.md) for the exact boundary.
 The legacy extractor remains available and backward compatible:
 
 ```bash
-curl -O https://raw.githubusercontent.com/ohad6k/ditto/v0.3.8/ditto.py
+curl -O https://raw.githubusercontent.com/ohad6k/ditto/v0.4.0/ditto.py
 python ditto.py --dry-run
 python ditto.py --chunks 4 --out ditto-out
 ```
@@ -293,7 +294,7 @@ A GitHub star bookmarks the repository but does not subscribe you to releases. T
 
 ## Limits
 
-- Ditto models how you work, design, and write. It does not make the underlying model smarter.
+- Ditto models how you work, design, write, and make videos. It does not make the underlying model smarter.
 - Sparse or repetitive histories can leave design or writing inactive. Ditto reports the exact targeted-deepen instruction instead of inventing a persona.
 - Provider token accounting remains outside Ditto's exact measurement.
 - Benchmarks, leaderboard results, and proof videos are a separate later release.

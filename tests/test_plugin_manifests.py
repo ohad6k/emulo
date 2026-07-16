@@ -56,20 +56,20 @@ class PluginManifestTest(unittest.TestCase):
                     f"{workflow_path.name} must pin actions by full commit SHA",
                 )
 
-    def test_copilot_manifest_uses_recognized_location_and_four_skills(self):
+    def test_copilot_manifest_uses_recognized_location_and_five_skills(self):
         path = ROOT / ".github" / "plugin" / "plugin.json"
         self.assertTrue(path.is_file(), "GitHub Copilot requires a recognized plugin.json location")
         manifest = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual("ditto", manifest["name"])
         self.assertEqual(
-            ["./skills/mine", "./skills/work", "./skills/design", "./skills/write"],
+            ["./skills/mine", "./skills/work", "./skills/design", "./skills/write", "./skills/video"],
             manifest["skills"],
         )
         for relative in manifest["skills"]:
             self.assertTrue((ROOT / relative).is_dir(), relative)
 
     def test_patch_release_versions_match_across_public_surfaces(self):
-        expected = "0.3.8"
+        expected = "0.4.0"
         manifests = [
             ROOT / ".github" / "plugin" / "plugin.json",
             ROOT / ".claude-plugin" / "plugin.json",
@@ -115,7 +115,7 @@ class PluginManifestTest(unittest.TestCase):
         self.assertFalse(plugin["source"].startswith(".."))
 
     def test_plugin_tree_contains_no_generated_profile(self):
-        forbidden = {"active-profile.json", "current.json", "you.md", "you-designer.md", "you-writer.md", "appendix.md"}
+        forbidden = {"active-profile.json", "current.json", "you.md", "you-designer.md", "you-writer.md", "you-video.md", "appendix.md"}
         found = {
             path.name
             for path in ROOT.rglob("*")
@@ -127,7 +127,7 @@ class PluginManifestTest(unittest.TestCase):
         self.assertTrue((ROOT / ".agents" / "skills" / "ditto" / "SKILL.md").is_file())
         self.assertFalse((ROOT / "skills" / "ditto" / "SKILL.md").exists())
         native = {path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")}
-        self.assertEqual({"mine", "work", "design", "write"}, native)
+        self.assertEqual({"mine", "work", "design", "write", "video"}, native)
 
 
 class DocumentationTruthTest(unittest.TestCase):
@@ -178,7 +178,7 @@ class DocumentationTruthTest(unittest.TestCase):
 
     def test_plugin_discovers_exactly_four_skills(self):
         discovered = {path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")}
-        self.assertEqual({"mine", "work", "design", "write"}, discovered)
+        self.assertEqual({"mine", "work", "design", "write", "video"}, discovered)
 
     def test_readme_preserves_the_explicit_npx_install(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8").lower()

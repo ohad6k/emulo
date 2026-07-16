@@ -1,6 +1,6 @@
 {
   "name": "ditto",
-  "version": "0.3.8",
+  "version": "0.4.0",
   "description": "Mine real AI coding sessions into a bounded, evidence-backed personal layer.",
   "author": {"name": "Ohad"},
   "homepage": "https://github.com/ohad6k/ditto",
@@ -11,7 +11,7 @@
   "interface": {
     "displayName": "Ditto",
     "shortDescription": "Your agents stop starting from zero",
-    "longDescription": "Ditto mines selected evidence from your real local coding-agent sessions into private work, design, and writing profiles.",
+    "longDescription": "Ditto mines selected evidence from your real local coding-agent sessions into private work, design, writing, and video profiles.",
     "developerName": "Ohad",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Read", "Write"],
