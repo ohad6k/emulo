@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "emulo-autopilot-api",
+  "name": "emulo",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-16",
   "compatibility_flags": ["nodejs_compat"],
@@ -11,7 +11,7 @@
   "vars": {
     "APP_ENV": "beta",
     "GITHUB_CLIENT_ID": "not-configured",
-    "PUBLIC_BASE_URL": "https://emulo-autopilot-api.ohad1306.workers.dev/",
+    "PUBLIC_BASE_URL": "https://emulo.ohad1306.workers.dev/",
     "PAID_CHECKOUT_ENABLED": "false",
     "POLAR_SERVER": "sandbox",
     "POLAR_MONTHLY_PRODUCT_ID": "not-configured",
