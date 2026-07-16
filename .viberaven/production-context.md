@@ -2,6 +2,17 @@
 
 ## Current Release / Change Window
 
+### 2026-07-17 - Production GitHub OAuth registration
+
+- Change: Bind the owner-created Emulo Production OAuth application's public Client ID into the isolated production Worker configuration.
+- Evidence: Owner supplied Client ID `Ov23liZFqQWwSfHUWsY1` after registering the app with the documented production homepage and callback; the provider dashboard was not independently inspected.
+- Boundary: The Client ID is nonsecret repo configuration. `GITHUB_CLIENT_SECRET` remains a Cloudflare secret and must never enter source control or chat.
+- Danger: Reusing Sandbox OAuth credentials, committing the Client Secret, or deploying before the production secret exists would leave authentication unavailable or cross environments.
+- Repo fix: Replace only the production Client ID placeholder; keep checkout disabled and Polar production identifiers unconfigured.
+- Verification: Run the production configuration guard, Worker typecheck/tests, and Wrangler production dry-run before committing.
+- Provider/MCP proof: Owner confirmation only; secret installation and a successful production callback remain unproven.
+- Open action: Generate the OAuth Client Secret in GitHub and install it directly with Wrangler for `emulo-production`, without exposing its value.
+
 ### 2026-07-16 - Emulo founding-beta billing experience
 
 - Change: Replace placeholder account/payment pages with an authenticated, state-aware Emulo experience while keeping checkout disabled by default.
