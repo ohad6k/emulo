@@ -80,6 +80,12 @@ description: Evidence-backed Emulo video profile
   - Action: Never open a line with the word that must land; give it a short carrier ("Now, vibe coding...") and gate that token exactly under base.en.
 - tiny.en scores a mangled proper noun as clear, so the clarity gate silently passes a wrong brand name.
   - Action: Gate any line containing a product name with whisper base.en and assert the name appears as an exact token in the transcript, rejecting the take outright when it does not.
+- The transcriber writes spoken numbers as digits ("Level one" comes back "Level 1"), so a word-token gate rejects perfect takes of any line containing a number.
+  - Action: Token asserts must accept digit equivalents (one/1, two/2, three/3); when a batch fails the gate, read the actual transcripts before regenerating, because a false gate failure wastes a full CPU batch.
+- The roast-plus-guide video is the LEVELS format: demonstrate the dumb way on a real screen, laugh at its real output, then teach the level above and show its result; the creator roasts his own failure modes, never the audience.
+  - Action: Structure mixed-take videos as Level 1 (pure vibes, real broken demo), Level 2 (boundaries, the passing request), Level 3 (receipts); open on personal credibility ("I do this every day and it keeps breaking my apps") and end on when to use each level.
+- Act groupings that use fixed scene counts silently drop every scene past the block size when a script grows; 46 seconds of visuals fell out of the acts without any error.
+  - Action: Group acts by chapter (the semantic unit), assert the chapter count matches the sub-composition count, and fail loudly on mismatch.
 - A line can be clean in the voice track and still be smeared in the final mix, because a short sidechain release lets the music swell back over the last syllable; emulo survived the take but became emulog once the bed was under it.
   - Action: Set the music duck release to about 750ms so it outlasts a word tail, and always re-verify the important line by transcribing it back out of the finished mix, not just the voice track; the mix is audio only, so fixing it costs a remux and never a re-render.
 - A word the transcriber keeps mishearing is a real ambiguity for viewers too; tax came back as text in 3 of 4 takes.
