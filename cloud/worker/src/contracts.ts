@@ -33,11 +33,11 @@ export interface Env {
   APP_ENV: string;
   POLAR_MONTHLY_PRODUCT_ID: string;
   POLAR_YEARLY_PRODUCT_ID: string;
-  POLAR_WEBHOOK_SECRET: string;
+  POLAR_WEBHOOK_SECRET?: string;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
   PUBLIC_BASE_URL: string;
   PAID_CHECKOUT_ENABLED: string;
-  POLAR_ACCESS_TOKEN: string;
+  POLAR_ACCESS_TOKEN?: string;
   POLAR_SERVER: string;
 }

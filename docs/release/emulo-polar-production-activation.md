@@ -1,7 +1,7 @@
 # Emulo Polar Production Activation
 
 **Status:** Prepared, not activated  
-**Last checked:** 2026-07-16  
+**Last checked:** 2026-07-17
 **Owner:** Ohad  
 **Safety default:** Production checkout disabled
 
@@ -99,8 +99,16 @@ arguments, or shown in screenshots.
 - `wrangler.production.jsonc` points only to the production D1 resource, uses
   `POLAR_SERVER=production`, and keeps `PAID_CHECKOUT_ENABLED=false`.
 - The config validates and bundles in a Wrangler dry-run.
-- GitHub client ID, Polar product IDs, and all three production secrets remain
-  deliberately unconfigured pending the owner/provider steps below.
+- GitHub client ID, GitHub client secret, and both Polar product IDs are
+  configured. Production Worker version
+  `2a49f764-d11f-4fed-93a3-984f42cc862d` is deployed with checkout and preview
+  hostnames disabled.
+- Live health, account, and asset routes return `200`; signed-out account status
+  returns `401`; GitHub auth redirects to `github.com`; checkout, portal, and
+  the not-yet-configured webhook return safe `503` states. Count-only D1
+  queries before and after returned zero rows and zero writes.
+- The production Polar access token and raw-webhook signing secret remain
+  deliberately absent pending the owner/provider steps below.
 
 ## Phase 1: owner/provider readiness
 
@@ -136,11 +144,15 @@ Codex may perform these steps after Phase 1 has a redacted receipt:
 3. Run `npm run verify:production-config` and confirm the result changes from
    `provider-actions-required` to `nonsecret-config-ready` only after the
    GitHub client ID and both Polar product IDs are present.
-4. Deploy the production Worker while preserving Cloudflare secrets.
+4. Deploy the production Worker while preserving Cloudflare secrets. Only the
+   GitHub client secret is deploy-required at this gate; both Polar secrets are
+   installed later and runtime billing routes fail closed while they are absent.
 5. Verify `/healthz`, signed-out `/account`, `/account.css`, `/account.js`, and
    `/emulo.svg` without enabling checkout.
 6. Verify unauthenticated `/v1/account/status` returns `401`, checkout returns
-   `503`, and an unsigned webhook returns `403`.
+   `503`, and the not-yet-configured webhook returns `503` without a D1 write.
+   After the Polar signing secret is installed, an unsigned webhook must return
+   `403`.
 
 Record the Worker URL, Worker version, and D1 database ID. These are nonsecret.
 Do not record any session/account/provider identifiers.

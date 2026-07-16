@@ -2,12 +2,13 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 const PRODUCT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const REQUIRED_SECRETS = [
-  "GITHUB_CLIENT_SECRET",
+const SERVER_SIDE_SECRETS = [
   "POLAR_ACCESS_TOKEN",
   "POLAR_WEBHOOK_SECRET",
+  "GITHUB_CLIENT_SECRET",
 ];
-const FORBIDDEN_VAR_KEYS = new Set(REQUIRED_SECRETS);
+const DEPLOY_STAGE_REQUIRED_SECRETS = ["GITHUB_CLIENT_SECRET"];
+const FORBIDDEN_VAR_KEYS = new Set(SERVER_SIDE_SECRETS);
 const SANDBOX_DATABASE_ID = "63f95387-b248-4332-8bd7-3ef44bd3628a";
 
 function invariant(condition, message) {
@@ -21,6 +22,10 @@ function sorted(values) {
 export function validateProductionConfig(config) {
   invariant(config !== null && typeof config === "object", "config must be an object");
   invariant(config.name === "emulo-production", "production service name is invalid");
+  invariant(
+    config.preview_urls === false,
+    "production preview URLs must remain disabled",
+  );
 
   const vars = config.vars;
   invariant(vars !== null && typeof vars === "object", "production vars are missing");
@@ -56,8 +61,9 @@ export function validateProductionConfig(config) {
   const requiredSecrets = config.secrets?.required;
   invariant(
     Array.isArray(requiredSecrets) &&
-      JSON.stringify(sorted(requiredSecrets)) === JSON.stringify(sorted(REQUIRED_SECRETS)),
-    "required secret declarations are incomplete or too broad",
+      JSON.stringify(sorted(requiredSecrets)) ===
+        JSON.stringify(sorted(DEPLOY_STAGE_REQUIRED_SECRETS)),
+    "deploy-stage secret declarations are incomplete or too broad",
   );
 
   const monthly = vars.POLAR_MONTHLY_PRODUCT_ID;

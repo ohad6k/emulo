@@ -6,6 +6,7 @@ import { validateProductionConfig } from "../scripts/validate-production-config.
 function validConfig() {
   return {
     name: "emulo-production",
+    preview_urls: false,
     vars: {
       APP_ENV: "production",
       GITHUB_CLIENT_ID: "not-configured",
@@ -16,11 +17,7 @@ function validConfig() {
       POLAR_YEARLY_PRODUCT_ID: "not-configured",
     },
     secrets: {
-      required: [
-        "POLAR_WEBHOOK_SECRET",
-        "GITHUB_CLIENT_SECRET",
-        "POLAR_ACCESS_TOKEN",
-      ],
+      required: ["GITHUB_CLIENT_SECRET"],
     },
     d1_databases: [
       {
@@ -74,6 +71,15 @@ describe("production Wrangler configuration guard", () => {
     }
   });
 
+  it("rejects production preview hostnames", () => {
+    const config = validConfig();
+    config.preview_urls = true;
+    assert.throws(
+      () => validateProductionConfig(config),
+      /preview URLs must remain disabled/i,
+    );
+  });
+
   it("rejects partial product configuration and secret values in vars", () => {
     const partial = validConfig();
     partial.vars.POLAR_MONTHLY_PRODUCT_ID = "11111111-1111-4111-8111-111111111111";
@@ -90,12 +96,15 @@ describe("production Wrangler configuration guard", () => {
     );
   });
 
-  it("requires exactly the server-side secret names", () => {
+  it("requires only the deploy-stage GitHub secret", () => {
     const config = validConfig();
-    config.secrets.required = ["POLAR_ACCESS_TOKEN"];
+    config.secrets.required = [
+      "GITHUB_CLIENT_SECRET",
+      "POLAR_ACCESS_TOKEN",
+    ];
     assert.throws(
       () => validateProductionConfig(config),
-      /required secret declarations/i,
+      /deploy-stage secret declarations/i,
     );
   });
 });

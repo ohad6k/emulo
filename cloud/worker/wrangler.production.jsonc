@@ -5,6 +5,7 @@
   "compatibility_date": "2026-07-16",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "preview_urls": false,
   "observability": {
     "enabled": false
   },
@@ -18,7 +19,7 @@
     "POLAR_YEARLY_PRODUCT_ID": "b6535378-b1bd-40ee-bd37-96a03abec2f2"
   },
   "secrets": {
-    "required": ["POLAR_WEBHOOK_SECRET", "GITHUB_CLIENT_SECRET", "POLAR_ACCESS_TOKEN"]
+    "required": ["GITHUB_CLIENT_SECRET"]
   },
   "d1_databases": [
     {

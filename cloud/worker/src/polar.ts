@@ -99,6 +99,12 @@ export async function handlePolarWebhook(
   request: Request,
   env: Env,
 ): Promise<Response> {
+  if (
+    typeof env.POLAR_WEBHOOK_SECRET !== "string" ||
+    env.POLAR_WEBHOOK_SECRET.length < 8
+  ) {
+    return json(503, { status: "unavailable" });
+  }
   try {
     const { body, bytes } = await readBoundedBody(request);
     validateEvent(body, webhookHeaders(request), env.POLAR_WEBHOOK_SECRET);

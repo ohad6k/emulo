@@ -10,7 +10,7 @@ import { handlePolarWebhook } from "../src/polar";
 const testEnv = env as unknown as Env;
 const ACCOUNT_ID = "acct_0123456789abcdef0123456789abcdef";
 const MONTHLY_PRODUCT_ID = "11111111-1111-4111-8111-111111111111";
-const SECRET = testEnv.POLAR_WEBHOOK_SECRET;
+const SECRET = testEnv.POLAR_WEBHOOK_SECRET!;
 
 function subscriptionPayload(changes: Record<string, unknown> = {}) {
   const timestamp = "2026-07-16T12:00:00Z";
@@ -179,6 +179,19 @@ describe("Emulo Autopilot Worker", () => {
     const request = signedRequest(subscriptionPayload(), "evt_bad", "wrong-secret");
     const response = await fetch(request);
     expect(response.status).toBe(403);
+    const count = await testEnv.DB.prepare(
+      "SELECT COUNT(*) AS count FROM billing_events",
+    ).first<{ count: number }>();
+    expect(count?.count).toBe(0);
+  });
+
+  it("keeps webhooks unavailable until the signing secret is installed", async () => {
+    const response = await handlePolarWebhook(
+      signedRequest(subscriptionPayload(), "evt_missing_secret"),
+      { ...testEnv, POLAR_WEBHOOK_SECRET: undefined },
+    );
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ status: "unavailable" });
     const count = await testEnv.DB.prepare(
       "SELECT COUNT(*) AS count FROM billing_events",
     ).first<{ count: number }>();
