@@ -14,6 +14,7 @@ const NOW = new Date("2026-07-16T12:00:00.000Z");
 const STATE = "state_that_is_long_and_random_enough_for_oauth";
 const VERIFIER = "v".repeat(43);
 const BROWSER_BINDING = "browser_binding_that_is_random_enough_12345";
+const UPSTREAM_ACCESS_TOKEN = crypto.randomUUID();
 
 async function sha256(value: string): Promise<string> {
   const bytes = new TextEncoder().encode(value);
@@ -104,7 +105,7 @@ describe("GitHub OAuth", () => {
       .fn()
       .mockResolvedValueOnce(
         Response.json({
-          access_token: "test-token",
+          access_token: UPSTREAM_ACCESS_TOKEN,
           token_type: "bearer",
           scope: "",
         }),
@@ -131,14 +132,14 @@ describe("GitHub OAuth", () => {
     const userRequest = fetcher.mock.calls[1];
     expect(userRequest[0]).toBe("https://api.github.com/user");
     expect((userRequest[1] as RequestInit).headers).toMatchObject({
-      Authorization: "Bearer test-token",
+      Authorization: `Bearer ${UPSTREAM_ACCESS_TOKEN}`,
     });
     const cookie = response.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("__Host-emulo_session=");
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");
     expect(cookie).toContain("SameSite=Lax");
-    expect(cookie).not.toContain("test-token");
+    expect(cookie).not.toContain(UPSTREAM_ACCESS_TOKEN);
     const stored = await testEnv.DB.prepare(
       "SELECT session_hash FROM browser_sessions",
     ).first<{ session_hash: string }>();
@@ -160,7 +161,7 @@ describe("GitHub OAuth", () => {
       expect(this).toBeUndefined();
       call += 1;
       return call === 1
-        ? Response.json({ access_token: "test-token" })
+        ? Response.json({ access_token: UPSTREAM_ACCESS_TOKEN })
         : Response.json({ id: 12345678 });
     };
     const response = await completeGitHubOAuth(
@@ -178,7 +179,7 @@ describe("GitHub OAuth", () => {
   it("rejects replayed state before contacting GitHub", async () => {
     await seedFlow();
     const fetcher = vi.fn().mockResolvedValue(
-      Response.json({ access_token: "test-token" }),
+      Response.json({ access_token: UPSTREAM_ACCESS_TOKEN }),
     );
     const request = () =>
       new Request(
@@ -256,7 +257,7 @@ describe("GitHub OAuth", () => {
     await seedFlow();
     const fetcher = vi
       .fn()
-      .mockResolvedValueOnce(Response.json({ access_token: "test-token" }))
+      .mockResolvedValueOnce(Response.json({ access_token: UPSTREAM_ACCESS_TOKEN }))
       .mockResolvedValueOnce(
         Response.json({ message: "private upstream detail" }, { status: 401 }),
       );
@@ -285,14 +286,14 @@ describe("GitHub OAuth", () => {
       error_code: null,
     });
     expect(JSON.stringify(diagnostic)).not.toContain("private upstream detail");
-    expect(JSON.stringify(diagnostic)).not.toContain("test-token");
+    expect(JSON.stringify(diagnostic)).not.toContain(UPSTREAM_ACCESS_TOKEN);
   });
 
   it("records a sanitized identity-write diagnostic for internal failures", async () => {
     await seedFlow();
     const fetcher = vi
       .fn()
-      .mockResolvedValueOnce(Response.json({ access_token: "test-token" }))
+      .mockResolvedValueOnce(Response.json({ access_token: UPSTREAM_ACCESS_TOKEN }))
       .mockResolvedValueOnce(Response.json({ id: 12345678 }));
     const brokenDependencies = dependencies(fetcher);
     brokenDependencies.randomBytes = () => new Uint8Array(0);
@@ -329,7 +330,7 @@ describe("GitHub OAuth", () => {
       .fn()
       .mockResolvedValueOnce(
         Response.json({
-          access_token: "test-token",
+          access_token: UPSTREAM_ACCESS_TOKEN,
           token_type: "bearer",
           scope: "",
         }),

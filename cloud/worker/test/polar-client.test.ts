@@ -30,7 +30,7 @@ function enabledEnv(changes: Partial<Env> = {}): Env {
     ...testEnv,
     PAID_CHECKOUT_ENABLED: "true",
     POLAR_SERVER: "sandbox",
-    POLAR_ACCESS_TOKEN: "polar-test-placeholder",
+    POLAR_ACCESS_TOKEN: testEnv.POLAR_ACCESS_TOKEN,
     ...changes,
   };
 }

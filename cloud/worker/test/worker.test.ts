@@ -10,7 +10,7 @@ import { handlePolarWebhook } from "../src/polar";
 const testEnv = env as unknown as Env;
 const ACCOUNT_ID = "acct_0123456789abcdef0123456789abcdef";
 const MONTHLY_PRODUCT_ID = "11111111-1111-4111-8111-111111111111";
-const SECRET = "test-only-placeholder";
+const SECRET = testEnv.POLAR_WEBHOOK_SECRET;
 
 function subscriptionPayload(changes: Record<string, unknown> = {}) {
   const timestamp = "2026-07-16T12:00:00Z";
