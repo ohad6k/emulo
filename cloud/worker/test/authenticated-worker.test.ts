@@ -6,7 +6,19 @@ describe("authenticated Worker integration", () => {
     const account = await SELF.fetch("https://api.example/account");
     expect(account.status).toBe(200);
     expect(account.headers.get("cache-control")).toBe("no-store");
-    expect(await account.text()).toContain("local Emulo control center");
+    const accountBody = await account.text();
+    expect(accountBody).toContain("local Emulo control center");
+    expect(accountBody).toContain('data-plan="monthly"');
+    expect(accountBody).toContain('data-plan="yearly"');
+    expect(accountBody).toContain("disabled");
+    expect(accountBody).toContain('/account.js');
+
+    const script = await SELF.fetch("https://api.example/account.js");
+    expect(script.status).toBe(200);
+    expect(script.headers.get("content-type")).toBe(
+      "text/javascript; charset=utf-8",
+    );
+    expect(await script.text()).toContain('fetch("/v1/billing/checkout"');
 
     const complete = await SELF.fetch(
       "https://api.example/v1/billing/complete",
@@ -34,6 +46,11 @@ describe("authenticated Worker integration", () => {
     expect(
       (
         await SELF.fetch("https://api.example/account", { method: "POST" })
+      ).status,
+    ).toBe(405);
+    expect(
+      (
+        await SELF.fetch("https://api.example/account.js", { method: "POST" })
       ).status,
     ).toBe(405);
     expect(
