@@ -1,4 +1,5 @@
 import type { Env } from "./contracts";
+import { beginGitHubOAuth, completeGitHubOAuth } from "./github-auth";
 import { handlePolarWebhook } from "./polar";
 
 function json(status: number, body: Record<string, string>): Response {
@@ -27,6 +28,18 @@ export default {
         return json(405, { status: "method-not-allowed" });
       }
       return handlePolarWebhook(request, env);
+    }
+    if (url.pathname === "/v1/auth/github/start") {
+      if (request.method !== "GET") {
+        return json(405, { status: "method-not-allowed" });
+      }
+      return beginGitHubOAuth(env);
+    }
+    if (url.pathname === "/v1/auth/github/callback") {
+      if (request.method !== "GET") {
+        return json(405, { status: "method-not-allowed" });
+      }
+      return completeGitHubOAuth(request, env);
     }
     return json(404, { status: "not-found" });
   },

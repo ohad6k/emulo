@@ -6,6 +6,7 @@ const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 interface OAuthFlowInput {
   stateHash: string;
+  browserBindingHash: string;
   codeVerifier: string;
   createdAt: string;
   expiresAt: string;
@@ -55,36 +56,52 @@ export async function createOAuthFlow(
   if (!HASH_PATTERN.test(input.stateHash)) {
     throw new Error("OAuth state hash is invalid");
   }
+  if (!HASH_PATTERN.test(input.browserBindingHash)) {
+    throw new Error("OAuth browser binding hash is invalid");
+  }
   if (!VERIFIER_PATTERN.test(input.codeVerifier)) {
     throw new Error("OAuth code verifier is invalid");
   }
   assertWindow(input.createdAt, input.expiresAt, 10 * 60 * 1000);
-  await db
-    .prepare(
+  await db.batch([
+    db
+      .prepare("DELETE FROM oauth_flows WHERE expires_at <= ?")
+      .bind(input.createdAt),
+    db.prepare(
       `INSERT INTO oauth_flows
-       (state_hash, code_verifier, created_at, expires_at)
-       VALUES (?, ?, ?, ?)`,
+       (state_hash, browser_binding_hash, code_verifier, created_at, expires_at)
+       VALUES (?, ?, ?, ?, ?)`,
     )
-    .bind(input.stateHash, input.codeVerifier, input.createdAt, input.expiresAt)
-    .run();
+      .bind(
+        input.stateHash,
+        input.browserBindingHash,
+        input.codeVerifier,
+        input.createdAt,
+        input.expiresAt,
+      ),
+  ]);
 }
 
 export async function consumeOAuthFlow(
   db: D1Database,
   stateHash: string,
+  browserBindingHash: string,
   now: string,
 ): Promise<{ codeVerifier: string } | null> {
-  if (!HASH_PATTERN.test(stateHash)) {
+  if (
+    !HASH_PATTERN.test(stateHash) ||
+    !HASH_PATTERN.test(browserBindingHash)
+  ) {
     return null;
   }
   assertTimestamp(now, "current timestamp");
   const consumed = await db
     .prepare(
       `DELETE FROM oauth_flows
-       WHERE state_hash = ? AND expires_at > ?
+       WHERE state_hash = ? AND browser_binding_hash = ? AND expires_at > ?
        RETURNING code_verifier`,
     )
-    .bind(stateHash, now)
+    .bind(stateHash, browserBindingHash, now)
     .first<{ code_verifier: string }>();
   if (consumed !== null) {
     return { codeVerifier: consumed.code_verifier };

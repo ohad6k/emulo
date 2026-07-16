@@ -34,4 +34,7 @@ export interface Env {
   POLAR_MONTHLY_PRODUCT_ID: string;
   POLAR_YEARLY_PRODUCT_ID: string;
   POLAR_WEBHOOK_SECRET: string;
+  GITHUB_CLIENT_ID: string;
+  GITHUB_CLIENT_SECRET: string;
+  PUBLIC_BASE_URL: string;
 }

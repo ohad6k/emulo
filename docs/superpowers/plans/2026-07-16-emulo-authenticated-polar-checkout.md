@@ -40,10 +40,10 @@
 - Modify: `cloud/worker/wrangler.jsonc`
 - Modify: `cloud/worker/.dev.vars.example`
 
-- [ ] Add failing tests for state/PKCE generation, exact callback URL, no requested scope, invalid/replayed/expired state, provider refusal, identity validation, safe cookie flags, and upstream failure.
-- [ ] Implement `GET /v1/auth/github/start` and callback with GitHub's official endpoints; discard the access token immediately after `GET /user`.
-- [ ] Return bounded safe HTML/JSON only; no auth value enters a URL except GitHub's temporary code and state.
-- [ ] Run focused tests, typecheck, and commit `feat: authenticate Autopilot accounts with GitHub`.
+- [x] Add failing tests for state/PKCE generation, exact callback URL, no requested scope, invalid/replayed/expired state, provider refusal, identity validation, safe cookie flags, and upstream failure.
+- [x] Implement `GET /v1/auth/github/start` and callback with GitHub's official endpoints; discard the access token immediately after `GET /user`.
+- [x] Return bounded safe HTML/JSON only; no auth value enters a URL except GitHub's temporary code and state.
+- [x] Run focused tests, typecheck, and commit `feat: authenticate Autopilot accounts with GitHub`.
 
 ### Task 3: Gated Polar checkout and portal adapter
 

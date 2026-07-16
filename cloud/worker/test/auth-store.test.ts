@@ -33,6 +33,7 @@ describe("auth store", () => {
   it("consumes a valid OAuth state exactly once", async () => {
     await createOAuthFlow(testEnv.DB, {
       stateHash: "a".repeat(64),
+      browserBindingHash: "1".repeat(64),
       codeVerifier: "v".repeat(43),
       createdAt: NOW,
       expiresAt: LATER,
@@ -41,6 +42,7 @@ describe("auth store", () => {
       await consumeOAuthFlow(
         testEnv.DB,
         "a".repeat(64),
+        "1".repeat(64),
         "2026-07-16T12:05:00.000Z",
       ),
     ).toEqual({ codeVerifier: "v".repeat(43) });
@@ -48,6 +50,7 @@ describe("auth store", () => {
       await consumeOAuthFlow(
         testEnv.DB,
         "a".repeat(64),
+        "1".repeat(64),
         "2026-07-16T12:05:01.000Z",
       ),
     ).toBeNull();
@@ -56,6 +59,7 @@ describe("auth store", () => {
   it("refuses and removes an expired OAuth state", async () => {
     await createOAuthFlow(testEnv.DB, {
       stateHash: "b".repeat(64),
+      browserBindingHash: "2".repeat(64),
       codeVerifier: "w".repeat(43),
       createdAt: NOW,
       expiresAt: LATER,
@@ -64,6 +68,7 @@ describe("auth store", () => {
       await consumeOAuthFlow(
         testEnv.DB,
         "b".repeat(64),
+        "2".repeat(64),
         "2026-07-16T12:10:00.000Z",
       ),
     ).toBeNull();
@@ -80,6 +85,7 @@ describe("auth store", () => {
     await expect(
       createOAuthFlow(testEnv.DB, {
         stateHash: "e".repeat(64),
+        browserBindingHash: "3".repeat(64),
         codeVerifier: "x".repeat(43),
         createdAt: NOW,
         expiresAt: "2026-07-16T12:10:00.001Z",
@@ -90,6 +96,56 @@ describe("auth store", () => {
         "SELECT state_hash FROM oauth_flows WHERE state_hash = ?",
       )
         .bind("e".repeat(64))
+        .first(),
+    ).toBeNull();
+  });
+
+  it("requires the browser binding without consuming another browser's flow", async () => {
+    await createOAuthFlow(testEnv.DB, {
+      stateHash: "f".repeat(64),
+      browserBindingHash: "4".repeat(64),
+      codeVerifier: "y".repeat(43),
+      createdAt: NOW,
+      expiresAt: LATER,
+    });
+    expect(
+      await consumeOAuthFlow(
+        testEnv.DB,
+        "f".repeat(64),
+        "5".repeat(64),
+        "2026-07-16T12:05:00.000Z",
+      ),
+    ).toBeNull();
+    expect(
+      await consumeOAuthFlow(
+        testEnv.DB,
+        "f".repeat(64),
+        "4".repeat(64),
+        "2026-07-16T12:05:00.000Z",
+      ),
+    ).toEqual({ codeVerifier: "y".repeat(43) });
+  });
+
+  it("reclaims abandoned expired flows when a new flow starts", async () => {
+    await createOAuthFlow(testEnv.DB, {
+      stateHash: "6".repeat(64),
+      browserBindingHash: "7".repeat(64),
+      codeVerifier: "z".repeat(43),
+      createdAt: NOW,
+      expiresAt: LATER,
+    });
+    await createOAuthFlow(testEnv.DB, {
+      stateHash: "8".repeat(64),
+      browserBindingHash: "9".repeat(64),
+      codeVerifier: "q".repeat(43),
+      createdAt: "2026-07-16T12:10:00.001Z",
+      expiresAt: "2026-07-16T12:20:00.001Z",
+    });
+    expect(
+      await testEnv.DB.prepare(
+        "SELECT state_hash FROM oauth_flows WHERE state_hash = ?",
+      )
+        .bind("6".repeat(64))
         .first(),
     ).toBeNull();
   });

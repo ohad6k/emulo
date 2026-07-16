@@ -10,11 +10,13 @@
   },
   "vars": {
     "APP_ENV": "local",
+    "GITHUB_CLIENT_ID": "not-configured",
+    "PUBLIC_BASE_URL": "https://not-configured.invalid/",
     "POLAR_MONTHLY_PRODUCT_ID": "not-configured",
     "POLAR_YEARLY_PRODUCT_ID": "not-configured"
   },
   "secrets": {
-    "required": ["POLAR_WEBHOOK_SECRET"]
+    "required": ["POLAR_WEBHOOK_SECRET", "GITHUB_CLIENT_SECRET"]
   },
   "d1_databases": [
     {
