@@ -283,23 +283,37 @@ class AutopilotStore:
             return path
         return self.atomic_write_json(path, decision)
 
-    def latest_decision(self, candidate_id):
-        self.get_candidate(candidate_id)
+    def list_decisions(self):
+        self.initialize()
         decisions = []
         root = self._child("decisions")
-        if not os.path.isdir(root):
-            return None
         for name in os.listdir(root):
             if not re.fullmatch(r"dec_[a-f0-9]{20}\.json", name):
                 raise ValueError("unexpected decision file")
             path = self._child("decisions", name)
             try:
+                self._assert_not_link(path)
+                if not os.path.isfile(path):
+                    raise ValueError("decision is corrupt")
                 with open(path, "r", encoding="utf-8", errors="strict") as handle:
                     decision = validate_decision(json.load(handle))
+                self.get_candidate(decision["candidate_id"])
             except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
                 raise ValueError("decision is corrupt") from exc
-            if decision["candidate_id"] == candidate_id:
-                decisions.append(decision)
+            decisions.append(decision)
+        return sorted(
+            decisions,
+            key=lambda item: (
+                item["candidate_id"], item["decided_at"], item["decision_id"]
+            ),
+        )
+
+    def latest_decision(self, candidate_id):
+        self.get_candidate(candidate_id)
+        decisions = [
+            decision for decision in self.list_decisions()
+            if decision["candidate_id"] == candidate_id
+        ]
         if not decisions:
             return None
         return max(

@@ -125,6 +125,31 @@ class AutopilotStoreTest(unittest.TestCase):
         self.store.append_decision(earlier)
         self.assertEqual(later, self.store.latest_decision(candidate["candidate_id"]))
 
+    def test_decision_inventory_is_sorted_and_fails_closed(self):
+        first = candidate_fixture(statement="First reviewed rule.")
+        second = candidate_fixture(statement="Second reviewed rule.")
+        self.store.put_candidate(first)
+        self.store.put_candidate(second)
+        decisions = [
+            decision_fixture(second["candidate_id"]),
+            decision_fixture(first["candidate_id"]),
+        ]
+        for decision in decisions:
+            self.store.append_decision(decision)
+        self.assertEqual(
+            sorted(
+                decisions,
+                key=lambda item: (
+                    item["candidate_id"], item["decided_at"], item["decision_id"]
+                ),
+            ),
+            self.store.list_decisions(),
+        )
+        root = self.home / "autopilot" / "decisions"
+        (root / "notes.txt").write_text("unexpected", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "unexpected decision"):
+            self.store.list_decisions()
+
     def test_unexpected_decision_file_fails_closed(self):
         candidate = candidate_fixture()
         self.store.put_candidate(candidate)

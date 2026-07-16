@@ -32,11 +32,11 @@
 - Create: `emulo_autopilot/service.py`
 - Create: `tests/test_autopilot_service.py`
 
-- [ ] Add failing tests for empty/locked/active status, pending queue classification, explicit approve/reject decisions, reject-policy approval refusal, and newest-decision state.
-- [ ] Implement `status_snapshot(store)`, `review_queue(store)`, and `record_review(store, candidate_id, decision, reason, decided_at)`.
-- [ ] Derive `policy_class` with `classify_candidate(..., auto_activate_enabled=False)`; reject approval when it returns `reject` and permit an explicit rejection record.
-- [ ] Return versioned JSON-safe dictionaries with IDs, statements, domains, kinds, policy reasons, decision state, counts, and active generation only.
-- [ ] Run `python -m unittest tests.test_autopilot_service tests.test_autopilot_store -v` and commit `feat: add local Autopilot review service`.
+- [x] Add failing tests for empty/locked/active status, pending queue classification, explicit approve/reject decisions, reject-policy approval refusal, and newest-decision state.
+- [x] Implement `status_snapshot(store)`, `review_queue(store)`, and `record_review(store, candidate_id, decision, reason, decided_at)`.
+- [x] Derive `policy_class` with `classify_candidate(..., auto_activate_enabled=False)`; reject approval when it returns `reject` and permit an explicit rejection record.
+- [x] Return versioned JSON-safe dictionaries with IDs, statements, domains, kinds, policy reasons, decision state, counts, and active generation only.
+- [x] Run `python -m unittest tests.test_autopilot_service tests.test_autopilot_store -v` and commit `feat: add local Autopilot review service`.
 
 ### Task 3: JSON-first CLI and package entry point
 
