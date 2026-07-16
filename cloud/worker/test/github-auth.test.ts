@@ -91,7 +91,7 @@ describe("GitHub OAuth", () => {
       .fn()
       .mockResolvedValueOnce(
         Response.json({
-          access_token: "github-test-access-token",
+          access_token: "test-token",
           token_type: "bearer",
           scope: "",
         }),
@@ -115,14 +115,14 @@ describe("GitHub OAuth", () => {
     const userRequest = fetcher.mock.calls[1];
     expect(userRequest[0]).toBe("https://api.github.com/user");
     expect((userRequest[1] as RequestInit).headers).toMatchObject({
-      Authorization: "Bearer github-test-access-token",
+      Authorization: "Bearer test-token",
     });
     const cookie = response.headers.get("set-cookie") ?? "";
     expect(cookie).toContain("__Host-emulo_session=");
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");
     expect(cookie).toContain("SameSite=Lax");
-    expect(cookie).not.toContain("github-test-access-token");
+    expect(cookie).not.toContain("test-token");
     const stored = await testEnv.DB.prepare(
       "SELECT session_hash FROM browser_sessions",
     ).first<{ session_hash: string }>();
@@ -136,7 +136,7 @@ describe("GitHub OAuth", () => {
   it("rejects replayed state before contacting GitHub", async () => {
     await seedFlow();
     const fetcher = vi.fn().mockResolvedValue(
-      Response.json({ access_token: "github-test-access-token" }),
+      Response.json({ access_token: "test-token" }),
     );
     const request = () =>
       new Request(
@@ -179,7 +179,7 @@ describe("GitHub OAuth", () => {
       .fn()
       .mockResolvedValueOnce(
         Response.json({
-          access_token: "github-test-access-token",
+          access_token: "test-token",
           token_type: "bearer",
           scope: "",
         }),

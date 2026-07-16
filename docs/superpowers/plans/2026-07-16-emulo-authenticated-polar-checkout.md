@@ -56,10 +56,10 @@
 - Modify: `cloud/worker/wrangler.jsonc`
 - Modify: `cloud/worker/.dev.vars.example`
 
-- [ ] Add failing tests for missing/expired session, disabled checkout, invalid plan, server-owned products/redirects, external account binding, connecting-IP forwarding, sandbox selection, provider refusal, and portal ownership.
-- [ ] Implement `POST /v1/billing/checkout` and `POST /v1/billing/portal` through Polar's official SDK using sandbox by default.
-- [ ] Return only short-lived hosted URLs with `Cache-Control: no-store`; never return Polar tokens or SDK error bodies.
-- [ ] Keep entitlement changes webhook-only; run focused tests and commit `feat: create authenticated Polar billing sessions`.
+- [x] Add failing tests for missing/expired session, disabled checkout, invalid plan, server-owned products/redirects, external account binding, connecting-IP forwarding, sandbox selection, provider refusal, and portal ownership.
+- [x] Implement `POST /v1/billing/checkout` and `POST /v1/billing/portal` through Polar's official SDK using sandbox by default.
+- [x] Return only short-lived hosted URLs with `Cache-Control: no-store`; never return Polar tokens or SDK error bodies.
+- [x] Keep entitlement changes webhook-only; run focused tests and commit `feat: create authenticated Polar billing sessions`.
 
 ### Task 4: Route/security integration and provider handoff
 

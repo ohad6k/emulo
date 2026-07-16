@@ -37,4 +37,7 @@ export interface Env {
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
   PUBLIC_BASE_URL: string;
+  PAID_CHECKOUT_ENABLED: string;
+  POLAR_ACCESS_TOKEN: string;
+  POLAR_SERVER: string;
 }

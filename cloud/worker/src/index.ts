@@ -1,6 +1,7 @@
 import type { Env } from "./contracts";
 import { beginGitHubOAuth, completeGitHubOAuth } from "./github-auth";
 import { handlePolarWebhook } from "./polar";
+import { handlePolarCheckout, handlePolarPortal } from "./polar-client";
 
 function json(status: number, body: Record<string, string>): Response {
   return Response.json(body, {
@@ -40,6 +41,18 @@ export default {
         return json(405, { status: "method-not-allowed" });
       }
       return completeGitHubOAuth(request, env);
+    }
+    if (url.pathname === "/v1/billing/checkout") {
+      if (request.method !== "POST") {
+        return json(405, { status: "method-not-allowed" });
+      }
+      return handlePolarCheckout(request, env);
+    }
+    if (url.pathname === "/v1/billing/portal") {
+      if (request.method !== "POST") {
+        return json(405, { status: "method-not-allowed" });
+      }
+      return handlePolarPortal(request, env);
     }
     return json(404, { status: "not-found" });
   },

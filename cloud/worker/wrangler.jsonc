@@ -12,11 +12,13 @@
     "APP_ENV": "local",
     "GITHUB_CLIENT_ID": "not-configured",
     "PUBLIC_BASE_URL": "https://not-configured.invalid/",
+    "PAID_CHECKOUT_ENABLED": "false",
+    "POLAR_SERVER": "sandbox",
     "POLAR_MONTHLY_PRODUCT_ID": "not-configured",
     "POLAR_YEARLY_PRODUCT_ID": "not-configured"
   },
   "secrets": {
-    "required": ["POLAR_WEBHOOK_SECRET", "GITHUB_CLIENT_SECRET"]
+    "required": ["POLAR_WEBHOOK_SECRET", "GITHUB_CLIENT_SECRET", "POLAR_ACCESS_TOKEN"]
   },
   "d1_databases": [
     {
