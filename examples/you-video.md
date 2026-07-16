@@ -38,6 +38,10 @@ description: Evidence-backed Emulo video profile
   - Action: Center a single card, put the number inside it, and dim the background so the card reads.
 - Reaction cut-ins and everything on screen must keep continuous looped motion for their whole window; a static hold reads as a render bug.
   - Action: Loop bob, wobble, breathing, and burst spin for the full duration with repeats sized to the window; never animate-in then hold.
+- The PowerPoint feel is measurable, not a vibe: a four-minute cut that "felt static" had 76 freezedetect runs totaling 103 of 247 seconds, and its motion file held 28 tweens with only 2 repeats.
+  - Action: Diagnose staticness as frozen-seconds over duration before touching design; fix it with one keepAlive layer that gives every scene a slow full-window camera push plus sized loops on caption, character, and props, rather than restyling anything.
+- Regenerating any voice line silently invalidates every timing artifact downstream, and a stale transcript drifts the visuals a full sentence off the audio by mid-video.
+  - Action: Treat VO as the head of a chain (narration assembly, line timing, shot data, captions or srt, sfx cues, final mix) and rebuild the whole chain in order after any line changes; also update any hand-carried times, like act boundaries in the root composition.
 - Long-format is the priority and it is a teaching video, not a stretched short: one concept per screen, sustained explanation, a real structure of chapters.
   - Action: Author long videos at 1920x1080 around 3 to 4 minutes; open on a cinematic hook, then walk one idea at a time with the character hosting and reacting between concepts.
 - The long-format canvas is mostly pure black with big centered ELEGANT SERIF text, one idea per screen, not the Anton bold of the shorts.
@@ -56,6 +60,8 @@ description: Evidence-backed Emulo video profile
   - Action: Run ffmpeg freezedetect over every finished cut and treat any reported run as a bug; carry the closing motion all the way to the composition total, not a hardcoded few seconds.
 - A brand name is slurred by energy and by the words in front of it, not by its spelling; emulo lands cleanly at exaggeration 0.5 in the frame "a tool called emulo" but becomes AMOLO after "why I built" and MLue at exaggeration 0.6.
   - Action: Speak proper nouns at exaggeration 0.42 to 0.5, never hook energy, and put them in a "called X" frame; fix a mangled name by changing the energy and the carrier phrase, never by respelling it phonetically, since every respelling only produces a different wrong word.
+- Sentence-initial is the fragile slot for any odd word, not just brand names; a line opening on "Vibe coding" decoded as Live, 5, wipe, and why across takes, and landed only with a carrier word in front.
+  - Action: Never open a line with the word that must land; give it a short carrier ("Now, vibe coding...") and gate that token exactly under base.en.
 - tiny.en scores a mangled proper noun as clear, so the clarity gate silently passes a wrong brand name.
   - Action: Gate any line containing a product name with whisper base.en and assert the name appears as an exact token in the transcript, rejecting the take outright when it does not.
 - A line can be clean in the voice track and still be smeared in the final mix, because a short sidechain release lets the music swell back over the last syllable; emulo survived the take but became emulog once the bed was under it.
