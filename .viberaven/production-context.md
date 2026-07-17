@@ -2,6 +2,17 @@
 
 ## Current Release / Change Window
 
+### 2026-07-17 - Emulo Pro continuity customer onboarding
+
+- Change: Expose the verified encrypted-continuity foundation as a first-device, recovery, pairing, status, push, retry, pull, device-management, encrypted-export, and cloud-deletion customer workflow.
+- Evidence: The Python companion now creates a private device/master-key file plus a portable encrypted recovery kit, displays the recovery secret once, prompts without echo for recovery and pairing, stores the device bearer token only in a private exact-schema file, and preserves explicit conflict output. The active Pro account page creates a 10-minute one-time pairing code, lists/revokes safe device metadata, downloads the signed-in account's encrypted manifest, and requires typing `delete-cloud-continuity` before cloud deletion becomes actionable. A CLI-level synthetic proof moved exact Hebrew, emoji, and CRLF bytes from a first device to a recovered second device without printing recovery or device tokens.
+- Boundary: The local companion alone holds plaintext, device private keys, the master key, recovery secret, and device bearer credential. The Worker/browser receives bounded account/device metadata and ciphertext. Local open-source use remains independent of entitlement. Checkout remains disabled.
+- Danger: Printing a recovery/device secret, overwriting existing key material, accepting a redirect or non-HTTPS origin, silently merging divergent generations, exposing wrapped keys/tokens in account HTML, treating browser export as cross-account, or coupling local rollback to billing would break the product boundary.
+- Repo fix: Add strict onboarding/credential schemas, atomic private writes, public-key derivation, exact HTTPS pairing, lazy CLI commands, active-only account controls, browser-session-scoped export, and typed-confirmation deletion UI. No migration, provider SDK, product ID, or checkout flag changed.
+- Verification: Fresh Python suite passed 396 tests with 3 platform skips. Worker passed 132 tests across 14 files plus 8 production-config guards. TypeScript, production-config validation, npm production audit, clean `.[pro]` install/pip check, and Cloudflare production dry run passed. Dry run bundled 1,752.99 KiB / 320.76 KiB gzip with `PAID_CHECKOUT_ENABLED=false` and `GOOGLE_CLIENT_ID=not-configured`. Local browser proof at 1,265 CSS px showed no horizontal overflow, one safe device row, a valid 43-character pairing result, a disabled-until-typed deletion control, and no console warnings/errors. The in-app viewport override did not apply, so a fresh 390 px visual receipt for the new controls remains open.
+- Provider/MCP proof: Unknown for this change. No Google, Cloudflare, D1, Polar, deployment, webhook, billing, or live customer state was mutated.
+- Open action: Capture the fresh 390 px account receipt, configure/prove production Google, apply migrations through `0008`, deploy with checkout disabled, run the complete live synthetic two-device/account/billing/deletion proof, and require separate Ohad approval before checkout activation.
+
 ### 2026-07-17 - Google identity implementation (provider activation pending)
 
 - Change: Implement Google OpenID Connect beside GitHub using an Authorization Code flow, PKCE S256, state plus browser binding, a one-time nonce, signed ID-token verification, provider-separated internal accounts, and the existing opaque Emulo browser session.

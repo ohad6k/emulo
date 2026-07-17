@@ -1,6 +1,6 @@
 # Emulo Pro continuity release evidence
 
-**Status:** repository implementation verified; **not production-launch ready**.
+**Status:** repository implementation and customer onboarding verified; **not production-launch ready**.
 
 This record separates what is proven in the repository from provider and
 operator work that has not happened. `PAID_CHECKOUT_ENABLED` must remain
@@ -28,22 +28,39 @@ approves activation.
 - Concrete Free versus Pro copy: open source keeps local mining, review,
   activation, history, rollback, export, and offline use; Pro adds managed
   encrypted continuity and device/recovery operations.
+- Customer CLI commands for first-device initialization, second-device recovery,
+  hidden-input pairing, local status, encrypted push/retry/pull, and explicit
+  conflict reporting.
+- Active-account controls for 10-minute pairing codes, safe device listing and
+  revocation, browser-session-scoped encrypted export manifests, and exact typed
+  confirmation before hosted continuity deletion.
+- Secure local onboarding files that refuse overwrite and links, store the
+  recovery secret nowhere, and keep device bearer credentials out of command
+  output and account HTML.
 
 ## Verification evidence from 2026-07-17
 
-- Python: 380 tests passed, 3 Windows/platform skips.
-- Worker: 129 tests passed across 14 files.
+- Python: 396 tests passed, 3 Windows/platform skips.
+- Worker: 132 tests passed across 14 files.
 - Production configuration: 8 guards passed.
 - TypeScript: `tsc --noEmit` passed.
 - Production npm audit: 0 vulnerabilities.
 - Clean temporary Python environment with `.[pro]`: no broken requirements.
-- Cloudflare production dry run passed at 1,741.67 KiB / 318.03 KiB gzip.
+- Cloudflare production dry run passed at 1,752.99 KiB / 320.76 KiB gzip.
 - Dry run confirmed `PAID_CHECKOUT_ENABLED=false` and
   `GOOGLE_CLIENT_ID=not-configured`.
-- Browser QA: desktop and 390 px mobile pricing render with zero horizontal
-  overflow, readable Pro contrast, and no page or console errors.
+- Browser QA for the new active-account controls: the local desktop render at
+  1,265 CSS px had zero horizontal overflow, one safe device row, a working
+  43-character pairing-code reveal, a delete button disabled until the exact
+  confirmation was typed, and no console warning/error. The in-app viewport
+  override did not apply, so the changed controls still need a fresh 390 px
+  visual receipt before launch.
 - Synthetic two-device proof preserved exact Hebrew, emoji, and CRLF artifact
   bytes and retained local rollback while transport was unavailable.
+- Customer-level CLI proof initialized device A, connected it, pushed two
+  approved generations, recovered a fresh device B from the portable encrypted
+  kit, connected it, and activated the exact remote bytes without printing the
+  recovery or device bearer tokens.
 
 ## Data boundary proven by tests
 
@@ -58,9 +75,9 @@ Device bearer tokens and browser sessions are stored only as hashes.
 
 ## Remaining launch blockers
 
-1. Build the user-facing local onboarding path for first-device setup, recovery
-   kit confirmation, pairing, sync status, push, pull, conflicts, export, and
-   deletion. The tested Python APIs are not yet a complete customer workflow.
+1. Capture a fresh 390 px visual/interaction receipt for the new active-account
+   device and deletion controls. The desktop receipt is proven; the attempted
+   in-app viewport override remained at 1,265 CSS px and is not mobile evidence.
 2. Create and verify the Google production Web OAuth client with callback
    `https://emulo-production.ohad1306.workers.dev/v1/auth/google/callback`, add
    the client secret directly as a Cloudflare Worker secret, and commit only
@@ -80,5 +97,6 @@ Device bearer tokens and browser sessions are stored only as hashes.
 ## Launch decision
 
 **No-go today.** The repository foundation is strong and the paid value is now
-specific, but accepting money before customer-facing onboarding and live
-provider proof would sell an internal capability rather than a usable product.
+specific and customer-operable. Accepting money still requires the mobile
+receipt, live provider/deployment proof, and a separately approved checkout
+release; repository evidence alone cannot prove those production systems.
