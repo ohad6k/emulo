@@ -2,6 +2,17 @@
 
 ## Current Release / Change Window
 
+### 2026-07-17 - Consumer account and Google identity design
+
+- Change: Plan a structural account redesign, public legal pages, professional pricing copy, and Google sign-in alongside GitHub without changing the Polar entitlement boundary.
+- Evidence: The current Worker already stores provider identities separately from accounts and billing, but D1 constrains identities/diagnostics to GitHub. The approved architecture uses a forward-only provider-widening migration, server-side Google Authorization Code flow, minimal identity scopes, local ID-token verification, and separate provider accounts rather than unsafe email merging.
+- Boundary: The repo can implement and test routes, migration, UI, policies, and fail-closed config. Google OAuth client/consent publishing, Cloudflare secret installation, live migration, and live provider proof remain dashboard/provider actions.
+- Danger: Silent email account merging, persisted Google tokens, broad Google scopes, deploying code before migration, claiming Google is public before consent-screen proof, or enabling Polar checkout during an auth/UI release.
+- Repo fix: Pending approved design review and TDD implementation plan. Checkout remains disabled.
+- Verification: Architecture plan and design spec record exact flows, rejected alternatives, test matrix, rollout, and rollback. No product code or provider state changed in this planning step.
+- Provider/MCP proof: Google Cloud project/client, redirect URI, consent-screen audience, publishing/brand-verification status, and Cloudflare Google secret are currently unknown from repo.
+- Open action: Review the written design, approve the proposed 14-day initial/7-day renewal refund window, then implement with tests before provider setup.
+
 ### 2026-07-17 - Public Emulo Pro pricing boundary
 
 - Change: Add an honest Free-versus-Emulo Pro pricing section to the Vercel site and route paid intent to the authenticated production Worker account boundary.
