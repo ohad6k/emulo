@@ -198,7 +198,7 @@ def connect_continuity(
     pairing_code,
     label,
     client_version,
-    pairer=complete_pairing,
+    pairer=None,
 ):
     credential_path = _credential_path(home)
     if os.path.lexists(credential_path):
@@ -217,6 +217,8 @@ def connect_continuity(
     ):
         raise ValueError("client version is invalid")
     server = validate_https_origin(server)
+    if pairer is None:
+        pairer = complete_pairing
     private_key, master_key = load_private_material(home)
     public_key = device_public_key(private_key)
     wrapped = wrap_master_key_for_device(master_key, public_key)
