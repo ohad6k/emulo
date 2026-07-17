@@ -206,6 +206,11 @@ describe("Google OAuth", () => {
       dependencies(),
     );
     expect(response.status).toBe(503);
-    expect(await response.text()).not.toMatch(/secret|client id/i);
+    const body = await response.text();
+    expect(body).toContain("Google sign-in is not available yet");
+    expect(body).toContain('class="brand-lockup"');
+    expect(body).toContain('href="/account.css"');
+    expect(body).toContain('href="/account"');
+    expect(body).not.toMatch(/secret|client id/i);
   });
 });

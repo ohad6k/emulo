@@ -484,6 +484,7 @@ function htmlDocument(
   title: string,
   _environment: "sandbox" | "production",
   surface: string,
+  status = 200,
 ): Response {
   return new Response(
     `<!doctype html>
@@ -503,7 +504,25 @@ function htmlDocument(
   <script src="/account.js" defer></script>
 </body>
 </html>`,
-    { status: 200, headers: DOCUMENT_HEADERS },
+    { status, headers: DOCUMENT_HEADERS },
+  );
+}
+
+export function renderAuthMessagePage(
+  status: number,
+  title: string,
+  heading: string,
+  message: string,
+): Response {
+  return htmlDocument(
+    title,
+    "production",
+    `<article class="account-surface" data-account-state="auth-message">
+      <h1>${heading}</h1>
+      <p class="lede">${message}</p>
+      <div class="action-stack"><a class="primary-action" href="/account">Return to Emulo account</a></div>
+    </article>`,
+    status,
   );
 }
 

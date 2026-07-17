@@ -5,6 +5,7 @@ import {
   resolveOrCreateOAuthIdentity,
 } from "./auth-store";
 import type { Env } from "./contracts";
+import { renderAuthMessagePage } from "./account-ui";
 import {
   verifyGoogleIdToken,
   type GoogleTokenVerificationOptions,
@@ -89,19 +90,13 @@ function callbackUrl(env: Env): string {
 }
 
 function safeResponse(status: number, message: string): Response {
-  return new Response(
-    `<!doctype html><meta charset="utf-8"><title>Emulo</title><p>${message}</p>`,
-    {
-      status,
-      headers: {
-        "cache-control": "no-store",
-        "content-security-policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
-        "content-type": "text/html; charset=utf-8",
-        "referrer-policy": "no-referrer",
-        "x-content-type-options": "nosniff",
-      },
-    },
-  );
+  const supportingCopy =
+    status === 503
+      ? "You can continue with GitHub or return to your Emulo account."
+      : status === 400
+        ? "No account changes were made. Return to Emulo and try again."
+        : "No account changes were made. Please return to Emulo and try again.";
+  return renderAuthMessagePage(status, "Emulo sign-in", message, supportingCopy);
 }
 
 function cookieValue(request: Request): string | null {
