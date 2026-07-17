@@ -61,6 +61,23 @@ This evidence proves the Sandbox path only. It does not prove Polar production
 products, production secrets, payout/KYC readiness, a real-money purchase, a
 refund, or a public launch.
 
+## Verified production preparation
+
+- The isolated `emulo-production` Worker and D1 database are deployed.
+- GitHub's public client ID, the two private Polar product IDs, and the GitHub
+  client secret are configured in their correct public/secret locations.
+- Checkout is disabled. Live checkout returns `503 checkout-disabled`; portal
+  and webhook routes return `503 unavailable` while their Polar secrets are
+  absent.
+- The public account shell and assets return `200`, signed-out status returns
+  `401`, and GitHub auth redirects only to `github.com`.
+- Count-only D1 checks before and after live refusal tests show zero accounts,
+  customers, billing events, entitlements, browser sessions, and writes.
+
+This proves safe production preparation, not a production purchase. The Polar
+access token, raw-webhook signing secret, payout readiness, signed delivery,
+real charge, portal, cancellation/refund, and public checkout remain gated.
+
 ## Local verification
 
 Requires Node.js 24 or newer.
@@ -81,9 +98,9 @@ arguments, screenshots, issues, or documentation.
 ## Safe deployment order
 
 The repository contains `wrangler.production.jsonc` for the isolated
-`emulo-production` service and D1 database. Its committed provider identifiers
-remain `not-configured` and checkout remains `false` until the owner completes
-the production GitHub and Polar actions. Validate it with:
+`emulo-production` service and D1 database. Its nonsecret production provider
+identifiers are configured and checkout remains `false` until the remaining
+Polar actions and real lifecycle proof pass. Validate it with:
 
 ```powershell
 npm run verify:production-config
@@ -91,21 +108,27 @@ npx wrangler deploy --dry-run --config wrangler.production.jsonc
 ```
 
 The config guard rejects Sandbox service/database drift, committed secret
-values, partial product configuration, and checkout enablement.
+values, partial product configuration, preview hostnames, and checkout
+enablement. Only `GITHUB_CLIENT_SECRET` is deploy-required at the safe shell
+stage. Runtime checks keep Polar checkout, portal, and webhooks unavailable
+until their corresponding secrets are installed.
 
-1. Keep `POLAR_SERVER=sandbox` and `PAID_CHECKOUT_ENABLED=false`.
+1. Keep `POLAR_SERVER=production` and `PAID_CHECKOUT_ENABLED=false` in the
+   production service.
 2. Apply D1 migrations, deploy with existing secret bindings preserved, and
    verify the signed-out account page plus fail-closed routes.
-3. Sign in through GitHub and verify the account/status pages show the existing
-   D1 entitlement without identifiers.
-4. Open Polar's hosted portal and confirm it is tied to the same external Emulo
+3. Sign in through GitHub and verify count-only D1 account, identity, and
+   browser-session evidence without recording identifiers.
+4. Create the scoped production Polar token and raw webhook through the
+   authenticated dashboard only after payout/KYC state is confirmed. Enter
+   both values directly into Cloudflare secret storage.
+5. Prove one signed test delivery. An unsigned request must return `403` after
+   the signing secret exists; before installation, the route returns `503`.
+6. Open Polar's hosted portal and confirm it is tied to the same external Emulo
    account.
-5. Treat production as a separate environment. Create production products,
-   token, and raw webhook through the authenticated Polar dashboard only after
-   payout/KYC state is confirmed.
-6. Perform one explicitly approved private real purchase, cancellation/refund,
+7. Perform one explicitly approved private real purchase, cancellation/refund,
    portal, and webhook lifecycle before enabling a public production checkout.
-7. To stop new purchases, set `PAID_CHECKOUT_ENABLED=false` and redeploy. Keep
+8. To stop new purchases, set `PAID_CHECKOUT_ENABLED=false` and redeploy. Keep
    signed webhooks running so existing customer state continues to converge.
 
 Production dashboard actions and secret entry require the account owner or an

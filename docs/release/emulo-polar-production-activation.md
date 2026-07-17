@@ -107,6 +107,9 @@ arguments, or shown in screenshots.
   returns `401`; GitHub auth redirects to `github.com`; checkout, portal, and
   the not-yet-configured webhook return safe `503` states. Count-only D1
   queries before and after returned zero rows and zero writes.
+- Vercel deployment `dpl_A7Vc19mb63ggGKyt7PqXseskcpHb` is `READY` and owns
+  `https://emulo.vercel.app`; the public page contains the approved Free, `$9`,
+  `$79`, private-beta, and Worker-account markers without a Polar product UUID.
 - The production Polar access token and raw-webhook signing secret remain
   deliberately absent pending the owner/provider steps below.
 
