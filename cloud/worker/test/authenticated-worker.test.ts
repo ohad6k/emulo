@@ -87,13 +87,24 @@ describe("authenticated Worker integration", () => {
     expect(account.status).toBe(200);
     expect(account.headers.get("cache-control")).toBe("no-store");
     const accountBody = await account.text();
+    expect(accountBody).toContain("Sign in to Emulo");
+    expect(accountBody).toContain("Continue with Google");
     expect(accountBody).toContain("Continue with GitHub");
     expect(accountBody).not.toContain("account is connected");
     expect(accountBody).toContain('class="brand-mark"');
-    expect(accountBody).toContain('href="/emulo.svg"');
+    expect(accountBody).toContain('href="/emulo.png"');
     expect(accountBody).toContain('href="/account.css"');
     expect(accountBody).toContain('data-account-state="signed-out"');
-    expect(accountBody).toContain("Your way of working, carried forward.");
+    expect(accountBody).toContain('href="/privacy.html"');
+    for (const rejected of [
+      "Private account",
+      "Signed out",
+      "Production",
+      "View open source",
+      "opaque, hashed browser session",
+    ]) {
+      expect(accountBody).not.toContain(rejected);
+    }
     expect(account.headers.get("content-security-policy")).toContain(
       "style-src 'self'",
     );
@@ -110,17 +121,15 @@ describe("authenticated Worker integration", () => {
     expect(styles.headers.get("content-type")).toBe("text/css; charset=utf-8");
     expect(await styles.text()).toContain("prefers-reduced-motion");
 
-    const mark = await SELF.fetch("https://api.example/emulo.svg");
-    expect(mark.status).toBe(200);
-    expect(mark.headers.get("content-type")).toBe("image/svg+xml; charset=utf-8");
-    expect(await mark.text()).toContain("emulo mascot");
+    expect((await SELF.fetch("https://api.example/emulo.svg")).status).toBe(404);
 
     const complete = await SELF.fetch(
       "https://api.example/v1/billing/complete",
     );
     expect(complete.status).toBe(200);
     const body = await complete.text();
-    expect(body).toContain("verified Polar confirmation");
+    expect(body).toContain("Sign in to continue");
+    expect(body).not.toContain("Polar");
     expect(body).not.toContain("access is active");
     expect(body).toContain('data-payment-state="verifying"');
     expect(body).toContain('aria-live="polite"');
@@ -182,7 +191,8 @@ describe("authenticated Worker integration", () => {
     const completeBody = await complete.text();
     expect(completeBody).toContain('data-payment-state="active"');
     expect(completeBody).toContain("Emulo Pro activated");
-    expect(completeBody).not.toContain("Waiting for Polar confirmation");
+    expect(completeBody).not.toContain("Confirming your subscription");
+    expect(completeBody).not.toContain("webhook");
   });
 
   it("ships bounded checkout, portal, and status-polling interactions", async () => {
@@ -195,6 +205,8 @@ describe("authenticated Worker integration", () => {
     expect(script).toContain("MAX_STATUS_ATTEMPTS");
     expect(script).toContain('credentials: "same-origin"');
     expect(script).not.toContain("innerHTML");
+    expect(script).not.toContain("signed confirmation");
+    expect(script).not.toContain("verified Polar");
   });
 
   it("keeps checkout disabled through the public Worker route", async () => {
@@ -224,11 +236,6 @@ describe("authenticated Worker integration", () => {
     expect(
       (
         await SELF.fetch("https://api.example/account.css", { method: "POST" })
-      ).status,
-    ).toBe(405);
-    expect(
-      (
-        await SELF.fetch("https://api.example/emulo.svg", { method: "POST" })
       ).status,
     ).toBe(405);
     expect(

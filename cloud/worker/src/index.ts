@@ -2,7 +2,6 @@ import { resolveAccountStatus } from "./account-status";
 import {
   accountScript,
   accountStyles,
-  emuloMark,
   renderAccountPage,
   renderPaymentPage,
   unavailablePage,
@@ -67,12 +66,6 @@ export default {
         return json(405, { status: "method-not-allowed" });
       }
       return accountStyles();
-    }
-    if (url.pathname === "/emulo.svg") {
-      if (request.method !== "GET") {
-        return json(405, { status: "method-not-allowed" });
-      }
-      return emuloMark();
     }
     if (url.pathname === "/v1/billing/complete") {
       if (request.method !== "GET") {

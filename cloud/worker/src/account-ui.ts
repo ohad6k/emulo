@@ -1,4 +1,5 @@
 import type { AccountStatus, EntitlementSummary } from "./account-status";
+import { professionalAccountStyles } from "./account-styles";
 
 const DOCUMENT_HEADERS = {
   "cache-control": "no-store",
@@ -8,23 +9,6 @@ const DOCUMENT_HEADERS = {
   "referrer-policy": "no-referrer",
   "x-content-type-options": "nosniff",
 };
-
-const EMULO_MARK = `<svg width="320" viewBox="0 0 470 470" role="img" xmlns="http://www.w3.org/2000/svg">
-<title>emulo mascot</title>
-<desc>A friendly flat robot with double-stroke eyes, with a faded copy of itself behind it.</desc>
-<ellipse cx="306" cy="392" rx="150" ry="20" fill="#0f766e" opacity="0.14"/>
-<g opacity="0.28" transform="translate(30,-22)"><rect x="224" y="96" width="212" height="210" rx="52" fill="#14b8a6"/><rect x="306" y="60" width="10" height="40" rx="5" fill="#14b8a6"/><circle cx="311" cy="52" r="15" fill="#14b8a6"/></g>
-<line x1="281" y1="92" x2="275" y2="58" stroke="#17303a" stroke-width="7" stroke-linecap="round"/>
-<circle cx="273" cy="49" r="16" fill="#ff8a5c" stroke="#17303a" stroke-width="6"/>
-<rect x="198" y="200" width="26" height="70" rx="13" fill="#0f9488" stroke="#17303a" stroke-width="6"/>
-<rect x="428" y="200" width="26" height="70" rx="13" fill="#0f9488" stroke="#17303a" stroke-width="6"/>
-<rect x="216" y="96" width="220" height="216" rx="54" fill="#14b8a6" stroke="#17303a" stroke-width="7"/>
-<rect x="248" y="132" width="156" height="132" rx="28" fill="#f6f4ec" stroke="#17303a" stroke-width="6"/>
-<g fill="#17303a"><g transform="rotate(14 296 178)"><rect x="282" y="158" width="11" height="40" rx="5.5"/><rect x="299" y="158" width="11" height="40" rx="5.5"/></g><g transform="rotate(14 360 178)"><rect x="346" y="158" width="11" height="40" rx="5.5"/><rect x="363" y="158" width="11" height="40" rx="5.5"/></g></g>
-<circle cx="282" cy="228" r="12" fill="#ff8a5c" opacity="0.55"/><circle cx="370" cy="228" r="12" fill="#ff8a5c" opacity="0.55"/>
-<path d="M298 224 Q326 250 354 224" fill="none" stroke="#17303a" stroke-width="6" stroke-linecap="round"/>
-<rect x="262" y="312" width="46" height="24" rx="12" fill="#0f9488" stroke="#17303a" stroke-width="6"/><rect x="344" y="312" width="46" height="24" rx="12" fill="#0f9488" stroke="#17303a" stroke-width="6"/>
-</svg>`;
 
 const ACCOUNT_STYLES = `:root {
   color-scheme: light;
@@ -365,7 +349,7 @@ for (const form of document.querySelectorAll("[data-checkout-form]")) {
     const plan = button?.dataset.plan;
     if (!(button instanceof HTMLButtonElement) || !(status instanceof HTMLElement) || (plan !== "monthly" && plan !== "yearly")) return;
     button.disabled = true;
-    status.textContent = "Creating secure Polar checkout...";
+    status.textContent = "Opening secure checkout...";
     try {
       await hostedAction(fetch("/v1/billing/checkout", {
         method: "POST",
@@ -387,7 +371,7 @@ for (const form of document.querySelectorAll("[data-portal-form]")) {
     const status = document.querySelector("#account-action-status");
     if (!(button instanceof HTMLButtonElement) || !(status instanceof HTMLElement)) return;
     button.disabled = true;
-    status.textContent = "Opening your secure Polar portal...";
+    status.textContent = "Opening subscription management...";
     try {
       await hostedAction(fetch("/v1/billing/portal", {
         method: "POST",
@@ -414,21 +398,21 @@ function updatePaymentSurface(root, state) {
     badge.textContent = "Active";
     badge.dataset.tone = "";
     title.textContent = "Emulo Pro activated";
-    copy.textContent = "Polar's signed confirmation is applied. Your Emulo Pro access is now active.";
+    copy.textContent = "Your Emulo Pro subscription is active.";
     return true;
   }
   if (state === "past_due" || state === "grace") {
     badge.textContent = "Attention";
     badge.dataset.tone = "attention";
     title.textContent = "Billing needs attention";
-    copy.textContent = "Polar confirmed a billing issue. Open your account to manage it; local Emulo stays yours.";
+    copy.textContent = "Open your account to review the subscription. Your local Emulo setup remains yours.";
     return true;
   }
   if (state === "ended" || state === "refunded") {
     badge.textContent = "Paused";
     badge.dataset.tone = "ended";
     title.textContent = "Cloud continuity is paused";
-    copy.textContent = "Polar no longer reports active access. Your local profiles and workflows remain yours.";
+    copy.textContent = "Your local profiles and workflows remain yours.";
     return true;
   }
   return false;
@@ -453,8 +437,8 @@ async function pollPaymentStatus() {
         const copy = root.querySelector("[data-status-copy]");
         const badge = root.querySelector("[data-status-badge]");
         const action = root.querySelector("[data-status-action]");
-        if (title instanceof HTMLElement) title.textContent = "Sign in to verify access";
-        if (copy instanceof HTMLElement) copy.textContent = "Reconnect the account used at checkout, then Emulo can read the verified status.";
+        if (title instanceof HTMLElement) title.textContent = "Sign in to continue";
+        if (copy instanceof HTMLElement) copy.textContent = "Use the same Emulo account you selected for your subscription.";
         if (badge instanceof HTMLElement) badge.textContent = "Reconnect";
         if (action instanceof HTMLAnchorElement) {
           action.href = "/v1/auth/github/start";
@@ -475,19 +459,32 @@ async function pollPaymentStatus() {
   const title = root.querySelector("[data-status-title]");
   const copy = root.querySelector("[data-status-copy]");
   const badge = root.querySelector("[data-status-badge]");
-  if (title instanceof HTMLElement) title.textContent = "Confirmation is still pending";
-  if (copy instanceof HTMLElement) copy.textContent = "No active entitlement is visible yet. Your account page will show access as soon as a verified Polar confirmation arrives.";
+  if (title instanceof HTMLElement) title.textContent = "Still confirming your subscription";
+  if (copy instanceof HTMLElement) copy.textContent = "You can return to your account and check again in a moment.";
   if (badge instanceof HTMLElement) badge.textContent = "Pending";
 }
 
 void pollPaymentStatus();`;
 
+function providerActions(): string {
+  return `<div class="provider-actions">
+    <a class="provider-button provider-google" href="/v1/auth/google/start">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M21.6 12.23c0-.71-.06-1.24-.2-1.8H12v3.4h5.52a4.72 4.72 0 0 1-2.05 3.1v2.2h3.32c1.94-1.79 3.06-4.43 3.06-7.57z"/><path fill="#34a853" d="M12 22c2.77 0 5.1-.91 6.79-2.48l-3.32-2.58c-.92.62-2.1.99-3.47.99-2.67 0-4.93-1.8-5.74-4.23H2.83v2.66A10.26 10.26 0 0 0 12 22z"/><path fill="#fbbc05" d="M6.26 13.7A6.17 6.17 0 0 1 5.94 12c0-.59.1-1.16.32-1.7V7.64H2.83A10.02 10.02 0 0 0 1.75 12c0 1.61.39 3.14 1.08 4.36z"/><path fill="#ea4335" d="M12 6.07c1.5 0 2.84.52 3.9 1.52l2.96-2.95C17.1 3 14.77 2 12 2a10.26 10.26 0 0 0-9.17 5.64l3.43 2.66C7.07 7.87 9.33 6.07 12 6.07z"/></svg>
+      <span>Continue with Google</span>
+    </a>
+    <span class="provider-divider">or</span>
+    <a class="provider-button provider-github" href="/v1/auth/github/start">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.61-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.03A9.6 9.6 0 0 1 12 7.7a9.6 9.6 0 0 1 2.5.34c1.91-1.3 2.75-1.03 2.75-1.03.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.86V21c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
+      <span>Continue with GitHub</span>
+    </a>
+  </div>`;
+}
+
 function htmlDocument(
   title: string,
-  environment: "sandbox" | "production",
+  _environment: "sandbox" | "production",
   surface: string,
 ): Response {
-  const environmentLabel = environment === "sandbox" ? "Polar Sandbox" : "Production";
   return new Response(
     `<!doctype html>
 <html lang="en">
@@ -496,28 +493,13 @@ function htmlDocument(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${title}</title>
   <meta name="description" content="Emulo carries your way of working across AI agents.">
-  <link rel="icon" href="/emulo.svg" type="image/svg+xml">
+  <link rel="icon" href="/emulo.png" type="image/png">
   <link rel="stylesheet" href="/account.css">
 </head>
 <body>
-  <main class="site-shell">
-    <section class="identity-panel" aria-labelledby="emulo-promise">
-      <a class="brand-lockup" href="/account" aria-label="Emulo account home">
-        <img class="brand-mark" src="/emulo.svg" alt="">
-        <span class="wordmark">Emulo</span>
-      </a>
-      <div class="identity-copy">
-        <p class="eyebrow">Personal operating alignment</p>
-        <h1 id="emulo-promise">Your way of working, carried forward.</h1>
-        <p>Emulo learns from completed sessions and keeps your agents aligned without uploading raw session logs.</p>
-      </div>
-      <footer class="identity-foot">
-        <span>Open source stays capable. Autopilot adds continuity.</span>
-        <span class="environment-badge">${environmentLabel}</span>
-      </footer>
-    </section>
-    <section class="account-panel">${surface}</section>
-  </main>
+  <header class="brand-header"><a class="brand-lockup" href="/account" aria-label="Emulo account home"><img class="brand-mark" src="/emulo.png" alt=""><span class="wordmark">Emulo</span></a></header>
+  <main class="account-main">${surface}</main>
+  <footer class="account-footer"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refunds.html">Refunds</a><a href="mailto:ohadkrispin@gmail.com">Contact</a></footer>
   <script src="/account.js" defer></script>
 </body>
 </html>`,
@@ -535,11 +517,10 @@ function activeSurface(entitlement: EntitlementSummary): string {
   return `<article class="account-surface" data-account-state="${entitlement.state}">
     <div class="surface-kicker"><span>Emulo account</span><span class="state-badge">Active</span></div>
     <h2>Emulo Pro is active</h2>
-    <p class="lede">Your verified Polar subscription is connected. Autopilot controls remain in the local Emulo control center.</p>
+    <p class="lede">Your subscription is connected. Autopilot controls remain in the local Emulo control center.</p>
     <dl class="plan-facts"><div class="plan-fact"><dt>Plan</dt><dd>${productLabel(entitlement)}</dd></div><div class="plan-fact"><dt>Access</dt><dd>Cloud continuity</dd></div></dl>
     <div class="action-stack"><form data-portal-form><button class="primary-action" type="submit">Manage subscription</button></form><a class="secondary-action" href="/account">Refresh account</a></div>
     <p id="account-action-status" class="action-status" aria-live="polite"></p>
-    <p class="proof-line">This state comes from a verified Polar confirmation, not the checkout redirect.</p>
   </article>`;
 }
 
@@ -547,7 +528,7 @@ function attentionSurface(entitlement: EntitlementSummary): string {
   return `<article class="account-surface" data-account-state="${entitlement.state}">
     <div class="surface-kicker"><span>Emulo account</span><span class="state-badge" data-tone="attention">Attention</span></div>
     <h2>Billing needs attention</h2>
-    <p class="lede">Open Polar to resolve the subscription. Cloud continuity may enter a grace period, but local Emulo stays yours.</p>
+    <p class="lede">Open subscription management to resolve the issue. Cloud continuity may enter a grace period, but local Emulo stays yours.</p>
     <dl class="plan-facts"><div class="plan-fact"><dt>Plan</dt><dd>${productLabel(entitlement)}</dd></div><div class="plan-fact"><dt>Local engine</dt><dd>Still available</dd></div></dl>
     <div class="action-stack"><form data-portal-form><button class="primary-action" type="submit">Open billing portal</button></form><a class="secondary-action" href="/account">Refresh account</a></div>
     <p id="account-action-status" class="action-status" aria-live="polite"></p>
@@ -568,18 +549,15 @@ function endedSurface(entitlement: EntitlementSummary): string {
 function noneSurface(checkoutEnabled: boolean): string {
   const actions = checkoutEnabled
     ? `<div class="action-stack">
-        <form class="plan-choice" data-checkout-form><div><strong>Annual founding plan</strong><span>$79/year · founding price</span></div><button class="primary-action" type="submit" data-plan="yearly">Choose annual</button></form>
-        <form class="plan-choice" data-checkout-form><div><strong>Monthly founding plan</strong><span>$9/month · cancel in Polar</span></div><button class="secondary-action" type="submit" data-plan="monthly">Choose monthly</button></form>
+        <form class="plan-choice" data-checkout-form><div><strong>Emulo Pro annual</strong><span>$79/year · Save 27%</span></div><button class="primary-action" type="submit" data-plan="yearly">Choose annual</button></form>
+        <form class="plan-choice" data-checkout-form><div><strong>Emulo Pro monthly</strong><span>$9/month</span></div><button class="secondary-action" type="submit" data-plan="monthly">Choose monthly</button></form>
       </div>`
-    : `<div class="action-stack"><a class="primary-action" href="https://github.com/ohad6/emulo">Use Emulo open source</a></div>
-       <p class="fine-print">Checkout is safely closed while the founding beta is prepared for production.</p>`;
+    : `<p class="fine-print">Emulo Pro is not available for purchase yet.</p>`;
   return `<article class="account-surface" data-account-state="none">
-    <div class="surface-kicker"><span>Founding beta</span><span class="state-badge" data-tone="ended">Private</span></div>
-    <h2>${checkoutEnabled ? "Choose your founding plan" : "Founding access is currently private"}</h2>
-    <p class="lede">The open-source engine remains free and local. Autopilot will add managed continuity across agents and devices.</p>
+    <h2>${checkoutEnabled ? "Choose Emulo Pro" : "Your Emulo account is ready."}</h2>
+    <p class="lede">Your account is connected. The local Emulo engine remains available without a subscription.</p>
     ${actions}
     <p id="account-action-status" class="action-status" aria-live="polite"></p>
-    <p class="proof-line">Raw session logs stay local. Access activates only after a verified Polar confirmation.</p>
   </article>`;
 }
 
@@ -589,11 +567,10 @@ export function renderAccountPage(status: AccountStatus): Response {
       "Emulo account",
       status.environment,
       `<article class="account-surface" data-account-state="signed-out">
-        <div class="surface-kicker"><span>Private account</span><span class="state-badge" data-tone="ended">Signed out</span></div>
-        <h2>Connect your Emulo account</h2>
-        <p class="lede">GitHub verifies your identity. Emulo requests no repository or email scope and never stores the temporary GitHub token.</p>
-        <div class="action-stack"><a class="primary-action" href="/v1/auth/github/start">Continue with GitHub</a><a class="secondary-action" href="https://github.com/ohad6/emulo">View open source</a></div>
-        <p class="proof-line">Your account session is stored as an opaque, hashed browser session.</p>
+        <h1>Sign in to Emulo</h1>
+        <p class="lede">Access your account and manage Emulo Pro.</p>
+        ${providerActions()}
+        <p class="identity-note">Emulo uses your sign-in provider only to verify your identity.</p>
       </article>`,
     );
   }
@@ -614,43 +591,37 @@ export function renderAccountPage(status: AccountStatus): Response {
 function paymentSurface(status: AccountStatus): string {
   if (!status.authenticated) {
     return `<article class="account-surface" data-payment-state="verifying" data-authenticated="false" aria-live="polite">
-      <div class="surface-kicker"><span>Payment verification</span><span class="state-badge" data-tone="attention">Reconnect</span></div>
-      <h2 data-status-title>Sign in to verify access</h2>
-      <p class="lede" data-status-copy>Emulo enables cloud access only after a verified Polar confirmation. Reconnect the account used at checkout to read that status.</p>
-      <div class="action-stack"><a class="primary-action" href="/v1/auth/github/start">Continue with GitHub</a><a class="secondary-action" href="/account">Return to account</a></div>
+      <h2 data-status-title>Sign in to continue</h2>
+      <p class="lede" data-status-copy>Use the same Emulo account you selected for your subscription.</p>
+      ${providerActions()}
     </article>`;
   }
   if (status.entitlement.state === "active" || status.entitlement.state === "trialing") {
     return `<article class="account-surface" data-payment-state="active" data-authenticated="true" aria-live="polite">
-      <div class="surface-kicker"><span>Payment verification</span><span class="state-badge" data-status-badge>Active</span></div>
       <h2 data-status-title>Emulo Pro activated</h2>
-      <p class="lede" data-status-copy>Your verified Polar confirmation is applied. Emulo now recognizes the ${productLabel(status.entitlement).toLowerCase()} Emulo Pro plan.</p>
+      <p class="lede" data-status-copy>Your ${productLabel(status.entitlement).toLowerCase()} Emulo Pro plan is active.</p>
       <div class="action-stack"><a class="primary-action" data-status-action href="/account">Open Emulo account</a></div>
-      <p class="proof-line">Access was confirmed from the signed webhook state stored by Emulo.</p>
     </article>`;
   }
   if (status.entitlement.state === "past_due" || status.entitlement.state === "grace") {
     return `<article class="account-surface" data-payment-state="${status.entitlement.state}" data-authenticated="true" aria-live="polite">
-      <div class="surface-kicker"><span>Payment verification</span><span class="state-badge" data-tone="attention" data-status-badge>Attention</span></div>
-      <h2 data-status-title>Billing needs attention</h2>
-      <p class="lede" data-status-copy>Polar confirmed a billing issue. Open the account to manage it; local Emulo stays yours.</p>
+      <h2 data-status-title>Your subscription needs attention</h2>
+      <p class="lede" data-status-copy>Open your Emulo account to review the subscription. Your local Emulo setup remains yours.</p>
       <div class="action-stack"><a class="primary-action" data-status-action href="/account">Open Emulo account</a></div>
     </article>`;
   }
   if (status.entitlement.state === "ended" || status.entitlement.state === "refunded") {
     return `<article class="account-surface" data-payment-state="${status.entitlement.state}" data-authenticated="true" aria-live="polite">
-      <div class="surface-kicker"><span>Payment verification</span><span class="state-badge" data-tone="ended" data-status-badge>Paused</span></div>
       <h2 data-status-title>Cloud continuity is paused</h2>
-      <p class="lede" data-status-copy>Polar no longer reports active access. Your local Emulo profiles and workflows remain yours.</p>
+      <p class="lede" data-status-copy>Your local Emulo profiles and workflows remain yours.</p>
       <div class="action-stack"><a class="primary-action" data-status-action href="/account">Open Emulo account</a></div>
     </article>`;
   }
   return `<article class="account-surface" data-payment-state="verifying" data-authenticated="true" aria-live="polite">
-    <div class="surface-kicker"><span>Payment verification</span><span class="state-badge" data-tone="attention" data-status-badge>Verifying</span></div>
-    <h2 data-status-title>Waiting for Polar confirmation</h2>
-    <p class="lede" data-status-copy>The payment page returned, but Emulo enables cloud access only after a verified Polar confirmation. This normally takes a few seconds.</p>
+    <h2 data-status-title>Confirming your subscription</h2>
+    <span class="sr-only" data-status-badge>Confirming</span>
+    <p class="lede" data-status-copy>This can take a few seconds. You can safely return to your account while Emulo finishes.</p>
     <div class="action-stack"><a class="primary-action" data-status-action href="/account">Return to account</a></div>
-    <p class="proof-line">The checkout redirect alone never grants access.</p>
   </article>`;
 }
 
@@ -672,7 +643,7 @@ export function unavailablePage(): Response {
 }
 
 export function accountStyles(): Response {
-  return new Response(ACCOUNT_STYLES, {
+  return new Response(professionalAccountStyles, {
     status: 200,
     headers: {
       "cache-control": "public, max-age=300",
@@ -690,18 +661,6 @@ export function accountScript(): Response {
       "cache-control": "public, max-age=300",
       "content-type": "text/javascript; charset=utf-8",
       "referrer-policy": "no-referrer",
-      "x-content-type-options": "nosniff",
-    },
-  });
-}
-
-export function emuloMark(): Response {
-  return new Response(EMULO_MARK, {
-    status: 200,
-    headers: {
-      "cache-control": "public, max-age=86400, immutable",
-      "content-type": "image/svg+xml; charset=utf-8",
-      "content-security-policy": "default-src 'none'; style-src 'none'; script-src 'none'",
       "x-content-type-options": "nosniff",
     },
   });

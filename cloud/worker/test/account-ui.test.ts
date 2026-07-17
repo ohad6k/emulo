@@ -32,21 +32,37 @@ async function body(response: Response): Promise<string> {
 }
 
 describe("Emulo account UI", () => {
-  it("renders a signed-out identity state", async () => {
+  it("renders the professional two-provider sign-in surface", async () => {
     const html = await body(renderAccountPage({
       authenticated: false,
       environment: "sandbox",
       checkoutEnabled: false,
     }));
     expect(html).toContain('data-account-state="signed-out"');
+    expect(html).toContain("Sign in to Emulo");
+    expect(html).toContain("Continue with Google");
     expect(html).toContain("Continue with GitHub");
+    expect(html).toContain('href="/privacy.html"');
+    expect(html).toContain('href="/terms.html"');
+    expect(html).toContain('href="/refunds.html"');
     expect(html).not.toContain("account is connected");
+    for (const rejected of [
+      "Private account",
+      "Signed out",
+      "Production",
+      "View open source",
+      "opaque, hashed browser session",
+      "Connect your Emulo account",
+    ]) {
+      expect(html).not.toContain(rejected);
+    }
   });
 
   it("keeps founding checkout absent while the gate is disabled", async () => {
     const html = await body(renderAccountPage(status("none")));
     expect(html).toContain('data-account-state="none"');
-    expect(html).toContain("Founding access is currently private");
+    expect(html).toContain("Your Emulo account is ready.");
+    expect(html).toContain("Emulo Pro is not available for purchase yet.");
     expect(html).not.toContain("data-checkout-form");
   });
 
@@ -63,8 +79,11 @@ describe("Emulo account UI", () => {
     const html = await body(renderAccountPage(status("active")));
     expect(html).toContain("Emulo Pro is active");
     expect(html).toContain("Monthly");
+    expect(html).toContain("Manage subscription");
     expect(html).toContain("data-portal-form");
     expect(html).not.toContain("data-checkout-form");
+    expect(html).not.toContain("Polar");
+    expect(html).not.toContain("webhook");
   });
 
   it.each(["past_due", "grace"] as const)(
@@ -74,6 +93,7 @@ describe("Emulo account UI", () => {
       expect(html).toContain("Billing needs attention");
       expect(html).toContain("local Emulo stays yours");
       expect(html).toContain("data-portal-form");
+      expect(html).not.toContain("Polar");
     },
   );
 
@@ -83,14 +103,15 @@ describe("Emulo account UI", () => {
       const html = await body(renderAccountPage(status(state)));
       expect(html).toContain("Cloud continuity is paused");
       expect(html).toContain("local profiles and workflows remain yours");
+      expect(html).not.toContain("Polar");
     },
   );
 
   it("keeps the receipt pending until an entitlement exists", async () => {
     const html = await body(renderPaymentPage(status("none")));
     expect(html).toContain('data-payment-state="verifying"');
-    expect(html).toContain("Waiting for Polar confirmation");
-    expect(html).toContain("verified Polar confirmation");
+    expect(html).toContain("Confirming your subscription");
+    expect(html).not.toContain("Polar");
     expect(html).not.toContain("Payment successful");
   });
 
@@ -98,6 +119,7 @@ describe("Emulo account UI", () => {
     const html = await body(renderPaymentPage(status("active")));
     expect(html).toContain('data-payment-state="active"');
     expect(html).toContain("Emulo Pro activated");
-    expect(html).not.toContain("Waiting for Polar confirmation");
+    expect(html).not.toContain("Confirming your subscription");
+    expect(html).not.toContain("webhook");
   });
 });
