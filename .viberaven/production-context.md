@@ -2,6 +2,17 @@
 
 ## Current Release / Change Window
 
+### 2026-07-17 - Emulo Pro continuity production deployment
+
+- Change: Push verified `main` commit `ce520457`, apply production D1 migrations `0006_google_oauth.sql` through `0008_continuity_generations.sql`, and deploy the reviewed Worker with checkout disabled.
+- Evidence: GitHub `main` and `origin/main` both resolved to `ce520457` after the push. Wrangler applied all three pending migrations successfully and then reported no migrations to apply. The production deploy completed as Worker version `37374377-f196-488d-ae15-179f172f2625` at `https://emulo-production.ohad1306.workers.dev`.
+- Boundary: `PAID_CHECKOUT_ENABLED=false`; `GOOGLE_CLIENT_ID=not-configured`; the only declared production secret is `GITHUB_CLIENT_SECRET`. No Polar token, webhook secret, Google secret, customer, entitlement, device, generation, or payment was created.
+- Danger: The signed-out page currently renders a Google action while Google is deliberately unconfigured; it fails closed with `503` but must be hidden or fully configured before public checkout. Authenticated continuity and billing behavior remain unproven in the live environment.
+- Repo fix: None during deployment. The deployed artifact is the already reviewed and tested `ce520457` tree.
+- Verification: Post-merge Python passed 396 tests with 3 platform skips; Worker passed 132 tests plus 8 production guards; TypeScript passed. Live health, account, CSS, JavaScript, icon, privacy, terms, and refunds returned expected `200` responses; signed-out status/devices/export returned `401`; GitHub auth returned a `302` to `github.com`; disabled checkout, portal, unsigned webhook, and unconfigured Google returned safe `503` responses; unknown routes returned `404`. No checked response body matched token/private-key patterns. Desktop and real 390x844 signed-out renders had no horizontal overflow, loaded the logo, and produced no console warnings/errors.
+- Provider/MCP proof: Cloudflare listed version `37374377-f196-488d-ae15-179f172f2625` after deploy. D1 count-only reads before and after migration preserved one OAuth flow and zero accounts, customers, billing events, entitlements, identities, sessions, diagnostics, pairing grants, devices, generations, and heads. Deployment `2a49f764-d11f-4fed-93a3-984f42cc862d` remains the prior rollback target.
+- Open action: Hide or configure the Google action, complete a real GitHub callback with owner consent, prove the active paid account controls at 390 px, install production Polar secrets through the provider boundary, run the complete synthetic continuity/billing lifecycle, and require separate approval before checkout activation.
+
 ### 2026-07-17 - Emulo Pro continuity customer onboarding
 
 - Change: Expose the verified encrypted-continuity foundation as a first-device, recovery, pairing, status, push, retry, pull, device-management, encrypted-export, and cloud-deletion customer workflow.

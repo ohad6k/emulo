@@ -1,6 +1,7 @@
 # Emulo Pro continuity release evidence
 
-**Status:** repository implementation and customer onboarding verified; **not production-launch ready**.
+**Status:** repository implementation, production migration, disabled-checkout
+deployment, and signed-out shell verified; **not production-launch ready**.
 
 This record separates what is proven in the repository from provider and
 operator work that has not happened. `PAID_CHECKOUT_ENABLED` must remain
@@ -61,6 +62,22 @@ approves activation.
   approved generations, recovered a fresh device B from the portable encrypted
   kit, connected it, and activated the exact remote bytes without printing the
   recovery or device bearer tokens.
+- GitHub `main` was pushed at `ce520457`; production D1 applied migrations
+  `0006` through `0008` and then reported no pending migrations.
+- Cloudflare deployed Worker version
+  `37374377-f196-488d-ae15-179f172f2625` with checkout disabled and Google
+  deliberately unconfigured. The only declared secret name was
+  `GITHUB_CLIENT_SECRET`; no secret value was read.
+- Live HTTP proof returned expected `200` responses for health, account assets,
+  and legal pages; `401` for signed-out account/device/export reads; `302` from
+  GitHub start to `github.com`; safe `503` responses for checkout, portal,
+  unsigned webhook, and unconfigured Google; and `404` for an unknown route.
+- Live desktop and real 390x844 signed-out renders had no horizontal overflow,
+  loaded the Emulo mark, and produced no console warnings or errors. This proves
+  the responsive public shell, not the still-unseen active paid controls.
+- Count-only D1 reads before and after migration preserved one OAuth flow and
+  zero accounts, customers, billing events, entitlements, identities, sessions,
+  diagnostics, pairing grants, devices, generations, and heads.
 
 ## Data boundary proven by tests
 
@@ -75,16 +92,18 @@ Device bearer tokens and browser sessions are stored only as hashes.
 
 ## Remaining launch blockers
 
-1. Capture a fresh 390 px visual/interaction receipt for the new active-account
-   device and deletion controls. The desktop receipt is proven; the attempted
-   in-app viewport override remained at 1,265 CSS px and is not mobile evidence.
-2. Create and verify the Google production Web OAuth client with callback
+1. Capture a fresh authenticated 390 px visual/interaction receipt for the new
+   active-account device and deletion controls. The live signed-out shell is
+   proven at 390x844, but it cannot prove paid-state controls.
+2. Either hide the currently visible Google action until it is ready, or create
+   and verify the Google production Web OAuth client with callback
    `https://emulo-production.ohad1306.workers.dev/v1/auth/google/callback`, add
    the client secret directly as a Cloudflare Worker secret, and commit only
    the nonsecret client ID.
-3. Apply production D1 migrations through `0008_continuity_generations.sql` and
-   deploy the reviewed Worker revision without enabling checkout.
-4. Run a live synthetic account proof: both sign-in providers, webhook-confirmed
+3. Complete a real GitHub OAuth callback and verify the resulting browser
+   session/account row without exposing the callback code, cookies, or tokens.
+4. Run a live synthetic account proof: every enabled sign-in provider,
+   webhook-confirmed
    entitlement, first and second device, encrypted push/pull, conflict,
    revocation, recovery export, cloud deletion, and negative cross-account
    tests. Capture URLs, request IDs, timestamps, and screenshots without secret
@@ -96,7 +115,7 @@ Device bearer tokens and browser sessions are stored only as hashes.
 
 ## Launch decision
 
-**No-go today.** The repository foundation is strong and the paid value is now
-specific and customer-operable. Accepting money still requires the mobile
-receipt, live provider/deployment proof, and a separately approved checkout
-release; repository evidence alone cannot prove those production systems.
+**No-go today.** The repository foundation, migrations, and disabled-checkout
+deployment are proven. Accepting money still requires an authenticated live
+account/continuity proof, a resolved Google action, production Polar/webhook
+proof, and a separately approved checkout release.
