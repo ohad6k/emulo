@@ -8,6 +8,7 @@ import {
 } from "./account-ui";
 import type { Env } from "./contracts";
 import { beginGitHubOAuth, completeGitHubOAuth } from "./github-auth";
+import { beginGoogleOAuth, completeGoogleOAuth } from "./google-auth";
 import { legalStyles, renderWorkerPolicy } from "./legal-pages";
 import { handlePolarWebhook } from "./polar";
 import { handlePolarCheckout, handlePolarPortal } from "./polar-client";
@@ -118,6 +119,18 @@ export default {
         return json(405, { status: "method-not-allowed" });
       }
       return beginGitHubOAuth(env);
+    }
+    if (url.pathname === "/v1/auth/google/start") {
+      if (request.method !== "GET") {
+        return json(405, { status: "method-not-allowed" });
+      }
+      return beginGoogleOAuth(env);
+    }
+    if (url.pathname === "/v1/auth/google/callback") {
+      if (request.method !== "GET") {
+        return json(405, { status: "method-not-allowed" });
+      }
+      return completeGoogleOAuth(request, env);
     }
     if (url.pathname === "/v1/auth/github/callback") {
       if (request.method !== "GET") {

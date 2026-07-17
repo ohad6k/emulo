@@ -8,10 +8,12 @@ import { defineConfig } from "vitest/config";
 
 const polarWebhookSecret = process.env.POLAR_WEBHOOK_SECRET ?? randomUUID();
 const githubClientSecret = process.env.GITHUB_CLIENT_SECRET ?? randomUUID();
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET ?? randomUUID();
 const polarAccessToken = process.env.POLAR_ACCESS_TOKEN ?? randomUUID();
 
 process.env.POLAR_WEBHOOK_SECRET = polarWebhookSecret;
 process.env.GITHUB_CLIENT_SECRET = githubClientSecret;
+process.env.GOOGLE_CLIENT_SECRET = googleClientSecret;
 process.env.POLAR_ACCESS_TOKEN = polarAccessToken;
 
 export default defineConfig({
@@ -23,6 +25,8 @@ export default defineConfig({
           APP_ENV: "test",
           GITHUB_CLIENT_ID: "github-client-test",
           GITHUB_CLIENT_SECRET: githubClientSecret,
+          GOOGLE_CLIENT_ID: "google-client-test.apps.googleusercontent.com",
+          GOOGLE_CLIENT_SECRET: googleClientSecret,
           PUBLIC_BASE_URL: "https://api.example/",
           PAID_CHECKOUT_ENABLED: "false",
           POLAR_ACCESS_TOKEN: polarAccessToken,

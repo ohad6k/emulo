@@ -255,6 +255,14 @@ describe("authenticated Worker integration", () => {
   });
 
   it("keeps exact methods on account and billing routes", async () => {
+    const googleStart = await SELF.fetch(
+      "https://api.example/v1/auth/google/start",
+      { redirect: "manual" },
+    );
+    expect(googleStart.status).toBe(302);
+    expect(googleStart.headers.get("location")).toContain(
+      "https://accounts.google.com/o/oauth2/v2/auth",
+    );
     expect(
       (
         await SELF.fetch("https://api.example/account", { method: "POST" })
@@ -291,5 +299,14 @@ describe("authenticated Worker integration", () => {
         })
       ).status,
     ).toBe(405);
+    for (const path of [
+      "/v1/auth/google/start",
+      "/v1/auth/google/callback",
+    ]) {
+      expect(
+        (await SELF.fetch(`https://api.example${path}`, { method: "POST" }))
+          .status,
+      ).toBe(405);
+    }
   });
 });
