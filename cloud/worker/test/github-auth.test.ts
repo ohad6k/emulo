@@ -40,6 +40,7 @@ function dependencies(
 
 async function seedFlow() {
   await createOAuthFlow(testEnv.DB, {
+    provider: "github",
     stateHash: await sha256(STATE),
     browserBindingHash: await sha256(BROWSER_BINDING),
     codeVerifier: VERIFIER,

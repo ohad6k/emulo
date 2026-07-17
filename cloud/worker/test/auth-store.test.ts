@@ -6,6 +6,7 @@ import {
   createBrowserSession,
   createOAuthFlow,
   resolveBrowserSession,
+  resolveOrCreateOAuthIdentity,
   resolveOrCreateGitHubIdentity,
   revokeBrowserSession,
 } from "../src/auth-store";
@@ -32,6 +33,7 @@ describe("auth store", () => {
 
   it("consumes a valid OAuth state exactly once", async () => {
     await createOAuthFlow(testEnv.DB, {
+      provider: "github",
       stateHash: "a".repeat(64),
       browserBindingHash: "1".repeat(64),
       codeVerifier: "v".repeat(43),
@@ -41,6 +43,7 @@ describe("auth store", () => {
     expect(
       await consumeOAuthFlow(
         testEnv.DB,
+        "github",
         "a".repeat(64),
         "1".repeat(64),
         "2026-07-16T12:05:00.000Z",
@@ -49,6 +52,7 @@ describe("auth store", () => {
     expect(
       await consumeOAuthFlow(
         testEnv.DB,
+        "github",
         "a".repeat(64),
         "1".repeat(64),
         "2026-07-16T12:05:01.000Z",
@@ -58,6 +62,7 @@ describe("auth store", () => {
 
   it("refuses and removes an expired OAuth state", async () => {
     await createOAuthFlow(testEnv.DB, {
+      provider: "github",
       stateHash: "b".repeat(64),
       browserBindingHash: "2".repeat(64),
       codeVerifier: "w".repeat(43),
@@ -67,6 +72,7 @@ describe("auth store", () => {
     expect(
       await consumeOAuthFlow(
         testEnv.DB,
+        "github",
         "b".repeat(64),
         "2".repeat(64),
         "2026-07-16T12:10:00.000Z",
@@ -84,6 +90,7 @@ describe("auth store", () => {
   it("rejects an OAuth state lifetime longer than ten minutes", async () => {
     await expect(
       createOAuthFlow(testEnv.DB, {
+        provider: "github",
         stateHash: "e".repeat(64),
         browserBindingHash: "3".repeat(64),
         codeVerifier: "x".repeat(43),
@@ -102,6 +109,7 @@ describe("auth store", () => {
 
   it("requires the browser binding without consuming another browser's flow", async () => {
     await createOAuthFlow(testEnv.DB, {
+      provider: "github",
       stateHash: "f".repeat(64),
       browserBindingHash: "4".repeat(64),
       codeVerifier: "y".repeat(43),
@@ -111,6 +119,7 @@ describe("auth store", () => {
     expect(
       await consumeOAuthFlow(
         testEnv.DB,
+        "github",
         "f".repeat(64),
         "5".repeat(64),
         "2026-07-16T12:05:00.000Z",
@@ -119,6 +128,7 @@ describe("auth store", () => {
     expect(
       await consumeOAuthFlow(
         testEnv.DB,
+        "github",
         "f".repeat(64),
         "4".repeat(64),
         "2026-07-16T12:05:00.000Z",
@@ -128,6 +138,7 @@ describe("auth store", () => {
 
   it("reclaims abandoned expired flows when a new flow starts", async () => {
     await createOAuthFlow(testEnv.DB, {
+      provider: "github",
       stateHash: "6".repeat(64),
       browserBindingHash: "7".repeat(64),
       codeVerifier: "z".repeat(43),
@@ -135,6 +146,7 @@ describe("auth store", () => {
       expiresAt: LATER,
     });
     await createOAuthFlow(testEnv.DB, {
+      provider: "github",
       stateHash: "8".repeat(64),
       browserBindingHash: "9".repeat(64),
       codeVerifier: "q".repeat(43),
@@ -148,6 +160,37 @@ describe("auth store", () => {
         .bind("6".repeat(64))
         .first(),
     ).toBeNull();
+  });
+
+  it("binds OAuth state to one provider without consuming it on mismatch", async () => {
+    await createOAuthFlow(testEnv.DB, {
+      provider: "google",
+      stateHash: "0".repeat(64),
+      browserBindingHash: "1".repeat(64),
+      codeVerifier: "v".repeat(43),
+      nonceHash: "2".repeat(64),
+      createdAt: NOW,
+      expiresAt: LATER,
+    });
+
+    expect(
+      await consumeOAuthFlow(
+        testEnv.DB,
+        "github",
+        "0".repeat(64),
+        "1".repeat(64),
+        "2026-07-16T12:05:00.000Z",
+      ),
+    ).toBeNull();
+    expect(
+      await consumeOAuthFlow(
+        testEnv.DB,
+        "google",
+        "0".repeat(64),
+        "1".repeat(64),
+        "2026-07-16T12:05:00.000Z",
+      ),
+    ).toEqual({ codeVerifier: "v".repeat(43), nonceHash: "2".repeat(64) });
   });
 
   it("reuses a GitHub identity without creating a second account", async () => {
@@ -169,6 +212,32 @@ describe("auth store", () => {
       "SELECT COUNT(*) AS count FROM accounts",
     ).first<{ count: number }>();
     expect(count?.count).toBe(1);
+  });
+
+  it("keeps Google and GitHub subjects in separate Emulo accounts", async () => {
+    const googleAccount = await resolveOrCreateOAuthIdentity(testEnv.DB, {
+      provider: "google",
+      providerUserId: "google-subject-123",
+      proposedAccountId: ACCOUNT_ID,
+      createdAt: NOW,
+    });
+    const githubAccount = await resolveOrCreateOAuthIdentity(testEnv.DB, {
+      provider: "github",
+      providerUserId: "12345678",
+      proposedAccountId: OTHER_ACCOUNT_ID,
+      createdAt: NOW,
+    });
+
+    expect(googleAccount).toBe(ACCOUNT_ID);
+    expect(githubAccount).toBe(OTHER_ACCOUNT_ID);
+    await expect(
+      resolveOrCreateOAuthIdentity(testEnv.DB, {
+        provider: "google",
+        providerUserId: "contains a space",
+        proposedAccountId: ACCOUNT_ID,
+        createdAt: NOW,
+      }),
+    ).rejects.toThrow("Google subject is invalid");
   });
 
   it("resolves only live hashed browser sessions", async () => {
@@ -225,6 +294,8 @@ describe("auth store", () => {
       "PRAGMA table_info(browser_sessions)",
     ).all<{ name: string }>();
     expect(flowColumns.results.map(({ name }) => name)).not.toContain("state");
+    expect(flowColumns.results.map(({ name }) => name)).toContain("provider");
+    expect(flowColumns.results.map(({ name }) => name)).toContain("nonce_hash");
     expect(sessionColumns.results.map(({ name }) => name)).not.toContain(
       "session_token",
     );

@@ -136,6 +136,7 @@ export async function beginGitHubOAuth(
   const browserBinding = base64Url(dependencies.randomBytes(32));
   const codeChallenge = base64Url(await digest(codeVerifier));
   await createOAuthFlow(env.DB, {
+    provider: "github",
     stateHash: await hexDigest(state),
     browserBindingHash: await hexDigest(browserBinding),
     codeVerifier,
@@ -231,6 +232,7 @@ export async function completeGitHubOAuth(
   const now = dependencies.now();
   const flow = await consumeOAuthFlow(
     env.DB,
+    "github",
     await hexDigest(state),
     await hexDigest(browserBinding),
     now.toISOString(),

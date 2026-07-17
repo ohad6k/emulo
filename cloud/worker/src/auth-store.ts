@@ -1,18 +1,24 @@
 const HASH_PATTERN = /^[a-f0-9]{64}$/;
 const ACCOUNT_PATTERN = /^acct_[a-f0-9]{32}$/;
 const GITHUB_USER_PATTERN = /^[0-9]{1,32}$/;
+const GOOGLE_SUBJECT_PATTERN = /^[A-Za-z0-9._~-]{1,255}$/;
 const VERIFIER_PATTERN = /^[A-Za-z0-9._~-]{43,128}$/;
 const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
+export type OAuthProvider = "github" | "google";
+
 interface OAuthFlowInput {
+  provider: OAuthProvider;
   stateHash: string;
   browserBindingHash: string;
   codeVerifier: string;
+  nonceHash?: string | null;
   createdAt: string;
   expiresAt: string;
 }
 
 interface IdentityInput {
+  provider: OAuthProvider;
   providerUserId: string;
   proposedAccountId: string;
   createdAt: string;
@@ -62,6 +68,13 @@ export async function createOAuthFlow(
   if (!VERIFIER_PATTERN.test(input.codeVerifier)) {
     throw new Error("OAuth code verifier is invalid");
   }
+  const nonceHash = input.nonceHash ?? null;
+  if (
+    (input.provider === "github" && nonceHash !== null) ||
+    (input.provider === "google" && (nonceHash === null || !HASH_PATTERN.test(nonceHash)))
+  ) {
+    throw new Error("OAuth nonce hash is invalid for provider");
+  }
   assertWindow(input.createdAt, input.expiresAt, 10 * 60 * 1000);
   await db.batch([
     db
@@ -69,13 +82,15 @@ export async function createOAuthFlow(
       .bind(input.createdAt),
     db.prepare(
       `INSERT INTO oauth_flows
-       (state_hash, browser_binding_hash, code_verifier, created_at, expires_at)
-       VALUES (?, ?, ?, ?, ?)`,
+       (state_hash, provider, browser_binding_hash, code_verifier, nonce_hash, created_at, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         input.stateHash,
+        input.provider,
         input.browserBindingHash,
         input.codeVerifier,
+        nonceHash,
         input.createdAt,
         input.expiresAt,
       ),
@@ -84,10 +99,11 @@ export async function createOAuthFlow(
 
 export async function consumeOAuthFlow(
   db: D1Database,
+  provider: OAuthProvider,
   stateHash: string,
   browserBindingHash: string,
   now: string,
-): Promise<{ codeVerifier: string } | null> {
+): Promise<{ codeVerifier: string; nonceHash?: string } | null> {
   if (
     !HASH_PATTERN.test(stateHash) ||
     !HASH_PATTERN.test(browserBindingHash)
@@ -98,27 +114,40 @@ export async function consumeOAuthFlow(
   const consumed = await db
     .prepare(
       `DELETE FROM oauth_flows
-       WHERE state_hash = ? AND browser_binding_hash = ? AND expires_at > ?
-       RETURNING code_verifier`,
+       WHERE state_hash = ? AND provider = ? AND browser_binding_hash = ? AND expires_at > ?
+       RETURNING code_verifier, nonce_hash`,
     )
-    .bind(stateHash, browserBindingHash, now)
-    .first<{ code_verifier: string }>();
+    .bind(stateHash, provider, browserBindingHash, now)
+    .first<{ code_verifier: string; nonce_hash: string | null }>();
   if (consumed !== null) {
-    return { codeVerifier: consumed.code_verifier };
+    return consumed.nonce_hash === null
+      ? { codeVerifier: consumed.code_verifier }
+      : { codeVerifier: consumed.code_verifier, nonceHash: consumed.nonce_hash };
   }
   await db
-    .prepare("DELETE FROM oauth_flows WHERE state_hash = ? AND expires_at <= ?")
-    .bind(stateHash, now)
+    .prepare(
+      "DELETE FROM oauth_flows WHERE state_hash = ? AND provider = ? AND expires_at <= ?",
+    )
+    .bind(stateHash, provider, now)
     .run();
   return null;
 }
 
-export async function resolveOrCreateGitHubIdentity(
+export async function resolveOrCreateOAuthIdentity(
   db: D1Database,
   input: IdentityInput,
 ): Promise<string> {
-  if (!GITHUB_USER_PATTERN.test(input.providerUserId)) {
+  if (
+    input.provider === "github" &&
+    !GITHUB_USER_PATTERN.test(input.providerUserId)
+  ) {
     throw new Error("GitHub user ID is invalid");
+  }
+  if (
+    input.provider === "google" &&
+    !GOOGLE_SUBJECT_PATTERN.test(input.providerUserId)
+  ) {
+    throw new Error("Google subject is invalid");
   }
   if (!ACCOUNT_PATTERN.test(input.proposedAccountId)) {
     throw new Error("proposed account ID is invalid");
@@ -127,9 +156,9 @@ export async function resolveOrCreateGitHubIdentity(
   const existing = await db
     .prepare(
       `SELECT account_id FROM oauth_identities
-       WHERE provider = 'github' AND provider_user_id = ?`,
+       WHERE provider = ? AND provider_user_id = ?`,
     )
-    .bind(input.providerUserId)
+    .bind(input.provider, input.providerUserId)
     .first<{ account_id: string }>();
   if (existing !== null) {
     return existing.account_id;
@@ -143,19 +172,19 @@ export async function resolveOrCreateGitHubIdentity(
       .prepare(
         `INSERT OR IGNORE INTO oauth_identities
          (provider, provider_user_id, account_id, created_at)
-         VALUES ('github', ?, ?, ?)`,
+         VALUES (?, ?, ?, ?)`,
       )
-      .bind(input.providerUserId, input.proposedAccountId, input.createdAt),
+      .bind(input.provider, input.providerUserId, input.proposedAccountId, input.createdAt),
   ]);
   const resolved = await db
     .prepare(
       `SELECT account_id FROM oauth_identities
-       WHERE provider = 'github' AND provider_user_id = ?`,
+       WHERE provider = ? AND provider_user_id = ?`,
     )
-    .bind(input.providerUserId)
+    .bind(input.provider, input.providerUserId)
     .first<{ account_id: string }>();
   if (resolved === null) {
-    throw new Error("GitHub identity could not be created");
+    throw new Error("OAuth identity could not be created");
   }
   if (resolved.account_id !== input.proposedAccountId) {
     await db
@@ -170,6 +199,13 @@ export async function resolveOrCreateGitHubIdentity(
       .run();
   }
   return resolved.account_id;
+}
+
+export async function resolveOrCreateGitHubIdentity(
+  db: D1Database,
+  input: Omit<IdentityInput, "provider">,
+): Promise<string> {
+  return resolveOrCreateOAuthIdentity(db, { ...input, provider: "github" });
 }
 
 export async function createBrowserSession(
