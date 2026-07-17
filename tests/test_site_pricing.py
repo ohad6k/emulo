@@ -41,6 +41,19 @@ class SitePricingTests(unittest.TestCase):
         self.assertNotIn("available today", pricing.lower())
         self.assertNotIn("unlimited", pricing.lower())
 
+    def test_pro_scope_is_concrete_and_privacy_bounded(self):
+        pricing = self.html.split('id="pricing"', 1)[1].split("</section>", 1)[0]
+        for text in (
+            "End-to-end encrypted",
+            "five devices",
+            "500 encrypted generations",
+            "64 MiB",
+            "Conflict-safe",
+            "30-day encrypted export",
+            "Raw session logs and decryption keys stay local",
+        ):
+            self.assertIn(text, pricing)
+
     def test_open_source_local_product_is_not_weakened(self):
         pricing = self.html.split('id="pricing"', 1)[1].split("</section>", 1)[0]
         self.assertIn("MIT", pricing)

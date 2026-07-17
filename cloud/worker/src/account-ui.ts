@@ -536,8 +536,8 @@ function activeSurface(entitlement: EntitlementSummary): string {
   return `<article class="account-surface" data-account-state="${entitlement.state}">
     <div class="surface-kicker"><span>Emulo account</span><span class="state-badge">Active</span></div>
     <h2>Emulo Pro is active</h2>
-    <p class="lede">Your subscription is connected. Autopilot controls remain in the local Emulo control center.</p>
-    <dl class="plan-facts"><div class="plan-fact"><dt>Plan</dt><dd>${productLabel(entitlement)}</dd></div><div class="plan-fact"><dt>Access</dt><dd>Cloud continuity</dd></div></dl>
+    <p class="lede">Your subscription is connected. Approved generations can move between paired devices while raw sessions and decryption keys stay local.</p>
+    <dl class="plan-facts"><div class="plan-fact"><dt>Plan</dt><dd>${productLabel(entitlement)}</dd></div><div class="plan-fact"><dt>Continuity</dt><dd>End-to-end encrypted</dd></div><div class="plan-fact"><dt>Device limit</dt><dd>5 paired devices</dd></div><div class="plan-fact"><dt>History</dt><dd>500 generations · 64 MiB</dd></div></dl>
     <div class="action-stack"><form data-portal-form><button class="primary-action" type="submit">Manage subscription</button></form><a class="secondary-action" href="/account">Refresh account</a></div>
     <p id="account-action-status" class="action-status" aria-live="polite"></p>
   </article>`;
@@ -574,7 +574,7 @@ function noneSurface(checkoutEnabled: boolean): string {
     : `<p class="fine-print">Emulo Pro is not available for purchase yet.</p>`;
   return `<article class="account-surface" data-account-state="none">
     <h2>${checkoutEnabled ? "Choose Emulo Pro" : "Your Emulo account is ready."}</h2>
-    <p class="lede">Your account is connected. The local Emulo engine remains available without a subscription.</p>
+    <p class="lede">Your account is connected. The local Emulo engine remains available without a subscription. Emulo Pro adds encrypted continuity, up to 5 devices, conflict-safe history, and a 30-day export window.</p>
     ${actions}
     <p id="account-action-status" class="action-status" aria-live="polite"></p>
   </article>`;

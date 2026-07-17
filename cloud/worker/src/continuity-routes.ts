@@ -1,5 +1,6 @@
 import type { Env } from "./contracts";
 import { authenticateDevice } from "./device-auth";
+import { authenticateBrowserSession } from "./session";
 import {
   canReadContinuity,
   canWriteContinuity,
@@ -271,4 +272,97 @@ export async function handleContinuityGeneration(
   if (stored === null) return json(404, { status: "not-found" });
   await touchDevice(env.DB, identity.deviceId, new Date().toISOString());
   return json(200, responseEnvelope(stored));
+}
+
+export async function handleContinuityExport(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const identity = await authenticated(request, env);
+  if (identity === null) return json(401, { status: "unauthorized" });
+  if (!(await canReadContinuity(env.DB, identity.accountId))) {
+    return json(403, { status: "recovery-window-ended" });
+  }
+  const rows = await env.DB.prepare(
+    `SELECT generation_id, parent_generation_id, ciphertext_sha256,
+            ciphertext_bytes, created_at
+     FROM continuity_generations
+     WHERE account_id = ?
+     ORDER BY received_at, generation_id
+     LIMIT 500`,
+  )
+    .bind(identity.accountId)
+    .all<{
+      generation_id: string;
+      parent_generation_id: string | null;
+      ciphertext_sha256: string;
+      ciphertext_bytes: number;
+      created_at: string;
+    }>();
+  const now = new Date().toISOString();
+  await touchDevice(env.DB, identity.deviceId, now);
+  return json(200, {
+    schemaVersion: "emulo.continuity-export/v1",
+    head: await currentHead(env.DB, identity.accountId),
+    generations: rows.results.map((row) => ({
+      generationId: row.generation_id,
+      parentGenerationId: row.parent_generation_id,
+      ciphertextSha256: row.ciphertext_sha256,
+      ciphertextBytes: row.ciphertext_bytes,
+      createdAt: row.created_at,
+    })),
+  });
+}
+
+export async function handleDeleteContinuity(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const session = await authenticateBrowserSession(request, env.DB, new Date());
+  if (session === null) return json(401, { status: "unauthorized" });
+  if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) {
+    return json(415, { status: "content-type-required" });
+  }
+  let confirmation: unknown;
+  try {
+    const raw = await request.text();
+    if (raw.length > 128) return json(413, { status: "payload-too-large" });
+    confirmation = JSON.parse(raw);
+  } catch {
+    return json(400, { status: "confirmation-required" });
+  }
+  if (
+    typeof confirmation !== "object" ||
+    confirmation === null ||
+    Array.isArray(confirmation) ||
+    JSON.stringify(Object.keys(confirmation).sort()) !==
+      JSON.stringify(["confirmation"]) ||
+    (confirmation as { confirmation?: unknown }).confirmation !==
+      "delete-cloud-continuity"
+  ) {
+    return json(400, { status: "confirmation-required" });
+  }
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM continuity_heads WHERE account_id = ?").bind(
+      session.accountId,
+    ),
+    env.DB.prepare("DELETE FROM continuity_generations WHERE account_id = ?").bind(
+      session.accountId,
+    ),
+    env.DB.prepare("DELETE FROM continuity_pairing_grants WHERE account_id = ?").bind(
+      session.accountId,
+    ),
+    env.DB.prepare("DELETE FROM continuity_devices WHERE account_id = ?").bind(
+      session.accountId,
+    ),
+  ]);
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+      "referrer-policy": "no-referrer",
+      "x-content-type-options": "nosniff",
+    },
+  });
 }

@@ -17,6 +17,8 @@ import {
   handleRevokeDevice,
 } from "./device-auth";
 import {
+  handleDeleteContinuity,
+  handleContinuityExport,
   handleContinuityGeneration,
   handleContinuityHead,
   handleContinuityUpload,
@@ -144,6 +146,14 @@ export default {
     if (url.pathname === "/v1/continuity/head") {
       if (request.method !== "GET") return json(405, { status: "method-not-allowed" });
       return handleContinuityHead(request, env);
+    }
+    if (url.pathname === "/v1/continuity/export") {
+      if (request.method !== "GET") return json(405, { status: "method-not-allowed" });
+      return handleContinuityExport(request, env);
+    }
+    if (url.pathname === "/v1/continuity") {
+      if (request.method !== "DELETE") return json(405, { status: "method-not-allowed" });
+      return handleDeleteContinuity(request, env);
     }
     if (url.pathname === "/v1/continuity/generations") {
       if (request.method !== "POST") return json(405, { status: "method-not-allowed" });

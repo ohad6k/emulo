@@ -25,10 +25,12 @@ Emulo's local engine stays MIT licensed and useful without an account. Your
 session extraction, redaction, caches, profile, and agent adapters remain on
 your machine unless you explicitly choose a model provider for mining.
 
-[Emulo Pro](https://emulo.vercel.app/#pricing) is the optional hosted product
-for managed continuity, cross-agent orchestration, recovery, and founding-beta
-support. It does not include model-provider tokens, and ending Pro access never
-disables local Emulo.
+[Emulo Pro](https://emulo.vercel.app/#pricing) is the optional hosted layer for
+client-encrypted approved-generation continuity across up to five devices,
+managed pairing and revocation, conflict-preserving history, and a bounded
+encrypted recovery/export window. Raw session evidence, decryption keys, and
+model-provider tokens do not enter the hosted service. Ending Pro access never
+disables local Emulo, its history, or rollback.
 
 The hosted Worker source is public so its authentication, checkout, webhook,
 and entitlement rules can be audited. Production credentials and customer

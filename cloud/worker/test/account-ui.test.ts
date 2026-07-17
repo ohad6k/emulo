@@ -63,6 +63,9 @@ describe("Emulo account UI", () => {
     expect(html).toContain('data-account-state="none"');
     expect(html).toContain("Your Emulo account is ready.");
     expect(html).toContain("Emulo Pro is not available for purchase yet.");
+    expect(html).toContain("encrypted continuity");
+    expect(html).toContain("up to 5 devices");
+    expect(html).toContain("30-day export window");
     expect(html).not.toContain("data-checkout-form");
   });
 
@@ -80,6 +83,8 @@ describe("Emulo account UI", () => {
     expect(html).toContain("Emulo Pro is active");
     expect(html).toContain("Monthly");
     expect(html).toContain("Manage subscription");
+    expect(html).toContain("End-to-end encrypted");
+    expect(html).toContain("5 paired devices");
     expect(html).toContain("data-portal-form");
     expect(html).not.toContain("data-checkout-form");
     expect(html).not.toContain("Polar");
