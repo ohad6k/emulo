@@ -11,6 +11,7 @@ import type { Env } from "./contracts";
 import { beginGitHubOAuth, completeGitHubOAuth } from "./github-auth";
 import { handlePolarWebhook } from "./polar";
 import { handlePolarCheckout, handlePolarPortal } from "./polar-client";
+import emuloIcon from "../../../assets/emulo-oauth.png";
 
 function json(status: number, body: unknown): Response {
   return Response.json(body, {
@@ -31,6 +32,18 @@ export default {
       return json(200, {
         service: "emulo-autopilot-api",
         status: "ok",
+      });
+    }
+    if (url.pathname === "/emulo.png") {
+      if (request.method !== "GET") {
+        return json(405, { status: "method-not-allowed" });
+      }
+      return new Response(emuloIcon, {
+        headers: {
+          "cache-control": "public, max-age=86400, immutable",
+          "content-type": "image/png",
+          "x-content-type-options": "nosniff",
+        },
       });
     }
     if (url.pathname === "/account") {

@@ -148,6 +148,21 @@ describe("authenticated Worker integration", () => {
     expect(body).not.toMatch(/accountId|account_id|provider|subscription|customer/i);
   });
 
+  it("serves the optimized real Emulo icon with immutable headers", async () => {
+    const mark = await SELF.fetch("https://api.example/emulo.png");
+    expect(mark.status).toBe(200);
+    expect(mark.headers.get("content-type")).toBe("image/png");
+    expect(mark.headers.get("cache-control")).toBe(
+      "public, max-age=86400, immutable",
+    );
+    expect((await mark.arrayBuffer()).byteLength).toBeGreaterThan(100_000);
+    expect(
+      (
+        await SELF.fetch("https://api.example/emulo.png", { method: "POST" })
+      ).status,
+    ).toBe(405);
+  });
+
   it("renders webhook-confirmed active account and receipt states", async () => {
     await insertActiveEntitlement();
 
