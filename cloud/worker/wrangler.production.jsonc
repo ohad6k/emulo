@@ -3,7 +3,8 @@
   "name": "emulo-production",
   "main": "src/index.ts",
   "rules": [
-    { "type": "Data", "globs": ["**/*.png"], "fallthrough": true }
+    { "type": "Data", "globs": ["**/*.png"], "fallthrough": true },
+    { "type": "Text", "globs": ["**/*.html", "**/*.css"], "fallthrough": true }
   ],
   "compatibility_date": "2026-07-16",
   "compatibility_flags": ["nodejs_compat"],

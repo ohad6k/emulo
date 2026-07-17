@@ -8,6 +8,7 @@ import {
 } from "./account-ui";
 import type { Env } from "./contracts";
 import { beginGitHubOAuth, completeGitHubOAuth } from "./github-auth";
+import { legalStyles, renderWorkerPolicy } from "./legal-pages";
 import { handlePolarWebhook } from "./polar";
 import { handlePolarCheckout, handlePolarPortal } from "./polar-client";
 import emuloIcon from "../../../assets/emulo-oauth.png";
@@ -33,7 +34,7 @@ export default {
         status: "ok",
       });
     }
-    if (url.pathname === "/emulo.png") {
+    if (url.pathname === "/emulo.png" || url.pathname === "/assets/emulo.png") {
       if (request.method !== "GET") {
         return json(405, { status: "method-not-allowed" });
       }
@@ -44,6 +45,22 @@ export default {
           "x-content-type-options": "nosniff",
         },
       });
+    }
+    if (url.pathname === "/legal.css") {
+      if (request.method !== "GET") {
+        return json(405, { status: "method-not-allowed" });
+      }
+      return legalStyles();
+    }
+    if (
+      url.pathname === "/privacy.html" ||
+      url.pathname === "/terms.html" ||
+      url.pathname === "/refunds.html"
+    ) {
+      if (request.method !== "GET") {
+        return json(405, { status: "method-not-allowed" });
+      }
+      return renderWorkerPolicy(url.pathname);
     }
     if (url.pathname === "/account") {
       if (request.method !== "GET") {

@@ -172,6 +172,28 @@ describe("authenticated Worker integration", () => {
     ).toBe(405);
   });
 
+  it("serves every customer policy before authentication", async () => {
+    for (const path of ["/privacy.html", "/terms.html", "/refunds.html"]) {
+      const response = await SELF.fetch(`https://api.example${path}`);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toBe(
+        "text/html; charset=utf-8",
+      );
+      expect(response.headers.get("content-security-policy")).toContain(
+        "default-src 'self'",
+      );
+      expect(await response.text()).toContain("ohadkrispin@gmail.com");
+      expect(
+        (
+          await SELF.fetch(`https://api.example${path}`, { method: "POST" })
+        ).status,
+      ).toBe(405);
+    }
+    const styles = await SELF.fetch("https://api.example/legal.css");
+    expect(styles.status).toBe(200);
+    expect(styles.headers.get("content-type")).toBe("text/css; charset=utf-8");
+  });
+
   it("renders webhook-confirmed active account and receipt states", async () => {
     await insertActiveEntitlement();
 
