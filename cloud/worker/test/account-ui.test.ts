@@ -59,6 +59,22 @@ describe("Emulo account UI", () => {
     }
   });
 
+  it("hides Google and the provider divider until Google OAuth is configured", async () => {
+    const signedOut = {
+      authenticated: false,
+      environment: "production",
+      checkoutEnabled: false,
+    } as const;
+    const accountHtml = await body(renderAccountPage(signedOut, { googleEnabled: false }));
+    const paymentHtml = await body(renderPaymentPage(signedOut, { googleEnabled: false }));
+
+    for (const html of [accountHtml, paymentHtml]) {
+      expect(html).toContain("Continue with GitHub");
+      expect(html).not.toContain("Continue with Google");
+      expect(html).not.toContain('class="provider-divider"');
+    }
+  });
+
   it("keeps founding checkout absent while the gate is disabled", async () => {
     const html = await body(renderAccountPage(status("none")));
     expect(html).toContain('data-account-state="none"');

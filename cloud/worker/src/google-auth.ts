@@ -71,7 +71,7 @@ function publicBase(env: Env): URL | null {
   }
 }
 
-function configurationValid(env: Env): env is Env & {
+export function isGoogleOAuthConfigured(env: Env): env is Env & {
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
 } {
@@ -170,7 +170,7 @@ export async function beginGoogleOAuth(
   env: Env,
   dependencies: GoogleAuthDependencies = defaultDependencies,
 ): Promise<Response> {
-  if (!configurationValid(env)) return safeResponse(503, "Google sign-in is not available yet.");
+  if (!isGoogleOAuthConfigured(env)) return safeResponse(503, "Google sign-in is not available yet.");
   const now = dependencies.now();
   const state = base64Url(dependencies.randomBytes(32));
   const codeVerifier = base64Url(dependencies.randomBytes(32));
@@ -213,7 +213,7 @@ export async function completeGoogleOAuth(
   env: Env,
   dependencies: GoogleAuthDependencies = defaultDependencies,
 ): Promise<Response> {
-  if (!configurationValid(env)) {
+  if (!isGoogleOAuthConfigured(env)) {
     return clearFlowCookie(safeResponse(503, "Google sign-in is not available yet."));
   }
   const url = new URL(request.url);

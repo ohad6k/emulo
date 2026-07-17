@@ -8,7 +8,11 @@ import {
 } from "./account-ui";
 import type { Env } from "./contracts";
 import { beginGitHubOAuth, completeGitHubOAuth } from "./github-auth";
-import { beginGoogleOAuth, completeGoogleOAuth } from "./google-auth";
+import {
+  beginGoogleOAuth,
+  completeGoogleOAuth,
+  isGoogleOAuthConfigured,
+} from "./google-auth";
 import { legalStyles, renderWorkerPolicy } from "./legal-pages";
 import {
   handleListDevices,
@@ -81,7 +85,9 @@ export default {
         return json(405, { status: "method-not-allowed" });
       }
       try {
-        return renderAccountPage(await resolveAccountStatus(request, env));
+        return renderAccountPage(await resolveAccountStatus(request, env), {
+          googleEnabled: isGoogleOAuthConfigured(env),
+        });
       } catch {
         return unavailablePage();
       }
@@ -103,7 +109,9 @@ export default {
         return json(405, { status: "method-not-allowed" });
       }
       try {
-        return renderPaymentPage(await resolveAccountStatus(request, env));
+        return renderPaymentPage(await resolveAccountStatus(request, env), {
+          googleEnabled: isGoogleOAuthConfigured(env),
+        });
       } catch {
         return unavailablePage();
       }

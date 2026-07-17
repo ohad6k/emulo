@@ -616,13 +616,22 @@ function configureContinuityControls() {
 configureContinuityControls();
 void pollPaymentStatus();`;
 
-function providerActions(): string {
-  return `<div class="provider-actions">
-    <a class="provider-button provider-google" href="/v1/auth/google/start">
+export interface AccountRenderOptions {
+  googleEnabled: boolean;
+}
+
+const DEFAULT_RENDER_OPTIONS: AccountRenderOptions = { googleEnabled: true };
+
+function providerActions({ googleEnabled }: AccountRenderOptions): string {
+  const googleAction = googleEnabled
+    ? `<a class="provider-button provider-google" href="/v1/auth/google/start">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M21.6 12.23c0-.71-.06-1.24-.2-1.8H12v3.4h5.52a4.72 4.72 0 0 1-2.05 3.1v2.2h3.32c1.94-1.79 3.06-4.43 3.06-7.57z"/><path fill="#34a853" d="M12 22c2.77 0 5.1-.91 6.79-2.48l-3.32-2.58c-.92.62-2.1.99-3.47.99-2.67 0-4.93-1.8-5.74-4.23H2.83v2.66A10.26 10.26 0 0 0 12 22z"/><path fill="#fbbc05" d="M6.26 13.7A6.17 6.17 0 0 1 5.94 12c0-.59.1-1.16.32-1.7V7.64H2.83A10.02 10.02 0 0 0 1.75 12c0 1.61.39 3.14 1.08 4.36z"/><path fill="#ea4335" d="M12 6.07c1.5 0 2.84.52 3.9 1.52l2.96-2.95C17.1 3 14.77 2 12 2a10.26 10.26 0 0 0-9.17 5.64l3.43 2.66C7.07 7.87 9.33 6.07 12 6.07z"/></svg>
       <span>Continue with Google</span>
     </a>
-    <span class="provider-divider">or</span>
+    <span class="provider-divider">or</span>`
+    : "";
+  return `<div class="provider-actions">
+    ${googleAction}
     <a class="provider-button provider-github" href="/v1/auth/github/start">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.61-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.03A9.6 9.6 0 0 1 12 7.7a9.6 9.6 0 0 1 2.5.34c1.91-1.3 2.75-1.03 2.75-1.03.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.86V21c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
       <span>Continue with GitHub</span>
@@ -754,7 +763,10 @@ function noneSurface(checkoutEnabled: boolean): string {
   </article>`;
 }
 
-export function renderAccountPage(status: AccountStatus): Response {
+export function renderAccountPage(
+  status: AccountStatus,
+  options: AccountRenderOptions = DEFAULT_RENDER_OPTIONS,
+): Response {
   if (!status.authenticated) {
     return htmlDocument(
       "Emulo account",
@@ -762,7 +774,7 @@ export function renderAccountPage(status: AccountStatus): Response {
       `<article class="account-surface" data-account-state="signed-out">
         <h1>Sign in to Emulo</h1>
         <p class="lede">Access your account and manage Emulo Pro.</p>
-        ${providerActions()}
+        ${providerActions(options)}
         <p class="identity-note">Emulo uses your sign-in provider only to verify your identity.</p>
       </article>`,
     );
@@ -781,12 +793,12 @@ export function renderAccountPage(status: AccountStatus): Response {
   return htmlDocument("Emulo account", status.environment, noneSurface(status.checkoutEnabled));
 }
 
-function paymentSurface(status: AccountStatus): string {
+function paymentSurface(status: AccountStatus, options: AccountRenderOptions): string {
   if (!status.authenticated) {
     return `<article class="account-surface" data-payment-state="verifying" data-authenticated="false" aria-live="polite">
       <h2 data-status-title>Sign in to continue</h2>
       <p class="lede" data-status-copy>Use the same Emulo account you selected for your subscription.</p>
-      ${providerActions()}
+      ${providerActions(options)}
     </article>`;
   }
   if (status.entitlement.state === "active" || status.entitlement.state === "trialing") {
@@ -818,8 +830,11 @@ function paymentSurface(status: AccountStatus): string {
   </article>`;
 }
 
-export function renderPaymentPage(status: AccountStatus): Response {
-  return htmlDocument("Verify Emulo access", status.environment, paymentSurface(status));
+export function renderPaymentPage(
+  status: AccountStatus,
+  options: AccountRenderOptions = DEFAULT_RENDER_OPTIONS,
+): Response {
+  return htmlDocument("Verify Emulo access", status.environment, paymentSurface(status, options));
 }
 
 export function unavailablePage(): Response {
