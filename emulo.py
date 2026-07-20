@@ -3882,7 +3882,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-EMULO_VERSION = "0.5.0"
+EMULO_VERSION = "0.6.0"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 
 def mcp_tool_definitions():

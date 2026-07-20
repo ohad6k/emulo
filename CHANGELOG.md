@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.6.0 - 2026-07-20
+
+### Added
+
+- **Repeated procedures are mined as workflows.** Beyond taste, mining now captures how you build: the order you fix things in, what you regenerate before what, what you check before calling a step done. A sequence demonstrated in a single session stays context; a real procedure needs two distinct sessions like every other rule. Validated procedures group under a `## Workflow` heading in the domain profile, each rule stating its ordered steps in sequence order, carried through `draft-manifest.json` with their evidence IDs at the same evidence bar as every other rule. This widens what a profile can express, hence the minor bump.
+- **The bootstrap offers the native plugin once mining finishes.** Previously it installed the core profile and stopped, so anyone following the site never reached the namespaced `emulo:` skills, and nothing in the repository ran a plugin install at all. New step 9 offers it once after the run reports, asks first, takes a no, and skips the offer when the host already has the plugin. It pins an exact release tag rather than `main`. Codex can run the install itself; in Claude Code `/plugin` is typed by the user and an agent cannot execute it, so the agent prints the two exact lines to paste instead.
+- `pip install emulo` is documented in the Quickstart and on the site. The published package was already on PyPI but appeared in no install instructions, so `git clone` stayed the dominant install path.
+- The site gained a questions section with `FAQPage` structured data, covering how this differs from agent memory, whether session logs leave your machine, supported agents, and cost.
+
+### Fixed
+
+- **The install command on the site prompted instead of installing.** The site shipped `npx skills add ohad6k/emulo` while the README shipped `ohad6k/emulo@emulo`. The skills CLI scans both `skills/` and `.agents/skills/`, so this repository exposes six skills to it and only auto-selects when it finds exactly one. The bare form fell through to a multiselect asking the user to pick, with no indication which entry was the bootstrap. This regressed on 2026-07-10 when the routed skills landed and went from one skill to five, and the docs were never updated. All four places on the page plus `llms.txt` now carry the explicit form.
+
+### Verified
+
+- Full suite passes with the widened evidence contract and 0.6.0 pinned across `emulo.py`, all four plugin manifests, the marketplace manifest, `server.json`, and the bootstrap runtime.
+- The `v0.6.0` bootstrap runtime pins `emulo.py` to SHA-256 `80fa3046370e6f5f` (prefix) and `MINING_PROMPT.md` to `ee22077c2cda3c1c` (prefix); full digests in `.agents/skills/emulo/runtime.json`.
+- `pip install emulo` checked end to end from a clean virtualenv against the published package rather than the local checkout: the `emulo` entry point runs, and `emulo mcp` answers `initialize` and `tools/list` over stdio with the `load_emulo_profile` tool.
+
 ## 0.5.0 - 2026-07-16
 
 ### Changed

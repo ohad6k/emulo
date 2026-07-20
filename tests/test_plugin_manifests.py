@@ -69,7 +69,7 @@ class PluginManifestTest(unittest.TestCase):
             self.assertTrue((ROOT / relative).is_dir(), relative)
 
     def test_patch_release_versions_match_across_public_surfaces(self):
-        expected = "0.5.0"
+        expected = "0.6.0"
         manifests = [
             ROOT / ".github" / "plugin" / "plugin.json",
             ROOT / ".claude-plugin" / "plugin.json",

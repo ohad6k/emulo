@@ -696,6 +696,13 @@ class ReportCacheTest(unittest.TestCase):
         self.assertIn("real bottleneck is trust recovery", prompt)
         self.assertNotIn("18/20", prompt)
 
+    def test_mining_prompt_mines_repeated_procedures(self):
+        prompt = (ROOT / "MINING_PROMPT.md").read_text(encoding="utf-8")
+        self.assertIn("repeated procedure", prompt)
+        self.assertIn("ordered steps", prompt)
+        self.assertIn("## Workflow", prompt)
+        self.assertIn("same rule shape and the same evidence bar", prompt)
+
     def test_validate_report_command_is_read_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

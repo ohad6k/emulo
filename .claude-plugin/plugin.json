@@ -1,7 +1,7 @@
 {
   "name": "emulo",
   "displayName": "Emulo",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Mine real AI coding sessions into a bounded, evidence-backed personal layer.",
   "author": {"name": "Ohad"},
   "homepage": "https://github.com/ohad6k/emulo",

@@ -29,6 +29,8 @@ Every `write` evidence item must also carry a `register` classifying the voice b
 
 Classify from the receipts, never from guesswork: who the text addresses, the platform it targets, and the artifact type. `register` is valid only on `write` evidence.
 
+Beyond taste, capture how the user builds. A **repeated procedure** is a sequence the user runs or enforces across sessions: the order they fix things in, what they regenerate before what, what they check before calling a step done. Record it as a normal evidence item whose `instruction` names the sequence as **ordered steps** ("regenerates voiceover, then re-times captions, then renders, then verifies the render") and whose `implication` states the order an agent must follow. Procedure evidence obeys every rule above: verbatim dated quotes, no invention, and a sequence demonstrated in only one session is context, not a procedure.
+
 Return JSON only. The complete serialized report must be no more than 8,192 bytes, contain at most 12 evidence items, and use no quote longer than 200 characters.
 
 ```json
@@ -106,6 +108,8 @@ draft-manifest.json
 Use exact profile frontmatter names: `emulo-work-profile`, `emulo-design-profile`, `emulo-write-profile`, and `emulo-video-profile`. Every active profile must contain each installed rule and its operational implication.
 
 An active `you-writer.md` groups its rules under exact register headings: `## Voice laws` for `shared` rules, `## Casual register` for `casual`, and `## Professional register` for `professional`. Omit a heading only when no rule carries that register. Every write rule in `draft-manifest.json` carries a `register` following the reducer register rules: a rule keeps its evidence's single shared register, and mixed-register evidence reduces to `shared`.
+
+When a domain's validated evidence includes repeated procedures, group those rules in that profile under a `## Workflow` heading, each rule stating its ordered steps in sequence order. Workflow rules use the **same rule shape and the same evidence bar** as every other rule: two distinct sessions, strata when available, listed in `draft-manifest.json` with their evidence IDs. Omit the heading when no procedure passes. Never promote a one-session sequence into a workflow.
 
 `draft-manifest.json` uses this shape:
 

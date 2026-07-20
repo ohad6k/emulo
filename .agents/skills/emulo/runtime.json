@@ -1,13 +1,13 @@
 {
  "schema_version": "1",
- "version": "0.5.0",
- "ref": "v0.5.0",
+ "version": "0.6.0",
+ "ref": "v0.6.0",
  "files": {
   "emulo.py": {
-   "sha256": "a5a7d3f3a8b968f8cc174fd2745d87c3ca50f5cfdd40740a626c6a2525d0b4b7"
+   "sha256": "80fa3046370e6f5f1b3190a70421a55a21fe54d53e576c8bef4319b9084a64f9"
   },
   "MINING_PROMPT.md": {
-   "sha256": "8d31170cb94b0b42be4936c977b986e141194e8633fdd0e33fbd32b5b0c91eac"
+   "sha256": "ee22077c2cda3c1c361eeefba6f6d50ab6831e14836d6de87fd8aac72b0d18f7"
   }
  }
 }
