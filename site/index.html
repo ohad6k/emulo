@@ -490,7 +490,7 @@ footer a:hover{color:var(--red)}
           <span class="star">★</span> <span>Star on GitHub</span> <span class="count" id="star-count"></span>
         </a>
         <span class="cmd" title="Copy install command">
-          <span><span class="dollar">$</span> npx skills add ohad6k/emulo</span>
+          <span><span class="dollar">$</span> npx skills add ohad6k/emulo@emulo</span>
           <button aria-label="Copy command">Copy</button>
         </span>
       </div>
@@ -662,7 +662,7 @@ footer a:hover{color:var(--red)}
         <span class="star">★</span> <span>Star on GitHub</span> <span class="count" id="star-count-2"></span>
       </a>
       <span class="cmd" title="Copy install command">
-        <span><span class="dollar">$</span> npx skills add ohad6k/emulo</span>
+        <span><span class="dollar">$</span> npx skills add ohad6k/emulo@emulo</span>
         <button aria-label="Copy command">Copy</button>
       </span>
     </div>
@@ -701,7 +701,7 @@ fetch("https://api.github.com/repos/ohad6k/emulo")
   .catch(() => {});
 
 // copy command: whole chip is clickable, selection fallback if clipboard is blocked
-const CMD = "npx skills add ohad6k/emulo";
+const CMD = "npx skills add ohad6k/emulo@emulo";
 document.querySelectorAll(".cmd").forEach(chip => {
   const btn = chip.querySelector("button");
   chip.addEventListener("click", e => {
@@ -791,7 +791,7 @@ addEventListener("scroll", () => {
   const cv = document.getElementById("ghost");
   const ctx = cv.getContext("2d");
   const FRAGS = [
-    "$ npx skills add ohad6k/emulo",
+    "$ npx skills add ohad6k/emulo@emulo",
     "done means it runs live",
     "fix the one thing",
     "show me, don't tell me",
