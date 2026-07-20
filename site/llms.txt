@@ -6,7 +6,7 @@ Emulo is open source (MIT), runs locally, and redacts secrets before writing any
 
 It is not memory. Memory is what you told the model. Emulo mines what your work already proved about you, which is why it reads raw session logs rather than a CLAUDE.md or rules file.
 
-Install: `npx skills add ohad6k/emulo`
+Install: `npx skills add ohad6k/emulo` to install it as an agent skill, or `pip install emulo` to run the CLI yourself. The published PyPI package also serves the MCP server via `emulo mcp`.
 
 ## Links
 - [GitHub repository](https://github.com/ohad6k/emulo): source, README, and install instructions

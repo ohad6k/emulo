@@ -141,6 +141,16 @@ run emulo
 
 That installs the bootstrap and creates a read-only full-history mining plan. Your agent must show the cost and wait for approval before model work. It does not install native namespaced routing.
 
+### Install the CLI
+
+If you'd rather run Emulo yourself instead of through an agent:
+
+```bash
+pip install emulo
+```
+
+That puts `emulo` on your path. `emulo` runs the miner, `emulo --dry-run` prints the read-only plan first, and `emulo mcp` runs the MCP server below. `uv tool install emulo` works the same way, and `uvx emulo` runs it without installing.
+
 ### Native Codex plugin
 
 The native plugin adds `emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, and `emulo:video`:

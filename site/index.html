@@ -38,6 +38,50 @@
 }
 </script>
 
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I make my AI agent write code the way I do?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Give it evidence instead of instructions. Your session logs already record how you decide, what you reject, and what you call done. Emulo reads those logs, mines the repeated patterns, and writes a you.md your agent loads before every task, so it starts from your standards instead of a blank slate." }
+    },
+    {
+      "@type": "Question",
+      "name": "How is this different from agent memory?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Memory stores what you told the model. Emulo mines what your work already proved about you, which is a different input entirely. That is why it reads raw session logs and not your CLAUDE.md. The rules you remembered to write down on a good day are a small and flattering subset of how you actually work." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is this just a CLAUDE.md or a rules file?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. A rules file is written by hand, so it captures intentions. Emulo's profile is derived from real sessions, with dated receipts pointing back at the ones that support each trait, so you can check any claim it makes about you." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do my session logs leave my machine?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Session extraction, redaction, caching, and the profile itself all stay local, and secrets are redacted before anything is written. The one exception is mining: if you point it at a hosted model, the selected evidence goes to that provider. Choosing a local model keeps the whole run on your machine." }
+    },
+    {
+      "@type": "Question",
+      "name": "Which coding agents does it work with?",
+      "acceptedAnswer": { "@type": "Answer", "text": "It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box, and installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load the profile before a task." }
+    },
+    {
+      "@type": "Question",
+      "name": "What does it cost to run?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The tool is MIT licensed and free. Mining spends model calls to read your history, so Emulo prints a read-only plan with the cost first and waits for your approval before any model work starts." }
+    },
+    {
+      "@type": "Question",
+      "name": "How much history do I need?",
+      "acceptedAnswer": { "@type": "Answer", "text": "It mines whatever you have. Patterns get sharper with more sessions, since a trait only earns a place in the profile when separate sessions keep supporting it. The profile on this page came from 1,656 sessions over nine months." }
+    }
+  ]
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -205,6 +249,25 @@ body.loaded .plate .tick{animation:tick 1s cubic-bezier(.7,0,.2,1) .1s both}
   transition:color .2s ease;
 }
 .cmd:hover button{color:var(--red)}
+.alt-cmd{
+  margin-top:14px;font-family:var(--mono);font-size:12.5px;
+  letter-spacing:.02em;color:var(--ink-faint);
+}
+.alt-cmd code{font-family:var(--mono);color:var(--ink-soft);font-size:12.5px}
+
+/* ---------- faq ---------- */
+.faq .q-list{border-top:1px solid var(--rule)}
+.faq .q{border-bottom:1px solid var(--rule);padding:26px 0}
+.faq .q h3{
+  font-family:var(--serif);font-weight:600;font-size:21px;
+  line-height:1.3;margin-bottom:10px;color:var(--ink);
+}
+.faq .q p{font-size:16.5px;color:var(--ink-soft);max-width:72ch}
+.faq .q p + p{margin-top:10px}
+.faq .q code{
+  font-family:var(--mono);font-size:14px;
+  background:var(--paper-2);border:1px solid var(--rule);padding:1px 5px;
+}
 
 /* ---------- stat strip ---------- */
 .stats{border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);position:relative;z-index:3;background:var(--paper)}
@@ -431,6 +494,7 @@ footer a:hover{color:var(--red)}
           <button aria-label="Copy command">Copy</button>
         </span>
       </div>
+      <p class="alt-cmd rise d3">or <code>pip install emulo</code> to run it yourself</p>
     </div>
     <div class="hero-art">
       <div class="art" id="hero-art">
@@ -551,6 +615,43 @@ footer a:hover{color:var(--red)}
   </div>
 </div>
 
+<section class="faq" id="faq">
+  <div class="wrap">
+    <div class="sec-head reveal"><span class="num">IV.</span><h2>Questions.</h2></div>
+    <div class="q-list reveal">
+      <div class="q">
+        <h3>How do I make my AI agent write code the way I do?</h3>
+        <p>Give it evidence instead of instructions. Your session logs already record how you decide, what you reject, and what you call done. Emulo reads those logs, mines the repeated patterns, and writes a <code>you.md</code> your agent loads before every task, so it starts from your standards instead of a blank slate.</p>
+      </div>
+      <div class="q">
+        <h3>How is this different from agent memory?</h3>
+        <p>Memory stores what you told the model. Emulo mines what your work already proved about you, which is a different input entirely.</p>
+        <p>That is why it reads raw session logs and not your <code>CLAUDE.md</code>. The rules you remembered to write down on a good day are a small and flattering subset of how you actually work.</p>
+      </div>
+      <div class="q">
+        <h3>Is this just a CLAUDE.md or a rules file?</h3>
+        <p>No. A rules file is written by hand, so it captures intentions. Emulo's profile is derived from real sessions, with dated receipts pointing back at the ones that support each trait, so you can check any claim it makes about you.</p>
+      </div>
+      <div class="q">
+        <h3>Do my session logs leave my machine?</h3>
+        <p>Session extraction, redaction, caching, and the profile itself all stay local, and secrets are redacted before anything is written. The one exception is mining: if you point it at a hosted model, the selected evidence goes to that provider. Choosing a local model keeps the whole run on your machine.</p>
+      </div>
+      <div class="q">
+        <h3>Which coding agents does it work with?</h3>
+        <p>It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box, and installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load the profile before a task.</p>
+      </div>
+      <div class="q">
+        <h3>What does it cost to run?</h3>
+        <p>The tool is MIT licensed and free. Mining spends model calls to read your history, so Emulo prints a read-only plan with the cost first and waits for your approval before any model work starts.</p>
+      </div>
+      <div class="q">
+        <h3>How much history do I need?</h3>
+        <p>It mines whatever you have. Patterns get sharper with more sessions, since a trait only earns a place in the profile when separate sessions keep supporting it. The profile on this page came from 1,656 sessions over nine months.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="final">
   <div class="wrap">
     <img class="engrave reveal" src="assets/emulo.png" alt="">
@@ -565,6 +666,7 @@ footer a:hover{color:var(--red)}
         <button aria-label="Copy command">Copy</button>
       </span>
     </div>
+    <p class="alt-cmd reveal">or <code>pip install emulo</code> to run it yourself</p>
     <div class="barcode reveal" aria-hidden="true"></div>
   </div>
 </section>
