@@ -421,6 +421,14 @@ h2{
 .pro-plan a:hover{background:var(--paper-2);color:var(--ink)}
 .pro-plan a:active{transform:translateY(1px)}
 
+/* ---- TEMPORARY: Pro checkout not open yet (2026-07-20) ----
+   CSS only, no markup touched, so it cannot collide with work in flight.
+   TO REVERT WHEN PRO GOES LIVE: delete this block. Nothing else changed. */
+.pro-plan a{pointer-events:none;color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.25);font-size:0}
+.pro-plan a::after{content:"Coming soon";font-size:10px;letter-spacing:.14em}
+.pro-plan a:hover{background:none;color:rgba(255,255,255,.5)}
+/* ---- END TEMPORARY ---- */
+
 /* works with — slow marquee */
 .works{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:24px 0;overflow:hidden;position:relative;z-index:3;background:var(--paper)}
 .works .lane{display:flex;width:max-content;animation:lane 28s linear infinite}
