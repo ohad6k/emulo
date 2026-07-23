@@ -311,7 +311,7 @@ python emulo.py --install you.md --target opencode
 
 | Surface | Status in this release |
 |---|---|
-| Codex native plugin | Proven locally with four namespaced skills |
+| Codex native plugin | Proven locally with five namespaced skills (`emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, `emulo:video`) |
 | Codex skills.sh bootstrap | Supported |
 | Claude Code skills.sh/direct adapter | Supported |
 | Claude native plugin | Not claimed; host unavailable during validation |
