@@ -2364,11 +2364,14 @@ def write_stats(result, out_dir):
     return stats
 
 def months_between(first_date, last_date):
+    # TypeError covers a reducer that emits JSON null (or any non-sliceable
+    # value) for a date: 0 means "unknown", and both card renderers already
+    # skip the months row when it is falsy, like every other missing stat.
     try:
         y1, m1 = int(first_date[:4]), int(first_date[5:7])
         y2, m2 = int(last_date[:4]), int(last_date[5:7])
         return max(1, (y2 - y1) * 12 + (m2 - m1) + 1)
-    except (ValueError, IndexError):
+    except (TypeError, ValueError, IndexError):
         return 0
 
 def fmt_tokens(n):
