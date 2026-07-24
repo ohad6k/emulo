@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -446,6 +447,35 @@ class AtomicProfileStoreTest(unittest.TestCase):
 
 
 class MigrationTest(unittest.TestCase):
+    def test_default_home_follows_the_collection_not_the_directory(self):
+        # An empty ~/.emulo says nothing about where the profile lives. Anything
+        # may create it, and reading it as the collection hides a ~/.ditto the
+        # user spent months mining.
+        cases = (
+            (("release-bundles",), ("profiles",), ".ditto"),
+            ((), ("profiles",), ".ditto"),
+            (("profiles",), ("profiles",), ".emulo"),
+            (("cache",), (), ".emulo"),
+            ((), (), ".emulo"),
+        )
+        for new_dirs, legacy_dirs, expected in cases:
+            with self.subTest(new=new_dirs, legacy=legacy_dirs):
+                with tempfile.TemporaryDirectory() as tmp:
+                    host_home = Path(tmp)
+                    for name in new_dirs:
+                        (host_home / ".emulo" / name).mkdir(parents=True)
+                    for name in legacy_dirs:
+                        (host_home / ".ditto" / name).mkdir(parents=True)
+                    with mock.patch.object(emulo, "HOME", str(host_home)), mock.patch.dict(
+                        os.environ,
+                        {"EMULO_HOME": "", "DITTO_HOME": ""},
+                        clear=False,
+                    ):
+                        self.assertEqual(
+                            str(host_home / expected),
+                            emulo.resolve_emulo_home(),
+                        )
+
     def test_migration_cli_stage_returns_json_without_cutover(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

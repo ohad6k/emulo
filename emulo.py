@@ -3103,13 +3103,25 @@ def resolve_out_dir(value=None):
 
 def resolve_emulo_home(value=None):
     # EMULO_HOME wins; DITTO_HOME (pre-rename) still honored; and an existing
-    # ~/.ditto keeps working in place when no ~/.emulo exists yet, so nobody's
-    # mined profile disappears after the rename. No data is moved.
+    # ~/.ditto keeps working in place while ~/.emulo holds no collection, so
+    # nobody's mined profile disappears after the rename. No data is moved.
+    # The test is what each home actually holds, not whether the directory
+    # exists: anything at all may create an empty ~/.emulo, and treating that
+    # as the collection hides a profile the user spent months building.
     raw = value or os.environ.get("EMULO_HOME") or os.environ.get("DITTO_HOME")
     if not raw:
         new_home = os.path.join(HOME, ".emulo")
         legacy_home = os.path.join(HOME, ".ditto")
-        if not os.path.isdir(new_home) and os.path.isdir(legacy_home):
+        collection_markers = ("active-profile.json", "profiles", "cache", "runs")
+        new_is_established = any(
+            os.path.exists(os.path.join(new_home, marker))
+            for marker in collection_markers
+        )
+        legacy_is_established = any(
+            os.path.exists(os.path.join(legacy_home, marker))
+            for marker in collection_markers
+        )
+        if legacy_is_established and not new_is_established:
             raw = legacy_home
         else:
             raw = new_home
@@ -3882,7 +3894,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-EMULO_VERSION = "0.5.0"
+EMULO_VERSION = "0.5.1"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 AUTOPILOT_HEAD_SCHEMA = "emulo.autopilot-head/v1"
 AUTOPILOT_GENERATION_SCHEMA = "emulo.autopilot-generation/v1"
