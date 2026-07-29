@@ -637,6 +637,30 @@ Expected: each image is 1080x1920; five non-empty WAV files exist.
 Use these exact primitives:
 
 ```css
+@font-face {
+  font-family: "Archivo Black";
+  src: url("../fonts/ArchivoBlack-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Evidence Mono";
+  src: url("../fonts/Consolas-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Evidence Mono";
+  src: url("../fonts/Consolas-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
 :root {
   --ink: #171714;
   --cream: #f7f2e8;
@@ -651,6 +675,9 @@ Use these exact primitives:
 }
 
 .premium-field {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background:
     radial-gradient(circle at 84% 10%, rgba(244, 180, 124, .72), transparent 34%),
     radial-gradient(circle at 12% 82%, rgba(255, 255, 255, .92), transparent 38%),
@@ -662,6 +689,7 @@ Use these exact primitives:
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 0;
   opacity: .16;
   background-image:
     linear-gradient(rgba(23, 23, 20, .06) 1px, transparent 1px),
@@ -671,6 +699,8 @@ Use these exact primitives:
 }
 
 .caption-pill {
+  position: relative;
+  z-index: 35;
   display: inline-flex;
   align-items: center;
   max-width: 820px;
@@ -684,6 +714,7 @@ Use these exact primitives:
 
 .editorial-art {
   position: absolute;
+  z-index: 1;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -692,6 +723,7 @@ Use these exact primitives:
 
 .character-anchor {
   position: absolute;
+  z-index: 20;
   right: -54px;
   bottom: 250px;
   width: 520px;
@@ -699,7 +731,14 @@ Use these exact primitives:
   transform-origin: 70% 100%;
 }
 
+.cta-active .character-anchor {
+  opacity: 0;
+  visibility: hidden;
+}
+
 .proof-card {
+  position: relative;
+  z-index: 30;
   border: 1px solid rgba(255, 255, 255, .12);
   border-radius: 30px;
   background: var(--proof);
@@ -717,6 +756,7 @@ Use these exact primitives:
 
 .resource-cta {
   position: absolute;
+  z-index: 40;
   left: 64px;
   right: 64px;
   bottom: 340px;
@@ -747,9 +787,10 @@ Use these exact primitives:
 
 .proof-source {
   position: absolute;
+  z-index: 35;
   left: 64px;
   right: 64px;
-  bottom: 108px;
+  bottom: 320px;
   color: var(--muted);
   font: 700 21px/1.25 "Evidence Mono", monospace;
 }
