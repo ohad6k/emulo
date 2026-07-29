@@ -215,6 +215,16 @@ footer a:hover{color:var(--red)}
 .get-open .arrow{font-size:15px;line-height:1}
 .get-aside{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-faint);line-height:1.7}
 
+/* Emulo is Windows-only. Someone on a Mac should learn that from the page,
+   not from unpacking 7.4 MB and finding a .cmd file inside. The button still
+   works -- people download on one machine for another -- it just stops being
+   the thing the page is pointing at. */
+.get-note{
+  margin:16px 0 0;padding:10px 14px;max-width:52ch;
+  border-left:3px solid var(--gold);background:var(--paper-2);
+  font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--ink-2);
+}
+
 /* ---------- the download dialog ---------- */
 /* A <dialog> rather than a div-with-a-backdrop: the browser gives the modal
    its own top layer, focus trapping, Escape-to-close and inertness of the page
@@ -264,6 +274,53 @@ footer a:hover{color:var(--red)}
 }
 .sheet-foot a{color:var(--ink-soft)}
 
+/* The kicker above the title carries the one piece of news -- the file is on
+   its way -- so the title can stay the product name and version. */
+.sheet-kicker{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--red);margin-bottom:6px;
+}
+/* What is actually arriving, named. A download screen that does not tell you
+   the filename leaves you guessing which of the four things in your downloads
+   folder to open. */
+.sheet-file{
+  margin:0 0 4px;padding:14px 16px;
+  border:1px solid var(--rule);background:var(--paper);
+}
+.sheet-file-name{
+  margin:0;font-family:var(--mono);font-size:13.5px;color:var(--ink);
+  overflow-wrap:anywhere;
+}
+.sheet-file-meta{margin:4px 0 0;font-family:var(--mono);font-size:12px;color:var(--ink-faint)}
+/* Browsers block programmatic downloads often enough -- pop-up heuristics, an
+   extension, a slow click -- that a screen saying "your download started" has
+   to carry the way to start it again. Otherwise the screen is a claim the page
+   cannot back up. */
+.sheet-again{margin:10px 0 0;font-family:var(--mono);font-size:12px;color:var(--ink-faint)}
+.sheet-again a{color:var(--red);text-decoration:underline;text-underline-offset:2px}
+
+/* A hash you cannot copy is a hash nobody checks, so both the checksum and the
+   command that produces it get a button. */
+.copy-row{
+  display:flex;align-items:stretch;gap:0;margin:10px 0 0;
+  border:1px solid var(--rule);background:var(--paper);
+}
+.copy-row code{
+  flex:1;min-width:0;padding:9px 11px;
+  font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--ink-soft);
+  overflow-wrap:anywhere;
+}
+.copy{
+  flex:none;align-self:stretch;
+  border:0;border-left:1px solid var(--rule);background:var(--paper-2);
+  padding:0 14px;cursor:pointer;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-faint);transition:color .18s ease,background .18s ease;
+}
+.copy:hover{background:var(--ink);color:var(--paper)}
+.copy:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
+.copy[data-copied="yes"]{background:var(--ink);color:var(--paper)}
+
 @media (max-width:900px){
   .hero{grid-template-columns:1fr;gap:8px;padding-top:0}
   .hero-art{order:-1}
@@ -296,7 +353,7 @@ footer a:hover{color:var(--red)}
   <div class="hero-copy">
     <p class="kicker">Emulo Pro</p>
     <h1>Download</h1>
-    <p class="lead">Free to download. You sign in once on first run, and after that Emulo runs on your machine — no network needed, nothing uploaded.</p>
+    <p class="lead">Free to download. You sign in once on first run, and after that Emulo runs on your machine with no network needed and nothing uploaded.</p>
 
     <!--
       The action and everything about the build come from /releases.json, which
@@ -325,7 +382,7 @@ footer a:hover{color:var(--red)}
 
     <h2>2. Install</h2>
     <p>Unpack the zip and double-click <strong>Install Emulo.cmd</strong>. It installs into your Windows account. No administrator access is needed.</p>
-    <p>If it cannot find Python 3.11, install Python 3.11 and run it again. Pro checks the integrity of every file it reads, and Python 3.13 on Windows reports file timestamps inconsistently enough to break that check — so installing on 3.13 is refused outright rather than allowed to fail strangely later.</p>
+    <p>If it cannot find Python 3.11, install Python 3.11 and run it again. Pro checks the integrity of every file it reads, and Python 3.13 on Windows reports file timestamps inconsistently enough to break that check, so installing on 3.13 is refused outright rather than allowed to fail strangely later.</p>
     <p>There is a manual route too, in the install guide inside the zip.</p>
 
     <h2>3. Sign in, once</h2>
@@ -341,7 +398,7 @@ footer a:hover{color:var(--red)}
     <h2>Requirements</h2>
     <ol>
       <li>Windows.</li>
-      <li>Python 3.11 — exactly, for the reason above.</li>
+      <li>Python 3.11 exactly, for the reason above.</li>
       <li>Claude Code or Codex installed, so there are sessions to read. Emulo runs through the agent you already have, so there is no API key to add.</li>
     </ol>
 
@@ -353,22 +410,36 @@ footer a:hover{color:var(--red)}
 
 <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
   <div class="sheet-head">
-    <h2 class="sheet-title" id="sheet-title">Emulo Pro</h2>
+    <div>
+      <p class="sheet-kicker">Download started</p>
+      <h2 class="sheet-title" id="sheet-title">Emulo Pro</h2>
+    </div>
     <button class="sheet-close" type="button" id="sheet-close" aria-label="Close">&times;</button>
   </div>
   <div class="sheet-body">
-    <p id="sheet-intro">Your download is starting. Here is what happens next.</p>
-
-    <p class="get-meta" style="margin-top:18px">SHA-256 of the zip</p>
-    <p class="checksum" id="sheet-sum"></p>
+    <div class="sheet-file">
+      <p class="sheet-file-name" id="sheet-file-name">emulo-pro.zip</p>
+      <p class="sheet-file-meta" id="sheet-file-meta"></p>
+      <p class="sheet-again">Nothing in your downloads? <a id="sheet-again" href="#" download>Start it again</a>.</p>
+    </div>
 
     <ol class="sheet-steps">
-      <li><strong>Check the hash.</strong> Run <code>Get-FileHash .\emulo-pro-*.zip -Algorithm SHA256</code> and compare it with the one above. If it does not match, do not install it.</li>
-      <li><strong>Install.</strong> Unpack the zip and double-click <strong>Install Emulo.cmd</strong>. It installs into your Windows account; no administrator access is needed.</li>
-      <li><strong>Sign in, once.</strong> Emulo shows a short code and opens your browser. You sign in there with Google or GitHub. Emulo never sees your password.</li>
+      <li>
+        <strong>Check what arrived.</strong> Run this where the file landed, and compare it with the hash below it.
+        <div class="copy-row">
+          <code id="sheet-cmd"></code>
+          <button class="copy" type="button" data-copy="sheet-cmd">Copy</button>
+        </div>
+        <div class="copy-row">
+          <code id="sheet-sum"></code>
+          <button class="copy" type="button" data-copy="sheet-sum">Copy</button>
+        </div>
+      </li>
+      <li><strong>Install.</strong> Unpack the zip and double-click <strong>Install Emulo.cmd</strong>. It installs into your own Windows account; no administrator access is needed.</li>
+      <li><strong>Sign in, once.</strong> Emulo shows a short code and opens your browser. You sign in there with Google or GitHub. Emulo never sees your password, and after this the device stays signed in with no network at all.</li>
     </ol>
 
-    <p class="sheet-foot">The full walkthrough is on this page behind you, and the install guide is inside the zip. Trouble? <a href="mailto:ohadkrispin@gmail.com">Email me.</a></p>
+    <p class="sheet-foot">If the two hashes differ, do not install it. Download it again. The install guide is inside the zip, and the longer walkthrough is on the page behind this. Stuck? <a href="mailto:ohadkrispin@gmail.com">Email me.</a></p>
   </div>
 </dialog>
 
@@ -399,6 +470,71 @@ footer a:hover{color:var(--red)}
       row.replaceChildren(b);
     }
 
+    // Windows is the only build there is. userAgentData is the supported way to
+    // ask and navigator.platform is the one that still answers everywhere else;
+    // an unknown answer is treated as Windows, because guessing wrong toward
+    // "this is for you" is the cheaper mistake on a Windows-only product.
+    function windows() {
+      var data = navigator.userAgentData;
+      var claim = (data && data.platform) || navigator.platform || navigator.userAgent || "";
+      if (/mac|iphone|ipad|android|linux|cros/i.test(claim) && !/win/i.test(claim)) return false;
+      return true;
+    }
+
+    // Everything the screen says about the build, written from the manifest at
+    // the moment it opens.
+    function fill(release, name) {
+      document.getElementById("sheet-title").textContent = "Emulo Pro " + release.version;
+      document.getElementById("sheet-file-name").textContent = name;
+      document.getElementById("sheet-file-meta").textContent =
+        release.size + " · Windows · Python 3.11 · published " + release.published;
+      document.getElementById("sheet-sum").textContent = release.sha256;
+      document.getElementById("sheet-cmd").textContent =
+        "Get-FileHash .\\" + name + " -Algorithm SHA256";
+      var again = document.getElementById("sheet-again");
+      again.href = release.file;
+      again.setAttribute("download", "");
+    }
+
+    // Copy, with the fallback that matters: on a page served over plain http
+    // there is no clipboard API at all, and a dead Copy button on a checksum is
+    // worse than none, so the text gets selected for a manual copy instead.
+    document.addEventListener("click", function (event) {
+      var button = event.target.closest ? event.target.closest(".copy") : null;
+      if (!button) return;
+      var source = document.getElementById(button.getAttribute("data-copy"));
+      if (!source) return;
+
+      function mark(label) {
+        button.textContent = label;
+        button.setAttribute("data-copied", "yes");
+        window.setTimeout(function () {
+          button.textContent = "Copy";
+          button.removeAttribute("data-copied");
+        }, 1600);
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(source.textContent).then(function () {
+          mark("Copied");
+        }, function () {
+          select(source);
+          mark("Select");
+        });
+      } else {
+        select(source);
+        mark("Select");
+      }
+    });
+
+    function select(node) {
+      var range = document.createRange();
+      range.selectNodeContents(node);
+      var selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
     close.addEventListener("click", function () { sheet.close(); });
     // Clicking the backdrop closes it. The dialog element reports a click on
     // itself when the press lands outside its own box.
@@ -421,23 +557,35 @@ footer a:hover{color:var(--red)}
         link.className = "get-open";
         link.href = release.file;
         link.setAttribute("download", "");
-        link.append(document.createTextNode("Download for Windows"));
+        link.append(document.createTextNode(windows() ? "Download for Windows" : "Download the Windows build"));
         var arrow = document.createElement("span");
         arrow.className = "arrow";
         arrow.setAttribute("aria-hidden", "true");
         arrow.textContent = "↓";
         link.append(arrow);
 
-        // The download starts from the anchor itself; the dialog is what the
-        // person reads while it does. It never gates the file.
+        // The name of the file that is about to appear, taken from the manifest
+        // rather than typed here, so the screen names the thing being served.
+        var name = release.file.split("/").pop();
+
+        // The download fires from the anchor's own default action; the screen is
+        // what you read while it arrives. Nothing here calls preventDefault, so
+        // the dialog can never end up standing between a person and the file.
         link.addEventListener("click", function () {
-          document.getElementById("sheet-sum").textContent = release.sha256;
-          document.getElementById("sheet-title").textContent = "Emulo Pro " + release.version;
+          fill(release, name);
           if (typeof sheet.showModal === "function") sheet.showModal();
         });
 
         row.replaceChildren(link);
         aside.textContent = release.size + " · Windows · Python 3.11 · published " + release.published;
+
+        if (!windows()) {
+          var note = document.createElement("p");
+          note.className = "get-note";
+          note.textContent = "Emulo Pro is a Windows build. The installer is a .cmd and it needs Python 3.11. "
+            + "The download works from here anyway if you are fetching it for a Windows machine.";
+          aside.parentNode.insertBefore(note, aside.nextSibling);
+        }
 
         if (release.testOnly) {
           // The bundler folds a rehearsal tag into the archive name for this

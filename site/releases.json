@@ -1,9 +1,8 @@
 {
-  "file": null,
-  "note": "Written by the release process from the manifest sealed inside the archive. Null until a signed release is published, so download.html renders its honest empty state instead of a button that 404s.",
-  "published": null,
-  "sha256": null,
-  "size": null,
+  "file": "/emulo-pro-1.0.0.zip",
+  "published": "2026-07-29",
+  "sha256": "16593b031c9ba15187554e1800784a09ba44162930133514f91e422234183b2e",
+  "size": "7.4 MB",
   "testOnly": false,
-  "version": null
+  "version": "1.0.0"
 }
