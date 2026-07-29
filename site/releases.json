@@ -1,0 +1,9 @@
+{
+  "file": null,
+  "note": "Written by the release process from the manifest sealed inside the archive. Null until a signed release is published, so download.html renders its honest empty state instead of a button that 404s.",
+  "published": null,
+  "sha256": null,
+  "size": null,
+  "testOnly": false,
+  "version": null
+}

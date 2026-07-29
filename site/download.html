@@ -1,112 +1,212 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f1e8">
-  <meta name="description" content="Download Emulo Pro for Windows. Free download, sign in once with Google or GitHub, then it runs on your machine with no network.">
-  <link rel="icon" type="image/png" href="/assets/emulo.png">
-  <link rel="stylesheet" href="/legal.css">
-  <link rel="canonical" href="https://emulo.vercel.app/download.html">
-  <title>Emulo Pro | Download for Windows</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f2eee1">
+<meta name="description" content="Download Emulo Pro for Windows. Free download, sign in once with Google or GitHub, then it runs on your machine with no network.">
+<link rel="icon" type="image/png" href="/assets/emulo.png">
+<link rel="canonical" href="https://emulo.vercel.app/download.html">
+<title>Emulo Pro | Download for Windows</title>
 
-  <meta property="og:title" content="Emulo Pro | Download for Windows">
-  <meta property="og:description" content="Free download. Sign in once with Google or GitHub. Then it runs on your machine, offline.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://emulo.vercel.app/download.html">
-  <meta property="og:site_name" content="Emulo">
+<meta property="og:title" content="Emulo Pro | Download for Windows">
+<meta property="og:description" content="Free download. Sign in once with Google or GitHub. Then it runs on your machine, offline.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://emulo.vercel.app/download.html">
+<meta property="og:site_name" content="Emulo">
 
-  <style>
-    /* The download page has three things the legal pages do not: a primary
-       action, a checksum you are meant to copy, and a short ordered walk
-       through first run. Everything else inherits legal.css so this page
-       cannot drift away from the rest of the site. */
-    .download-lead { font-size: 19px; margin: 0 0 28px; }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-    .get {
-      margin: 28px 0 12px;
-      padding: 22px 24px;
-      border: 1px solid var(--line);
-      background: #fffdf8;
-    }
-    .get p { margin: 0; }
-    .get-action {
-      display: inline-block;
-      margin-bottom: 10px;
-      padding: 12px 22px;
-      border: 1px solid var(--ink);
-      background: var(--ink);
-      color: var(--paper);
-      font-weight: 700;
-      letter-spacing: .04em;
-      text-decoration: none;
-    }
-    .get-action:hover { background: var(--accent); border-color: var(--accent); color: var(--paper); }
-    /* The waiting state reads as an empty shelf, not a button someone should
-       try. No fill, no hover, nothing that invites a click. */
-    .get-action--waiting {
-      background: none;
-      color: var(--muted);
-      border-style: dashed;
-      border-color: var(--line);
-      cursor: default;
-    }
-    .get-meta { color: var(--muted); font-size: 14px; }
+<style>
+/* The same tokens the home page declares. This page used to inherit
+   legal.css, which is the policy-page theme -- a different paper, a different
+   ink and a system sans -- so it read as a document filed next to the site
+   rather than a page of it. */
+:root{
+  --paper:#f2eee1;
+  --paper-2:#f7f4ea;
+  --ink:#161309;
+  --ink-2:#3b382c;
+  --ink-soft:#3d3a2f;
+  --ink-faint:#6f6a58;
+  --ink-dim:#8f8a76;
+  --cream-dim:#cfc9b4;
+  --rule:#c9c3ad;
+  --red:#a83b23;
+  --gold:#e8c15a;
+  --serif:"Playfair Display",Georgia,serif;
+  --text:"Source Serif 4",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--text);
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
 
-    /* A checksum is only useful if it can be copied without picking up a
-       line break, so it gets its own block and wraps on character. */
-    .checksum {
-      margin: 4px 0 0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 13px;
-      overflow-wrap: anywhere;
-      color: var(--body);
-    }
+/* ---------- nav, matching the home page ---------- */
+nav{
+  position:relative;z-index:4;
+  display:flex;justify-content:space-between;align-items:center;
+  max-width:1120px;margin:0 auto;padding:26px 32px;
+}
+.wordmark{
+  font-family:var(--mono);font-weight:500;font-size:14px;
+  letter-spacing:.5em;text-decoration:none;
+}
+.nav-links{display:flex;gap:28px;align-items:center}
+.nav-links a{
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;text-decoration:none;color:var(--ink-soft);
+  border-bottom:1px solid transparent;padding-bottom:2px;
+  transition:color .2s ease,border-color .2s ease;
+}
+.nav-links a:hover{border-bottom-color:var(--red);color:var(--ink)}
 
-    pre {
-      margin: 12px 0 20px;
-      padding: 14px 16px;
-      border: 1px solid var(--line);
-      background: #fffdf8;
-      overflow-x: auto;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 13.5px;
-      line-height: 1.6;
-    }
+/* The one action in the bar. Solid ink against paper is the strongest
+   contrast this palette has, and it is spent once -- every other link stays a
+   quiet mono label so this one is unmistakably the thing to press. */
+.nav-links a.nav-cta{
+  padding:9px 18px;
+  border:1px solid var(--ink);
+  background:var(--ink);
+  color:var(--paper);
+  font-weight:500;
+  transition:background .2s ease,border-color .2s ease,color .2s ease;
+}
+.nav-links a.nav-cta:hover{background:var(--red);border-color:var(--red);color:var(--paper)}
+.nav-links a.nav-cta[aria-current="page"]{
+  background:none;color:var(--ink);border-color:var(--ink);
+}
+.nav-links a:focus-visible{outline:2px solid var(--red);outline-offset:3px}
 
-    ol.steps { margin: 0 0 24px; padding-left: 20px; }
-    ol.steps li { margin-bottom: 10px; }
+/* ---------- page ---------- */
+.page{max-width:1120px;margin:0 auto;padding:0 32px 96px}
+/* Centred, not flush left. The nav spans 1120px and the reading measure is
+   64ch; left-aligning the column under a full-width bar leaves the entire
+   right half of the page empty, which reads as a layout that did not finish
+   rather than as an editorial choice. */
+.doc{max-width:64ch;margin:0 auto}
 
-    .note {
-      margin: 24px 0;
-      padding: 16px 18px;
-      border-left: 3px solid var(--accent);
-      background: #fffdf8;
-      font-size: 15px;
-    }
-  </style>
+.kicker{
+  font-family:var(--mono);font-size:12px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-faint);margin-bottom:14px;
+}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(44px,6vw,72px);line-height:1.04;letter-spacing:-.015em}
+h2{font-family:var(--serif);font-weight:600;font-size:28px;line-height:1.2;margin:52px 0 14px}
+p{margin:0 0 16px;color:var(--ink-2)}
+.lead{font-size:20px;color:var(--ink);margin:22px 0 0;max-width:56ch}
+
+ol,ul{margin:0 0 16px 22px;color:var(--ink-2)}
+li{margin-bottom:8px}
+
+code{font-family:var(--mono);font-size:.9em}
+pre{
+  margin:0 0 18px;padding:16px 18px;overflow-x:auto;
+  border:1px solid var(--rule);background:var(--paper-2);
+  font-family:var(--mono);font-size:13.5px;line-height:1.6;
+}
+
+/* ---------- the release panel ---------- */
+.get{
+  margin:36px 0 20px;padding:26px 28px;
+  border:1px solid var(--rule);background:var(--paper-2);
+}
+.get-action{
+  display:inline-block;padding:14px 26px;
+  border:1px solid var(--ink);background:var(--ink);color:var(--paper);
+  font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:500;text-decoration:none;
+  transition:background .2s ease,border-color .2s ease;
+}
+.get-action:hover{background:var(--red);border-color:var(--red)}
+.get-action:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+
+/* The waiting state reads as an empty shelf, not a button someone should try.
+   No fill, no hover, nothing that invites a click. */
+.get-action--waiting{
+  background:none;color:var(--ink-dim);border-style:dashed;border-color:var(--cream-dim);
+  cursor:default;
+}
+.get-meta{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-faint);margin:14px 0 0}
+
+/* A checksum is only useful if it can be copied without picking up a line
+   break, so it wraps on character and sits on its own line. */
+.checksum{
+  margin:6px 0 0;font-family:var(--mono);font-size:12.5px;line-height:1.55;
+  color:var(--ink-soft);overflow-wrap:anywhere;
+}
+.rehearsal{
+  margin:0 0 16px;padding:10px 14px;
+  border-left:3px solid var(--red);color:var(--red);
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;
+}
+
+.note{
+  margin:0 0 18px;padding:16px 18px;
+  border-left:3px solid var(--gold);background:var(--paper-2);color:var(--ink-2);
+}
+
+footer{
+  max-width:1120px;margin:0 auto;padding:28px 32px 56px;
+  border-top:1px solid var(--rule);
+  display:flex;gap:24px;flex-wrap:wrap;
+}
+footer a{
+  font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-faint);text-decoration:none;
+}
+footer a:hover{color:var(--red)}
+
+@media (max-width:720px){
+  nav{padding:20px}
+  .nav-links{gap:14px;flex-wrap:wrap;justify-content:flex-end}
+  .page{padding:0 20px 72px}
+  footer{padding:24px 20px 44px}
+}
+</style>
 </head>
 <body>
-  <header class="legal-header"><a href="/"><img src="/assets/emulo.png" alt=""><span>EMULO</span></a></header>
 
-  <main class="legal-document">
-    <p class="legal-kicker">Emulo Pro</p>
+<nav>
+  <a class="wordmark" href="/">EMULO</a>
+  <div class="nav-links">
+    <a href="/bench">Bench</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="https://github.com/ohad6k/emulo">GitHub</a>
+    <a href="https://discord.gg/QMnYtVcxk2">Discord</a>
+    <a class="nav-cta" href="/download.html" aria-current="page">Download</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="doc">
+    <p class="kicker">Emulo Pro</p>
     <h1>Download</h1>
-    <p class="download-lead">The download is free. You sign in once on first run, and after that Emulo runs on your machine — no network needed, nothing uploaded.</p>
+    <p class="lead">The download is free. You sign in once on first run, and after that Emulo runs on your machine — no network needed, nothing uploaded.</p>
 
-    <!-- Deliberately not a link. Emulo Pro has no published release yet, and a
-         primary button that does nothing when clicked is worse than an honest
-         empty state -- it is the same sin as a progress bar that means nothing.
-         When the first signed release exists, this becomes an <a> pointing at
-         the zip and the checksum below is filled in from the manifest. -->
-    <div class="get">
-      <p><span class="get-action get-action--waiting">Not published yet</span></p>
-      <p class="get-meta">Windows &middot; Python 3.11 &middot; one zip</p>
-      <p class="get-meta" style="margin-top:12px">SHA-256 of the zip:</p>
-      <p class="checksum" id="checksum">Published with the first release.</p>
+    <!--
+      Filled in from /releases.json by the script at the bottom. Deliberately
+      empty in the markup: a primary button that does nothing when clicked is
+      worse than an honest empty state, and a hand-typed checksum is a checksum
+      nobody has verified. The release process writes that file from the
+      manifest sealed inside the archive it just built, so the version, size
+      and hash here can only ever be the ones in the file being served.
+    -->
+    <div class="get" id="release" aria-live="polite">
+      <p><span class="get-action get-action--waiting">Checking for a build…</span></p>
     </div>
 
-    <p class="legal-updated">Everything below is how the download works once it exists. The button turns on with the first signed release, and the checksum fills in beside it.</p>
+    <p class="get-meta">Everything below is how the download works once it exists. The button turns on with the first signed release, and the checksum fills in beside it.</p>
 
     <h2>1. Check what you got</h2>
     <p>Before unpacking anything, compare the hash of the file you downloaded against the one printed above. It takes a second and it is the whole point of publishing it.</p>
@@ -130,7 +230,7 @@
     <p>It reads the AI coding sessions already on your computer and turns what you actually do into skills, workflows and a profile your agent reads before every task. Raw sessions, local paths and decryption keys never leave the device. The <a href="/privacy.html">privacy policy</a> is the long version.</p>
 
     <h2>Requirements</h2>
-    <ol class="steps">
+    <ol>
       <li>Windows.</li>
       <li>Python 3.11 — exactly, for the reason above.</li>
       <li>Claude Code or Codex installed, so there are sessions to read. Emulo runs through the agent you already have, so there is no API key to add.</li>
@@ -138,8 +238,75 @@
 
     <h2>The open-source CLI</h2>
     <p>Emulo the profile miner is open source and needs none of this. <code>pip install emulo</code>, or read the <a href="https://github.com/ohad6k/emulo">repository</a>. Pro is the Museum: the desktop app, the reference board, the curator and the workflows.</p>
-  </main>
+  </div>
+</main>
 
-  <footer class="legal-footer"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/refunds.html">Refunds</a><a href="mailto:ohadkrispin@gmail.com">Contact</a></footer>
+<footer>
+  <a href="/">Home</a>
+  <a href="/privacy.html">Privacy</a>
+  <a href="/terms.html">Terms</a>
+  <a href="/refunds.html">Refunds</a>
+  <a href="mailto:ohadkrispin@gmail.com">Contact</a>
+</footer>
+
+<script>
+  // Static HTML, no build step. Fetches the release manifest and renders what
+  // is actually published -- three states, and the honest one is the default.
+  (function () {
+    var panel = document.getElementById("release");
+
+    function el(tag, className, value) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (value !== undefined) node.textContent = value;
+      return node;
+    }
+
+    function waiting(message) {
+      var p = el("p");
+      p.append(el("span", "get-action get-action--waiting", message));
+      panel.replaceChildren(p);
+    }
+
+    fetch("/releases.json", { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("no manifest"); return r.json(); })
+      .then(function (release) {
+        // A manifest naming no file means a build was prepared but not
+        // published. Say so, rather than rendering a button that 404s.
+        if (!release || !release.file || !release.sha256) {
+          waiting("Not published yet");
+          panel.append(el("p", "get-meta", "Windows · Python 3.11 · one zip"));
+          return;
+        }
+
+        var link = el("a", "get-action", "Download Emulo Pro " + release.version);
+        link.href = release.file;
+        link.setAttribute("download", "");
+
+        var action = el("p");
+        action.append(link);
+
+        var children = [
+          action,
+          el("get-meta" && "p", "get-meta",
+            release.size + " · Windows · Python 3.11 · published " + release.published),
+          el("p", "get-meta", "SHA-256 of the zip:"),
+          el("p", "checksum", release.sha256)
+        ];
+
+        // The bundler already folds a rehearsal tag into the archive name.
+        // Nobody should have to read a filename to learn a build is a test.
+        if (release.testOnly) {
+          children.unshift(el("p", "rehearsal",
+            "Build rehearsal, not a signed release. Do not install it expecting a working licence."));
+        }
+        panel.replaceChildren.apply(panel, children);
+      })
+      .catch(function () {
+        waiting("Not published yet");
+        panel.append(el("p", "get-meta", "Windows · Python 3.11 · one zip"));
+      });
+  })();
+</script>
 </body>
 </html>

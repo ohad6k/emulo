@@ -154,6 +154,21 @@ nav{
 }
 .nav-links a:hover{border-bottom-color:var(--red);color:var(--ink)}
 
+/* The one action in the bar. Solid ink against paper is the strongest
+   contrast this palette has, and it is spent once -- every other link stays a
+   quiet mono label so this one is unmistakably the thing to press. */
+.nav-links a.nav-cta{
+  padding:9px 18px;
+  border:1px solid var(--ink);
+  background:var(--ink);
+  color:var(--paper);
+  font-weight:500;
+  border-bottom-color:var(--ink);
+  transition:background .2s ease,border-color .2s ease,color .2s ease;
+}
+.nav-links a.nav-cta:hover{background:var(--red);border-color:var(--red);color:var(--paper)}
+.nav-links a:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+
 /* ---------- hero ---------- */
 .hero{position:relative;padding:40px 0 0}
 .hero .wrap{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:center;gap:0}
@@ -548,9 +563,9 @@ footer a:hover{color:var(--red)}
   <div class="nav-links">
     <a href="/bench">Bench</a>
     <a href="#pricing">Pricing</a>
-    <a href="/download.html">Download</a>
     <a href="https://github.com/ohad6k/emulo">GitHub</a>
     <a href="https://discord.gg/QMnYtVcxk2">Discord</a>
+    <a class="nav-cta" href="/download.html">Download</a>
   </div>
 </nav>
 
