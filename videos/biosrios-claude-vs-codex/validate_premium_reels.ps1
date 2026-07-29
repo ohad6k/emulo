@@ -73,6 +73,17 @@ function Test-OpeningTagIsVisible([string]$openingTag) {
     return $style -notmatch '(?i)(?<![A-Za-z0-9_-])(?:display\s*:\s*none|visibility\s*:\s*hidden)\b'
 }
 
+function Test-MarkupContainsInertOpeningTag([string]$markup) {
+    $openingTagPattern = [regex]::new('<(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    foreach ($openingTag in $openingTagPattern.Matches($markup)) {
+        if (-not (Test-OpeningTagIsVisible $openingTag.Value)) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Get-MatchingElementInnerHtml([string]$markup, [System.Text.RegularExpressions.Match]$openingTag) {
     $tagName = $openingTag.Groups['tag'].Value
     $tagPattern = [regex]::new('<(?<closing>/)?(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
@@ -194,6 +205,10 @@ foreach ($composition in $compositions) {
         $s01Html = $html
     }
 
+    if (Test-MarkupContainsInertOpeningTag $markup) {
+        $errors.Add("$($composition.Id): contains inert hidden markup")
+    }
+
     $openingTagPattern = [regex]::new('<(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     $stylesheetLinks = @($openingTagPattern.Matches($markup) | Where-Object {
         [string]::Equals($_.Groups['tag'].Value, 'link', [System.StringComparison]::OrdinalIgnoreCase) -and
@@ -225,7 +240,7 @@ foreach ($composition in $compositions) {
     $audioCues = @($openingTagPattern.Matches($markup) | Where-Object {
         [string]::Equals($_.Groups['tag'].Value, 'audio', [System.StringComparison]::OrdinalIgnoreCase) -and
         (Test-OpeningTagIsVisible $_.Value) -and
-        ([regex]::IsMatch($_.Value, '(?<=\s)(?i:src)\s*=\s*["''][^"'']*sfx_005\.wav["'']'))
+        (Test-OpeningTagHasExactAttribute $_.Value 'src' '.media/audio/sfx/sfx_005.wav')
     })
     if ($audioCues.Count -eq 0) {
         $errors.Add("$($composition.Id): sfx_005.wav cue missing")
