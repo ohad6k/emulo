@@ -29,6 +29,114 @@ $media = @(
 
 $errors = [System.Collections.Generic.List[string]]::new()
 
+function Get-VisibleMarkup([string]$html) {
+    $withoutComments = [regex]::Replace($html, '<!--.*?-->', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    return [regex]::Replace($withoutComments, '<script\b[^>]*>.*?</script\s*>', '', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Singleline)
+}
+
+function Test-OpeningTagHasClassToken([string]$openingTag, [string]$classToken) {
+    $classAttribute = [regex]::Match($openingTag, '\bclass\s*=\s*["''](?<value>[^"'']*)["'']', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    if (-not $classAttribute.Success) {
+        return $false
+    }
+
+    $tokenPattern = '(?<![A-Za-z0-9_-])' + [regex]::Escape($classToken) + '(?![A-Za-z0-9_-])'
+    return $classAttribute.Groups['value'].Value -cmatch $tokenPattern
+}
+
+function Test-OpeningTagHasExactAttribute([string]$openingTag, [string]$name, [string]$value) {
+    $attributePattern = '\b' + [regex]::Escape($name) + '\s*=\s*["'']' + [regex]::Escape($value) + '["'']'
+    return $openingTag -cmatch $attributePattern
+}
+
+function Get-MatchingElementInnerHtml([string]$markup, [System.Text.RegularExpressions.Match]$openingTag) {
+    $tagName = $openingTag.Groups['tag'].Value
+    $tagPattern = [regex]::new('<(?<closing>/)?(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $depth = 1
+
+    foreach ($tag in $tagPattern.Matches($markup, $openingTag.Index + $openingTag.Length)) {
+        if (-not [string]::Equals($tag.Groups['tag'].Value, $tagName, [System.StringComparison]::OrdinalIgnoreCase)) {
+            continue
+        }
+
+        if ($tag.Groups['closing'].Success) {
+            $depth--
+            if ($depth -eq 0) {
+                return $markup.Substring($openingTag.Index + $openingTag.Length, $tag.Index - ($openingTag.Index + $openingTag.Length))
+            }
+        } elseif ($tag.Value -notmatch '/\s*>$') {
+            $depth++
+        }
+    }
+
+    return $null
+}
+
+function Get-DirectChildElements([string]$innerHtml) {
+    $tagPattern = [regex]::new('<(?<closing>/)?(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $voidTags = @('area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr')
+    $stack = [System.Collections.Generic.List[string]]::new()
+    $children = [System.Collections.Generic.List[object]]::new()
+    $childOpeningTag = $null
+    $childStart = 0
+
+    foreach ($tag in $tagPattern.Matches($innerHtml)) {
+        $tagName = $tag.Groups['tag'].Value
+        if ($tag.Groups['closing'].Success) {
+            if ($stack.Count -eq 0 -or -not [string]::Equals($stack[$stack.Count - 1], $tagName, [System.StringComparison]::OrdinalIgnoreCase)) {
+                continue
+            }
+
+            if ($stack.Count -eq 1) {
+                $children.Add([pscustomobject]@{
+                    OpeningTag = $childOpeningTag
+                    InnerHtml = $innerHtml.Substring($childStart, $tag.Index - $childStart)
+                })
+                $childOpeningTag = $null
+            }
+            $stack.RemoveAt($stack.Count - 1)
+        } elseif ($tag.Value -notmatch '/\s*>$' -and $voidTags -notcontains $tagName.ToLowerInvariant()) {
+            if ($stack.Count -eq 0) {
+                $childOpeningTag = $tag.Value
+                $childStart = $tag.Index + $tag.Length
+            }
+            $stack.Add($tagName)
+        }
+    }
+
+    return $children
+}
+
+function Test-ResourceCtaCopy([string]$markup, [string]$keyword) {
+    $openingTagPattern = [regex]::new('<(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    foreach ($openingTag in $openingTagPattern.Matches($markup)) {
+        if (-not (Test-OpeningTagHasClassToken $openingTag.Value 'resource-cta') -or -not (Test-OpeningTagHasExactAttribute $openingTag.Value 'data-cta-keyword' $keyword)) {
+            continue
+        }
+
+        $ctaInnerHtml = Get-MatchingElementInnerHtml $markup $openingTag
+        if ($null -eq $ctaInnerHtml) {
+            continue
+        }
+
+        $children = @(Get-DirectChildElements $ctaInnerHtml)
+        for ($commentIndex = 0; $commentIndex -lt $children.Count; $commentIndex++) {
+            if ($children[$commentIndex].InnerHtml -cnotmatch '^\s*Comment\s*$' -or -not (Test-OpeningTagHasClassToken $children[$commentIndex].OpeningTag 'comment')) {
+                continue
+            }
+
+            for ($keywordIndex = $commentIndex + 1; $keywordIndex -lt $children.Count; $keywordIndex++) {
+                $keywordText = '^\s*["'']?' + [regex]::Escape($keyword) + '["'']?\s*$'
+                if ((Test-OpeningTagHasClassToken $children[$keywordIndex].OpeningTag 'keyword') -and $children[$keywordIndex].InnerHtml -cmatch $keywordText) {
+                    return $true
+                }
+            }
+        }
+    }
+
+    return $false
+}
+
 foreach ($entry in $resources.GetEnumerator()) {
     $resourcePath = Join-Path $pack $entry.Value
     if (-not (Test-Path -LiteralPath $resourcePath -PathType Leaf)) {
@@ -43,6 +151,11 @@ foreach ($relativePath in $media) {
     }
 }
 
+$sharedStylesheet = Join-Path $project 'assets/styles/premium-reel.css'
+if (-not (Test-Path -LiteralPath $sharedStylesheet -PathType Leaf)) {
+    $errors.Add('Missing shared asset: assets\styles\premium-reel.css')
+}
+
 $s01Html = $null
 foreach ($composition in $compositions) {
     $compositionPath = Join-Path $project $composition.Path
@@ -52,34 +165,37 @@ foreach ($composition in $compositions) {
     }
 
     $html = Get-Content -LiteralPath $compositionPath -Raw
+    $markup = Get-VisibleMarkup $html
     if ($composition.Id -eq 'S01') {
         $s01Html = $html
     }
 
-    if ($html -notmatch 'premium-reel\.css') {
+    $stylesheetLink = '<link\b(?=[^>]*\brel\s*=\s*["'']stylesheet["''])(?=[^>]*\bhref\s*=\s*["'']assets/styles/premium-reel\.css["''])[^>]*>'
+    if ($markup -cnotmatch $stylesheetLink) {
         $errors.Add("$($composition.Id): premium-reel.css reference missing")
     }
 
-    $ctaAttribute = 'data-cta-keyword\s*=\s*["'']' + [regex]::Escape($composition.Keyword) + '["'']'
-    if ($html -notmatch $ctaAttribute) {
+    $openingTagPattern = [regex]::new('<(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $resourceCtas = @($openingTagPattern.Matches($markup) | Where-Object { Test-OpeningTagHasClassToken $_.Value 'resource-cta' })
+    $matchingResourceCtas = @($resourceCtas | Where-Object { Test-OpeningTagHasExactAttribute $_.Value 'data-cta-keyword' $composition.Keyword })
+    if ($matchingResourceCtas.Count -eq 0) {
         $errors.Add("$($composition.Id): data-cta-keyword must equal $($composition.Keyword)")
     }
 
-    $visibleComment = '(?is)Comment.*' + [regex]::Escape($composition.Keyword) + '(?=<|["''])'
-    if ($html -notmatch $visibleComment) {
+    if (-not (Test-ResourceCtaCopy $markup $composition.Keyword)) {
         $errors.Add("$($composition.Id): visible 'Comment $($composition.Keyword)' CTA copy missing")
     }
 
-    if ($html -notmatch 'VERIFIED LOCAL EXCERPT') {
+    if ($markup -cnotmatch '<[A-Za-z][A-Za-z0-9:-]*\b[^>]*>\s*VERIFIED LOCAL EXCERPT\s*</[A-Za-z][A-Za-z0-9:-]*\s*>') {
         $errors.Add("$($composition.Id): VERIFIED LOCAL EXCERPT proof label missing")
     }
-    if ($html -notmatch 'resource-cta') {
+    if ($resourceCtas.Count -eq 0) {
         $errors.Add("$($composition.Id): resource-cta missing")
     }
-    if ($html -notmatch 'sfx_005\.wav') {
+    if ($markup -cnotmatch '<audio\b(?=[^>]*\bsrc\s*=\s*["''][^"'']*sfx_005\.wav["''])[^>]*>') {
         $errors.Add("$($composition.Id): sfx_005.wav cue missing")
     }
-    if ($html -match 'FACE-CLONE PREVIEW FALLBACK') {
+    if ($markup -cmatch 'FACE-CLONE PREVIEW FALLBACK') {
         $errors.Add("$($composition.Id): FACE-CLONE PREVIEW FALLBACK must be removed")
     }
 }
