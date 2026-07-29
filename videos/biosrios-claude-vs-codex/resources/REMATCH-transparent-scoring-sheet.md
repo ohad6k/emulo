@@ -10,6 +10,15 @@
 | Handoff clarity | 5 |  |  |  |
 | **Total** | **100** |  |  |  |
 
+## Scoring method
+
+Score each category from 0 up to its listed weight. Total = the sum of category
+points, with a maximum of 100. Every non-zero score needs cited evidence.
+
+- Full credit: fully satisfies the category with verified evidence.
+- Partial credit: partially satisfies the category; note the gaps.
+- Zero: missing, invalid, or has no verifiable evidence.
+
 ## Required run metadata
 
 - Repository commit:
