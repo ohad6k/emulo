@@ -1,2 +1,5 @@
 # Pilot hashes commit to exact bytes and must survive Windows checkouts.
 proof/fixtures/pilot/** text eol=lf
+
+# Preserve vendored runtime bytes so the recorded integrity hash stays stable.
+videos/biosrios-claude-vs-codex-shorts/assets/vendor/gsap-3.14.2/gsap.min.js -text
