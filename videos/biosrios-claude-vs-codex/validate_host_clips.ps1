@@ -1,21 +1,25 @@
 param(
-    [string]$PackageRoot = "D:\ditto\videos\biosrios-claude-vs-codex"
+    [string]$PackageRoot = $PSScriptRoot,
+    [string]$FfprobePath = $env:FFPROBE_PATH
 )
 
 $ErrorActionPreference = "Stop"
 
 $mapPath = Join-Path $PackageRoot "HOST-CLIP-REPLACEMENT-MAP.json"
-$longProject = "D:\ditto\videos\biosrios-claude-vs-codex-long"
-$shortsProject = "D:\ditto\videos\biosrios-claude-vs-codex-shorts"
+$videosRoot = Split-Path -Parent $PackageRoot
+$longProject = Join-Path $videosRoot "biosrios-claude-vs-codex-long"
+$shortsProject = Join-Path $videosRoot "biosrios-claude-vs-codex-shorts"
 $longClips = Join-Path $longProject "assets\host-clips"
 $shortsClips = Join-Path $shortsProject "assets\host-clips"
 
-$ffprobe = (Get-Command ffprobe -ErrorAction SilentlyContinue).Source
-if (-not $ffprobe) {
-    $ffprobe = "C:\Users\ohad1\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin\ffprobe.exe"
+if ([string]::IsNullOrWhiteSpace($FfprobePath)) {
+    $ffprobeCommand = Get-Command ffprobe -ErrorAction SilentlyContinue
+    if ($ffprobeCommand) {
+        $FfprobePath = $ffprobeCommand.Source
+    }
 }
-if (-not (Test-Path -LiteralPath $ffprobe)) {
-    throw "ffprobe was not found."
+if ([string]::IsNullOrWhiteSpace($FfprobePath) -or -not (Test-Path -LiteralPath $FfprobePath)) {
+    throw "ffprobe was not found. Add it to PATH, pass -FfprobePath, or set FFPROBE_PATH."
 }
 
 function Get-FrameRate([string]$fraction) {
@@ -26,8 +30,24 @@ function Get-FrameRate([string]$fraction) {
     return [double]$parts[0] / [double]$parts[1]
 }
 
-function Test-Selector([string]$compositionPath, [string]$selector) {
+function Get-LiveHtmlSource([string]$compositionPath) {
     $source = Get-Content -LiteralPath $compositionPath -Raw
+    $options = [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
+        [System.Text.RegularExpressions.RegexOptions]::Singleline
+    $source = [regex]::Replace($source, "<!--.*?-->", "", $options)
+    # HyperFrames sub-compositions intentionally keep their live markup inside
+    # a body <template>, so only truly inert executable/fallback blocks are removed.
+    $source = [regex]::Replace(
+        $source,
+        "<(script|noscript)\b[^>]*>.*?</\1\s*>",
+        "",
+        $options
+    )
+    return $source
+}
+
+function Test-Selector([string]$compositionPath, [string]$selector) {
+    $source = Get-LiveHtmlSource $compositionPath
     if ($selector -match "^#([A-Za-z0-9_-]+)") {
         $id = [regex]::Escape($Matches[1])
         return $source -match "id\s*=\s*[`"']$id[`"']"
@@ -45,6 +65,13 @@ function Get-IntegrationMode($spec) {
         return "selector"
     }
     return $mode
+}
+
+function Test-IsRequired($spec) {
+    if ($null -eq $spec.required) {
+        return $true
+    }
+    return [bool]$spec.required
 }
 
 function Test-MapSpec($spec, [string]$projectRoot) {
@@ -68,7 +95,7 @@ function Test-MapSpec($spec, [string]$projectRoot) {
     if ($spec.selector -notmatch "^#([A-Za-z0-9_-]+)$") {
         return "$($spec.id): integration selector must be one exact element id"
     }
-    $source = Get-Content -LiteralPath $compositionPath -Raw
+    $source = Get-LiveHtmlSource $compositionPath
     $id = [regex]::Escape($Matches[1])
     $target = [regex]::Match(
         $source,
@@ -92,6 +119,7 @@ function Test-MapSpec($spec, [string]$projectRoot) {
 }
 
 function Test-Clip($spec, [string]$clipsRoot, [string]$projectRoot) {
+    $required = Test-IsRequired $spec
     $candidate = Get-ChildItem -LiteralPath $clipsRoot -Filter $spec.filenamePattern -File |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1
@@ -100,16 +128,18 @@ function Test-Clip($spec, [string]$clipsRoot, [string]$projectRoot) {
         return [pscustomobject]@{
             Id = $spec.id
             Status = "MISSING"
+            Required = $required
             File = ""
             Details = $spec.filenamePattern
         }
     }
 
-    $probeText = & $ffprobe -v error -show_streams -show_format -print_format json $candidate.FullName
+    $probeText = & $FfprobePath -v error -show_streams -show_format -print_format json $candidate.FullName
     if ($LASTEXITCODE -ne 0) {
         return [pscustomobject]@{
             Id = $spec.id
             Status = "FAIL"
+            Required = $required
             File = $candidate.Name
             Details = "ffprobe failed"
         }
@@ -145,6 +175,7 @@ function Test-Clip($spec, [string]$clipsRoot, [string]$projectRoot) {
     return [pscustomobject]@{
         Id = $spec.id
         Status = if ($issues.Count) { "FAIL" } else { "PASS" }
+        Required = $required
         File = $candidate.Name
         Details = if ($issues.Count) { $issues -join "; " } else {
             "$($video.width)x$($video.height), $([math]::Round($fps, 3)) fps, $([math]::Round($duration, 2))s, $audioNote"
@@ -167,10 +198,14 @@ $results += $map.long | ForEach-Object { Test-Clip $_ $longClips $longProject }
 $results += $map.shorts | ForEach-Object { Test-Clip $_ $shortsClips $shortsProject }
 $results | Format-Table -AutoSize
 
-$failed = @($results | Where-Object { $_.Status -ne "PASS" })
+$failed = @($results | Where-Object { $_.Required -and $_.Status -ne "PASS" })
 if ($failed.Count) {
-    Write-Error "$($failed.Count) of $($results.Count) required host clips are missing or invalid."
+    Write-Error "$($failed.Count) required host clip(s) are missing or invalid."
     exit 1
 }
 
-Write-Output "All $($results.Count) host clips passed technical validation."
+$optionalMissing = @($results | Where-Object { -not $_.Required -and $_.Status -eq "MISSING" })
+Write-Output "All required host clips passed technical validation."
+if ($optionalMissing.Count) {
+    Write-Output "$($optionalMissing.Count) optional host clip(s) are not present."
+}

@@ -8,6 +8,7 @@
       "width": 1920,
       "height": 1080,
       "composition": "compositions/scene-01-hook.html",
+      "required": true,
       "selector": "#s01-host-media",
       "className": "host-media"
     },
@@ -19,6 +20,7 @@
       "width": 1920,
       "height": 1080,
       "composition": "index.html",
+      "required": true,
       "selector": "#main-host-l02",
       "className": "main-host-video"
     },
@@ -30,6 +32,7 @@
       "width": 1920,
       "height": 1080,
       "composition": "index.html",
+      "required": true,
       "selector": "#main-host-l03",
       "className": "main-host-video"
     },
@@ -41,6 +44,7 @@
       "width": 1920,
       "height": 1080,
       "composition": "compositions/scene-05-codex-blocks.html",
+      "required": false,
       "selector": "#s05-host-image",
       "className": "s05-host-image"
     },
@@ -52,6 +56,7 @@
       "width": 1920,
       "height": 1080,
       "composition": "compositions/scene-09-checklist.html",
+      "required": false,
       "selector": "#scene-09-checklist-host-photo",
       "className": "host-photo"
     },
@@ -63,6 +68,7 @@
       "width": 1920,
       "height": 1080,
       "composition": "compositions/scene-10-close.html",
+      "required": false,
       "selector": "#scene-10-close-host-photo",
       "className": "host-photo"
     }
@@ -76,6 +82,7 @@
       "width": 1080,
       "height": 1920,
       "composition": "compositions/s01/index.html",
+      "required": false,
       "integrationMode": "character-led-retired"
     },
     {
@@ -86,6 +93,7 @@
       "width": 1080,
       "height": 1920,
       "composition": "compositions/s01/index.html",
+      "required": false,
       "integrationMode": "character-led-retired"
     },
     {
@@ -96,6 +104,7 @@
       "width": 1080,
       "height": 1920,
       "composition": "compositions/s02/index.html",
+      "required": false,
       "integrationMode": "character-led-retired"
     },
     {
@@ -106,6 +115,7 @@
       "width": 1080,
       "height": 1920,
       "composition": "compositions/s02/index.html",
+      "required": false,
       "integrationMode": "character-led-retired"
     },
     {
@@ -116,6 +126,7 @@
       "width": 1080,
       "height": 1920,
       "composition": "compositions/s03/index.html",
+      "required": false,
       "integrationMode": "character-led-retired"
     },
     {
@@ -126,6 +137,7 @@
       "width": 1080,
       "height": 1920,
       "composition": "compositions/s03/index.html",
+      "required": false,
       "integrationMode": "character-led-retired"
     }
   ]

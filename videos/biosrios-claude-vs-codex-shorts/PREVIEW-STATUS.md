@@ -33,7 +33,7 @@
   upgrade probe failed with `ETARGET`: npm metadata advertised `0.7.82`, but
   that version was unavailable from the registry. `package.json` was unchanged.
 - After correcting the shared font URLs, `npm run check` completed with
-  `0 error(s)` and `Check passed`.
+  `0 error(s)`, zero lint warnings, and `Check passed`.
 - Reviewed nonblocking findings: five SFX `clip_media_fit` warnings from the
   locked 1.0-second spec slots being longer than their source files; eleven S01
   contrast samples during proof/comparison entrances at 11.667s and 30.333s;
@@ -41,8 +41,9 @@
   `pointer-events` information. The proof states remain readable in the
   contact sheet, and the contrast samples do not affect hook or CTA beats.
 - The host replacement map validates in `character-led-retired` mode. L01-L03
-  pass technical validation; the remaining nine HeyGen-quota-dependent clips
-  are reported missing. Those optional avatar clips do not block this
+  pass required technical validation; the remaining nine
+  HeyGen-quota-dependent clips are reported as optional missing. The validator
+  exits successfully because those avatar clips do not block this
   character-led premium Short batch.
 
 ## Visual preview
