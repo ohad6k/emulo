@@ -405,9 +405,9 @@ $compositions = @(
 $requiredMedia = @(
   '.media\audio\sfx\sfx_006.wav',
   '.media\audio\sfx\sfx_007.wav',
-  '.media\audio\sfx\sfx_008.wav',
-  '.media\audio\sfx\sfx_009.wav',
-  '.media\audio\sfx\sfx_010.wav',
+  '.media\audio\sfx\sfx_011.wav',
+  '.media\audio\sfx\sfx_012.wav',
+  '.media\audio\sfx\sfx_013.wav',
   '.media\images\image_008.png',
   '.media\images\image_009.png',
   '.media\images\image_010.png'
@@ -441,7 +441,7 @@ foreach ($item in $compositions) {
     'visible comment CTA' = "(?s)Comment.*$($item.Keyword)"
     'verified evidence label' = 'VERIFIED LOCAL EXCERPT'
     'bottom safe CTA' = 'resource-cta'
-    'signature CTA sound' = 'sfx_010\.wav'
+    'signature CTA sound' = 'sfx_013\.wav'
   }
 
   foreach ($check in $checks.GetEnumerator()) {
@@ -587,9 +587,11 @@ node 'C:\Users\ohad1\.agents\skills\media-use\scripts\resolve.mjs' --type sfx --
 ```
 
 The resolver's first pass created `sfx_001` through `sfx_005` as MP3
-candidate history. Those files are retained but are not used. The final
-ledger-safe 48 kHz stereo WAV palette is adopted as `sfx_006` through
-`sfx_010` in the same functional order.
+candidate history. Those files are retained but are not used. The first WAV
+revisions, `sfx_008` through `sfx_010`, are superseded and unused. The final
+ledger-safe 48 kHz stereo WAV palette retains `sfx_006` and `sfx_007`, then
+adopts v2 number impact, reversal riser, and keyword signature as `sfx_011`
+through `sfx_013` in the same functional order.
 
 - [ ] **Step 7: Create the sound map**
 
@@ -602,9 +604,9 @@ Use:
 |---|---|---:|
 | `sfx_006` | Card/screen transition whoosh | 0.22 |
 | `sfx_007` | Checklist/UI verification click | 0.18 |
-| `sfx_008` | Number or verdict impact | 0.24 |
-| `sfx_009` | Reversal riser | 0.16 |
-| `sfx_010` | Comment-keyword signature hit | 0.24 |
+| `sfx_011` | Number or verdict impact | 0.24 |
+| `sfx_012` | Reversal riser | 0.16 |
+| `sfx_013` | Comment-keyword signature hit | 0.24 |
 
 Speech stays at 1.0. The existing music bed is reduced from 0.045 to 0.035.
 No effect may overlap a spoken numerical claim at full level.
@@ -817,12 +819,12 @@ Every designed proof panel must contain the visible label
 Add timed audio elements:
 
 ```html
-<audio class="clip" src=".media/audio/sfx/sfx_008.wav" data-start="0.15" data-duration="1.0" data-track-index="30" data-volume="0.24"></audio>
+<audio class="clip" src=".media/audio/sfx/sfx_011.wav" data-start="0.15" data-duration="1.0" data-track-index="30" data-volume="0.24"></audio>
 <audio class="clip" src=".media/audio/sfx/sfx_006.wav" data-start="6.15" data-duration="1.0" data-track-index="31" data-volume="0.22"></audio>
 <audio class="clip" src=".media/audio/sfx/sfx_006.wav" data-start="11.35" data-duration="1.0" data-track-index="31" data-volume="0.22"></audio>
 <audio class="clip" src=".media/audio/sfx/sfx_006.wav" data-start="17.75" data-duration="1.0" data-track-index="31" data-volume="0.22"></audio>
-<audio class="clip" src=".media/audio/sfx/sfx_009.wav" data-start="31.9" data-duration="1.0" data-track-index="32" data-volume="0.16"></audio>
-<audio class="clip" src=".media/audio/sfx/sfx_010.wav" data-start="37.25" data-duration="1.0" data-track-index="33" data-volume="0.24"></audio>
+<audio class="clip" src=".media/audio/sfx/sfx_012.wav" data-start="31.9" data-duration="1.0" data-track-index="32" data-volume="0.16"></audio>
+<audio class="clip" src=".media/audio/sfx/sfx_013.wav" data-start="37.25" data-duration="1.0" data-track-index="33" data-volume="0.24"></audio>
 ```
 
 - [ ] **Step 4: Add the CTA timeline**
@@ -897,9 +899,9 @@ Use:
 
 - [ ] **Step 3: Add deterministic S02 sound clips**
 
-Use `sfx_008` at 0.15, `sfx_006` at 7.25/13.45/19.45, `sfx_007` at
-27.2/28.0/28.8 for the three checklist confirmations, `sfx_009` at 24.9, and
-`sfx_010` at 35.45. Keep volumes from `SOUND-MAP.md`.
+Use `sfx_011` at 0.15, `sfx_006` at 7.25/13.45/19.45, `sfx_007` at
+27.2/28.0/28.8 for the three checklist confirmations, `sfx_012` at 24.9, and
+`sfx_013` at 35.45. Keep volumes from `SOUND-MAP.md`.
 
 - [ ] **Step 4: Add the CTA animation**
 
@@ -958,8 +960,8 @@ Use:
 
 - [ ] **Step 3: Add deterministic S03 sound clips**
 
-Use `sfx_008` at 0.15 and 25.2, `sfx_006` at 6.45/12.45, `sfx_007` at
-19.7/20.95 for the crossouts, `sfx_009` at 24.3, and `sfx_010` at 35.85.
+Use `sfx_011` at 0.15 and 25.2, `sfx_006` at 6.45/12.45, `sfx_007` at
+19.7/20.95 for the crossouts, `sfx_012` at 24.3, and `sfx_013` at 35.85.
 
 - [ ] **Step 4: Add the CTA animation**
 

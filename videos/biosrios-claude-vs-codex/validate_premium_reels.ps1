@@ -19,9 +19,9 @@ $compositions = @(
 $media = @(
     '.media/audio/sfx/sfx_006.wav'
     '.media/audio/sfx/sfx_007.wav'
-    '.media/audio/sfx/sfx_008.wav'
-    '.media/audio/sfx/sfx_009.wav'
-    '.media/audio/sfx/sfx_010.wav'
+    '.media/audio/sfx/sfx_011.wav'
+    '.media/audio/sfx/sfx_012.wav'
+    '.media/audio/sfx/sfx_013.wav'
     '.media/images/image_008.png'
     '.media/images/image_009.png'
     '.media/images/image_010.png'
@@ -240,10 +240,10 @@ foreach ($composition in $compositions) {
     $audioCues = @($openingTagPattern.Matches($markup) | Where-Object {
         [string]::Equals($_.Groups['tag'].Value, 'audio', [System.StringComparison]::OrdinalIgnoreCase) -and
         (Test-OpeningTagIsVisible $_.Value) -and
-        (Test-OpeningTagHasExactAttribute $_.Value 'src' '.media/audio/sfx/sfx_010.wav')
+        (Test-OpeningTagHasExactAttribute $_.Value 'src' '.media/audio/sfx/sfx_013.wav')
     })
     if ($audioCues.Count -eq 0) {
-        $errors.Add("$($composition.Id): sfx_010.wav cue missing")
+        $errors.Add("$($composition.Id): sfx_013.wav cue missing")
     }
     if ($markup -cmatch 'FACE-CLONE PREVIEW FALLBACK') {
         $errors.Add("$($composition.Id): FACE-CLONE PREVIEW FALLBACK must be removed")
