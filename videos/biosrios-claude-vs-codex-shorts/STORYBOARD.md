@@ -59,8 +59,8 @@ Format: three separate 1080x1920 compositions, 30 fps
   4. The blocked public test command receives one red lock.
   5. The rejected patch receives one red read-only stamp.
   6. Motion stops on `TOKEN COUNT ≠ PRODUCTIVITY`.
-  7. Create file, run test, and inspect permission mode form a three-item
-     preflight checklist.
+  7. `Authentication ready`, `Write permissions ready`, and
+     `Repo + evaluator ready` form a three-item preflight checklist.
   8. Conclusion: `PREFLIGHT FIRST`.
   9. `PREFLIGHT` CTA offers the agent-run checklist.
 
