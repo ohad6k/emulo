@@ -31,11 +31,12 @@ $errors = [System.Collections.Generic.List[string]]::new()
 
 function Get-VisibleMarkup([string]$html) {
     $withoutComments = [regex]::Replace($html, '<!--.*?-->', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
-    return [regex]::Replace($withoutComments, '<script\b[^>]*>.*?</script\s*>', '', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $withoutScripts = [regex]::Replace($withoutComments, '<script\b[^>]*>.*?</script\s*>', '', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    return [regex]::Replace($withoutScripts, '<template\b[^>]*>.*?</template\s*>', '', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor [System.Text.RegularExpressions.RegexOptions]::Singleline)
 }
 
 function Test-OpeningTagHasClassToken([string]$openingTag, [string]$classToken) {
-    $classAttribute = [regex]::Match($openingTag, '\bclass\s*=\s*["''](?<value>[^"'']*)["'']', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $classAttribute = [regex]::Match($openingTag, '(?<=\s)(?i:class)\s*=\s*["''](?<value>[^"'']*)["'']')
     if (-not $classAttribute.Success) {
         return $false
     }
@@ -44,9 +45,32 @@ function Test-OpeningTagHasClassToken([string]$openingTag, [string]$classToken) 
     return $classAttribute.Groups['value'].Value -cmatch $tokenPattern
 }
 
-function Test-OpeningTagHasExactAttribute([string]$openingTag, [string]$name, [string]$value) {
-    $attributePattern = '\b' + [regex]::Escape($name) + '\s*=\s*["'']' + [regex]::Escape($value) + '["'']'
-    return $openingTag -cmatch $attributePattern
+function Test-OpeningTagHasExactAttribute([string]$openingTag, [string]$name, [string]$value, [bool]$valueCaseInsensitive = $false) {
+    $attributePattern = '(?<=\s)(?i:' + [regex]::Escape($name) + ')\s*=\s*["''](?<value>[^"'']*)["'']'
+    $attribute = [regex]::Match($openingTag, $attributePattern)
+    if (-not $attribute.Success) {
+        return $false
+    }
+
+    if ($valueCaseInsensitive) {
+        return [string]::Equals($attribute.Groups['value'].Value, $value, [System.StringComparison]::OrdinalIgnoreCase)
+    }
+
+    return $attribute.Groups['value'].Value -ceq $value
+}
+
+function Test-OpeningTagIsVisible([string]$openingTag) {
+    if ($openingTag -match '(?i)(?<=\s)hidden(?=\s|=|/?>)') {
+        return $false
+    }
+
+    $styleAttribute = [regex]::Match($openingTag, '(?<=\s)(?i:style)\s*=\s*["''](?<value>[^"'']*)["'']')
+    if (-not $styleAttribute.Success) {
+        return $true
+    }
+
+    $style = $styleAttribute.Groups['value'].Value
+    return $style -notmatch '(?i)(?<![A-Za-z0-9_-])(?:display\s*:\s*none|visibility\s*:\s*hidden)\b'
 }
 
 function Get-MatchingElementInnerHtml([string]$markup, [System.Text.RegularExpressions.Match]$openingTag) {
@@ -110,7 +134,7 @@ function Get-DirectChildElements([string]$innerHtml) {
 function Test-ResourceCtaCopy([string]$markup, [string]$keyword) {
     $openingTagPattern = [regex]::new('<(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     foreach ($openingTag in $openingTagPattern.Matches($markup)) {
-        if (-not (Test-OpeningTagHasClassToken $openingTag.Value 'resource-cta') -or -not (Test-OpeningTagHasExactAttribute $openingTag.Value 'data-cta-keyword' $keyword)) {
+        if (-not (Test-OpeningTagIsVisible $openingTag.Value) -or -not (Test-OpeningTagHasClassToken $openingTag.Value 'resource-cta') -or -not (Test-OpeningTagHasExactAttribute $openingTag.Value 'data-cta-keyword' $keyword)) {
             continue
         }
 
@@ -121,13 +145,13 @@ function Test-ResourceCtaCopy([string]$markup, [string]$keyword) {
 
         $children = @(Get-DirectChildElements $ctaInnerHtml)
         for ($commentIndex = 0; $commentIndex -lt $children.Count; $commentIndex++) {
-            if ($children[$commentIndex].InnerHtml -cnotmatch '^\s*Comment\s*$' -or -not (Test-OpeningTagHasClassToken $children[$commentIndex].OpeningTag 'comment')) {
+            if (-not (Test-OpeningTagIsVisible $children[$commentIndex].OpeningTag) -or $children[$commentIndex].InnerHtml -cnotmatch '^\s*Comment\s*$' -or -not (Test-OpeningTagHasClassToken $children[$commentIndex].OpeningTag 'comment')) {
                 continue
             }
 
             for ($keywordIndex = $commentIndex + 1; $keywordIndex -lt $children.Count; $keywordIndex++) {
                 $keywordText = '^\s*["'']?' + [regex]::Escape($keyword) + '["'']?\s*$'
-                if ((Test-OpeningTagHasClassToken $children[$keywordIndex].OpeningTag 'keyword') -and $children[$keywordIndex].InnerHtml -cmatch $keywordText) {
+                if ((Test-OpeningTagIsVisible $children[$keywordIndex].OpeningTag) -and (Test-OpeningTagHasClassToken $children[$keywordIndex].OpeningTag 'keyword') -and $children[$keywordIndex].InnerHtml -cmatch $keywordText) {
                     return $true
                 }
             }
@@ -170,13 +194,18 @@ foreach ($composition in $compositions) {
         $s01Html = $html
     }
 
-    $stylesheetLink = '<link\b(?=[^>]*\brel\s*=\s*["'']stylesheet["''])(?=[^>]*\bhref\s*=\s*["'']assets/styles/premium-reel\.css["''])[^>]*>'
-    if ($markup -cnotmatch $stylesheetLink) {
+    $openingTagPattern = [regex]::new('<(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $stylesheetLinks = @($openingTagPattern.Matches($markup) | Where-Object {
+        [string]::Equals($_.Groups['tag'].Value, 'link', [System.StringComparison]::OrdinalIgnoreCase) -and
+        (Test-OpeningTagIsVisible $_.Value) -and
+        (Test-OpeningTagHasExactAttribute $_.Value 'rel' 'stylesheet' $true) -and
+        (Test-OpeningTagHasExactAttribute $_.Value 'href' 'assets/styles/premium-reel.css')
+    })
+    if ($stylesheetLinks.Count -eq 0) {
         $errors.Add("$($composition.Id): premium-reel.css reference missing")
     }
 
-    $openingTagPattern = [regex]::new('<(?<tag>[A-Za-z][A-Za-z0-9:-]*)\b[^>]*>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
-    $resourceCtas = @($openingTagPattern.Matches($markup) | Where-Object { Test-OpeningTagHasClassToken $_.Value 'resource-cta' })
+    $resourceCtas = @($openingTagPattern.Matches($markup) | Where-Object { (Test-OpeningTagIsVisible $_.Value) -and (Test-OpeningTagHasClassToken $_.Value 'resource-cta') })
     $matchingResourceCtas = @($resourceCtas | Where-Object { Test-OpeningTagHasExactAttribute $_.Value 'data-cta-keyword' $composition.Keyword })
     if ($matchingResourceCtas.Count -eq 0) {
         $errors.Add("$($composition.Id): data-cta-keyword must equal $($composition.Keyword)")
@@ -186,13 +215,19 @@ foreach ($composition in $compositions) {
         $errors.Add("$($composition.Id): visible 'Comment $($composition.Keyword)' CTA copy missing")
     }
 
-    if ($markup -cnotmatch '<[A-Za-z][A-Za-z0-9:-]*\b[^>]*>\s*VERIFIED LOCAL EXCERPT\s*</[A-Za-z][A-Za-z0-9:-]*\s*>') {
+    $proofLabels = @([regex]::Matches($markup, '(?<opening>(?i:<[A-Za-z][A-Za-z0-9:-]*\b[^>]*>))\s*(?-i:VERIFIED LOCAL EXCERPT)\s*(?i:</[A-Za-z][A-Za-z0-9:-]*\s*>)') | Where-Object { Test-OpeningTagIsVisible $_.Groups['opening'].Value })
+    if ($proofLabels.Count -eq 0) {
         $errors.Add("$($composition.Id): VERIFIED LOCAL EXCERPT proof label missing")
     }
     if ($resourceCtas.Count -eq 0) {
         $errors.Add("$($composition.Id): resource-cta missing")
     }
-    if ($markup -cnotmatch '<audio\b(?=[^>]*\bsrc\s*=\s*["''][^"'']*sfx_005\.wav["''])[^>]*>') {
+    $audioCues = @($openingTagPattern.Matches($markup) | Where-Object {
+        [string]::Equals($_.Groups['tag'].Value, 'audio', [System.StringComparison]::OrdinalIgnoreCase) -and
+        (Test-OpeningTagIsVisible $_.Value) -and
+        ([regex]::IsMatch($_.Value, '(?<=\s)(?i:src)\s*=\s*["''][^"'']*sfx_005\.wav["'']'))
+    })
+    if ($audioCues.Count -eq 0) {
         $errors.Add("$($composition.Id): sfx_005.wav cue missing")
     }
     if ($markup -cmatch 'FACE-CLONE PREVIEW FALLBACK') {
