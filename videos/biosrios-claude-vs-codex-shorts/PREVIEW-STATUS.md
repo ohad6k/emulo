@@ -17,8 +17,9 @@
 - Re-typeset proof panels are labeled `VERIFIED LOCAL EXCERPT`; they retain
   source and line references and are not presented as raw screenshots.
 - All hook, close, and CTA copy now clears a reserved 300-pixel bottom UI band.
-- All six destinations now use stable media IDs and are covered by the shared
-  replacement-map validator, including the Short 01 root mirror.
+- The six former Short host-video slots are explicitly recorded as
+  `character-led-retired`. The shared replacement-map validator skips their
+  obsolete DOM selectors while continuing to inventory the optional clips.
 - CTA keywords are `TEST`, `PREFLIGHT`, and `REMATCH`.
 - Paid HeyGen remains optional and is unused.
 
@@ -28,8 +29,21 @@
 - Nine locked preview frames exist for each Short.
 - The premium contact sheet is 1080x5760 and has been visually reviewed across
   all 27 frames.
-- The HyperFrames pin probe and full project check remain part of the final
-  Task 10 verification gate.
+- HyperFrames remains pinned to `0.7.78`. The 2026-07-29 read-only latest
+  upgrade probe failed with `ETARGET`: npm metadata advertised `0.7.82`, but
+  that version was unavailable from the registry. `package.json` was unchanged.
+- After correcting the shared font URLs, `npm run check` completed with
+  `0 error(s)` and `Check passed`.
+- Reviewed nonblocking findings: five SFX `clip_media_fit` warnings from the
+  locked 1.0-second spec slots being longer than their source files; eleven S01
+  contrast samples during proof/comparison entrances at 11.667s and 30.333s;
+  one intentional character-overflow finding; and pseudo-element
+  `pointer-events` information. The proof states remain readable in the
+  contact sheet, and the contrast samples do not affect hook or CTA beats.
+- The host replacement map validates in `character-led-retired` mode. L01-L03
+  pass technical validation; the remaining nine HeyGen-quota-dependent clips
+  are reported missing. Those optional avatar clips do not block this
+  character-led premium Short batch.
 
 ## Visual preview
 

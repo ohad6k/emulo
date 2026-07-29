@@ -1,0 +1,132 @@
+{
+  "long": [
+    {
+      "id": "L01",
+      "filenamePattern": "L01-v*.mp4",
+      "minimumDuration": 10.84,
+      "start": 0,
+      "width": 1920,
+      "height": 1080,
+      "composition": "compositions/scene-01-hook.html",
+      "selector": "#s01-host-media",
+      "className": "host-media"
+    },
+    {
+      "id": "L02",
+      "filenamePattern": "L02-v*.mp4",
+      "minimumDuration": 8.16,
+      "start": 28.44,
+      "width": 1920,
+      "height": 1080,
+      "composition": "index.html",
+      "selector": "#main-host-l02",
+      "className": "main-host-video"
+    },
+    {
+      "id": "L03",
+      "filenamePattern": "L03-v*.mp4",
+      "minimumDuration": 5.56,
+      "start": 137.41,
+      "width": 1920,
+      "height": 1080,
+      "composition": "index.html",
+      "selector": "#main-host-l03",
+      "className": "main-host-video"
+    },
+    {
+      "id": "L04",
+      "filenamePattern": "L04-v*.mp4",
+      "minimumDuration": 4.96,
+      "start": 0,
+      "width": 1920,
+      "height": 1080,
+      "composition": "compositions/scene-05-codex-blocks.html",
+      "selector": "#s05-host-image",
+      "className": "s05-host-image"
+    },
+    {
+      "id": "L05",
+      "filenamePattern": "L05-v*.mp4",
+      "minimumDuration": 5.8,
+      "start": 0,
+      "width": 1920,
+      "height": 1080,
+      "composition": "compositions/scene-09-checklist.html",
+      "selector": "#scene-09-checklist-host-photo",
+      "className": "host-photo"
+    },
+    {
+      "id": "L06",
+      "filenamePattern": "L06-v*.mp4",
+      "minimumDuration": 8.8,
+      "start": 6.27,
+      "width": 1920,
+      "height": 1080,
+      "composition": "compositions/scene-10-close.html",
+      "selector": "#scene-10-close-host-photo",
+      "className": "host-photo"
+    }
+  ],
+  "shorts": [
+    {
+      "id": "S01-HOOK",
+      "filenamePattern": "S01-HOOK-v*.mp4",
+      "minimumDuration": 6.12,
+      "start": 0,
+      "width": 1080,
+      "height": 1920,
+      "composition": "compositions/s01/index.html",
+      "integrationMode": "character-led-retired"
+    },
+    {
+      "id": "S01-CLOSE",
+      "filenamePattern": "S01-CLOSE-v*.mp4",
+      "minimumDuration": 5.28,
+      "start": 32.8,
+      "width": 1080,
+      "height": 1920,
+      "composition": "compositions/s01/index.html",
+      "integrationMode": "character-led-retired"
+    },
+    {
+      "id": "S02-HOOK",
+      "filenamePattern": "S02-HOOK-v*.mp4",
+      "minimumDuration": 6.84,
+      "start": 0,
+      "width": 1080,
+      "height": 1920,
+      "composition": "compositions/s02/index.html",
+      "integrationMode": "character-led-retired"
+    },
+    {
+      "id": "S02-CLOSE",
+      "filenamePattern": "S02-CLOSE-v*.mp4",
+      "minimumDuration": 3.84,
+      "start": 32.4,
+      "width": 1080,
+      "height": 1920,
+      "composition": "compositions/s02/index.html",
+      "integrationMode": "character-led-retired"
+    },
+    {
+      "id": "S03-HOOK",
+      "filenamePattern": "S03-HOOK-v*.mp4",
+      "minimumDuration": 4.56,
+      "start": 0,
+      "width": 1080,
+      "height": 1920,
+      "composition": "compositions/s03/index.html",
+      "integrationMode": "character-led-retired"
+    },
+    {
+      "id": "S03-CLOSE",
+      "filenamePattern": "S03-CLOSE-v*.mp4",
+      "minimumDuration": 5.32,
+      "start": 31,
+      "width": 1080,
+      "height": 1920,
+      "composition": "compositions/s03/index.html",
+      "integrationMode": "character-led-retired"
+    }
+  ]
+}
