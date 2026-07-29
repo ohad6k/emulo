@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#f2eee1">
-<meta name="description" content="Download Emulo Pro for Windows. Free download, sign in once with Google or GitHub, then it runs on your machine with no network.">
+<meta name="description" content="Emulo Pro is the desktop app for your mined profile. Free to download, sign in once, then it runs on your own machine.">
 <link rel="icon" type="image/png" href="/assets/emulo.png">
 <link rel="canonical" href="https://emulo.vercel.app/download">
 <title>Emulo Pro | Download for Windows</title>
 
 <meta property="og:title" content="Emulo Pro | Download for Windows">
-<meta property="og:description" content="Free download. Sign in once with Google or GitHub. Then it runs on your machine, offline.">
+<meta property="og:description" content="The app that opens your mined profile, the sessions behind it, and the workflows it wrote. Free to download.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://emulo.vercel.app/download">
 <meta property="og:site_name" content="Emulo">
@@ -101,59 +101,70 @@ nav{
   font-family:var(--mono);font-size:12px;letter-spacing:.18em;
   text-transform:uppercase;color:var(--ink-faint);margin-bottom:14px;
 }
-h1{font-family:var(--serif);font-weight:600;font-size:clamp(44px,6vw,72px);line-height:1.04;letter-spacing:-.015em}
-h2{font-family:var(--serif);font-weight:600;font-size:28px;line-height:1.2;margin:52px 0 14px}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(38px,4.6vw,58px);line-height:1.06;letter-spacing:-.015em}
+h2{font-family:var(--serif);font-weight:600;font-size:28px;line-height:1.2;margin:56px 0 16px}
+h3{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.3;margin:0 0 4px}
 p{margin:0 0 16px;color:var(--ink-2)}
-.lead{font-size:20px;color:var(--ink);margin:22px 0 0;max-width:56ch}
-
-ol,ul{margin:0 0 16px 22px;color:var(--ink-2)}
-li{margin-bottom:8px}
+.lead{font-size:20px;color:var(--ink);margin:22px 0 0;max-width:54ch}
 
 code{font-family:var(--mono);font-size:.9em}
 pre{
-  margin:0 0 18px;padding:16px 18px;overflow-x:auto;
+  margin:0 0 14px;padding:14px 16px;overflow-x:auto;
   border:1px solid var(--rule);background:var(--paper-2);
-  font-family:var(--mono);font-size:13.5px;line-height:1.6;
+  font-family:var(--mono);font-size:13px;line-height:1.6;
 }
 
-/* ---------- the release panel ---------- */
-.get{
-  margin:36px 0 20px;padding:26px 28px;
-  border:1px solid var(--rule);background:var(--paper-2);
-}
-.get-action{
-  display:inline-block;padding:14px 26px;
-  border:1px solid var(--ink);background:var(--ink);color:var(--paper);
-  font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;
-  font-weight:500;text-decoration:none;
-  transition:background .2s ease,border-color .2s ease;
-}
-.get-action:hover{background:var(--red);border-color:var(--red)}
-.get-action:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+/* ---------- what you get ---------- */
+/* Three plain items, no boxes. A bordered card around each would be three
+   containers doing the job one blank line already does. */
+.gets{margin:0;padding:0;list-style:none}
+.gets li{margin:0 0 26px}
+.gets p{margin:0}
 
-/* The waiting state reads as an empty shelf, not a button someone should try.
-   No fill, no hover, nothing that invites a click. */
-.get-action--waiting{
-  background:none;color:var(--ink-dim);border-style:dashed;border-color:var(--cream-dim);
-  cursor:default;
+/* ---------- steps ---------- */
+.steps{margin:0;padding:0;list-style:none;counter-reset:step}
+.steps li{
+  counter-increment:step;position:relative;padding-left:42px;margin-bottom:18px;color:var(--ink-2);
 }
-.get-meta{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-faint);margin:14px 0 0}
+.steps li::before{
+  content:counter(step);position:absolute;left:0;top:2px;
+  width:26px;height:26px;display:grid;place-items:center;
+  border:1px solid var(--rule);border-radius:50%;
+  font-family:var(--mono);font-size:12px;color:var(--ink-faint);
+}
+
+/* ---------- the collapsed detail ---------- */
+/* Everything a normal person does not need in order to install an app, in one
+   place they can open. It is a <details> so it costs no JavaScript and it is
+   keyboard reachable and findable by in-page search even while closed. */
+.more{margin:56px 0 0;border-top:1px solid var(--rule);padding-top:8px}
+.more summary{
+  cursor:pointer;padding:14px 0;list-style:none;
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-faint);display:flex;align-items:center;gap:10px;
+}
+.more summary::-webkit-details-marker{display:none}
+.more summary::after{content:"+";font-size:15px;color:var(--ink-dim)}
+.more[open] summary::after{content:"\2013"}
+.more summary:hover{color:var(--ink)}
+.more summary:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.more-body{padding:6px 0 8px}
+.more-body h3{font-size:17px;margin:26px 0 6px}
+.more-body h3:first-child{margin-top:0}
+.more-body p{font-size:16px}
 
 /* A checksum is only useful if it can be copied without picking up a line
    break, so it wraps on character and sits on its own line. */
 .checksum{
-  margin:6px 0 0;font-family:var(--mono);font-size:12.5px;line-height:1.55;
+  margin:0 0 14px;padding:12px 16px;
+  border:1px solid var(--rule);background:var(--paper-2);
+  font-family:var(--mono);font-size:12.5px;line-height:1.55;
   color:var(--ink-soft);overflow-wrap:anywhere;
 }
 .rehearsal{
   margin:0 0 16px;padding:10px 14px;
   border-left:3px solid var(--red);color:var(--red);
   font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;
-}
-
-.note{
-  margin:0 0 18px;padding:16px 18px;
-  border-left:3px solid var(--gold);background:var(--paper-2);color:var(--ink-2);
 }
 
 footer{
@@ -167,17 +178,16 @@ footer a{
 }
 footer a:hover{color:var(--red)}
 
-
 /* ---------- hero ---------- */
 .hero{
   max-width:1120px;margin:0 auto;padding:8px 32px 0;
   display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
   align-items:center;gap:40px;
 }
-.hero-copy{padding:40px 0 56px}
+.hero-copy{padding:32px 0 52px}
 .hero-art{position:relative;align-self:center;min-width:0}
 .hero-art img{
-  width:min(440px,100%);display:block;margin-left:auto;
+  width:min(430px,100%);display:block;margin-left:auto;
   mix-blend-mode:multiply;filter:contrast(1.02);
 }
 /* the same soft ink wash the home page grounds its portrait with. It is wider
@@ -213,7 +223,10 @@ footer a:hover{color:var(--red)}
 }
 .get-open:focus-visible{outline:2px solid var(--red);outline-offset:4px}
 .get-open .arrow{font-size:15px;line-height:1}
-.get-aside{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-faint);line-height:1.7}
+.get-aside{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-faint);line-height:1.7;margin:14px 0 0}
+/* The one prerequisite, in body text rather than in the mono strip, because it
+   is a sentence somebody has to read and act on, not a spec. */
+.get-needs{margin:10px 0 0;max-width:48ch;font-size:16px;color:var(--ink-2)}
 
 /* Emulo is Windows-only. Someone on a Mac should learn that from the page,
    not from unpacking 7.4 MB and finding a .cmd file inside. The button still
@@ -230,7 +243,7 @@ footer a:hover{color:var(--red)}
    its own top layer, focus trapping, Escape-to-close and inertness of the page
    behind it, none of which is worth reimplementing badly. */
 .sheet{
-  width:min(560px,calc(100vw - 32px));padding:0;
+  width:min(520px,calc(100vw - 32px));padding:0;
   border:1px solid var(--ink);background:var(--paper-2);color:var(--ink);
   /* A native <dialog> defaults to the top of its containing block, not the
      middle of the screen -- it opened pinned to the top-left corner until
@@ -250,6 +263,12 @@ footer a:hover{color:var(--red)}
   padding:26px 28px 0;
 }
 .sheet-title{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1.15}
+/* The kicker above the title carries the one piece of news, that the file is
+   on its way, so the title can stay the product name and version. */
+.sheet-kicker{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--red);margin-bottom:6px;
+}
 .sheet-close{
   border:0;background:none;cursor:pointer;padding:4px 6px;margin:-4px -6px 0 0;
   font-family:var(--mono);font-size:18px;line-height:1;color:var(--ink-faint);
@@ -258,28 +277,7 @@ footer a:hover{color:var(--red)}
 .sheet-close:focus-visible{outline:2px solid var(--red);outline-offset:2px}
 .sheet-body{padding:18px 28px 28px}
 .sheet-body p{color:var(--ink-2)}
-.sheet-steps{margin:22px 0 0;padding:0;list-style:none;counter-reset:step}
-.sheet-steps li{
-  counter-increment:step;position:relative;padding-left:38px;margin-bottom:16px;color:var(--ink-2);
-}
-.sheet-steps li::before{
-  content:counter(step);position:absolute;left:0;top:1px;
-  width:24px;height:24px;display:grid;place-items:center;
-  border:1px solid var(--rule);border-radius:50%;
-  font-family:var(--mono);font-size:12px;color:var(--ink-faint);
-}
-.sheet-foot{
-  margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);
-  font-family:var(--mono);font-size:12px;letter-spacing:.05em;color:var(--ink-faint);
-}
-.sheet-foot a{color:var(--ink-soft)}
 
-/* The kicker above the title carries the one piece of news -- the file is on
-   its way -- so the title can stay the product name and version. */
-.sheet-kicker{
-  font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;
-  text-transform:uppercase;color:var(--red);margin-bottom:6px;
-}
 /* What is actually arriving, named. A download screen that does not tell you
    the filename leaves you guessing which of the four things in your downloads
    folder to open. */
@@ -299,20 +297,35 @@ footer a:hover{color:var(--red)}
 .sheet-again{margin:10px 0 0;font-family:var(--mono);font-size:12px;color:var(--ink-faint)}
 .sheet-again a{color:var(--red);text-decoration:underline;text-underline-offset:2px}
 
-/* A hash you cannot copy is a hash nobody checks, so both the checksum and the
-   command that produces it get a button. */
+.sheet-steps{margin:22px 0 0;padding:0;list-style:none;counter-reset:step}
+.sheet-steps li{
+  counter-increment:step;position:relative;padding-left:38px;margin-bottom:16px;color:var(--ink-2);
+}
+.sheet-steps li::before{
+  content:counter(step);position:absolute;left:0;top:1px;
+  width:24px;height:24px;display:grid;place-items:center;
+  border:1px solid var(--rule);border-radius:50%;
+  font-family:var(--mono);font-size:12px;color:var(--ink-faint);
+}
+.sheet-foot{
+  margin-top:24px;padding-top:18px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:12px;letter-spacing:.05em;color:var(--ink-faint);
+}
+.sheet-foot a{color:var(--ink-soft)}
+
+/* A hash nobody can copy is a hash nobody checks. */
 .copy-row{
-  display:flex;align-items:stretch;gap:0;margin:10px 0 0;
-  border:1px solid var(--rule);background:var(--paper);
+  display:flex;align-items:stretch;gap:0;margin:0 0 14px;
+  border:1px solid var(--rule);background:var(--paper-2);
 }
 .copy-row code{
-  flex:1;min-width:0;padding:9px 11px;
+  flex:1;min-width:0;padding:11px 13px;
   font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--ink-soft);
   overflow-wrap:anywhere;
 }
 .copy{
   flex:none;align-self:stretch;
-  border:0;border-left:1px solid var(--rule);background:var(--paper-2);
+  border:0;border-left:1px solid var(--rule);background:var(--paper);
   padding:0 14px;cursor:pointer;
   font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--ink-faint);transition:color .18s ease,background .18s ease;
@@ -324,7 +337,7 @@ footer a:hover{color:var(--red)}
 @media (max-width:900px){
   .hero{grid-template-columns:1fr;gap:8px;padding-top:0}
   .hero-art{order:-1}
-  .hero-art img{margin:0 auto;width:min(320px,72%)}
+  .hero-art img{margin:0 auto;width:min(300px,68%)}
   .hero-copy{padding:16px 0 40px}
 }
 
@@ -345,6 +358,10 @@ footer a:hover{color:var(--red)}
     <a href="/#pricing">Pricing</a>
     <a href="https://github.com/ohad6k/emulo">GitHub</a>
     <a href="https://discord.gg/QMnYtVcxk2">Discord</a>
+    <!-- No ?start=1 here. On this page the bar link is the you-are-here marker
+         and the page's own button two inches below is the action; pointing it
+         at the parameter would reload the whole page to start a file the
+         visible button starts instantly. -->
     <a class="nav-cta" href="/download" aria-current="page">Download</a>
   </div>
 </nav>
@@ -352,8 +369,8 @@ footer a:hover{color:var(--red)}
 <section class="hero">
   <div class="hero-copy">
     <p class="kicker">Emulo Pro</p>
-    <h1>Download</h1>
-    <p class="lead">Free to download. You sign in once on first run, and after that Emulo runs on your machine with no network needed and nothing uploaded.</p>
+    <h1>See what Emulo found out about you.</h1>
+    <p class="lead">The desktop app opens your mined profile, the real sessions behind every claim it makes, and the workflows it wrote for you. Free to download. You sign in once, and after that it runs on your own machine.</p>
 
     <!--
       The action and everything about the build come from /releases.json, which
@@ -363,9 +380,10 @@ footer a:hover{color:var(--red)}
       markup to click before a build exists.
     -->
     <div class="get-row" id="release">
-      <button class="get-open" type="button" disabled>Checking for a build…</button>
+      <button class="get-open" type="button" disabled>One moment</button>
     </div>
-    <p class="get-aside" id="release-aside">Windows &middot; Python 3.11 &middot; one zip</p>
+    <p class="get-aside" id="release-aside">Checking which version is current.</p>
+    <p class="get-needs" id="release-needs">It needs Python 3.11 on the machine. If that is missing, the installer stops and tells you, and nothing on your computer is changed.</p>
   </div>
   <div class="hero-art">
     <img src="assets/emulo.png" alt="Emulo engraving: a human and a machine head back to back" fetchpriority="high">
@@ -374,36 +392,79 @@ footer a:hover{color:var(--red)}
 
 <main class="page">
   <div class="doc">
-<h2>1. Check what you got</h2>
-    <p>Before unpacking anything, compare the hash of the file you downloaded against the one printed above. It takes a second and it is the whole point of publishing it.</p>
-<pre>Get-FileHash .\emulo-pro-*.zip -Algorithm SHA256</pre>
-    <p>If it does not match, do not install it. Download it again.</p>
-    <p>A file named <code>emulo-pro-&lt;version&gt;-rehearsal.zip</code> is a build rehearsal, not a release. It says so in the filename on purpose, so you never have to open one to find out.</p>
 
-    <h2>2. Install</h2>
-    <p>Unpack the zip and double-click <strong>Install Emulo.cmd</strong>. It installs into your Windows account. No administrator access is needed.</p>
-    <p>If it cannot find Python 3.11, install Python 3.11 and run it again. Pro checks the integrity of every file it reads, and Python 3.13 on Windows reports file timestamps inconsistently enough to break that check, so installing on 3.13 is refused outright rather than allowed to fail strangely later.</p>
-    <p>There is a manual route too, in the install guide inside the zip.</p>
+    <h2>What you get</h2>
+    <ul class="gets">
+      <li>
+        <h3>Your profile, in a window</h3>
+        <p>Everything the mine found about how you work, laid out to read, instead of sitting in a file you open twice and forget.</p>
+      </li>
+      <li>
+        <h3>The sessions behind it</h3>
+        <p>Every claim points back at the real sessions that support it, so you can check any line it wrote about you and cut the ones that are not true.</p>
+      </li>
+      <li>
+        <h3>The workflows</h3>
+        <p>The things you do over and over, written out as steps your agent can follow without being told again.</p>
+      </li>
+    </ul>
+    <p>It reads the AI coding sessions already on your computer. There is no API key to add, because it runs through the agent you already use, Claude Code or Codex.</p>
 
-    <h2>3. Sign in, once</h2>
-    <p>The first run shows a short code and opens your browser. You sign in there with Google or GitHub and enter the code.</p>
-    <div class="note">
-      <strong>Emulo never sees your password.</strong> The browser does the authenticating and Emulo only ever receives a token for this device. There is no password field anywhere in Emulo, and there never will be.
-    </div>
-    <p>After that this device stays signed in. The licence lives on your machine and is checked locally, so Emulo keeps working with no network at all. It renews itself quietly when you are online; when you are not, nothing breaks and nothing nags.</p>
-
-    <h2>What it does with your sessions</h2>
-    <p>It reads the AI coding sessions already on your computer and turns what you actually do into skills, workflows and a profile your agent reads before every task. Raw sessions, local paths and decryption keys never leave the device. The <a href="/privacy.html">privacy policy</a> is the long version.</p>
-
-    <h2>Requirements</h2>
-    <ol>
-      <li>Windows.</li>
-      <li>Python 3.11 exactly, for the reason above.</li>
-      <li>Claude Code or Codex installed, so there are sessions to read. Emulo runs through the agent you already have, so there is no API key to add.</li>
+    <h2>Installing takes about a minute</h2>
+    <ol class="steps">
+      <li>Open the downloaded file and choose Extract All. Windows offers it in the bar at the top of the window.</li>
+      <li>Double-click <strong>Install Emulo</strong>. It installs into your own Windows account, so there is no administrator prompt. Windows will say the publisher could not be verified, because this build is not signed yet. The button that continues is Run.</li>
+      <li>Sign in once. Emulo shows a short code and opens your browser. You sign in there with Google or GitHub and type the code in.</li>
     </ol>
+    <p>The app opens itself when it is done.</p>
 
-    <h2>The open-source CLI</h2>
-    <p>Emulo the profile miner is open source and needs none of this. <code>pip install emulo</code>, or read the <a href="https://github.com/ohad6k/emulo">repository</a>. Pro is the Museum: the desktop app, the reference board, the curator and the workflows.</p>
+    <h2>Your sessions never leave your computer</h2>
+    <p>Emulo reads your private session logs, so it is built to never move them. The sessions, the file paths and the keys stay on the device.</p>
+    <p>Emulo never sees your password either. The signing in happens in your browser, and the app only ever receives a token for this one device.</p>
+    <p>Once this device is signed in it stays signed in, and the licence is checked on your own machine, so the app keeps working with no internet at all. The <a href="/privacy.html">privacy policy</a> is the long version.</p>
+
+    <h2>If something goes wrong</h2>
+    <p>Email me at <a href="mailto:ohadkrispin@gmail.com">ohadkrispin@gmail.com</a>. Tell me what the installer said and I will tell you what happened. I read every one of these myself.</p>
+
+    <!--
+      Everything below here is true, useful, and not needed by somebody who
+      just wants the app. It was the body of this page until it became clear
+      that a download page opening with a PowerShell block reads as a developer
+      artefact rather than a product. Closed by default, one press away, and
+      still findable by in-page search while closed.
+    -->
+    <details class="more" id="more">
+      <summary>For the curious: check the file, install it by hand</summary>
+      <div class="more-body">
+
+        <h3>This build</h3>
+        <p id="more-build">Loading the current version.</p>
+
+        <h3>Check the file before you open it</h3>
+        <p>Run this in the folder the file landed in, and compare the result with the hash below it.</p>
+        <div class="copy-row">
+          <code id="more-cmd">Get-FileHash .\emulo-pro.zip -Algorithm SHA256</code>
+          <button class="copy" type="button" data-copy="more-cmd">Copy</button>
+        </div>
+        <div class="copy-row">
+          <code id="more-sum">Published with the build.</code>
+          <button class="copy" type="button" data-copy="more-sum">Copy</button>
+        </div>
+        <p>If the two do not match, do not install it. Download it again. Inside the folder there is also a signed manifest listing every file with its own hash, and the installer verifies those before it installs anything.</p>
+
+        <h3>Install it by hand</h3>
+        <p>Open PowerShell in the folder you extracted, and follow the install guide that came with it. It builds a Python 3.11 environment, installs the wheel from the folder with no network, and opens the app.</p>
+
+        <h3>Why Python 3.11 and not a newer one</h3>
+        <p>Emulo Pro checks the integrity of every file it reads before using it. Python 3.13 on Windows reports file timestamps inconsistently enough to break that check, so installing on 3.13 is refused at the start rather than allowed to fail strangely later. 3.12 is excluded for the same reason and because it is untested here, not because it is known broken.</p>
+
+        <h3>Test builds</h3>
+        <p>A file with <code>rehearsal</code> in its name is a test build, not a release. It says so in the filename so you never have to open one to find out.</p>
+
+      </div>
+    </details>
+
+    <p style="margin-top:40px;color:var(--ink-faint);font-size:16px">Emulo itself, the miner, is open source and free. <code>pip install emulo</code>, or read the <a href="https://github.com/ohad6k/emulo">repository</a>. Pro is the app around it.</p>
   </div>
 </main>
 
@@ -411,7 +472,7 @@ footer a:hover{color:var(--red)}
 <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
   <div class="sheet-head">
     <div>
-      <p class="sheet-kicker">Download started</p>
+      <p class="sheet-kicker" id="sheet-kicker">Downloading</p>
       <h2 class="sheet-title" id="sheet-title">Emulo Pro</h2>
     </div>
     <button class="sheet-close" type="button" id="sheet-close" aria-label="Close">&times;</button>
@@ -424,22 +485,12 @@ footer a:hover{color:var(--red)}
     </div>
 
     <ol class="sheet-steps">
-      <li>
-        <strong>Check what arrived.</strong> Run this where the file landed, and compare it with the hash below it.
-        <div class="copy-row">
-          <code id="sheet-cmd"></code>
-          <button class="copy" type="button" data-copy="sheet-cmd">Copy</button>
-        </div>
-        <div class="copy-row">
-          <code id="sheet-sum"></code>
-          <button class="copy" type="button" data-copy="sheet-sum">Copy</button>
-        </div>
-      </li>
-      <li><strong>Install.</strong> Unpack the zip and double-click <strong>Install Emulo.cmd</strong>. It installs into your own Windows account; no administrator access is needed.</li>
-      <li><strong>Sign in, once.</strong> Emulo shows a short code and opens your browser. You sign in there with Google or GitHub. Emulo never sees your password, and after this the device stays signed in with no network at all.</li>
+      <li>Open the file and choose <strong>Extract All</strong>. Windows offers it in the bar at the top of the window.</li>
+      <li>Double-click <strong>Install Emulo</strong>. It installs into your own Windows account, so there is no administrator prompt.</li>
+      <li>Sign in once with Google or GitHub. Emulo shows a short code and opens your browser for it.</li>
     </ol>
 
-    <p class="sheet-foot">If the two hashes differ, do not install it. Download it again. The install guide is inside the zip, and the longer walkthrough is on the page behind this. Stuck? <a href="mailto:ohadkrispin@gmail.com">Email me.</a></p>
+    <p class="sheet-foot">Stuck at any of these? <a href="mailto:ohadkrispin@gmail.com">Email me.</a> If you want to check the file first, the hash is at the bottom of the page behind this.</p>
   </div>
 </dialog>
 
@@ -458,8 +509,21 @@ footer a:hover{color:var(--red)}
   (function () {
     var row = document.getElementById("release");
     var aside = document.getElementById("release-aside");
+    var needs = document.getElementById("release-needs");
     var sheet = document.getElementById("sheet");
     var close = document.getElementById("sheet-close");
+
+    // The Download button in the bar links to /download?start=1, which means
+    // "land here and start the file, with no second press". The parameter is
+    // read once and then taken out of the address bar, because a reload, a
+    // bookmark, a shared link or the back button must never fire a download at
+    // somebody who pressed nothing. The try/catch is for file:// -- an opaque
+    // origin refuses replaceState, and a throw here would kill the fetch below
+    // and leave the page saying "One moment" forever.
+    var autostart = new URLSearchParams(location.search).get("start") === "1";
+    if (autostart) {
+      try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {}
+    }
 
     function waiting(label) {
       var b = document.createElement("button");
@@ -468,6 +532,17 @@ footer a:hover{color:var(--red)}
       b.disabled = true;
       b.textContent = label;
       row.replaceChildren(b);
+    }
+
+    // Every write goes through this. Two separate patch sets aimed at this
+    // block, one of which deleted nodes the other one wrote to, and an
+    // unguarded getElementById inside the anchor's click listener fails in the
+    // worst possible way: the download still fires, because nothing calls
+    // preventDefault, but showModal is never reached, so the file arrives with
+    // no screen and no explanation.
+    function put(id, value) {
+      var node = document.getElementById(id);
+      if (node) node.textContent = value;
     }
 
     // Windows is the only build there is. userAgentData is the supported way to
@@ -483,17 +558,20 @@ footer a:hover{color:var(--red)}
 
     // Everything the screen says about the build, written from the manifest at
     // the moment it opens.
-    function fill(release, name) {
-      document.getElementById("sheet-title").textContent = "Emulo Pro " + release.version;
-      document.getElementById("sheet-file-name").textContent = name;
-      document.getElementById("sheet-file-meta").textContent =
-        release.size + " · Windows · Python 3.11 · published " + release.published;
-      document.getElementById("sheet-sum").textContent = release.sha256;
-      document.getElementById("sheet-cmd").textContent =
-        "Get-FileHash .\\" + name + " -Algorithm SHA256";
+    function fill(release, name, byPage) {
+      put("sheet-title", "Emulo Pro " + release.version);
+      put("sheet-file-name", name);
+      put("sheet-file-meta", release.size + " · Windows");
+      // A download no hand just asked for is the one a browser is most likely
+      // to hold back, so the screen says it is starting rather than claiming it
+      // started. "Start it again" under the filename is how it gets started by
+      // hand when the browser did hold it.
+      put("sheet-kicker", byPage ? "Starting your download" : "Downloading");
       var again = document.getElementById("sheet-again");
-      again.href = release.file;
-      again.setAttribute("download", "");
+      if (again) {
+        again.href = release.file;
+        again.setAttribute("download", "");
+      }
     }
 
     // Copy, with the fallback that matters: on a page served over plain http
@@ -545,9 +623,15 @@ footer a:hover{color:var(--red)}
     fetch("/releases.json", { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error("no manifest"); return r.json(); })
       .then(function (release) {
+        // No build, or a manifest of nulls: there is no anchor to press, so
+        // nothing can fire and the sheet stays shut. Somebody who just pressed
+        // Download in the bar is told that in the first sentence instead of
+        // being left to work out why nothing happened.
         if (!release || !release.file || !release.sha256) {
-          waiting("Not published yet");
-          aside.textContent = "The button turns on with the first signed release, and the checksum comes with it.";
+          waiting("Not out yet");
+          aside.textContent = (autostart ? "There is nothing to start yet. " : "")
+            + "This turns into a download button the day the Windows app ships.";
+          if (needs) needs.remove();
           return;
         }
 
@@ -568,23 +652,38 @@ footer a:hover{color:var(--red)}
         // rather than typed here, so the screen names the thing being served.
         var name = release.file.split("/").pop();
 
+        // True only for the instant the page presses the link itself, so the
+        // screen can word the difference between a download a hand asked for
+        // and one the bar asked for.
+        var pressedByPage = false;
+
         // The download fires from the anchor's own default action; the screen is
         // what you read while it arrives. Nothing here calls preventDefault, so
         // the dialog can never end up standing between a person and the file.
         link.addEventListener("click", function () {
-          fill(release, name);
-          if (typeof sheet.showModal === "function") sheet.showModal();
+          fill(release, name, pressedByPage);
+          if (!sheet.open && typeof sheet.showModal === "function") sheet.showModal();
         });
 
         row.replaceChildren(link);
-        aside.textContent = release.size + " · Windows · Python 3.11 · published " + release.published;
+        aside.textContent = "Free · " + release.size + " · Windows 10 and 11";
+
+        // The collapsed section is written from the same manifest as the button,
+        // never typed into the markup, for the same reason the button is not:
+        // a hand-typed version or hash is one release away from being a lie.
+        put("more-build", "Version " + release.version + ", published " + release.published + ". Windows only.");
+        put("more-cmd", "Get-FileHash .\\" + name + " -Algorithm SHA256");
+        put("more-sum", release.sha256);
 
         if (!windows()) {
           var note = document.createElement("p");
           note.className = "get-note";
-          note.textContent = "Emulo Pro is a Windows build. The installer is a .cmd and it needs Python 3.11. "
-            + "The download works from here anyway if you are fetching it for a Windows machine.";
-          aside.parentNode.insertBefore(note, aside.nextSibling);
+          note.textContent = "This build is for Windows. Download it here anyway if you are fetching it for a Windows machine.";
+          if (needs) {
+            needs.replaceWith(note);
+          } else {
+            aside.parentNode.insertBefore(note, aside.nextSibling);
+          }
         }
 
         if (release.testOnly) {
@@ -593,13 +692,34 @@ footer a:hover{color:var(--red)}
           // a test.
           var warn = document.createElement("p");
           warn.className = "rehearsal";
-          warn.textContent = "Build rehearsal, not a signed release. Do not install it expecting a working licence.";
+          warn.textContent = "This is a test build, not the real release. Do not install it expecting it to work.";
           row.parentNode.insertBefore(warn, row);
+        }
+
+        // Arriving from the bar. It presses the page's own anchor instead of
+        // repeating its href, so there is exactly one download path on this
+        // page: same file, same download attribute, same screen, nothing that
+        // can drift from the button. The anchor has to be in the document
+        // before click(), which is why this sits after replaceChildren.
+        //
+        // Two builds are never started for you. A rehearsal is tagged precisely
+        // so nobody ends up holding a test archive by accident, and a link in a
+        // nav bar is not consent for one. Nor is a Mac: the note above explains
+        // what this build is, and that is worth reading before a Windows-only
+        // zip lands in someone's downloads folder. Both cases leave a live
+        // button one press away.
+        if (autostart && !release.testOnly && windows()) {
+          pressedByPage = true;
+          link.click();
+          pressedByPage = false;
         }
       })
       .catch(function () {
-        waiting("Not published yet");
-        aside.textContent = "The build list could not be reached just now.";
+        waiting("Not out yet");
+        aside.textContent = autostart
+          ? "Nothing started: the version list could not be reached just now. Reload the page and it will try again."
+          : "Could not reach the version list just now. Try again in a minute.";
+        if (needs) needs.remove();
       });
   })();
 </script>

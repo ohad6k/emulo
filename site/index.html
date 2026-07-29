@@ -565,7 +565,12 @@ footer a:hover{color:var(--red)}
     <a href="#pricing">Pricing</a>
     <a href="https://github.com/ohad6k/emulo">GitHub</a>
     <a href="https://discord.gg/QMnYtVcxk2">Discord</a>
-    <a class="nav-cta" href="/download">Download</a>
+    <!-- ?start=1 means "land on the download page and start the file, with no
+         second press". The download page reads the parameter once, presses its
+         own button, and strips the parameter from the address bar, so a reload,
+         a bookmark, the back button or a shared link never fires a download at
+         somebody who pressed nothing. -->
+    <a class="nav-cta" href="/download?start=1">Download</a>
   </div>
 </nav>
 
