@@ -1,3 +1,5 @@
+[![MCP Toplist](https://mcptoplist.com/badge/io.github.ohad6k%2Femulo.svg)](https://mcptoplist.com/server/io.github.ohad6k%2Femulo)
+
 <!-- mcp-name: io.github.ohad6k/emulo -->
 <p align="center"><img src="assets/emulo.png" width="360" alt="Emulo"></p>
 
