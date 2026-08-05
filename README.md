@@ -256,7 +256,7 @@ The plugin-install command itself scans no logs, writes no private profile state
 
 ### Native Claude Code plugin
 
-The Claude Code plugin exposes the same four skills. Install it from inside Claude Code:
+The Claude Code plugin exposes the same five skills. Install it from inside Claude Code:
 
 ```text
 /plugin marketplace add ohad6k/emulo
@@ -265,7 +265,7 @@ The Claude Code plugin exposes the same four skills. Install it from inside Clau
 
 ## MCP server
 
-Emulo also ships a Model Context Protocol (MCP) server, so any MCP client — Claude Desktop, Cursor, and other agents — can load your profile before a task. The server implements MCP over stdio and exposes one tool, `load_emulo_profile`, which returns your mined work, design, or writing profile over the Model Context Protocol.
+Emulo also ships a Model Context Protocol (MCP) server, so any MCP client — Claude Desktop, Cursor, and other agents — can load your profile before a task. The server implements MCP over stdio and exposes one tool, `load_emulo_profile`, which returns your mined work, design, writing, or video profile over the Model Context Protocol.
 
 Run it from the published package with `uvx emulo mcp`, or from a checkout with `python emulo.py mcp`, and point an MCP client at it:
 
