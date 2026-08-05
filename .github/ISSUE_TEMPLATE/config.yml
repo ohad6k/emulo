@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and setup help
+    url: https://discord.gg/QMnYtVcxk2
+    about: Ask in Discord. Do not paste your profile, session logs, or local paths there either.
+  - name: Share what Emulo found
+    url: https://github.com/ohad6k/emulo/issues/1
+    about: The one thread for results. Share the card or one short trait, never your full profile.
+  - name: Security issue
+    url: https://github.com/ohad6k/emulo/blob/main/SECURITY.md
+    about: Do not open a public issue with reproduction details. Read the security model and report privately.
