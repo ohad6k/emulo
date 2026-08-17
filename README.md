@@ -21,23 +21,33 @@ The mined profile loads where your agents already live: Claude Code and Codex na
 
 The [Emulo Proof v1 methodology](docs/proof/README.md) is an unexecuted methodology until a separately approved evidence release exists.
 
-## Open source and Emulo Pro
+## Install
 
-Emulo's local engine stays MIT licensed and useful without an account. Your
-session extraction, redaction, caches, profile, and agent adapters remain on
-your machine unless you explicitly choose a model provider for mining.
+Inside Claude Code:
 
-[Emulo Pro](https://emulo.vercel.app/#pricing) is the optional hosted layer for
-client-encrypted approved-generation continuity across up to five devices,
-managed pairing and revocation, conflict-preserving history, and a bounded
-encrypted recovery/export window. Raw session evidence, decryption keys, and
-model-provider tokens do not enter the hosted service. Ending Pro access never
-disables local Emulo, its history, or rollback.
+```text
+/plugin marketplace add ohad6k/emulo
+/plugin install emulo@emulo
+```
 
-The hosted Worker source is public so its authentication, checkout, webhook,
-and entitlement rules can be audited. Production credentials and customer
-records are held by Cloudflare and Polar and are never stored in Git. Public
-source code is not public access to the hosted service or its data.
+Inside Codex:
+
+```bash
+codex plugin marketplace add ohad6k/emulo --ref v0.6.2 --json
+codex plugin add emulo@emulo --json
+```
+
+Then run `emulo:mine` and point it at your session history. Everything below explains what that produces and why. If you want the CLI instead of the plugin, see [Quickstart](#quickstart).
+
+## Open source and privacy
+
+Emulo is MIT licensed, free, and works without an account. There is nothing to
+buy and no sign-in.
+
+Session extraction, redaction, caches, the profile itself, and the agent
+adapters all stay on your machine. The one exception is mining: if you point it
+at a hosted model, the selected evidence goes to that provider. Point it at a
+local model and the whole run stays on your machine.
 
 ## Not memory
 
@@ -221,7 +231,7 @@ The plugin-install command itself scans no logs, writes no private profile state
 
 ### Native Claude Code plugin
 
-The Claude Code plugin exposes the same four skills. Install it from inside Claude Code:
+The Claude Code plugin exposes the same five skills. Install it from inside Claude Code:
 
 ```text
 /plugin marketplace add ohad6k/emulo

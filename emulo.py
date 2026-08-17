@@ -466,12 +466,38 @@ def session_label(path):
 # copy. Short messages ("yes", "push it live") are kept: their repetition IS the signal.
 DEDUPE_MIN_LEN = 200
 
+def _scan_progress(done, total, started):
+    """One rewritten line of scan progress, on stderr, only for a real terminal.
+
+    The scan reads every session file before anything is printed. On a real
+    history that is over a minute of a completely silent terminal, which reads as
+    a hang. stdout is left alone so --json and piped output are byte-identical.
+    """
+    if not sys.stderr.isatty():
+        return
+    pct = done * 100 // total if total else 100
+    sys.stderr.write(
+        f"\r  reading sessions {done}/{total} ({pct}%)  {time.time() - started:.0f}s "
+    )
+    sys.stderr.flush()
+
+
+def _scan_progress_clear():
+    if sys.stderr.isatty():
+        sys.stderr.write("\r" + " " * 60 + "\r")
+        sys.stderr.flush()
+
+
 def mine_files(files, no_redact=False, dedupe=True):
     sessions = msgs = chars = redactions = duplicates = 0
     blocks, records = [], []
     first_date = last_date = ""
     seen_long = set()
-    for f in files:
+    _total = len(files)
+    _started = time.time()
+    for _i, f in enumerate(files, 1):
+        if _i % 25 == 0 or _i == _total:
+            _scan_progress(_i, _total, _started)
         ums = user_messages(f)
         if not ums:
             continue
@@ -522,6 +548,7 @@ def mine_files(files, no_redact=False, dedupe=True):
         sessions += 1
         records.append(record)
         blocks.append(text)
+    _scan_progress_clear()
     return {
         "sessions": sessions,
         "messages": msgs,
