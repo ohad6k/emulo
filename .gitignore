@@ -22,12 +22,22 @@ __pycache__/
 *.pyc
 .DS_Store
 .venv/
+# the voice-clone engine builds its own isolated interpreter
+.voice-venv/
 
 # local working files, never part of the release
 .superpowers/
 .worktrees/
 videos/
 .tools/
+
+# tool download/capture caches written into the repo root
+# (npm _cacache/_logs/_npx, puppeteer browser downloads, extracted frames)
+.cache/
+
+# stray shell redirects left behind by local CLI runs
+/out.txt
+/error.log
 
 # python packaging build artifacts
 dist/
@@ -45,6 +55,8 @@ nul
 .emulo-proof-private/
 proof-private/
 emulo-proof-runs/
+# ad-hoc dated A/B render runs (out-a/out-b screenshots, compare.html)
+proof-run/
 
 # local tool, not part of the project
 mcp-publisher.exe
