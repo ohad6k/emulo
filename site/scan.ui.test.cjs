@@ -42,7 +42,7 @@ const html = fs.readFileSync(pagePath, 'utf8');
  * `directoryPicker` decides which browser we are pretending to be. jsdom has no File System
  * Access API of its own, so the default is exactly Ohad's case: the fallback branch.
  */
-function loadPage({ directoryPicker = null } = {}) {
+function loadPage({ directoryPicker = null, userAgent = null } = {}) {
   const listeners = [];
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
@@ -56,6 +56,8 @@ function loadPage({ directoryPicker = null } = {}) {
         return real.call(this, type, fn, opts);
       };
       if (directoryPicker) window.showDirectoryPicker = directoryPicker;
+      if (userAgent) Object.defineProperty(window.navigator, 'userAgent',
+        { value: userAgent, configurable: true });
     },
   });
   const { window } = dom;
@@ -171,4 +173,76 @@ test('hidden means hidden even on an element whose class sets display', { skip: 
   document.body.appendChild(probe);
   assert.equal(window.getComputedStyle(probe).display, 'none',
     'without the [hidden] !important rule, .button display:inline-flex wins');
+});
+
+// -- finding the folder, which is the real first obstacle -------------------
+
+test('only one folder control is offered when both would do the same thing', { skip: needsJsdom }, () => {
+  const { document } = loadPage();                    // no native picker: Ohad's browser
+  assert.equal(document.getElementById('fallback-label').hidden, true,
+    'without a native picker both buttons open the same dialog, so showing both is noise');
+  assert.equal(document.getElementById('picker-button').hidden, false,
+    'and the one that stays must be the one that works');
+});
+
+test('both controls remain when the browser has a native picker', { skip: needsJsdom }, () => {
+  const { document } = loadPage({ directoryPicker: async () => { throw new Error('x'); } });
+  assert.equal(document.getElementById('fallback-label').hidden, false,
+    'the file input is the fallback for when the native picker fails, so it stays');
+});
+
+test('the path shown matches the platform', { skip: needsJsdom }, () => {
+  const WIN = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)';
+  const MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)';
+
+  const win = loadPage({ userAgent: WIN });
+  const winPath = win.document.querySelector('.path-chip .path-value').textContent;
+  // Asserted by shape, not against a literal, because a backslash in a literal is exactly the
+  // escape-collapsing trap that has already cost this project two broken pushes.
+  assert.ok(winPath.startsWith('%USERPROFILE%'),
+    `a Windows dialog expands %USERPROFILE%; a tilde would paste literally and fail. Got ${winPath}`);
+  assert.ok(winPath.endsWith('.claude'), `got ${winPath}`);
+  assert.ok(!winPath.includes('~'), `a Windows path must not contain a tilde: ${winPath}`);
+
+  const mac = loadPage({ userAgent: MAC });
+  assert.equal(mac.document.querySelector('.path-chip .path-value').textContent, '~/.claude');
+});
+
+test('a path chip copies the path and says so', { skip: needsJsdom }, async () => {
+  const { window, document } = loadPage();
+  const chip = document.querySelector('.path-chip');
+  let copied = null;
+  Object.defineProperty(window.navigator, 'clipboard',
+    { value: { writeText: async (v) => { copied = v; } }, configurable: true });
+
+  chip.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 20));
+
+  assert.ok(copied, 'clicking a path must put something on the clipboard');
+  assert.match(copied, /\.claude$/, `copied the wrong thing: ${copied}`);
+  assert.equal(chip.querySelector('.path-copy').textContent, 'copied');
+});
+
+test('a chip whose clipboard is refused selects the text instead of looking broken',
+  { skip: needsJsdom }, async () => {
+    const { window, document } = loadPage();
+    const chip = document.querySelector('.path-chip');
+    Object.defineProperty(window.navigator, 'clipboard',
+      { value: { writeText: async () => { throw new Error('denied'); } }, configurable: true });
+
+    chip.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 20));
+
+    assert.equal(chip.querySelector('.path-copy').textContent, 'select and copy',
+      'a refused clipboard must leave the user a way through, not a dead button');
+  });
+
+test('every path chip shows a path, not the placeholder markup', { skip: needsJsdom }, () => {
+  const { document } = loadPage();
+  const chips = [...document.querySelectorAll('.path-chip')];
+  assert.equal(chips.length, 2);
+  for (const chip of chips) {
+    const shown = chip.querySelector('.path-value').textContent;
+    assert.match(shown, /\.(claude|codex)$/, `chip shows ${shown}`);
+  }
 });

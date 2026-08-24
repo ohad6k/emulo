@@ -60,9 +60,18 @@ h1 em { color: var(--red); font-weight: 500; }
 .step-number { margin-bottom: 24px; color: var(--red); font: italic 34px/1 var(--serif); }
 h2 { margin: 0 0 14px; font: 600 31px/1.12 var(--serif); letter-spacing: -.015em; }
 .muted { color: var(--soft); }
-.folder-list { display: grid; grid-template-columns: repeat(2, 1fr); margin: 28px 0 30px; border: 1px solid var(--rule); }
+.folder-list { display: grid; grid-template-columns: repeat(2, 1fr); margin: 28px 0 14px; border: 1px solid var(--rule); }
 .folder-list code { padding: 14px 16px; color: var(--ink-2); font: 13px/1.3 var(--mono); }
 .folder-list code + code { border-left: 1px solid var(--rule); }
+.path-chip { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 14px 16px; border: 0; background: transparent; cursor: pointer;
+  color: var(--ink-2); font: 13px/1.3 var(--mono); text-align: left;
+  transition: background .15s ease; }
+.path-chip + .path-chip { border-left: 1px solid var(--rule); }
+.path-chip:hover { background: var(--paper-2); }
+.path-copy { color: var(--soft); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.path-chip.copied .path-copy { color: var(--red); }
+.path-hint { margin: -18px 0 28px; color: var(--soft); font: 12px/1.55 var(--mono); }
 .button {
   width: 100%;
   display: inline-flex;
@@ -138,6 +147,7 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
   .panel-body { padding: 28px 22px; }
   .folder-list { grid-template-columns: 1fr; }
   .folder-list code + code { border-left: 0; border-top: 1px solid var(--rule); }
+  .path-chip + .path-chip { border-left: 0; border-top: 1px solid var(--rule); }
   .summary-stat strong { font-size: 24px; }
   .receipt { grid-template-columns: 1fr; gap: 3px; }
 }
@@ -170,8 +180,13 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
           <h2>Choose your log folder</h2>
           <p class="muted">Pick the folder itself. Emulo searches its subfolders for JSONL sessions.</p>
           <div class="folder-list" aria-label="Common folders">
-            <code>~/.claude</code><code>~/.codex</code>
+            <button type="button" class="path-chip" data-unix="~/.claude" data-win="%USERPROFILE%\.claude">
+              <span class="path-value">~/.claude</span><span class="path-copy">copy</span>
+            </button><button type="button" class="path-chip" data-unix="~/.codex" data-win="%USERPROFILE%\.codex">
+              <span class="path-value">~/.codex</span><span class="path-copy">copy</span>
+            </button>
           </div>
+          <p class="path-hint">Copy one, then paste it into the folder dialog. Both folders are hidden by default, so typing the path is faster than browsing for it.</p>
           <button class="button" id="picker-button" type="button">Choose agent folder</button>
           <label class="file-label" id="fallback-label">
             <span class="button secondary" id="fallback-button">Use browser folder picker</span>
@@ -684,8 +699,43 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
     }
   });
   if (!('showDirectoryPicker' in window)) {
-    byId('fallback-button').classList.remove('secondary');
-    byId('support-note').textContent = 'This browser opens its own folder picker. Your files still stay on this machine.';
+    // Without the native picker both controls do exactly the same thing, so showing both is
+    // just two buttons with one behaviour. The primary keeps the job; the redundant one goes.
+    // Hiding is safe here in a way it was not for the primary: the primary is wired first and
+    // unconditionally, and [hidden] now carries !important so a class setting display cannot
+    // defeat it.
+    byId('fallback-label').hidden = true;
+    byId('support-note').textContent = 'This browser opens its own folder dialog. Your files still stay on this machine.';
+  }
+
+  // Finding the folder is the actual first obstacle: both are dot-directories, hidden by
+  // default in Explorer and Finder, so browsing to them is slower than typing the path.
+  // Windows file dialogs expand %USERPROFILE%, so the copied value works as pasted.
+  const isWindows = /Windows|Win32|Win64/i.test(
+    (navigator.userAgentData && navigator.userAgentData.platform) || navigator.userAgent || '');
+  for (const chip of document.querySelectorAll('.path-chip')) {
+    const value = isWindows ? chip.dataset.win : chip.dataset.unix;
+    chip.querySelector('.path-value').textContent = value;
+    chip.addEventListener('click', async () => {
+      const label = chip.querySelector('.path-copy');
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch (error) {
+        // No clipboard permission, or an insecure context. Select it so it can still be copied
+        // by hand rather than leaving the button looking broken.
+        const range = document.createRange();
+        range.selectNodeContents(chip.querySelector('.path-value'));
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        label.textContent = 'select and copy';
+        chip.classList.add('copied');
+        return;
+      }
+      label.textContent = 'copied';
+      chip.classList.add('copied');
+      setTimeout(() => { label.textContent = 'copy'; chip.classList.remove('copied'); }, 2000);
+    });
   }
   folderInput.addEventListener('change', () => runScan(fileEntriesFromInput(folderInput.files)));
   byId('reset-button').addEventListener('click', () => { folderInput.value = ''; showState('choose'); });
