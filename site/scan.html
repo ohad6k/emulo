@@ -86,6 +86,7 @@ h2 { margin: 0 0 14px; font: 600 31px/1.12 var(--serif); letter-spacing: -.015em
 .file-label { margin-top: 12px; }
 .file-label input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
 .fallback-only { display: none; }
+[hidden] { display: none !important; }
 .support-note { margin: 15px 0 0; color: var(--soft); font: 12px/1.55 var(--mono); }
 .state { display: none; }
 .state.active { display: block; animation: enter .38s ease both; }
@@ -662,21 +663,29 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
     }
   }
 
-  if ('showDirectoryPicker' in window) {
-    pickerButton.addEventListener('click', async () => {
-      try {
-        const handle = await window.showDirectoryPicker({ mode: 'read' });
-        const entries = [];
-        await collectHandle(handle, handle.name, entries);
-        await runScan(entries);
-      } catch (error) {
-        if (!error || error.name !== 'AbortError') showError('The folder could not be opened. Use the browser folder picker below.');
-      }
-    });
-  } else {
-    pickerButton.hidden = true;
+  // The primary button is wired unconditionally and decides which path to take when it is
+  // clicked, not when the page loads. It used to be hidden on browsers without the File System
+  // Access API, but `.button` sets display, which beats the UA stylesheet's [hidden] rule, so
+  // the button stayed on screen with no listener attached. The page's most obvious control did
+  // nothing at all. A capability check that runs at click time cannot leave a dead control
+  // behind, whatever the CSS does.
+  pickerButton.addEventListener('click', async () => {
+    if (!('showDirectoryPicker' in window)) {
+      folderInput.click();
+      return;
+    }
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'read' });
+      const entries = [];
+      await collectHandle(handle, handle.name, entries);
+      await runScan(entries);
+    } catch (error) {
+      if (!error || error.name !== 'AbortError') showError('The folder could not be opened. Use the browser folder picker below.');
+    }
+  });
+  if (!('showDirectoryPicker' in window)) {
     byId('fallback-button').classList.remove('secondary');
-    byId('support-note').textContent = 'This browser uses its folder-input fallback. Your files still stay on this machine.';
+    byId('support-note').textContent = 'This browser opens its own folder picker. Your files still stay on this machine.';
   }
   folderInput.addEventListener('change', () => runScan(fileEntriesFromInput(folderInput.files)));
   byId('reset-button').addEventListener('click', () => { folderInput.value = ''; showState('choose'); });
