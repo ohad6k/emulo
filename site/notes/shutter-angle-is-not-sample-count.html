@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f1e8">
+<meta name="description" content="Rendering browser animations to video with ffmpeg tmix. The frames argument sets the shutter angle and the sample count at the same time, and the widely copied 240fps recipe is a 360 degree shutter. Measured comparisons and the fix.">
+<title>ffmpeg tmix: shutter angle is not sample count</title>
+<style>
+:root{
+  color-scheme: light;
+  --paper:#f5f1e8; --ink:#171715; --body:#35332f; --muted:#69665f;
+  --line:#d9d2c5; --accent:#9c3f2c; --panel:rgba(255,255,255,.42);
+}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{
+  margin:0; background:var(--paper); color:var(--body);
+  font:17px/1.72 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+main{width:min(760px,calc(100% - 40px)); margin-inline:auto; padding:72px 0 40px}
+.kicker{color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; margin:0}
+h1{
+  max-width:16ch; margin:.24em 0 .5em; color:var(--ink);
+  font:700 clamp(2.5rem,7.5vw,4.2rem)/1.02 Georgia,serif; letter-spacing:-.045em;
+}
+h2{margin:3em 0 .6em; color:var(--ink); font-size:1.35rem; letter-spacing:-.015em; line-height:1.3}
+h3{margin:2.2em 0 .5em; color:var(--ink); font-size:1.05rem; letter-spacing:-.01em}
+p{max-width:64ch}
+.lede{font-size:1.15rem; color:var(--body); margin:0 0 2.4em; max-width:60ch}
+a{color:var(--accent); text-underline-offset:3px}
+a:focus-visible{outline:3px solid var(--accent); outline-offset:4px}
+code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; font-size:.9em; background:var(--panel); padding:.12em .34em; border-radius:3px}
+pre{
+  margin:1.6em 0; padding:16px 18px; overflow-x:auto;
+  background:var(--panel); border-left:3px solid var(--line);
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  font-size:14px; line-height:1.6; color:var(--ink);
+}
+pre code{background:none; padding:0}
+figure{margin:2.4em 0}
+figure img{display:block; width:100%; height:auto; border:1px solid var(--line)}
+figcaption{margin-top:.7em; color:var(--muted); font-size:14px; max-width:64ch}
+.tablewrap{overflow-x:auto; margin:1.8em 0}
+table{border-collapse:collapse; font-size:15px; min-width:100%}
+th,td{padding:9px 14px 9px 0; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap}
+th{color:var(--ink); font-weight:700; font-size:13px; letter-spacing:.04em; text-transform:uppercase}
+td.mono,th.mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; font-size:13.5px}
+tr.bad td{color:var(--accent)}
+.note{margin:2.2em 0; padding:16px 20px; background:var(--panel); border-left:3px solid var(--accent)}
+.note p{margin:0; max-width:60ch}
+ul{padding-left:1.2rem; max-width:64ch}
+li+li{margin-top:.4em}
+footer{
+  width:min(760px,calc(100% - 40px)); margin-inline:auto;
+  padding:28px 0 64px; border-top:1px solid var(--line);
+  color:var(--muted); font-size:14px;
+}
+footer p{max-width:64ch; margin:0}
+@media (max-width:520px){
+  main{padding:48px 0 32px}
+  body{font-size:16px}
+  pre{font-size:12.5px}
+}
+</style>
+</head>
+<body>
+<main>
+
+<p class="kicker">Notes</p>
+<h1>Shutter angle is not sample count</h1>
+
+<p class="lede">I render browser animations to video by screenshotting the page at a high frame rate and averaging the frames back down with ffmpeg. I had the averaging wrong for months, in a way that still looked like motion blur.</p>
+
+<p>Browser frames carry no motion blur at all. Every screenshot is an instant, so a straight export reads like stop motion next to the same animation playing live. The usual fix is to sample faster than you need and average groups of samples into each output frame, which puts a shutter back.</p>
+
+<p>The recipe that gets copied around, and the one I used, is this:</p>
+
+<pre><code>render at 240fps, then  -vf tmix=frames=4,fps=60</code></pre>
+
+<p>That is a 360 degree shutter. Everything I shipped was exposed for twice as long as I meant.</p>
+
+<h2>The arithmetic</h2>
+
+<p>At 60fps an output frame occupies 16.67ms. A 180 degree shutter, the film default, exposes half of that: 8.33ms.</p>
+
+<p>At 240fps the samples are 4.17ms apart. Four of them is 16.67ms, which is the whole output interval, which is 360 degrees. The next output frame starts where the last sample ended, so there is no gap anywhere. Nothing is ever still.</p>
+
+<p>Two different things are hiding inside that one <code>frames</code> argument:</p>
+
+<ul>
+<li><strong>Shutter angle</strong> is <code>frames / samplerate</code>, expressed against the output interval. It sets how much of the frame you expose.</li>
+<li><strong>Sample count</strong> is <code>frames</code>. It sets how many discrete images fill that exposure.</li>
+</ul>
+
+<p>You cannot move one without moving the other, which is what makes the mistake stick.</p>
+
+<h2>The trap</h2>
+
+<p>The obvious correction at 240fps is <code>tmix=frames=2</code>. Half the samples, half the exposure, a genuine 180 degree shutter.</p>
+
+<p>It looks worse. Two samples is not a streak, it is a double image. You fix the exposure and break the sampling in the same edit, and the sampling is the more visible of the two.</p>
+
+<h2>The fix</h2>
+
+<p>Raise the sample rate instead of lowering the frame count. Render at 480fps and keep <code>frames=4</code>. The samples are 2.08ms apart, four of them is 8.33ms, and you get a 180 degree shutter with four images in it instead of two. It costs exactly twice the screenshots and nothing else changes.</p>
+
+<figure>
+  <img src="/assets/shutter-angle-test.png" alt="Five renders of the same moving stroke. No blur gives a 24 pixel hard edge. tmix=frames=4 at 240fps gives a 114 pixel smear made of four separate copies. tmix=frames=2 gives 54 pixels as two copies. 480fps with frames=4 gives one continuous 68 pixel streak. A dense 3840fps reference gives 82 pixels.">
+  <figcaption>One output frame in each row. A 24 px stroke crossing 120 px per frame at 60 fps. The motion is identical every time and only the filter chain changes.</figcaption>
+</figure>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th class="mono">filter chain</th><th>asked for</th><th>measured smear</th><th>reads as</th></tr></thead>
+<tbody>
+<tr><td class="mono">fps=60</td><td>0 deg</td><td>24 px</td><td>hard edge</td></tr>
+<tr class="bad"><td class="mono">240fps, tmix=frames=4, fps=60</td><td>360 deg</td><td>114 px</td><td>4 separate copies</td></tr>
+<tr class="bad"><td class="mono">240fps, tmix=frames=2, fps=60</td><td>180 deg</td><td>54 px</td><td>2 separate copies</td></tr>
+<tr><td class="mono">480fps, tmix=frames=4, fps=60</td><td>180 deg</td><td>68 px</td><td>one streak</td></tr>
+<tr><td class="mono">3840fps, tmix=frames=32, fps=60</td><td>180 deg</td><td>82 px</td><td>one streak</td></tr>
+<tr><td class="mono">ideal continuous exposure</td><td>180 deg</td><td>84 px</td><td>reference</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Here is the same three way comparison on real material, a rotating asterisk and a letter scaling up. At 360 degrees the four samples stop being a blur and start being four objects. Fast rotation gives you spokes, fast scale gives you nested outlines.</p>
+
+<figure>
+  <img src="/assets/shutter-angle-film.jpg" alt="A rotating asterisk and a scaling letter C rendered at 0, 180 and 360 degrees. The 360 degree column shows four fanned copies of the asterisk and four nested rings of the letter.">
+  <figcaption>Two frames of a real film at 0, 180 and 360 degrees. The 360 degree column is the copied recipe.</figcaption>
+</figure>
+
+<h2>How many samples is enough</h2>
+
+<p>Four is still not many. The streak comes apart into separate copies as soon as the gap between samples is bigger than the thing that is moving. The gap is:</p>
+
+<pre><code>step = speed per output frame / samples per output frame</code></pre>
+
+<p>Measured against a solid stroke, the break point sits right at the stroke's own width along the direction of travel.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>stroke width</th><th>sample rate</th><th>holds together</th><th>comes apart</th></tr></thead>
+<tbody>
+<tr><td>8 px</td><td class="mono">240fps</td><td>step 8 px</td><td>step 10 px</td></tr>
+<tr><td>8 px</td><td class="mono">480fps</td><td>step 7.5 px</td><td>step 10 px</td></tr>
+<tr><td>24 px</td><td class="mono">240fps</td><td>step 24 px</td><td>step 30 px</td></tr>
+<tr><td>24 px</td><td class="mono">480fps</td><td>step 15 px</td><td>step 25 px</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>So the rule is: keep the step under the width of whatever is moving. The step depends only on the sample rate, which means the thinnest fast thing in the shot decides how many screenshots the whole render needs.</p>
+
+<p>At 120 px per frame and a 180 degree shutter, that 24 px stroke is fine at 480fps: four samples, step 15 px, one streak. Take the stroke down to 8 px and 480fps falls apart into four copies. It needs 960fps, eight samples, step 7.5 px. Sixteen screenshots per delivered frame is the real cost, and it is the reason four keeps getting used. Not because four is right.</p>
+
+<h2>The exposure is a little shorter than you asked for</h2>
+
+<p><code>frames / samplerate</code> names the window you want, but <code>tmix</code> averages point samples, so the copies actually span <code>frames - 1</code> gaps rather than <code>frames</code>. With a lot of samples the difference vanishes. With four it does not.</p>
+
+<p>In the table above the ideal continuous 180 degree smear is 84 px. The dense 32 sample version lands on 82. Four samples at 480fps lands on 68, about 80 percent of the length. Two samples at 240fps lands on 54, which is not really a 180 degree shutter under any reading, it is a quarter of the interval with a hole in the middle of it.</p>
+
+<div class="note">
+<p>If you are choosing a number from this, choose it by the step, not by the angle. The angle tells you what you meant. The step tells you what you get.</p>
+</div>
+
+<h2>The filter order is load bearing</h2>
+
+<p>Both of these are valid ffmpeg and they are not the same thing:</p>
+
+<pre><code>-vf tmix=frames=4,fps=60      # average, then decimate
+-vf fps=60,tmix=frames=4      # decimate, then average</code></pre>
+
+<p>The second one throws away three of every four samples first, then averages four surviving output frames. That is 66.7ms of exposure, a 1440 degree shutter, spread across four positions with clear gaps between them. Same stroke as above, same speed: 384 px wide, four copies. It is easy to write by accident because the filters read left to right in the order you think about them.</p>
+
+<h2>What the render script does now</h2>
+
+<p>The renderer takes a shutter angle and derives the frame count from it, instead of hardcoding four:</p>
+
+<pre><code>const SAMPLES_PER_OUT = SAMPLE / OUTFPS;
+
+function tmixFor(deg) {
+  const n = Math.round((deg / 360) * SAMPLES_PER_OUT);
+  if (n &lt; 2) return "";              // one sample is no blur at all
+  return `tmix=frames=${n}:weights='${Array(n).fill("1").join(" ")}',`;
+}</code></pre>
+
+<p>The important part is that the angle and the sample rate are now separate knobs, so you have to pick the sample rate on purpose. A 180 degree shutter at <code>SAMPLE=240</code> gives you two samples and the double image. The same 180 degrees at <code>SAMPLE=480</code> gives you four. 360 is still reachable by name, because every master rendered before this was made that way and I would rather reproduce an old render than pretend it never happened.</p>
+
+<h2>Reproducing this</h2>
+
+<p>Nothing here needs a browser. A solid rectangle moving at a known speed is enough, and it makes the smear directly measurable in pixels.</p>
+
+<pre><code># 240fps source: a 24px stroke crossing 7200 px/sec, which is 120 px per 60fps frame
+ffmpeg -f lavfi -i "color=c=black:s=1400x160:r=240:d=0.6" \
+       -f lavfi -i "color=c=white:s=24x60:r=240:d=0.6" \
+       -filter_complex "[0][1]overlay=x=t*7200:y=50" -c:v ffv1 src240.mkv
+
+# the copied recipe: 360 degrees
+ffmpeg -i src240.mkv -vf "tmix=frames=4:weights='1 1 1 1',fps=60" -c:v ffv1 a.mkv
+
+# same shutter, twice the samples: render the source at 480 and keep frames=4
+</code></pre>
+
+<p>Then pull a single frame out of each and count the lit pixels across one scanline. Measuring the run length is the whole test, and it is the part that told me the exposure was double, which no amount of looking at it had done.</p>
+
+</main>
+<footer>
+<p>Measured with ffmpeg 8.0.1 on Windows. August 2026.</p>
+</footer>
+</body>
+</html>

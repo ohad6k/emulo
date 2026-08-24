@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emulo Scan | Find where your agent loses you</title>
+<meta name="description" content="Scan your local Claude, Codex, Copilot, or Antigravity session logs for repeated asks, lost context, and correction loops. Nothing is uploaded.">
+<style>
+:root {
+  --paper: #f2eee1;
+  --paper-2: #f8f5eb;
+  --ink: #161309;
+  --ink-2: #3b382c;
+  --soft: #6f6a58;
+  --rule: #c9c3ad;
+  --red: #a83b23;
+  --gold: #d2a929;
+  --serif: Georgia, "Times New Roman", serif;
+  --mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .45;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+button, input { font: inherit; }
+button:focus-visible, label:focus-within, a:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+.shell { position: relative; width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+nav { display: flex; align-items: center; justify-content: space-between; padding: 26px 0; border-bottom: 1px solid var(--rule); }
+.wordmark { color: inherit; font: 500 14px/1 var(--mono); letter-spacing: .48em; text-decoration: none; text-transform: uppercase; }
+.nav-note { color: var(--soft); font: 11px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+main { padding: clamp(54px, 8vw, 100px) 0 72px; }
+.hero { display: grid; grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr); gap: clamp(44px, 7vw, 92px); align-items: start; }
+.eyebrow { display: flex; align-items: center; gap: 12px; margin: 0 0 26px; color: var(--soft); font: 500 11px/1.3 var(--mono); letter-spacing: .24em; text-transform: uppercase; }
+.eyebrow::before { content: ""; width: 32px; height: 1px; background: var(--red); }
+h1 { max-width: 9.5ch; margin: 0 0 26px; font: 600 clamp(48px, 6.7vw, 78px)/.98 var(--serif); letter-spacing: -.035em; }
+h1 em { color: var(--red); font-weight: 500; }
+.intro { max-width: 43ch; margin: 0 0 34px; color: var(--ink-2); font-size: 19px; }
+.privacy-copy { max-width: 50ch; padding-top: 22px; border-top: 1px solid var(--rule); color: var(--soft); font-size: 15px; }
+.privacy-copy strong { color: var(--ink); font-weight: 600; }
+.panel { border: 1px solid var(--ink); background: var(--paper-2); box-shadow: 12px 12px 0 rgba(22, 19, 9, .07); }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 17px 22px; border-bottom: 1px solid var(--ink); font: 11px/1.3 var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+.panel-head span:last-child { color: var(--soft); letter-spacing: .06em; text-transform: none; }
+.panel-body { padding: clamp(28px, 4vw, 46px); }
+.step-number { margin-bottom: 24px; color: var(--red); font: italic 34px/1 var(--serif); }
+h2 { margin: 0 0 14px; font: 600 31px/1.12 var(--serif); letter-spacing: -.015em; }
+.muted { color: var(--soft); }
+.folder-list { display: grid; grid-template-columns: repeat(2, 1fr); margin: 28px 0 30px; border: 1px solid var(--rule); }
+.folder-list code { padding: 14px 16px; color: var(--ink-2); font: 13px/1.3 var(--mono); }
+.folder-list code + code { border-left: 1px solid var(--rule); }
+.button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--ink);
+  padding: 17px 20px;
+  color: var(--paper-2);
+  background: var(--ink);
+  cursor: pointer;
+  font: 500 13px/1.2 var(--mono);
+  letter-spacing: .08em;
+  text-align: left;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.button::after { content: "→"; font-size: 18px; }
+.button:hover { border-color: var(--red); background: var(--red); transform: translateY(-1px); }
+.button.secondary { margin-top: 14px; color: var(--ink); background: transparent; }
+.button.secondary:hover { color: var(--paper-2); }
+.file-label { margin-top: 12px; }
+.file-label input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
+.fallback-only { display: none; }
+.support-note { margin: 15px 0 0; color: var(--soft); font: 12px/1.55 var(--mono); }
+.state { display: none; }
+.state.active { display: block; animation: enter .38s ease both; }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } }
+.progress-track { height: 6px; margin: 30px 0 14px; overflow: hidden; background: #ded8c5; }
+.progress-bar { width: 0; height: 100%; background: var(--red); transition: width .12s linear; }
+.progress-line { display: flex; justify-content: space-between; gap: 18px; color: var(--soft); font: 12px/1.4 var(--mono); }
+.scan-motion { height: 142px; margin: 28px 0; position: relative; overflow: hidden; border: 1px solid var(--rule); background: var(--paper); }
+.scan-motion::before { content: "{ user message }\A{ assistant reply }\A{ user message }\A{ tool output }\A{ user message }"; white-space: pre; position: absolute; inset: 18px; color: #aaa38d; font: 12px/1.8 var(--mono); }
+.scan-motion::after { content: ""; position: absolute; left: 0; right: 0; height: 2px; background: var(--red); box-shadow: 0 0 20px rgba(168, 59, 35, .35); animation: scan 1.4s ease-in-out infinite alternate; }
+@keyframes scan { from { top: 12px; } to { top: 128px; } }
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); margin: 26px 0 32px; border: 1px solid var(--ink); }
+.summary-stat { padding: 18px 10px; text-align: center; }
+.summary-stat + .summary-stat { border-left: 1px solid var(--ink); }
+.summary-stat strong { display: block; font: 600 30px/1 var(--serif); font-variant-numeric: tabular-nums; }
+.summary-stat span { display: block; margin-top: 8px; color: var(--soft); font: 10px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.result-meta { margin: -18px 0 28px; color: var(--soft); font: 12px/1.5 var(--mono); }
+.findings { display: grid; gap: 16px; }
+.finding { border-top: 1px solid var(--ink); padding-top: 20px; }
+.finding-index { color: var(--red); font: italic 16px/1 var(--serif); }
+.finding h3 { margin: 7px 0 4px; font: 600 21px/1.25 var(--serif); }
+.finding-count { color: var(--soft); font: 12px/1.4 var(--mono); }
+.receipts { display: grid; gap: 8px; margin-top: 15px; }
+.receipt { display: grid; grid-template-columns: 88px 1fr; gap: 12px; padding: 11px 0; border-top: 1px dotted var(--rule); }
+.receipt time { color: var(--red); font: 11px/1.5 var(--mono); }
+.receipt q { color: var(--ink-2); font-size: 15px; line-height: 1.45; quotes: "“" "”"; overflow-wrap: anywhere; }
+.receipt q::after { color: var(--soft); }
+.clean { padding: 18px 20px; border: 1px solid var(--rule); color: var(--ink-2); background: var(--paper); }
+.clean strong { display: block; margin-bottom: 4px; font-family: var(--serif); }
+.error-box { margin: 24px 0; padding: 18px 20px; border-left: 3px solid var(--red); background: var(--paper); color: var(--ink-2); }
+.next-step { margin: 26px 0 0; padding: 22px 24px; background: var(--paper-2); border: 1px solid var(--rule); border-left: 3px solid var(--red); }
+.next-step h3 { margin: 0 0 10px; font: 600 17px/1.3 var(--serif); color: var(--ink); }
+.next-step p { margin: 0 0 12px; color: var(--ink-2); font-size: 15px; line-height: 1.62; }
+.next-step p:last-child { margin-bottom: 0; }
+.next-step a { color: var(--red); text-underline-offset: 3px; }
+.fine-print { margin: 28px 0 0; padding-top: 20px; border-top: 1px solid var(--rule); color: var(--soft); font-size: 14px; }
+footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--soft); font: 10px/1.5 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+@media (max-width: 820px) {
+  .hero { grid-template-columns: 1fr; }
+  h1 { max-width: 10ch; }
+  .panel { box-shadow: 7px 7px 0 rgba(22, 19, 9, .07); }
+}
+@media (max-width: 520px) {
+  .shell { width: min(100% - 30px, 1120px); }
+  nav { align-items: flex-start; }
+  .nav-note { max-width: 16ch; text-align: right; }
+  main { padding-top: 42px; }
+  h1 { font-size: 47px; }
+  .panel-body { padding: 28px 22px; }
+  .folder-list { grid-template-columns: 1fr; }
+  .folder-list code + code { border-left: 0; border-top: 1px solid var(--rule); }
+  .summary-stat strong { font-size: 24px; }
+  .receipt { grid-template-columns: 1fr; gap: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav>
+    <a class="wordmark" href="index.html">emulo</a>
+    <span class="nav-note">local session scan</span>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <header>
+        <p class="eyebrow">Your own receipts</p>
+        <h1>Where does your agent <em>lose you?</em></h1>
+        <p class="intro">Point Emulo at your agent logs. It finds the moments you sent the same ask again, re-explained context, rephrased the same request, or opened with a correction.</p>
+        <p class="privacy-copy"><strong>The files stay on this machine.</strong> This page reads the folder in your browser, runs the checks here, and makes no network request. Closing the tab clears the result.</p>
+      </header>
+
+      <section class="panel" aria-live="polite">
+        <div class="panel-head"><span>Emulo scan</span><span id="status-label">ready</span></div>
+
+        <div class="panel-body state active" id="choose-state">
+          <div class="step-number">01</div>
+          <h2>Choose your log folder</h2>
+          <p class="muted">Pick the folder itself. Emulo searches its subfolders for JSONL sessions.</p>
+          <div class="folder-list" aria-label="Common folders">
+            <code>~/.claude</code><code>~/.codex</code>
+          </div>
+          <button class="button" id="picker-button" type="button">Choose agent folder</button>
+          <label class="file-label" id="fallback-label">
+            <span class="button secondary" id="fallback-button">Use browser folder picker</span>
+            <input id="folder-input" type="file" webkitdirectory multiple aria-label="Choose agent log folder">
+          </label>
+          <p class="support-note" id="support-note">Chrome and Edge use direct folder access. The browser fallback works without it.</p>
+        </div>
+
+        <div class="panel-body state" id="scan-state">
+          <div class="step-number">02</div>
+          <h2>Reading your side of the conversation</h2>
+          <p class="muted" id="scan-detail">Finding JSONL session files…</p>
+          <div class="scan-motion" aria-hidden="true"></div>
+          <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+          <div class="progress-line"><span id="progress-count">0 / 0 files</span><span id="progress-time">0.0s</span></div>
+        </div>
+
+        <div class="panel-body state" id="result-state">
+          <div class="step-number">03</div>
+          <h2 id="result-title">Your scan</h2>
+          <div class="summary-grid" id="summary-grid"></div>
+          <p class="result-meta" id="result-meta"></p>
+          <div class="findings" id="findings"></div>
+          <p class="fine-print">These checks only read messages you typed. They cannot see model quality, token cost, tool calls, or whether a correction was justified.</p>
+          <div class="next-step">
+            <h3>The obvious next move, and whether it works</h3>
+            <p>Most people answer a scan like this by writing the agent a rules file. I tested
+            that properly before recommending it: the same tasks on this repo, run with the rules
+            loaded and without them, scored blind. One of the two things I was sure would help
+            made the agent measurably worse.</p>
+            <p><a href="/notes/do-your-agent-rules-do-anything">Read what the harness found</a>,
+            or <a href="/notes/agent-failure-lab">six failures my own agents shipped</a> with
+            every check green.</p>
+            <p>If you want that harness pointed at your repo and your rules, write to
+            <a href="mailto:founder@viberaven.dev?subject=Harness%20my%20agent%20rules">founder@viberaven.dev</a>
+            and say what your agent keeps getting wrong. Ohad reads them.</p>
+          </div>
+          <button class="button secondary" id="reset-button" type="button">Scan another folder</button>
+        </div>
+
+        <div class="panel-body state" id="error-state">
+          <div class="step-number">!</div>
+          <h2>Nothing to scan yet</h2>
+          <div class="error-box" id="error-message"></div>
+          <button class="button secondary" id="retry-button" type="button">Choose another folder</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>No install. No upload. No saved copy.</footer>
+</div>
+
+<script id="scan-core">
+(function () {
+  'use strict';
+
+  const DEDUPE_MIN_LEN = 200;
+  const COACH_REPEAT_RUN_MIN = 3;
+  const COACH_REPEAT_MIN_WORDS = 4;
+  const COACH_REWORD_RUN_MIN = 3;
+  const COACH_REWORD_OVERLAP = 0.75;
+  const COACH_REWORD_MIN_WORDS = 6;
+  const COACH_REWORD_MAX_LINES = 4;
+  const COACH_QUOTE_CHARS = 120;
+  const COACH_MAX_RECEIPTS = 3;
+  const COACH_SHORT_PROMPT_WORDS = 5;
+  const COACH_RESTATED_MIN = 3;
+  const COACH_CORRECTION_RATE = 5;
+
+  const INJECTED_CONTEXT_PREFIXES = [
+    '# AGENTS.md instructions', '# CLAUDE.md instructions',
+    '# Context from my IDE setup:', '# Files mentioned by the user',
+    '<environment_context', '<in-app-browser-context', '<permissions instructions',
+    '<recommended_plugins', '<summary>', '<command-name', '<command-message',
+    '<local-command-stdout', '<task-notification', '<launch-selected-element',
+    '[Request interrupted',
+  ];
+  const USER_LINE_MARKERS = [
+    '"role":"user"', '"role": "user"', '"type":"user"', '"type": "user"',
+    '"type":"user.message"', '"type": "user.message"',
+    '"type":"USER_INPUT"', '"type": "USER_INPUT"',
+  ];
+  const CORRECTION_OPENERS = [
+    'no ', 'no,', 'no.', 'nope', 'not that', 'not what i', "that's not",
+    'thats not', "that's wrong", 'thats wrong', 'that is wrong', 'still not',
+    'still wrong', 'still broken', 'wrong', 'undo', 'revert that', 'stop,',
+  ];
+  const COACH_NOT_CORRECTIONS = [
+    'no need', 'no problem', 'no worries', 'no idea', 'no rush', 'no hurry',
+    'no big deal', 'no clue',
+  ];
+  const RESTATED_CONTEXT_MARKERS = [
+    'i already told you', 'i already said', 'i just told you', 'as i said',
+    'like i said', 'i told you', 'i said before', 'i keep telling you',
+    'as i mentioned', "i've told you", 'ive told you', 'i already asked',
+  ];
+
+  function redactCredential(match, keyword, value) {
+    if (value.length >= 12 || /\d/.test(value) || !/^\p{L}+$/u.test(value)) {
+      return `${keyword}=[REDACTED]`;
+    }
+    return match;
+  }
+
+  function redact(text) {
+    let output = String(text || '');
+    const rules = [
+      [/sk-[A-Za-z0-9]{20,}/g, '[OPENAI_KEY]'],
+      [/sk_live_[A-Za-z0-9]{20,}/g, '[STRIPE_KEY]'],
+      [/whsec_[A-Za-z0-9]{20,}/g, '[WEBHOOK_SECRET]'],
+      [/sbp_[A-Za-z0-9]{20,}/g, '[SUPABASE_TOKEN]'],
+      [/gh[pousr]_[A-Za-z0-9]{20,}/g, '[GITHUB_TOKEN]'],
+      [/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[JWT]'],
+      [/AKIA[0-9A-Z]{16}/g, '[AWS_KEY]'],
+      [/xox[baprs]-[A-Za-z0-9-]{10,}/g, '[SLACK_TOKEN]'],
+      [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[EMAIL]'],
+      [/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[IP]'],
+      [/(?<![\p{L}\p{N}_.\-/])(?:\+\d{1,3}[\s-]?(?:\(\d{1,4}\)[\s-]?)?\d(?:[\s-]?\d){6,10}|\(?0[2-9]\d{0,2}\)?(?:[\s-]?\d){6,9})(?![\p{L}\p{N}_/]|[.-]\d)/gu, '[PHONE]'],
+    ];
+    for (const [pattern, replacement] of rules) output = output.replace(pattern, replacement);
+    output = output.replace(/(api[_-]?key|secret|token|password|passwd)\s*[:=]\s*\S+/gi, (_, keyword) => `${keyword}=[REDACTED]`);
+    output = output.replace(/\b(pass(?:word|wd|phrase)|psk|passkey|wifi\s+key)\b\s*(?:is\s+|=\s*|:\s*)?['"]?([^\s'",;]{6,})/gi, redactCredential);
+    return output;
+  }
+
+  function isPastedLog(text) {
+    const lines = String(text || '').split(/\r?\n/);
+    if (lines.length < 4) return false;
+    const hits = lines.filter((line) => /^\s+at /.test(line) || line.includes('Exception') || line.includes('Traceback') || /\.(java|py|ts|js|kt):\d/.test(line) || /^\s*File "/.test(line)).length;
+    return hits / Math.max(lines.length, 1) > 0.25;
+  }
+
+  function isInjectedContext(text) {
+    const stripped = String(text || '').trimStart();
+    return INJECTED_CONTEXT_PREFIXES.some((prefix) => stripped.startsWith(prefix));
+  }
+
+  function isHumanTurn(record) {
+    if (record.isMeta || record.isSidechain || Object.prototype.hasOwnProperty.call(record, 'toolUseResult') || record.isCompactSummary) return false;
+    if (record.origin && typeof record.origin === 'object') return record.origin.kind === 'human';
+    if (record.promptSource === 'sdk' && record.entrypoint === 'sdk-cli') return false;
+    return true;
+  }
+
+  function extractMessages(jsonl) {
+    const output = [];
+    for (const line of String(jsonl || '').split(/\r?\n/)) {
+      if (!USER_LINE_MARKERS.some((marker) => line.includes(marker))) continue;
+      let record;
+      try { record = JSON.parse(line); } catch (_) { continue; }
+      const isCodexRecord = record.type === 'response_item';
+      if (record.type === 'user' && !isHumanTurn(record)) continue;
+      let texts = [];
+      if (record.type === 'USER_INPUT') {
+        if (record.source !== 'USER_EXPLICIT') continue;
+        const content = record.content || '';
+        const wrapped = Array.from(content.matchAll(/<USER_REQUEST>\s*([\s\S]*?)\s*<\/USER_REQUEST>/g), (match) => match[1]);
+        texts = wrapped.length ? wrapped : [content];
+      } else if (record.type === 'user.message') {
+        const data = record.data || {};
+        if (data.source === 'system') continue;
+        texts = [data.content || ''];
+      } else {
+        const payload = record.payload || record;
+        const message = payload.message || payload;
+        if (!((payload.type === 'message' || record.type === 'user') && (payload.role === 'user' || message.role === 'user'))) continue;
+        const content = message.content === undefined ? (payload.content || '') : message.content;
+        if (typeof content === 'string') texts = [content];
+        else if (Array.isArray(content)) texts = content.filter((part) => part && typeof part === 'object').map((part) => part.text || '');
+      }
+      for (let text of texts) {
+        text = String(text || '').trim();
+        if (isCodexRecord && text) {
+          text = text.replace(/<(subagent_notification|codex_internal_context|codex_delegation|turn_aborted|heartbeat)(?:\s[^>]*)?>[\s\S]*?<\/\1>/g, '');
+          text = text.replace(/<\/?image\b[^>]*>?/g, '').trim();
+        }
+        if (!text || isInjectedContext(text) || isPastedLog(text)) continue;
+        const timestamp = String(record.timestamp || record.created_at || '').slice(0, 10);
+        output.push([timestamp, text]);
+      }
+    }
+    return output;
+  }
+
+  function sourceKind(filePath) {
+    const normalized = `/${String(filePath || '').replace(/\\/g, '/').toLowerCase().replace(/^\/+|\/+$/g, '')}/`;
+    if (normalized.includes('/.codex/')) return 'codex';
+    if (normalized.includes('/.claude/')) return 'claude';
+    if (normalized.includes('/.copilot/')) return 'copilot';
+    if (normalized.includes('/antigravity/')) return 'antigravity';
+    return 'custom';
+  }
+
+  async function sha256Text(text) {
+    const bytes = new TextEncoder().encode(text);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  function hasSubagentsComponent(filePath) {
+    return String(filePath || '').replace(/\\/g, '/').split('/').includes('subagents');
+  }
+
+  async function mineFiles(fileEntries, onProgress) {
+    const files = Array.from(fileEntries || [])
+      .filter((file) => String(file.path || '').toLowerCase().endsWith('.jsonl') && !hasSubagentsComponent(file.path))
+      .sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0);
+    let sessions = 0, messages = 0, chars = 0, redactions = 0, duplicates = 0;
+    let firstDate = '', lastDate = '';
+    const records = [], seenLong = new Set();
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      let fileText = '';
+      try { fileText = typeof file.getText === 'function' ? await file.getText() : String(file.text || ''); } catch (_) { fileText = ''; }
+      const userMessages = extractMessages(fileText);
+      const keptMessages = [], keptDates = [], buffer = [];
+      for (const [timestamp, original] of userMessages) {
+        if (original.length >= DEDUPE_MIN_LEN) {
+          if (seenLong.has(original)) { duplicates += 1; continue; }
+          seenLong.add(original);
+        }
+        const clean = redact(original);
+        if (clean !== original) redactions += 1;
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(timestamp) ? timestamp : 'undated';
+        if (date !== 'undated') {
+          keptDates.push(date);
+          if (!firstDate || date < firstDate) firstDate = date;
+          if (!lastDate || date > lastDate) lastDate = date;
+        }
+        buffer.push(`[${date}]\n${clean}`);
+        keptMessages.push({ date, text: clean, ordinal: keptMessages.length });
+        messages += 1;
+        chars += clean.length;
+      }
+      if (buffer.length) {
+        const source = sourceKind(file.path);
+        const sessionId = (await sha256Text(`${source}:${String(file.path).toLowerCase()}`)).slice(0, 16);
+        records.push({ session_id: sessionId, source, first_date: keptDates.length ? keptDates.slice().sort()[0] : 'undated', last_date: keptDates.length ? keptDates.slice().sort().at(-1) : 'undated', messages: keptMessages });
+        sessions += 1;
+      }
+      if (onProgress) onProgress({ done: index + 1, total: files.length, sessions, messages, redactions, duplicates });
+      if ((index + 1) % 25 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    return { files: files.length, sessions, messages, chars, redactions, duplicates, records, first_date: firstDate, last_date: lastDate };
+  }
+
+  function coachNormalize(text) {
+    return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/[.!?, ]+$/g, '');
+  }
+
+  function coachWords(text) {
+    return new Set((String(text || '').toLowerCase().match(/[a-z0-9']+/g) || []));
+  }
+
+  function coachQuote(text, marker) {
+    const oneLine = String(text || '').trim().replace(/\s+/g, ' ');
+    if (oneLine.length <= COACH_QUOTE_CHARS) return oneLine;
+    let start = 0;
+    if (marker) {
+      const found = oneLine.toLowerCase().indexOf(marker);
+      if (found > 0) start = Math.max(0, found - Math.floor(COACH_QUOTE_CHARS / 3));
+    }
+    const clipped = oneLine.slice(start, start + COACH_QUOTE_CHARS).trimEnd();
+    return `${start ? '...' : ''}${clipped}...`;
+  }
+
+  function coachSimilar(left, right) {
+    if ([left, right].some((side) => (String(side).match(/\n/g) || []).length > COACH_REWORD_MAX_LINES)) return false;
+    const a = coachWords(left), b = coachWords(right);
+    if (a.size < COACH_REWORD_MIN_WORDS || b.size < COACH_REWORD_MIN_WORDS) return false;
+    const union = new Set([...a, ...b]);
+    const intersection = [...a].filter((word) => b.has(word)).length;
+    return union.size > 0 && intersection / union.size >= COACH_REWORD_OVERLAP;
+  }
+
+  function coachReceipt(record, message, count = 1, marker = '') {
+    return { session_id: record.session_id, source: record.source, date: message.date, ordinal: message.ordinal, text: coachQuote(message.text, marker), marker, count };
+  }
+
+  function coachConsecutiveRuns(record, same) {
+    const messages = (record.messages || []).filter((message) => coachNormalize(message.text));
+    const runs = [];
+    let start = 0;
+    while (start < messages.length) {
+      let end = start + 1;
+      while (end < messages.length && same(messages[end - 1].text, messages[end].text)) end += 1;
+      if (end - start > 1) runs.push([messages[start], end - start]);
+      start = end;
+    }
+    return runs;
+  }
+
+  function usageFindings(records) {
+    const repeats = [], rewords = [], restated = [], corrections = [];
+    for (const record of records) {
+      for (const [message, length] of coachConsecutiveRuns(record, (a, b) => coachNormalize(a) === coachNormalize(b))) {
+        if (length >= COACH_REPEAT_RUN_MIN && coachWords(message.text).size >= COACH_REPEAT_MIN_WORDS) repeats.push(coachReceipt(record, message, length));
+      }
+      for (const [message, length] of coachConsecutiveRuns(record, (a, b) => coachNormalize(a) !== coachNormalize(b) && coachSimilar(a, b))) {
+        if (length >= COACH_REWORD_RUN_MIN) rewords.push(coachReceipt(record, message, length));
+      }
+      for (const message of record.messages || []) {
+        const normalized = coachNormalize(message.text);
+        if (!normalized) continue;
+        const marker = RESTATED_CONTEXT_MARKERS.find((candidate) => normalized.includes(candidate));
+        if (marker) restated.push(coachReceipt(record, message, 1, marker));
+        if (CORRECTION_OPENERS.some((opener) => normalized.startsWith(opener)) && !COACH_NOT_CORRECTIONS.some((opener) => normalized.startsWith(opener))) corrections.push(coachReceipt(record, message));
+      }
+    }
+    const compare = (left, right) => right.count - left.count || (left.date < right.date ? -1 : left.date > right.date ? 1 : 0) || (left.session_id < right.session_id ? -1 : left.session_id > right.session_id ? 1 : 0) || left.ordinal - right.ordinal;
+    for (const group of [repeats, rewords, restated, corrections]) group.sort(compare);
+    return { repeats, rewords, restated, corrections };
+  }
+
+  function coachDistinct(receipts, limit) {
+    const seen = new Set(), output = [];
+    for (const receipt of receipts) {
+      if (seen.has(receipt.text)) continue;
+      seen.add(receipt.text);
+      output.push(receipt);
+      if (output.length >= limit) break;
+    }
+    return output;
+  }
+
+  function usageReport(records) {
+    const { repeats, rewords, restated, corrections } = usageFindings(records);
+    const allMessages = records.flatMap((record) => record.messages || []);
+    const total = allMessages.length;
+    const wordCounts = allMessages.map((message) => coachWords(message.text).size).sort((a, b) => a - b);
+    const dates = allMessages.map((message) => message.date).filter((date) => date !== 'undated').sort();
+    const sources = {};
+    for (const record of records) sources[record.source] = (sources[record.source] || 0) + 1;
+    const correctionRate = total ? Math.floor(100 * corrections.length / total) : 0;
+    const finding = (key, title, meaning, receipts, occurrences, flagged) => ({ key, title, meaning, occurrences, flagged: Boolean(flagged), receipts: coachDistinct(receipts, COACH_MAX_RECEIPTS) });
+    const findings = [
+      finding('repeat_sends', 'You resend the same message instead of changing it.', 'When the same real ask goes out three times in a row, the model had already given everything that prompt could get. Rewording once beats sending it again.', repeats, repeats.reduce((sum, item) => sum + item.count, 0), repeats.length),
+      finding('restated_context', 'You re-explain things the agent was already told.', 'Every one of these is context you paid for twice. This is the gap a profile closes: state it once, install it, stop retyping it.', restated, restated.length, restated.length >= COACH_RESTATED_MIN),
+      finding('reword_loops', 'You rephrase the same ask several turns in a row.', 'Three near-identical asks back to back usually means the first one was missing a constraint, not that the wording was wrong.', rewords, rewords.reduce((sum, item) => sum + item.count, 0), rewords.length),
+      finding('corrections', 'You open turns by correcting the last answer.', `At ${correctionRate}% of your messages this is high enough to point at the opening prompt rather than the model: the constraint you correct toward is the one worth stating up front.`, corrections, corrections.length, correctionRate >= COACH_CORRECTION_RATE),
+    ];
+    return {
+      sessions: records.length,
+      messages: total,
+      first_date: dates[0] || '',
+      last_date: dates.at(-1) || '',
+      sources,
+      median_words: wordCounts.length ? wordCounts[Math.floor(wordCounts.length / 2)] : 0,
+      short_prompts: wordCounts.filter((count) => count <= COACH_SHORT_PROMPT_WORDS).length,
+      correction_rate: correctionRate,
+      findings: findings.filter((item) => item.flagged),
+      clean: findings.filter((item) => !item.flagged).map((item) => ({ title: item.title, occurrences: item.occurrences })),
+    };
+  }
+
+  globalThis.EmuloScanCore = Object.freeze({ redact, isPastedLog, isInjectedContext, isHumanTurn, extractMessages, sourceKind, mineFiles, usageReport });
+}());
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const core = globalThis.EmuloScanCore;
+  const states = ['choose', 'scan', 'result', 'error'];
+  const byId = (id) => document.getElementById(id);
+  const statusLabel = byId('status-label');
+  const pickerButton = byId('picker-button');
+  const fallbackLabel = byId('fallback-label');
+  const folderInput = byId('folder-input');
+  const progressBar = byId('progress-bar');
+  const progressCount = byId('progress-count');
+  const progressTime = byId('progress-time');
+  const scanDetail = byId('scan-detail');
+  let startedAt = 0;
+
+  function showState(name) {
+    for (const state of states) byId(`${state}-state`).classList.toggle('active', state === name);
+    statusLabel.textContent = name === 'choose' ? 'ready' : name === 'scan' ? 'reading locally' : name === 'result' ? 'finished' : 'needs a folder';
+  }
+
+  async function collectHandle(handle, prefix, output) {
+    for await (const entry of handle.values()) {
+      const entryPath = `${prefix}/${entry.name}`;
+      if (entry.kind === 'directory') await collectHandle(entry, entryPath, output);
+      else if (entry.name.toLowerCase().endsWith('.jsonl')) {
+        output.push({ path: entryPath, getText: async () => (await entry.getFile()).text() });
+      }
+    }
+  }
+
+  function fileEntriesFromInput(files) {
+    return Array.from(files)
+      .filter((file) => file.name.toLowerCase().endsWith('.jsonl'))
+      .map((file) => ({ path: file.webkitRelativePath || file.name, getText: () => file.text() }));
+  }
+
+  function setProgress(progress) {
+    const percent = progress.total ? Math.floor(100 * progress.done / progress.total) : 0;
+    progressBar.style.width = `${percent}%`;
+    progressCount.textContent = `${progress.done.toLocaleString()} / ${progress.total.toLocaleString()} files`;
+    progressTime.textContent = `${((performance.now() - startedAt) / 1000).toFixed(1)}s`;
+    scanDetail.textContent = `Found ${progress.sessions.toLocaleString()} sessions and ${progress.messages.toLocaleString()} messages you typed.`;
+  }
+
+  function addStat(parent, value, label) {
+    const cell = document.createElement('div');
+    cell.className = 'summary-stat';
+    const strong = document.createElement('strong');
+    strong.textContent = Number(value).toLocaleString();
+    const span = document.createElement('span');
+    span.textContent = label;
+    cell.append(strong, span);
+    parent.append(cell);
+  }
+
+  function renderResults(mined, report, elapsed) {
+    const summary = byId('summary-grid');
+    summary.replaceChildren();
+    addStat(summary, report.sessions, 'sessions');
+    addStat(summary, report.messages, 'your messages');
+    addStat(summary, mined.redactions, 'redacted');
+    const sources = Object.entries(report.sources).sort().map(([name, count]) => `${name} ${count}`).join(', ');
+    const span = report.first_date ? `${report.first_date} to ${report.last_date}` : 'dates unavailable';
+    byId('result-meta').textContent = `${span} · ${sources || 'custom logs'} · scanned in ${elapsed.toFixed(2)}s`;
+    byId('result-title').textContent = report.findings.length ? `${report.findings.length} pattern${report.findings.length === 1 ? '' : 's'} worth a look` : 'Nothing crossed the flag threshold';
+
+    const findings = byId('findings');
+    findings.replaceChildren();
+    if (!report.findings.length) {
+      const clean = document.createElement('div');
+      clean.className = 'clean';
+      const title = document.createElement('strong');
+      title.textContent = 'Every check came back under its bar.';
+      const detail = document.createElement('span');
+      detail.textContent = report.clean.map((item) => `${item.occurrences} ${item.title.toLowerCase()}`).join(' ');
+      clean.append(title, detail);
+      findings.append(clean);
+    }
+    report.findings.forEach((finding, index) => {
+      const article = document.createElement('article');
+      article.className = 'finding';
+      const number = document.createElement('span');
+      number.className = 'finding-index';
+      number.textContent = String(index + 1).padStart(2, '0');
+      const title = document.createElement('h3');
+      title.textContent = finding.title;
+      const count = document.createElement('p');
+      count.className = 'finding-count';
+      count.textContent = `${finding.occurrences.toLocaleString()} message${finding.occurrences === 1 ? '' : 's'}`;
+      const receipts = document.createElement('div');
+      receipts.className = 'receipts';
+      finding.receipts.forEach((receipt) => {
+        const row = document.createElement('div');
+        row.className = 'receipt';
+        const time = document.createElement('time');
+        time.textContent = receipt.date;
+        const quote = document.createElement('q');
+        quote.textContent = `${receipt.text}${receipt.count > 1 ? `  ×${receipt.count}` : ''}`;
+        row.append(time, quote);
+        receipts.append(row);
+      });
+      article.append(number, title, count, receipts);
+      findings.append(article);
+    });
+    showState('result');
+  }
+
+  function showError(message) {
+    byId('error-message').textContent = message;
+    showState('error');
+  }
+
+  async function runScan(entries) {
+    if (!entries.length) { showError('No JSONL session files were found. Pick .claude, .codex, or a folder that contains agent sessions.'); return; }
+    startedAt = performance.now();
+    progressBar.style.width = '0%';
+    progressCount.textContent = `0 / ${entries.length.toLocaleString()} files`;
+    progressTime.textContent = '0.0s';
+    showState('scan');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    try {
+      const mined = await core.mineFiles(entries, setProgress);
+      if (!mined.sessions) { showError('The folder had JSONL files, but none contained supported human messages. Try the top-level .claude or .codex folder.'); return; }
+      const report = core.usageReport(mined.records);
+      renderResults(mined, report, (performance.now() - startedAt) / 1000);
+    } catch (error) {
+      showError(`The browser could not finish reading this folder. ${error && error.message ? error.message : 'Try the browser folder picker instead.'}`);
+    }
+  }
+
+  if ('showDirectoryPicker' in window) {
+    pickerButton.addEventListener('click', async () => {
+      try {
+        const handle = await window.showDirectoryPicker({ mode: 'read' });
+        const entries = [];
+        await collectHandle(handle, handle.name, entries);
+        await runScan(entries);
+      } catch (error) {
+        if (!error || error.name !== 'AbortError') showError('The folder could not be opened. Use the browser folder picker below.');
+      }
+    });
+  } else {
+    pickerButton.hidden = true;
+    byId('fallback-button').classList.remove('secondary');
+    byId('support-note').textContent = 'This browser uses its folder-input fallback. Your files still stay on this machine.';
+  }
+  folderInput.addEventListener('change', () => runScan(fileEntriesFromInput(folderInput.files)));
+  byId('reset-button').addEventListener('click', () => { folderInput.value = ''; showState('choose'); });
+  byId('retry-button').addEventListener('click', () => { folderInput.value = ''; showState('choose'); });
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emulo | Project memory installed for AI coding teams</title>
+<meta name="description" content="A scoped engagement that mines your repo history and your team's coding sessions into project memory for Claude Code, Codex or Cursor. From $5,000.">
+<link rel="icon" type="image/png" href="assets/emulo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f2eee1;
+  --paper-2:#f7f4ea;
+  --ink:#161309;
+  --ink-soft:#3d3a2f;
+  --ink-faint:#6f6a58;
+  --ink-dim:#8f8a76;
+  --cream-dim:#cfc9b4;
+  --rule:#c9c3ad;
+  --red:#a83b23;
+  --serif:"Playfair Display",Georgia,serif;
+  --text:"Source Serif 4",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{max-width:100%;overflow-x:hidden;scroll-behavior:smooth}
+body{
+  max-width:100%;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--text);
+  font-size:17px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+/* paper grain, matches the landing page */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+a{color:inherit}
+.wrap{position:relative;z-index:3;width:100%;max-width:1120px;margin:0 auto;padding:0 32px}
+.label{
+  display:block;
+  color:var(--ink-faint);
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+}
+.label .red{color:var(--red)}
+h1,h2,h3{font-family:var(--serif);font-weight:600}
+
+/* ---------- nav ---------- */
+nav{
+  position:relative;z-index:3;
+  display:flex;align-items:center;justify-content:space-between;
+  max-width:1120px;margin:0 auto;padding:26px 32px;
+  border-bottom:1px solid var(--rule);
+}
+.wordmark{font-family:var(--mono);font-size:14px;font-weight:500;letter-spacing:.46em;text-decoration:none}
+.nav-link{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--ink-faint)}
+.nav-link:hover,.nav-link:focus-visible{color:var(--red)}
+
+/* ---------- hero ---------- */
+.hero{padding:78px 0 56px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(268px,.5fr);gap:72px;align-items:end}
+.hero-grid>*{min-width:0}
+.eyebrow{display:flex;gap:14px;align-items:center;margin-bottom:28px}
+.eyebrow::before{content:"";flex:none;width:34px;height:1px;background:var(--red)}
+h1{max-width:800px;font-size:clamp(44px,6.6vw,80px);line-height:1;letter-spacing:-.02em}
+h1 i{font-style:italic;color:var(--red);font-weight:500}
+.hero-copy{max-width:640px;margin-top:28px;font-size:20px;color:var(--ink-soft)}
+.hero-copy b{color:var(--ink);font-weight:600}
+.hero-action{margin-top:36px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.micro{max-width:360px;color:var(--ink-faint);font-size:14px;line-height:1.5}
+
+.ledger{border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.ledger-row{padding:16px 0;border-top:1px dotted var(--rule)}
+.ledger-row:first-child{border-top:0}
+.ledger-row b{display:block;margin-top:6px;font-family:var(--serif);font-size:21px;font-weight:600;line-height:1.2}
+.ledger-row .price{font-size:38px;letter-spacing:-.02em}
+
+.button{
+  display:inline-flex;align-items:center;gap:22px;
+  padding:16px 24px;border:1px solid var(--ink);background:var(--ink);
+  color:var(--paper-2);font-family:var(--mono);font-size:12px;font-weight:500;
+  letter-spacing:.1em;text-transform:uppercase;text-decoration:none;
+  transition:background .18s ease,border-color .18s ease,transform .18s ease;
+}
+.button:hover{background:var(--red);border-color:var(--red)}
+.button:active{transform:translateY(1px)}
+.button:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+
+/* ---------- the drift figure ---------- */
+.drift-band{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:56px 0 52px}
+.drift{position:relative}
+.drift-head{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:34px}
+.drift-inner{position:relative}
+.today{
+  position:absolute;top:-10px;bottom:24px;right:0;width:1px;
+  background:repeating-linear-gradient(to bottom,var(--ink-dim) 0 3px,transparent 3px 7px);
+}
+.today::after{
+  content:"TODAY";position:absolute;top:-16px;right:0;
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--ink-dim);
+}
+.track{display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px;align-items:end}
+.track+.track{margin-top:12px}
+.track-name{
+  padding-bottom:2px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);
+}
+.track-name.is-file{color:var(--red)}
+.track-art{position:relative;min-width:0}
+svg{display:block;width:100%}
+.stream{height:172px;overflow:visible}
+.stream line{stroke:var(--ink);stroke-width:1.5;stroke-opacity:.3;vector-effect:non-scaling-stroke}
+.stream .axis{stroke:var(--ink);stroke-width:1;stroke-opacity:1;vector-effect:non-scaling-stroke}
+.stream .curve{fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.stream .dot{stroke:var(--ink);stroke-width:9;stroke-opacity:1;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.filetrack{height:56px}
+.filetrack .base{stroke:var(--ink-dim);stroke-width:1;stroke-dasharray:1 6;vector-effect:non-scaling-stroke}
+.filetrack .commit{stroke:var(--ink);stroke-width:3;vector-effect:non-scaling-stroke}
+.filetrack .measure{stroke:var(--red);stroke-width:2;vector-effect:non-scaling-stroke}
+.filetrack .cap{stroke:var(--red);stroke-width:2;vector-effect:non-scaling-stroke}
+.curve-note{
+  position:absolute;left:0;top:-2px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);
+}
+.span-note{
+  position:absolute;left:16px;top:-1px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);
+}
+.gap-note{
+  position:absolute;left:0;bottom:-24px;
+  font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--red);
+}
+.drift figcaption{display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px;margin-top:58px}
+.drift figcaption p{max-width:660px;color:var(--ink-soft)}
+.drift figcaption .note{margin-top:16px;font-size:15px;color:var(--ink-faint)}
+
+/* ---------- sections ---------- */
+section{padding:88px 0}
+.section-grid{display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px}
+h2{font-size:clamp(32px,3.8vw,50px);line-height:1.05;letter-spacing:-.015em;max-width:14ch}
+.lede{max-width:660px;margin-top:20px;font-size:18px;color:var(--ink-soft)}
+code{font-family:var(--mono);font-size:.86em}
+
+.deliverables{margin-top:46px;border-top:2px solid var(--ink)}
+.deliverable{
+  display:grid;grid-template-columns:132px minmax(180px,.6fr) minmax(0,1.4fr);gap:22px;
+  padding:24px 0;border-bottom:1px solid var(--rule);
+}
+.deliverable .num{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--red)}
+.deliverable h3{font-size:21px;line-height:1.25}
+.deliverable p{color:var(--ink-soft)}
+
+.specimen{display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px;margin-top:46px}
+.specimen-body{max-width:760px}
+.specimen-card{
+  margin-top:14px;padding:26px 28px;background:var(--paper-2);
+  border:1px solid var(--rule);border-left:2px solid var(--red);
+}
+.specimen-card .rule{font-family:var(--serif);font-size:20px;font-weight:600;line-height:1.35}
+.specimen-card .act{margin-top:12px;font-size:16px;color:var(--ink-soft)}
+.specimen-card .act span{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--red)}
+.specimen-card .receipt{margin-top:16px;padding-top:14px;border-top:1px dotted var(--rule);font-family:var(--mono);font-size:12px;color:var(--ink-faint);overflow-wrap:anywhere}
+.specimen .micro{max-width:none;margin-top:14px}
+
+/* ---------- dark scope ---------- */
+.scope{background:var(--ink);color:var(--paper-2)}
+.scope h2{color:var(--paper-2)}
+.scope .label{color:var(--cream-dim)}
+.scope-grid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #423e31;border-bottom:1px solid #423e31;margin-top:46px}
+.scope-block{padding:32px 34px 34px 0}
+.scope-block+.scope-block{padding-left:34px;border-left:1px solid #423e31}
+.scope-block h3{font-size:23px;margin-bottom:14px;color:var(--paper-2)}
+.scope-block p,.scope-block li{color:#cdc7b3}
+.scope-block ul{list-style:none}
+.scope-block li{padding:8px 0;border-top:1px dotted #423e31}
+.scope-block li:first-child{border-top:0}
+
+/* ---------- close ---------- */
+.final{padding:96px 0 84px}
+.final-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:72px;align-items:end}
+.final h2{max-width:16ch}
+.final p{margin-top:20px;max-width:600px;color:var(--ink-soft);font-size:18px}
+.final-action{border-top:2px solid var(--ink);padding-top:24px}
+.price-line{padding-bottom:22px;margin-bottom:22px;border-bottom:1px dotted var(--rule)}
+.price-line b{display:block;font-family:var(--serif);font-size:34px;font-weight:600;line-height:1.15;letter-spacing:-.02em}
+.price-line span{display:block;margin-top:6px;color:var(--ink-faint);font-size:15px}
+.final-action .button{margin-bottom:16px}
+
+footer{border-top:1px solid var(--rule);padding:26px 0 40px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+footer span,footer a{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);text-decoration:none}
+
+@media (max-width:900px){
+  .hero-grid,.final-grid{grid-template-columns:1fr;gap:44px}
+  .hero{padding:56px 0 44px}
+  .section-grid,.specimen,.drift figcaption{grid-template-columns:1fr;gap:14px}
+  .scope-grid{grid-template-columns:1fr}
+  .scope-block{padding:26px 0;border-bottom:1px solid #423e31}
+  .scope-block+.scope-block{padding-left:0;border-left:0}
+  .scope-block:last-child{border-bottom:0}
+  .deliverable{grid-template-columns:52px minmax(0,1fr);gap:16px}
+  .deliverable p{grid-column:2}
+  section{padding:66px 0}
+}
+@media (max-width:640px){
+  .wrap{padding-left:20px;padding-right:20px}
+  nav{padding:20px}
+  .nav-link{letter-spacing:.1em}
+  h1{font-size:clamp(36px,10.4vw,44px);overflow-wrap:break-word}
+  .hero-copy{font-size:18px;overflow-wrap:break-word}
+  .track{grid-template-columns:1fr;gap:8px;align-items:start}
+  .track-name{padding-bottom:0}
+  .track+.track{margin-top:26px}
+  .today{bottom:52px}
+  .gap-note{position:static;display:block;margin-top:8px}
+  .stream{height:126px}
+  .drift figcaption{margin-top:60px}
+  .specimen-card{padding:20px}
+  .hero-action{flex-direction:column;align-items:stretch}
+  .button{width:100%;justify-content:space-between}
+  .final-action .button{width:100%}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button{transition:none}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="wordmark" href="/">EMULO</a>
+  <a class="nav-link" href="/">Open source project</a>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow"><span class="label">Project memory, installed for your team</span></div>
+      <h1>Your agents run on a file <i>nobody owns.</i></h1>
+      <p class="hero-copy">I mine your repo history and your team's real coding sessions, then install the project memory your agents load before every task. <b>Claude Code, Codex, Cursor.</b></p>
+      <div class="hero-action">
+        <a class="button" href="mailto:ohadkrispin@gmail.com?subject=Project%20memory%20enquiry&amp;body=Team%20size%3A%0AAgents%20we%20use%3A%0ARepo%20count%20and%20stack%3A%0AOne%20recent%20context%20failure%3A%0ACurrent%20CLAUDE.md%20or%20AGENTS.md%3A">Send one context failure <span aria-hidden="true">&rarr;</span></a>
+        <p class="micro">For engineering leads at teams of 3 to 50 already running coding agents on production work.</p>
+      </div>
+    </div>
+    <aside class="ledger" aria-label="Engagement summary">
+      <div class="ledger-row"><span class="label">Starts at</span><b class="price">$5,000</b></div>
+      <div class="ledger-row"><span class="label">Typical scope</span><b>$8,000 to $15,000</b></div>
+      <div class="ledger-row"><span class="label">First delivery</span><b>10 business days</b></div>
+      <div class="ledger-row"><span class="label">Maintenance</span><b>30 and 60 day passes</b></div>
+    </aside>
+  </div>
+</header>
+
+<div class="drift-band">
+  <div class="wrap">
+    <figure class="drift">
+      <div class="drift-head">
+        <span class="label">The pattern, drawn</span>
+        <span class="label"><span class="red">452</span> public repos carried an agent context file</span>
+      </div>
+
+      <div class="drift-inner">
+        <span class="today" aria-hidden="true"></span>
+
+        <div class="track">
+          <span class="track-name">Repo commits</span>
+          <div class="track-art">
+            <svg class="stream" viewBox="0 0 1000 100" preserveAspectRatio="none" role="img" aria-label="A dense stream of daily commit marks running the full width of the chart, from the start of the window to today.">
+              <line x1="8.0" y1="100" x2="8.0" y2="85.0"/><line x1="16.3" y1="100" x2="16.3" y2="77.3"/><line x1="24.7" y1="100" x2="24.7" y2="69.4"/><line x1="33.0" y1="100" x2="33.0" y2="79.3"/><line x1="41.4" y1="100" x2="41.4" y2="71.3"/><line x1="49.7" y1="100" x2="49.7" y2="97.0"/>
+              <line x1="58.0" y1="100" x2="58.0" y2="97.5"/><line x1="66.4" y1="100" x2="66.4" y2="79.2"/><line x1="74.7" y1="100" x2="74.7" y2="68.9"/><line x1="83.1" y1="100" x2="83.1" y2="58.5"/><line x1="91.4" y1="100" x2="91.4" y2="71.6"/><line x1="99.7" y1="100" x2="99.7" y2="61.0"/>
+              <line x1="108.1" y1="100" x2="108.1" y2="97.5"/><line x1="116.4" y1="100" x2="116.4" y2="96.0"/><line x1="124.7" y1="100" x2="124.7" y2="77.2"/><line x1="133.1" y1="100" x2="133.1" y2="66.4"/><line x1="141.4" y1="100" x2="141.4" y2="55.4"/><line x1="149.8" y1="100" x2="149.8" y2="69.2"/>
+              <line x1="158.1" y1="100" x2="158.1" y2="58.1"/><line x1="166.4" y1="100" x2="166.4" y2="97.5"/><line x1="174.8" y1="100" x2="174.8" y2="97.5"/><line x1="183.1" y1="100" x2="183.1" y2="80.3"/><line x1="191.5" y1="100" x2="191.5" y2="71.3"/><line x1="199.8" y1="100" x2="199.8" y2="62.1"/>
+              <line x1="208.1" y1="100" x2="208.1" y2="73.7"/><line x1="216.5" y1="100" x2="216.5" y2="64.4"/><line x1="224.8" y1="100" x2="224.8" y2="97.2"/><line x1="233.2" y1="100" x2="233.2" y2="97.5"/><line x1="241.5" y1="100" x2="241.5" y2="84.2"/><line x1="249.8" y1="100" x2="249.8" y2="77.2"/>
+              <line x1="258.2" y1="100" x2="258.2" y2="86.1"/><line x1="266.5" y1="100" x2="266.5" y2="79.0"/><line x1="274.8" y1="100" x2="274.8" y2="71.8"/><line x1="283.2" y1="100" x2="283.2" y2="93.7"/><line x1="291.5" y1="100" x2="291.5" y2="94.9"/><line x1="299.9" y1="100" x2="299.9" y2="82.8"/>
+              <line x1="308.2" y1="100" x2="308.2" y2="75.4"/><line x1="316.5" y1="100" x2="316.5" y2="84.8"/><line x1="324.9" y1="100" x2="324.9" y2="77.3"/><line x1="333.2" y1="100" x2="333.2" y2="69.8"/><line x1="341.6" y1="100" x2="341.6" y2="97.5"/><line x1="349.9" y1="100" x2="349.9" y2="97.1"/>
+              <line x1="358.2" y1="100" x2="358.2" y2="74.8"/><line x1="366.6" y1="100" x2="366.6" y2="64.4"/><line x1="374.9" y1="100" x2="374.9" y2="77.7"/><line x1="383.3" y1="100" x2="383.3" y2="67.2"/><line x1="391.6" y1="100" x2="391.6" y2="56.5"/><line x1="399.9" y1="100" x2="399.9" y2="97.5"/>
+              <line x1="408.3" y1="100" x2="408.3" y2="97.5"/><line x1="416.6" y1="100" x2="416.6" y2="66.0"/><line x1="424.9" y1="100" x2="424.9" y2="52.3"/><line x1="433.3" y1="100" x2="433.3" y2="69.8"/><line x1="441.6" y1="100" x2="441.6" y2="92.1"/><line x1="450.0" y1="100" x2="450.0" y2="89.6"/>
+              <line x1="458.3" y1="100" x2="458.3" y2="97.5"/><line x1="466.6" y1="100" x2="466.6" y2="97.5"/><line x1="475.0" y1="100" x2="475.0" y2="93.5"/><line x1="483.3" y1="100" x2="483.3" y2="90.9"/><line x1="491.7" y1="100" x2="491.7" y2="94.2"/><line x1="500.0" y1="100" x2="500.0" y2="91.6"/>
+              <line x1="508.3" y1="100" x2="508.3" y2="94.9"/><line x1="516.7" y1="100" x2="516.7" y2="97.5"/><line x1="525.0" y1="100" x2="525.0" y2="97.5"/><line x1="533.4" y1="100" x2="533.4" y2="94.5"/><line x1="541.7" y1="100" x2="541.7" y2="92.4"/><line x1="550.0" y1="100" x2="550.0" y2="72.5"/>
+              <line x1="558.4" y1="100" x2="558.4" y2="60.7"/><line x1="566.7" y1="100" x2="566.7" y2="75.8"/><line x1="575.1" y1="100" x2="575.1" y2="97.5"/><line x1="583.4" y1="100" x2="583.4" y2="95.5"/><line x1="591.7" y1="100" x2="591.7" y2="75.7"/><line x1="600.1" y1="100" x2="600.1" y2="66.7"/>
+              <line x1="608.4" y1="100" x2="608.4" y2="78.1"/><line x1="616.7" y1="100" x2="616.7" y2="69.1"/><line x1="625.1" y1="100" x2="625.1" y2="80.7"/><line x1="633.4" y1="100" x2="633.4" y2="97.5"/><line x1="641.8" y1="100" x2="641.8" y2="96.8"/><line x1="650.1" y1="100" x2="650.1" y2="39.6"/>
+              <line x1="658.4" y1="100" x2="658.4" y2="18.0"/><line x1="666.8" y1="100" x2="666.8" y2="76.4"/><line x1="675.1" y1="100" x2="675.1" y2="66.9"/><line x1="683.5" y1="100" x2="683.5" y2="79.0"/><line x1="691.8" y1="100" x2="691.8" y2="97.1"/><line x1="700.1" y1="100" x2="700.1" y2="97.5"/>
+              <line x1="708.5" y1="100" x2="708.5" y2="62.1"/><line x1="716.8" y1="100" x2="716.8" y2="48.9"/><line x1="725.2" y1="100" x2="725.2" y2="65.8"/><line x1="733.5" y1="100" x2="733.5" y2="52.5"/><line x1="741.8" y1="100" x2="741.8" y2="69.5"/><line x1="750.2" y1="100" x2="750.2" y2="94.9"/>
+              <line x1="758.5" y1="100" x2="758.5" y2="95.9"/><line x1="766.8" y1="100" x2="766.8" y2="49.7"/><line x1="775.2" y1="100" x2="775.2" y2="32.6"/><line x1="783.5" y1="100" x2="783.5" y2="54.4"/><line x1="791.9" y1="100" x2="791.9" y2="37.2"/><line x1="800.2" y1="100" x2="800.2" y2="59.2"/>
+              <line x1="808.5" y1="100" x2="808.5" y2="97.4"/><line x1="816.9" y1="100" x2="816.9" y2="93.4"/><line x1="825.2" y1="100" x2="825.2" y2="47.1"/><line x1="833.6" y1="100" x2="833.6" y2="29.6"/><line x1="841.9" y1="100" x2="841.9" y2="52.0"/><line x1="850.2" y1="100" x2="850.2" y2="34.3"/>
+              <line x1="858.6" y1="100" x2="858.6" y2="56.9"/><line x1="866.9" y1="100" x2="866.9" y2="95.9"/><line x1="875.3" y1="100" x2="875.3" y2="97.3"/><line x1="883.6" y1="100" x2="883.6" y2="55.9"/><line x1="891.9" y1="100" x2="891.9" y2="41.7"/><line x1="900.3" y1="100" x2="900.3" y2="59.9"/>
+              <line x1="908.6" y1="100" x2="908.6" y2="45.5"/><line x1="916.9" y1="100" x2="916.9" y2="63.9"/><line x1="925.3" y1="100" x2="925.3" y2="89.9"/><line x1="933.6" y1="100" x2="933.6" y2="96.7"/><line x1="942.0" y1="100" x2="942.0" y2="65.4"/><line x1="950.3" y1="100" x2="950.3" y2="54.5"/>
+              <line x1="958.6" y1="100" x2="958.6" y2="68.4"/><line x1="967.0" y1="100" x2="967.0" y2="57.5"/><line x1="975.3" y1="100" x2="975.3" y2="71.5"/><line x1="983.7" y1="100" x2="983.7" y2="95.8"/><line x1="992.0" y1="100" x2="992.0" y2="96.6"/>
+              <line class="axis" x1="0" y1="100" x2="1000" y2="100"/>
+              <path class="curve" d="M8.0 99.52C9.38 99.4 13.52 99.08 16.3 98.79C19.08 98.5 21.92 98.08 24.7 97.8C27.48 97.52 30.22 97.39 33.0 97.13C35.78 96.86 38.62 96.38 41.4 96.21C44.18 96.04 46.93 96.15 49.7 96.12C52.47 96.09 55.22 96.17 58.0 96.04C60.78 95.92 63.62 95.65 66.4 95.37C69.18 95.09 71.92 94.76 74.7 94.37C77.48 93.98 80.32 93.41 83.1 93.03C85.88 92.66 88.63 92.48 91.4 92.12C94.17 91.76 96.92 91.08 99.7 90.86C102.48 90.64 105.32 90.84 108.1 90.81C110.88 90.78 113.63 90.82 116.4 90.68C119.17 90.54 121.92 90.25 124.7 89.95C127.48 89.65 130.32 89.29 133.1 88.87C135.88 88.45 138.62 87.84 141.4 87.43C144.18 87.03 147.02 86.83 149.8 86.44C152.58 86.05 155.33 85.33 158.1 85.09C160.87 84.85 163.62 85.03 166.4 85.01C169.18 84.99 172.02 85.07 174.8 84.96C177.58 84.85 180.32 84.59 183.1 84.33C185.88 84.07 188.72 83.76 191.5 83.4C194.28 83.04 197.03 82.52 199.8 82.18C202.57 81.84 205.32 81.67 208.1 81.34C210.88 81.01 213.72 80.4 216.5 80.19C219.28 79.98 222.02 80.13 224.8 80.1C227.58 80.07 230.42 80.12 233.2 80.03C235.98 79.94 238.73 79.74 241.5 79.53C244.27 79.32 247.02 78.99 249.8 78.79C252.58 78.59 255.42 78.53 258.2 78.34C260.98 78.15 263.73 77.93 266.5 77.67C269.27 77.41 272.02 76.95 274.8 76.76C277.58 76.58 280.42 76.62 283.2 76.56C285.98 76.5 288.72 76.52 291.5 76.4C294.28 76.28 297.12 76.06 299.9 75.84C302.68 75.62 305.43 75.26 308.2 75.05C310.97 74.84 313.72 74.76 316.5 74.56C319.28 74.36 322.12 74.12 324.9 73.84C327.68 73.56 330.42 73.03 333.2 72.86C335.98 72.69 338.82 72.85 341.6 72.83C344.38 72.81 347.13 72.89 349.9 72.74C352.67 72.59 355.42 72.26 358.2 71.93C360.98 71.6 363.82 71.09 366.6 70.78C369.38 70.47 372.12 70.36 374.9 70.06C377.68 69.77 380.52 69.42 383.3 69.01C386.08 68.6 388.83 67.86 391.6 67.61C394.37 67.36 397.12 67.55 399.9 67.53C402.68 67.51 405.52 67.67 408.3 67.48C411.08 67.29 413.83 66.82 416.6 66.38C419.37 65.94 422.12 65.27 424.9 64.85C427.68 64.43 430.52 64.09 433.3 63.88C436.08 63.68 438.82 63.72 441.6 63.62C444.38 63.52 447.22 63.35 450.0 63.29C452.78 63.23 455.53 63.27 458.3 63.26C461.07 63.25 463.82 63.28 466.6 63.24C469.38 63.2 472.22 63.11 475.0 63.03C477.78 62.95 480.52 62.82 483.3 62.74C486.08 62.66 488.92 62.63 491.7 62.55C494.48 62.47 497.23 62.35 500.0 62.28C502.77 62.21 505.52 62.15 508.3 62.12C511.08 62.09 513.92 62.1 516.7 62.09C519.48 62.08 522.22 62.09 525.0 62.06C527.78 62.03 530.62 61.95 533.4 61.88C536.18 61.81 538.93 61.83 541.7 61.64C544.47 61.45 547.22 61.11 550.0 60.75C552.78 60.39 555.62 59.83 558.4 59.49C561.18 59.15 563.92 58.85 566.7 58.71C569.48 58.57 572.32 58.68 575.1 58.65C577.88 58.62 580.63 58.66 583.4 58.51C586.17 58.36 588.92 58.04 591.7 57.73C594.48 57.42 597.32 56.95 600.1 56.65C602.88 56.35 605.63 56.23 608.4 55.95C611.17 55.67 613.92 55.23 616.7 54.96C619.48 54.69 622.32 54.46 625.1 54.34C627.88 54.23 630.62 54.3 633.4 54.27C636.18 54.24 639.02 54.51 641.8 54.17C644.58 53.83 647.33 52.98 650.1 52.22C652.87 51.46 655.62 50.16 658.4 49.59C661.18 49.03 664.02 49.13 666.8 48.83C669.58 48.52 672.32 48.05 675.1 47.76C677.88 47.47 680.72 47.21 683.5 47.08C686.28 46.95 689.03 47.02 691.8 46.99C694.57 46.96 697.32 47.14 700.1 46.92C702.88 46.7 705.72 46.18 708.5 45.7C711.28 45.22 714.02 44.52 716.8 44.06C719.58 43.6 722.42 43.4 725.2 42.96C727.98 42.52 730.73 41.85 733.5 41.43C736.27 41.01 739.02 40.64 741.8 40.45C744.58 40.26 747.42 40.34 750.2 40.29C752.98 40.24 755.73 40.45 758.5 40.16C761.27 39.87 764.02 39.17 766.8 38.54C769.58 37.91 772.42 36.98 775.2 36.37C777.98 35.76 780.72 35.48 783.5 34.9C786.28 34.32 789.12 33.44 791.9 32.88C794.68 32.33 797.43 31.8 800.2 31.57C802.97 31.34 805.72 31.53 808.5 31.48C811.28 31.43 814.12 31.59 816.9 31.27C819.68 30.95 822.42 30.23 825.2 29.57C827.98 28.91 830.82 27.95 833.6 27.31C836.38 26.67 839.13 26.37 841.9 25.76C844.67 25.15 847.42 24.23 850.2 23.65C852.98 23.07 855.82 22.51 858.6 22.26C861.38 22.01 864.12 22.16 866.9 22.13C869.68 22.09 872.52 22.3 875.3 22.05C878.08 21.8 880.83 21.18 883.6 20.63C886.37 20.08 889.12 19.28 891.9 18.75C894.68 18.22 897.52 17.97 900.3 17.46C903.08 16.95 905.83 16.2 908.6 15.71C911.37 15.23 914.12 14.8 916.9 14.55C919.68 14.3 922.52 14.3 925.3 14.23C928.08 14.16 930.82 14.32 933.6 14.12C936.38 13.92 939.22 13.44 942.0 13.01C944.78 12.58 947.53 11.95 950.3 11.54C953.07 11.13 955.82 10.93 958.6 10.53C961.38 10.13 964.22 9.54 967.0 9.16C969.78 8.78 972.52 8.42 975.3 8.24C978.08 8.06 980.92 8.15 983.7 8.11C986.48 8.07 990.62 8.02 992.0 8.0"/>
+              <line class="dot" x1="992.0" y1="8.0" x2="992.0" y2="8.0"/>
+            </svg>
+            <span class="curve-note">Cumulative change</span>
+          </div>
+        </div>
+
+        <div class="track">
+          <span class="track-name is-file">CLAUDE.md</span>
+          <div class="track-art">
+            <svg class="filetrack" viewBox="0 0 1000 58" preserveAspectRatio="none" role="img" aria-label="A single commit mark at the very start of the window, then a flat dotted line with nothing on it all the way to today.">
+              <line class="base" x1="8" y1="34" x2="996" y2="34"/>
+              <line class="commit" x1="8" y1="6" x2="8" y2="34"/>
+              <line class="measure" x1="8" y1="50" x2="996" y2="50"/>
+              <line class="cap" x1="8" y1="44" x2="8" y2="56"/>
+              <line class="cap" x1="996" y1="44" x2="996" y2="56"/>
+            </svg>
+            <span class="span-note">Written once</span>
+            <span class="gap-note">Everything after this, your reviewers carry by hand</span>
+          </div>
+        </div>
+      </div>
+
+      <figcaption>
+        <span class="label">What I scanned</span>
+        <div>
+          <p>I pulled 1,164 recently pushed public repos. 452 of them carried a root <code>CLAUDE.md</code>, <code>AGENTS.md</code> or <code>.cursorrules</code>. 76 had gone 90 days or more without touching that file while the repo kept shipping. The file did not go stale because someone was careless. It went stale because it belongs to nobody.</p>
+          <p class="note">Veracode found AI generated code introduced security flaws in 45% of tests across more than 100 models. Project memory does not fix that. It stops the model guessing at constraints your reviewers already know.</p>
+        </div>
+      </figcaption>
+    </figure>
+  </div>
+</div>
+
+<main>
+  <section>
+    <div class="wrap">
+      <div class="section-grid">
+        <span class="label">What arrives</span>
+        <div>
+          <h2>Five things, in&nbsp;your&nbsp;repo.</h2>
+          <p class="lede">Every item lands as a file you own, on a branch you review. Nothing runs on my machine after the engagement ends.</p>
+        </div>
+      </div>
+
+      <div class="deliverables">
+        <div class="deliverable">
+          <span class="num">01</span><h3>A project map</h3><p>Architecture, boundaries, source of truth, commands, and the gates that need a human.</p>
+        </div>
+        <div class="deliverable">
+          <span class="num">02</span><h3>Repo instructions</h3><p>A versioned entry file plus scoped rules, installed where each agent actually reads them.</p>
+        </div>
+        <div class="deliverable">
+          <span class="num">03</span><h3>Mined team rules</h3><p>The corrections your reviewers keep repeating, pulled from your sessions, each one carrying its receipt.</p>
+        </div>
+        <div class="deliverable">
+          <span class="num">04</span><h3>A before and after</h3><p>The same tasks run on the old context and the new one. Both outputs stay in the repo.</p>
+        </div>
+        <div class="deliverable">
+          <span class="num">05</span><h3>Two maintenance passes</h3><p>Rebuilt at 30 and 60 days from the commits and sessions since delivery.</p>
+        </div>
+      </div>
+
+      <div class="specimen">
+        <span class="label">Specimen</span>
+        <div class="specimen-body">
+          <h3>What a mined rule looks like.</h3>
+          <div class="specimen-card">
+            <p class="rule">A completion report from another agent is not evidence. The diff is.</p>
+            <p class="act"><span>Action</span> &nbsp;Re-read the real changed files against the original requirement before approving, and audit delegated work against the bar that was set rather than the summary that came back.</p>
+            <p class="receipt">Supported by separate dated sessions. Every rule ships with the sessions that produced it, so you can throw one out.</p>
+          </div>
+          <p class="micro">This one is from my own profile, mined from my sessions. Yours comes out of your team's and will read nothing like it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scope">
+    <div class="wrap">
+      <div class="section-grid">
+        <span class="label">The boundary</span>
+        <h2>Scoped before money moves.</h2>
+      </div>
+      <div class="scope-grid">
+        <div class="scope-block">
+          <h3>What you provide</h3>
+          <ul>
+            <li>Read access to the repo and its git history</li>
+            <li>Your current agent instruction files</li>
+            <li>Sanitised sessions from the project</li>
+            <li>One working hour with a lead and a reviewer</li>
+          </ul>
+        </div>
+        <div class="scope-block">
+          <h3>Not included</h3>
+          <p>Feature work, refactors, security audits, compliance signoff, model or IDE fees, and any promise of error free generated code. Architecture changes are quoted separately.</p>
+        </div>
+        <div class="scope-block">
+          <h3>Privacy</h3>
+          <p>You sanitise the session evidence before it reaches me. The proposal names my access, where the files live, and the date it ends.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap final-grid">
+      <div>
+        <span class="label">Next step</span>
+        <h2>Send the failure your reviewers keep fixing.</h2>
+        <p>Team size, agents, repo and stack, your current instruction file, and one thing an agent got wrong last week. I reply with fit, scope, dates and a fixed price.</p>
+      </div>
+      <div class="final-action">
+        <div class="price-line">
+          <b>From $5,000.</b>
+          <span>Most engagements quote between $8,000 and $15,000. Written scope, dates and price before any invoice.</span>
+        </div>
+        <a class="button" href="mailto:ohadkrispin@gmail.com?subject=Project%20memory%20enquiry&amp;body=Team%20size%3A%0AAgents%20we%20use%3A%0ARepo%20count%20and%20stack%3A%0AOne%20recent%20context%20failure%3A%0ACurrent%20CLAUDE.md%20or%20AGENTS.md%3A">Open the enquiry email <span aria-hidden="true">&rarr;</span></a>
+        <p class="micro">Opens a draft in your mail client. Nothing sends on its own.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Emulo project memory engagement</span>
+    <span><a href="/">Open source project</a></span>
+  </div>
+</footer>
+</body>
+</html>

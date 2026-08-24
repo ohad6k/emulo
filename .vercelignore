@@ -1,0 +1,12 @@
+# Static site only. Everything else in this repo is source, tooling, or internal
+# working files and must never be uploaded to a deploy.
+/*
+!site
+!vercel.json
+
+# A1 excludes pricing and payment surfaces, so offer.html stays unpublished until Ohad
+# decides otherwise. scan.html was here for the same reason until he authorised it on
+# 2026-08-24. A test file is not a page.
+site/offer.html
+site/offer-claims.md
+site/scan.test.cjs
