@@ -10,6 +10,12 @@ from emulo_autopilot import cli, contracts
 from emulo_autopilot.store import AutopilotStore
 from tests.autopilot_helpers import candidate_fixture
 
+try:
+    import cryptography  # noqa: F401 - presence check only
+    HAS_CRYPTO = True
+except ImportError:  # pragma: no cover - exercised only in a core-only install
+    HAS_CRYPTO = False
+
 
 class AutopilotCliTest(unittest.TestCase):
     NOW = 1784210400
@@ -153,6 +159,7 @@ class AutopilotCliTest(unittest.TestCase):
         finally:
             context.__exit__(None, None, None)
 
+    @unittest.skipUnless(HAS_CRYPTO, "continuity commands need the [pro] extra")
     def test_continuity_init_outputs_the_recovery_secret_once(self):
         code, stdout, stderr = self.invoke("continuity-init")
 
@@ -163,6 +170,7 @@ class AutopilotCliTest(unittest.TestCase):
         self.assertEqual(1, stdout.count(secret))
         self.assertTrue(Path(result["recovery_kit_path"]).is_file())
 
+    @unittest.skipUnless(HAS_CRYPTO, "continuity commands need the [pro] extra")
     def test_continuity_recover_reads_the_secret_without_echoing_it(self):
         from emulo_autopilot.continuity_onboarding import initialize_continuity
 
@@ -179,6 +187,7 @@ class AutopilotCliTest(unittest.TestCase):
         self.assertEqual("emulo.continuity-recovery/v1", json.loads(stdout)["schema_version"])
         self.assertNotIn(secret, stdout + stderr)
 
+    @unittest.skipUnless(HAS_CRYPTO, "continuity commands need the [pro] extra")
     def test_continuity_connect_reads_pairing_code_without_echoing_token_or_code(self):
         from emulo_autopilot import continuity_onboarding
 
@@ -220,6 +229,7 @@ class AutopilotCliTest(unittest.TestCase):
         self.assertNotIn(pairing_code, stdout + stderr)
         self.assertNotIn(device_token, stdout + stderr)
 
+    @unittest.skipUnless(HAS_CRYPTO, "continuity commands need the [pro] extra")
     def test_continuity_status_is_local_and_base_status_does_not_load_crypto(self):
         from emulo_autopilot.continuity_onboarding import initialize_continuity
 
@@ -244,6 +254,7 @@ class AutopilotCliTest(unittest.TestCase):
         with mock.patch("builtins.__import__", side_effect=guarded_import):
             self.assertEqual("ready", cli.execute(parsed)["health"])
 
+    @unittest.skipUnless(HAS_CRYPTO, "continuity commands need the [pro] extra")
     def test_continuity_push_retry_and_pull_use_connected_material(self):
         from emulo_autopilot import continuity, continuity_onboarding
 
@@ -252,18 +263,19 @@ class AutopilotCliTest(unittest.TestCase):
         transport = object()
         connected = (master_key, device_id, transport)
 
-        with (
-            mock.patch.object(
+        # Parenthesized context managers are 3.9+, and pyproject promises 3.8.
+        # ExitStack expresses the same thing on every version the package claims.
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(mock.patch.object(
                 continuity_onboarding,
                 "load_connected_continuity",
                 return_value=connected,
-            ),
-            mock.patch.object(
+            ))
+            pushed = stack.enter_context(mock.patch.object(
                 continuity,
                 "push_active",
                 return_value={"status": "stored", "head": "gen_0123456789abcdef0123"},
-            ) as pushed,
-        ):
+            ))
             code, stdout, stderr = self.invoke("continuity-push")
         self.assertEqual((0, ""), (code, stderr))
         self.assertEqual("stored", json.loads(stdout)["status"])
@@ -272,18 +284,17 @@ class AutopilotCliTest(unittest.TestCase):
         self.assertEqual(self.store.emulo_home, pushed_store.emulo_home)
         self.assertEqual((master_key, device_id, transport), (pushed_key, pushed_device, pushed_transport))
 
-        with (
-            mock.patch.object(
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(mock.patch.object(
                 continuity_onboarding,
                 "load_connected_continuity",
                 return_value=connected,
-            ),
-            mock.patch.object(
+            ))
+            retried = stack.enter_context(mock.patch.object(
                 continuity,
                 "retry_pending",
                 return_value={"uploaded": 2},
-            ) as retried,
-        ):
+            ))
             code, stdout, stderr = self.invoke("continuity-retry")
         self.assertEqual((0, ""), (code, stderr))
         self.assertEqual(2, json.loads(stdout)["uploaded"])
@@ -297,18 +308,17 @@ class AutopilotCliTest(unittest.TestCase):
             "localHead": "gen_0123456789abcdef0123",
             "remoteHead": "gen_ffffffffffffffffffff",
         }
-        with (
-            mock.patch.object(
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(mock.patch.object(
                 continuity_onboarding,
                 "load_connected_continuity",
                 return_value=connected,
-            ),
-            mock.patch.object(
+            ))
+            stack.enter_context(mock.patch.object(
                 continuity,
                 "pull_remote_head",
                 return_value=conflict,
-            ),
-        ):
+            ))
             code, stdout, stderr = self.invoke("continuity-pull")
         self.assertEqual((0, ""), (code, stderr))
         result = json.loads(stdout)

@@ -45,7 +45,9 @@ def create_run_root(base):
     run_root = base / "run"
     fixture = run_root / "sealed-fixtures" / "work-primary"
     fixture.mkdir(parents=True)
-    (fixture / "brief.md").write_text("frozen\n", encoding="utf-8", newline="\n")
+    # Path.write_text(newline=) is 3.10+; pyproject promises 3.8.
+    with (fixture / "brief.md").open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write("frozen\n")
     return run_root, tree_hash(fixture)
 
 

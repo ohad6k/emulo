@@ -31,7 +31,9 @@ def _init_fixture_repo(path, files):
     for name, content in files.items():
         destination = path / name
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(content, encoding="utf-8", newline="\n")
+        # Path.write_text(newline=) is 3.10+; pyproject promises 3.8.
+        with destination.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(content)
     subprocess.run(["git", "init", "-q", str(path)], check=True)
     subprocess.run(
         ["git", "-C", str(path), "config", "user.email", "proof@example.invalid"],

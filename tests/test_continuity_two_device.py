@@ -7,7 +7,13 @@ from pathlib import Path
 import unittest
 from unittest import mock
 
-from cryptography.exceptions import InvalidTag
+try:
+    from cryptography.exceptions import InvalidTag
+except ImportError:  # pragma: no cover - exercised only in a core-only install
+    # The [pro] extra is optional and needs Python >=3.9 (cryptography's floor). A user who
+    # installed the dependency-free core must still be able to run the suite; without this
+    # guard, discovery errors on import and every OTHER test dies with it.
+    raise unittest.SkipTest("cryptography not installed; continuity is the [pro] extra")
 
 from emulo_autopilot import cli, contracts, continuity_onboarding
 from emulo_autopilot.continuity import pull_remote_head, push_active
