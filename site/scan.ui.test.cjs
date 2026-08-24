@@ -14,7 +14,24 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
-const { JSDOM } = require('jsdom');
+/**
+ * jsdom is the one dependency this repository has outside Python, and it exists only for these
+ * tests. Someone who clones the repo to use Emulo should not be forced to run npm install, so a
+ * missing jsdom skips these rather than exploding.
+ *
+ * In CI it is a hard failure instead. A silent skip is exactly how the dead button shipped past
+ * a green suite, and a guard that can quietly disable itself is not a guard.
+ */
+let JSDOM = null;
+try {
+  ({ JSDOM } = require('jsdom'));
+} catch (err) {
+  if (process.env.CI) {
+    throw new Error('jsdom is not installed and this is CI. Run `npm ci`. Skipping the page '
+      + 'tests here would hide exactly the class of defect they exist to catch.');
+  }
+}
+const needsJsdom = JSDOM ? false : 'jsdom is not installed: run `npm install` to run the page tests';
 
 const pagePath = path.join(__dirname, 'scan.html');
 const html = fs.readFileSync(pagePath, 'utf8');
@@ -51,7 +68,7 @@ const click = (window, el) =>
 
 // -- the regression ---------------------------------------------------------
 
-test('the primary folder button works on a browser with no File System Access API', () => {
+test('the primary folder button works on a browser with no File System Access API', { skip: needsJsdom }, () => {
   const { window, document } = loadPage();
   assert.equal('showDirectoryPicker' in window, false, 'this is the browser Ohad was using');
 
@@ -64,14 +81,14 @@ test('the primary folder button works on a browser with no File System Access AP
   assert.equal(opened, 1, 'clicking the page\'s primary control must open a folder picker');
 });
 
-test('the primary folder button is not hidden away on that browser', () => {
+test('the primary folder button is not hidden away on that browser', { skip: needsJsdom }, () => {
   const { document } = loadPage();
   const button = document.getElementById('picker-button');
   assert.equal(button.hidden, false,
     'hiding it was the old fix, and CSS defeated it. It must work instead of disappear.');
 });
 
-test('the primary folder button uses the native picker when the browser has one', async () => {
+test('the primary folder button uses the native picker when the browser has one', { skip: needsJsdom }, async () => {
   let native = 0;
   const picker = async () => {
     native += 1;
@@ -91,7 +108,7 @@ test('the primary folder button uses the native picker when the browser has one'
   assert.equal(fallback, 0, 'and must not also open the file input');
 });
 
-test('dismissing the native picker is silent, not an error screen', async () => {
+test('dismissing the native picker is silent, not an error screen', { skip: needsJsdom }, async () => {
   const picker = async () => { const e = new Error('x'); e.name = 'AbortError'; throw e; };
   const { window, document } = loadPage({ directoryPicker: picker });
   click(window, document.getElementById('picker-button'));
@@ -100,7 +117,7 @@ test('dismissing the native picker is silent, not an error screen', async () => 
     'changing your mind about a folder is not a failure');
 });
 
-test('a native picker that genuinely fails shows the error state', async () => {
+test('a native picker that genuinely fails shows the error state', { skip: needsJsdom }, async () => {
   const picker = async () => { throw new Error('permission denied'); };
   const { window, document } = loadPage({ directoryPicker: picker });
   click(window, document.getElementById('picker-button'));
@@ -110,7 +127,7 @@ test('a native picker that genuinely fails shows the error state', async () => {
 
 // -- the general guard, which does not need to know what broke --------------
 
-test('no control the page renders is left unwired', () => {
+test('no control the page renders is left unwired', { skip: needsJsdom }, () => {
   const { document, has } = loadPage();
   const dead = [];
   for (const el of document.querySelectorAll('button, .button')) {
@@ -122,7 +139,7 @@ test('no control the page renders is left unwired', () => {
     + 'folder button without anyone knowing it was broken.');
 });
 
-test('the fallback control still drives the file input', () => {
+test('the fallback control still drives the file input', { skip: needsJsdom }, () => {
   const { document } = loadPage();
   const span = document.getElementById('fallback-button');
   assert.ok(span.closest('label'), 'the secondary button is a label wrapping the real input');
@@ -131,7 +148,7 @@ test('the fallback control still drives the file input', () => {
 
 // -- the promise the page makes ---------------------------------------------
 
-test('the loaded page issues no network request', () => {
+test('the loaded page issues no network request', { skip: needsJsdom }, () => {
   const { document } = loadPage();
   for (const el of document.querySelectorAll('[src], link[href], form[action]')) {
     const url = el.getAttribute('src') || el.getAttribute('href') || el.getAttribute('action');
@@ -139,14 +156,14 @@ test('the loaded page issues no network request', () => {
   }
 });
 
-test('the reset controls return the page to the choose state', () => {
+test('the reset controls return the page to the choose state', { skip: needsJsdom }, () => {
   const { window, document } = loadPage();
   document.getElementById('result-state').classList.add('active');
   click(window, document.getElementById('reset-button'));
   assert.equal(document.getElementById('choose-state').classList.contains('active'), true);
 });
 
-test('hidden means hidden even on an element whose class sets display', () => {
+test('hidden means hidden even on an element whose class sets display', { skip: needsJsdom }, () => {
   const { window, document } = loadPage();
   const probe = document.createElement('div');
   probe.className = 'button';
