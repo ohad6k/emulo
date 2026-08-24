@@ -9,4 +9,6 @@
 # 2026-08-24. A test file is not a page.
 site/offer.html
 site/offer-claims.md
-site/scan.test.cjs
+site/*.test.cjs
+package.json
+package-lock.json
