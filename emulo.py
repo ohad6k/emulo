@@ -3977,9 +3977,10 @@ def build_adaptive_plan(result, stage="A"):
 def adaptive_preflight(result, stage="A"):
     plan = build_adaptive_plan(result, stage)
     return {
-        key: value for key, value in plan.items()
-        if key not in {"ledger", "packets"}
-    } | {
+        **{
+            key: value for key, value in plan.items()
+            if key not in {"ledger", "packets"}
+        },
         "packet_hashes": [packet["packet_hash"] for packet in plan["packets"]],
         "writes_private_state": False,
     }
@@ -4025,7 +4026,8 @@ def prepare_adaptive_run(args):
         packet_path = os.path.join(packets_dir, packet["packet_hash"] + ".txt")
         atomic_write_text(packet_path, render_receipt_packet(packet))
         packet_paths.append(packet_path)
-        manifest_packets.append({key: value for key, value in packet.items() if key != "receipts"} | {
+        manifest_packets.append({
+            **{key: value for key, value in packet.items() if key != "receipts"},
             "packet_path": packet_path,
         })
     manifest_path = os.path.join(run_dir, "packet-manifest.json")
@@ -4034,7 +4036,8 @@ def prepare_adaptive_run(args):
         "packets": manifest_packets,
     }) + "\n")
     plan_path = os.path.join(run_dir, "plan.json")
-    run_plan = frozen_identity | {
+    run_plan = {
+        **frozen_identity,
         "run_id": run_id,
         "run_dir": run_dir,
         "plan_hash": plan_hash,
