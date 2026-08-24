@@ -218,10 +218,15 @@ test('browser extraction and coach output match the current Python implementatio
     }
 
     const python = spawnSync('python', ['-c', [
-      'import json, sys',
+      'import json, sys, inspect',
       'import emulo',
       'files = emulo.discover_files([sys.argv[1]])',
-      'mined = emulo.mine_files(files, show_progress=False)',
+      // show_progress is not in every version of mine_files. Passing it unconditionally made
+      // this test depend on an uncommitted local change to emulo.py: it passed on the machine
+      // that had it and could not pass on the published repo. What is under test here is
+      // extraction and report parity, not a progress flag.
+      '_kw = {"show_progress": False} if "show_progress" in inspect.signature(emulo.mine_files).parameters else {}',
+      'mined = emulo.mine_files(files, **_kw)',
       'report = emulo.usage_report(mined["records"])',
       'for finding in report["findings"]:',
       '    for receipt in finding["receipts"]: receipt.pop("session_id", None)',
