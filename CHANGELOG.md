@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.5 - 2026-09-25
+
+### Fixed
+
+- **Emulo read its own mining chunks back as things you typed.** Mining a history means handing chunks to an agent. When a chunk goes to the agent inside the prompt itself, the agent's log records that prompt as a user message, and the next Emulo run read it back as your words. `--coach` counted the phrases inside it ("as I said", "I already told you") as you repeating yourself, and mining learned from its own earlier input, which is circular. Found by the 0.6.4 release run, which traced 10 of its 66 restated-context matches to these prompts and shipped without fixing them. A message is now treated as injected context when any line in it is Emulo's own chunk marker, `===== session:<id> source:<kind> =====`, or the line that opens an adaptive receipt packet. It matches as a whole line anywhere in the message, not as a prefix, because on the real history every one of these prompts opened with an instruction and the chunk came after it. Only the exact format counts, so a message that mentions the marker in a sentence, or a heading like `===== session notes =====`, is still yours. One deliberate side effect: if you paste part of a chunk to ask a question about it, the whole message drops, question included.
+- **The browser scan at `/scan` had the same gap.** It now uses the same pattern, written so that a bare carriage return is treated the same way in both.
+- In the flow the README describes, you type one line and the agent opens `RUN_ME.md` and the chunks with its own tools. Claude Code logs those reads as tool results, which were never read as yours, before or after this release. A test now holds that.
+
+### Verified
+
+- 8 new tests in `tests/test_usage_report.py`, all built on a chunk written by Emulo's own writer rather than a typed copy of its format: a chunk under an instruction, a chunk on its own, a chunk with Windows line endings, `--coach` over two chunk prompts and one genuine message, mining that must not carry the chunk's text into the new corpus, an adaptive receipt packet, five look-alike lines that must be kept, and the `RUN_ME.md` tool result. The first six failed before the fix, with the chunk's lines coming back as your messages. The last two passed before it and are guards, not evidence for the change.
+- 2 new site tests: a parity case where the browser scan and `emulo.py` must produce the identical report for a history holding a real chunk three ways (under an instruction, on its own, with CRLF line endings), and the same five look-alike lines as the Python test, one of them a bare carriage return after the marker.
+- Against one real history, on the same 1,574 log files: `--coach` read 5,693 messages across 1,375 sessions where it read 5,712 across 1,394. All 19 dropped messages were prompts carrying a chunk, between 333,294 and 560,730 characters each, and no other message was dropped or added. Restated-context matches went from 66 to 56. Repeat sends (11) and corrections (79, 1%) did not change. `--dry-run` went from 4,964 messages and about 3,472,837 tokens to 4,945 messages and about 1,627,997 tokens: more than half of what a mining run would have handed the agent was Emulo's own earlier chunks. Both commands exited 0 and left the directory they ran from empty.
+- Full suite on Python 3.11 with the `[pro]` extra: 552 tests, 5 skipped, 0 failures. On Python 3.13 without `cryptography`: 530 tests, 13 skipped, 0 failures. On Windows the symlink tests skip, and the two release pin tests skip until the `v0.6.5` tag exists.
+- Site tests after a clean `npm ci`: 41 tests, 0 failures.
+- The `v0.6.5` bootstrap runtime pins `emulo.py` to SHA-256 `f50dd098ed4398dd` (prefix); `MINING_PROMPT.md` is unchanged at `ee22077c2cda3c1c` (prefix). Full digests in `.agents/skills/emulo/runtime.json`.
+- Not verified: Python 3.8, because no 3.8 interpreter is installed on the release machine, and `pip install emulo==0.6.5` from PyPI, because the version is not published at the time of writing.
+
 ## 0.6.4 - 2026-09-25
 
 ### Fixed
