@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emulo | Do your agent rules actually do anything?</title>
+<meta name="description" content="A controlled test of one team's own CLAUDE.md. Same three tasks, same model, with the rules and without. The result was not the one we expected, and two of the five rules are unproven.">
+<link rel="canonical" href="https://emulo.vercel.app/notes/do-your-agent-rules-do-anything">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://emulo.vercel.app/notes/do-your-agent-rules-do-anything">
+<meta property="og:title" content="Do your agent rules actually do anything?">
+<meta property="og:description" content="A controlled test of one team's own CLAUDE.md. Same three tasks, same model, with the rules and without. Two of the five rules are unproven.">
+<meta property="og:site_name" content="Emulo">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f2eee1; --paper-2:#f7f4ea;
+  --ink:#161309; --ink-soft:#3d3a2f; --ink-faint:#6f6a58; --ink-dim:#8f8a76;
+  --rule:#c9c3ad; --red:#a83b23; --green:#4a6b3a;
+  --serif:"Playfair Display",Georgia,serif;
+  --text:"Source Serif 4",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{max-width:100%;overflow-x:hidden}
+body{background:var(--paper);color:var(--ink);font-family:var(--text);font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+a{color:inherit}
+.wrap{position:relative;z-index:3;width:100%;max-width:780px;margin:0 auto;padding:0 32px}
+.label{display:block;color:var(--ink-faint);font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.28em;text-transform:uppercase}
+.label .red{color:var(--red)}
+h1,h2,h3{font-family:var(--serif);font-weight:600}
+
+header{padding:96px 0 0}
+h1{font-size:clamp(32px,5.6vw,54px);line-height:1.08;letter-spacing:-.015em;margin:22px 0 26px}
+h1 em{font-style:italic;color:var(--red)}
+.standfirst{font-size:20px;color:var(--ink-soft);max-width:62ch}
+.byline{margin-top:34px;padding-top:18px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:12px;color:var(--ink-dim);letter-spacing:.04em}
+
+section{padding:54px 0 0}
+h2{font-size:clamp(21px,3.2vw,28px);line-height:1.2;margin:0 0 18px}
+h2 .n{font-family:var(--mono);font-size:12px;color:var(--red);letter-spacing:.2em;
+  display:block;font-weight:500;margin-bottom:10px}
+h3{font-size:19px;margin:28px 0 10px}
+p{margin:0 0 17px;max-width:68ch}
+p.lead{font-size:19px;color:var(--ink-soft)}
+strong{font-weight:600}
+ul{margin:0 0 17px 20px;max-width:66ch}
+li{margin-bottom:7px}
+
+table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);font-weight:500}
+td.v{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:2px 7px;border:1px solid var(--rule);white-space:nowrap}
+.keep{color:var(--green);border-color:var(--green)}
+.change{color:var(--red);border-color:var(--red)}
+.untested{color:var(--ink-dim)}
+
+.eb{background:var(--paper-2);border:1px solid var(--rule);border-left:2px solid var(--red);
+  padding:18px 20px;margin:22px 0;font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  color:var(--ink-soft);overflow-x:auto;white-space:pre-wrap}
+blockquote{margin:24px 0;padding-left:22px;border-left:2px solid var(--rule);
+  font-family:var(--serif);font-style:italic;font-size:20px;line-height:1.4;color:var(--ink-soft);max-width:58ch}
+
+footer{margin-top:70px;padding:26px 0 90px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:12px;color:var(--ink-dim);line-height:1.9}
+footer a{color:var(--red);text-decoration:none;border-bottom:1px solid var(--rule)}
+@media(max-width:620px){.wrap{padding:0 20px}header{padding-top:60px}section{padding-top:40px}
+  table{font-size:13px}th,td{padding:8px 6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="label"><span class="red">Controlled test</span> &nbsp;·&nbsp; Agent rules</span>
+  <h1>Do your agent rules <em>actually do anything?</em></h1>
+  <p class="standfirst">We ran one team's own <code>CLAUDE.md</code> as an experiment: the same three tasks, the same model, once with the rules loaded and once without. The result was not the one we were hoping for, which is the reason it is worth reading.</p>
+  <div class="byline">Ohad Krispin &nbsp;·&nbsp; 21 August 2026 &nbsp;·&nbsp; The ruleset under test is our own</div>
+</header>
+
+<section>
+  <h2><span class="n">01</span>Why this is worth measuring at all</h2>
+  <p class="lead">Rules files grow by accretion and are almost never tested. They are believed.</p>
+  <p>Teams write <code>CLAUDE.md</code>, <code>AGENTS.md</code> or <code>.cursorrules</code>, add a line each time something goes wrong, and end up with several hundred lines nobody has ever checked. We looked at public repositories and found the pattern everywhere: one team rewrote a single rule three times in 48 hours, including a commit titled <em>"stop commit body rule contradicting itself"</em>. Another recorded that their guidance <em>"caused repeated lint runs during iterative edits"</em>, a rule that changed behaviour in a way they did not intend and that they found by noticing wasted cycles rather than by testing.</p>
+  <p>A rules file is a set of claims about how a model will behave. Claims can be tested. Almost nobody does.</p>
+</section>
+
+<section>
+  <h2><span class="n">02</span>The method</h2>
+  <p>Two agents, three identical tasks, isolated git worktrees so neither could observe or disturb the other. Same model, same repository, same task text. The only variable was the rules.</p>
+  <ul>
+    <li><strong>Condition A</strong> read <code>CLAUDE.md</code> and the 353-line operating document first.</li>
+    <li><strong>Condition B</strong> was explicitly forbidden from reading them.</li>
+  </ul>
+  <p>The tasks were chosen so each one makes a <strong>falsifiable prediction</strong>. A task both conditions handle identically measures nothing, so every task targeted a rule that claims to change behaviour: implement a dated filter (does the agent break its own test to prove it can fail?), establish whether a bounce detector works (does it execute, or reason from reading source?), and verify an anti-duplicate guard (does it report a limitation that makes its own answer look worse?).</p>
+</section>
+
+<section>
+  <h2><span class="n">03</span>The headline result</h2>
+  <p class="lead">The baseline found four real production defects in nine minutes. The rules-enabled run took 3.2 times as long and did not find better code.</p>
+  <table>
+    <tr><th>&nbsp;</th><th>A — rules enabled</th><th>B — baseline</th></tr>
+    <tr><td>Task 1 implemented correctly</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Tests written</td><td class="v">30</td><td class="v">16</td></tr>
+    <tr><td>Deliberately broke its own tests</td><td><strong>Yes, 9 mutations, each restored and hash-verified</strong></td><td>Not reported</td></tr>
+    <tr><td>Executed rather than inferred</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Reported findings against itself</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Independent review</td><td><strong>2 delegated reviewers</strong></td><td>None</td></tr>
+    <tr><td>Real defects found in existing code</td><td class="v">4 named</td><td class="v">4 named</td></tr>
+    <tr><td>Wall clock</td><td class="v">30.0 min</td><td class="v">9.4 min</td></tr>
+  </table>
+  <p>Both conditions independently found the same class of defect in code that was already shipped and already had a passing test suite: an anti-duplicate guard that <strong>never ran in dry-run mode</strong>, which is the default and the documented review step; the same guard holding only within a single process, so splitting a batch across two files defeated it; a bounce detector reporting a <em>delay</em> notice as a permanent failure; and a body-scraping path that could mark a live prospect dead because their address appeared in a quoted original.</p>
+  <p>On raw defect discovery, the rules made no measurable difference. That is the finding, and it is not the one that would sell best.</p>
+</section>
+
+<section>
+  <h2><span class="n">04</span>Where the rules did change something</h2>
+  <p>The difference was not in the code. It was in the <strong>process</strong>.</p>
+  <p>Condition A read a rule saying the builder never reviews its own work, and spawned two independent reviewers. One of them found a defect in Condition A's own new code: under a date filter, replies from inside the window were being divided by sends from inside the window, two different populations. On a real fixture it printed:</p>
+  <div class="eb">lane2    sent 1    human_reply 4
+         DOUBLE DOWN, 400% reply rate</div>
+  <p>Condition A had shipped that. Its own reviewer caught it, and it was fixed and re-proved before delivery.</p>
+  <p>The second reviewer found something neither builder named. A genuine reply from a buyer, whose subject happened to contain the word <em>undeliverable</em> and whose body mentioned a colleague's address, was classified as a bounce, attributed to <strong>the colleague</strong>, dropped from the report entirely, and never written to the funnel. The buyer disappeared. The colleague, who never bounced, was marked dead.</p>
+  <blockquote>One reply corrupted two records, and the system kept reporting zero replies.</blockquote>
+  <p>Condition A's own investigation had produced both halves of that evidence and filed them as two separate smaller findings. It took a reader whose only job was to attack the result to name the compound failure. Condition B never surfaced it.</p>
+  <p>So the honest summary is narrow and specific: <strong>the rules did not make the builder better. They made it commission an adversary, and the adversary found the most dangerous defect in the study.</strong></p>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Rule-level findings</h2>
+  <p>Classification is deliberately strict. KEEP and CHANGE require direct evidence. DELETE-CANDIDATE requires comparative evidence that the rule did nothing where it should have. Everything else is UNTESTED, which is a statement about our test pack and not about the rule.</p>
+  <table>
+    <tr><th>Rule</th><th>Verdict</th><th>Evidence</th></tr>
+    <tr>
+      <td><em>"Test the tests. Break the code deliberately, confirm the test fails for the right reason, restore byte-for-byte."</em></td>
+      <td><span class="tag keep">KEEP</span></td>
+      <td>A ran 9 mutations with restore and hash verification, and one mutation survived, exposing an equivalent mutant it then reported against itself. B reported no deliberate break. Clear differential.</td>
+    </tr>
+    <tr>
+      <td><em>"The builder is never the only reviewer."</em></td>
+      <td><span class="tag keep">KEEP</span></td>
+      <td>Strongest result in the study. A delegated two reviewers; one found a defect A had shipped, the other found the compound failure neither builder named. B had no review layer and did not find it.</td>
+    </tr>
+    <tr>
+      <td><em>"Grade every material claim VERIFIED / SELF-REPORTED / UNSUPPORTED."</em></td>
+      <td><span class="tag change">CHANGE</span></td>
+      <td>A stated plainly: <em>"I did not use VERIFIED/SELF-REPORTED labels inline."</em> The rule was loaded and not followed. It asks for a vocabulary rather than an action, and instructions that name a quality rather than a behaviour are the ones that get quietly skipped.</td>
+    </tr>
+    <tr>
+      <td><em>"Done means it ran and you looked at the output."</em></td>
+      <td><span class="tag untested">UNTESTED</span></td>
+      <td>Both conditions executed everything and quoted real output. No differential, so this pack cannot attribute the behaviour to the rule. It may be doing work we did not measure.</td>
+    </tr>
+    <tr>
+      <td><em>"Keep the losses. A comparison that only shows wins is worthless."</em></td>
+      <td><span class="tag untested">UNTESTED</span></td>
+      <td>Both reported findings against their own work — B flagged a judgement call the caller might overrule, A disclosed an equivalent mutant and its own shipped defect. No differential.</td>
+    </tr>
+  </table>
+  <p><strong>Two of five rules are unproven by this pack.</strong> That is the correct answer, not a gap to be filled with an opinion.</p>
+</section>
+
+<section>
+  <h2><span class="n">06</span>What this does not show</h2>
+  <p>One run per condition, three tasks, one model. This measures <strong>observed effect under these tasks</strong>. A rule showing no effect here is not a useless rule; it is a rule this pack did not exercise, which is why nothing above is marked DELETE-CANDIDATE.</p>
+  <p>Agent runs are stochastic. A single divergence is a reason to look harder, not proof. The wall-clock figures come from the run records rather than self-report, but they include model latency and are not a cost model.</p>
+  <p>And the obvious one: <strong>we wrote the ruleset being tested.</strong> An unflattering result is easier to publish than a flattering one is to trust, which is part of why we ran it on ourselves first.</p>
+</section>
+
+<section>
+  <h2><span class="n">07</span>What we would do with your file</h2>
+  <p>The same thing. One rules file, three to five tasks your team actually performs, a baseline and a rules-enabled condition, and a report that says which rules moved the result, which need rewording, which are candidates for deletion, and which your task pack could not test.</p>
+  <p>The last category matters most. A report claiming certainty about every line would be the tell that it was not measured.</p>
+</section>
+
+<footer>
+  Ohad Krispin &nbsp;·&nbsp; Haifa, Israel &nbsp;·&nbsp; <a href="mailto:founder@viberaven.dev">founder@viberaven.dev</a><br>
+  Related: <a href="/notes/nothing-is-enforcing-your-agent-rules">nothing is enforcing your agent rules</a><br>
+  <span style="color:var(--ink-dim)">Every figure here is from the runs described. Nothing is a projection, and the negative results are the point.</span>
+</footer>
+
+</div>
+</body>
+</html>
