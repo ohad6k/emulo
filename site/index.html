@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Emulo | Mine your AI coding sessions into a you.md profile</title>
-<meta name="description" content="Emulo mines your real Claude Code, Codex, Copilot and OpenCode sessions into a you.md your agent reads before every task. Mined from 1,656 sessions. Open source.">
-<meta name="keywords" content="claude code, codex, cursor, github copilot, agent memory, you.md, ai coding, agent profile, context engineering, claude skill, open source">
+<title>Emulo | Free usage report and you.md profile from your AI coding logs</title>
+<meta name="description" content="Run uvx emulo --coach to see, with dated receipts, where you repeat yourself to Claude Code, Codex, Copilot CLI and OpenCode. Local, no model call. Then mine a you.md profile and verify every quote in it. Open source.">
+<meta name="keywords" content="claude code, codex, github copilot, opencode, ai coding, usage report, agent profile, you.md, context engineering, claude skill, open source">
 <link rel="canonical" href="https://emulo.vercel.app/">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 
-<meta property="og:title" content="Emulo | Mine your AI coding sessions into a you.md profile">
-<meta property="og:description" content="Your AI agents act like they just met you. Emulo mines your real sessions into a you.md they read first. Open source.">
+<meta property="og:title" content="Emulo | Free usage report and you.md profile from your AI coding logs">
+<meta property="og:description" content="One command reads your local AI coding logs and shows, with dated receipts, where you keep repeating yourself to the agent. No model call. Open source.">
 <meta property="og:image" content="https://raw.githubusercontent.com/ohad6k/emulo/main/assets/emulo.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://emulo.vercel.app/">
 <meta property="og:site_name" content="Emulo">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Emulo | Mine your AI coding sessions into a you.md profile">
-<meta name="twitter:description" content="Your AI agents act like they just met you. Emulo mines your real sessions into a you.md they read first. Open source.">
+<meta name="twitter:title" content="Emulo | Free usage report and you.md profile from your AI coding logs">
+<meta name="twitter:description" content="One command reads your local AI coding logs and shows, with dated receipts, where you keep repeating yourself to the agent. No model call. Open source.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/ohad6k/emulo/main/assets/emulo.png">
 
 <script type="application/ld+json">
@@ -30,13 +30,26 @@
   "url": "https://emulo.vercel.app/",
   "downloadUrl": "https://github.com/ohad6k/emulo",
   "codeRepository": "https://github.com/ohad6k/emulo",
-  "description": "Emulo mines your real Claude Code, Codex, Copilot and OpenCode sessions into a you.md working profile your agent reads before every task. It reads raw session logs locally and writes a private profile of how you decide, what you reject, and how you work.",
+  "description": "Emulo reads your local Claude Code, Codex, Copilot CLI, OpenCode and Google Antigravity session logs. Its free coach report counts where you repeat yourself to the agent, with dated receipts and no model call. It can also mine a you.md working profile and verify every quote in it against your own sessions.",
   "license": "https://opensource.org/licenses/MIT",
   "programmingLanguage": "Python",
   "offers": [
     { "@type": "Offer", "name": "Open-source Emulo", "price": "0", "priceCurrency": "USD" }
   ],
-  "author": { "@type": "Person", "name": "ohad6k", "url": "https://github.com/ohad6k" }
+  "author": {
+    "@type": "Person",
+    "@id": "https://ohad-motion.vercel.app/#person",
+    "name": "Ohad Krispin",
+    "url": "https://ohad-motion.vercel.app/",
+    "sameAs": [
+      "https://github.com/ohad6k",
+      "https://x.com/BiosRiosz",
+      "https://www.linkedin.com/in/ohadkrispin",
+      "https://www.instagram.com/ohad_krispin/",
+      "https://www.youtube.com/@BiosRiosCS0",
+      "https://dev.to/ohadkr"
+    ]
+  }
 }
 </script>
 
@@ -48,41 +61,43 @@
     {
       "@type": "Question",
       "name": "How do I make my AI agent write code the way I do?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Give it evidence instead of instructions. Your session logs already record how you decide, what you reject, and what you call done. Emulo reads those logs, mines the repeated patterns, and writes a you.md your agent loads before every task, so it starts from your standards instead of a blank slate." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Start with what it keeps missing. The free report shows where you repeat yourself to the agent. Mining goes further: it turns the rules that recur across your sessions into a you.md your agent loads before a task, with dated quotes behind every rule. Whether that changes how the agent works for you is worth testing on your own work. Our own 60 run test is public, including the part that did not go our way." }
     },
     {
       "@type": "Question",
       "name": "How is this different from agent memory?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Memory stores what you told the model. Emulo mines what your work already proved about you, which is a different input entirely. That is why it reads raw session logs and not your CLAUDE.md. The rules you remembered to write down on a good day are a small and flattering subset of how you actually work." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Memory stores what you told the model. Emulo reads the messages you actually typed across many sessions and pulls out what keeps recurring, with the dates it came from. The rules you remembered to write down on a good day are usually a smaller set than that." }
     },
     {
       "@type": "Question",
       "name": "Is this just a CLAUDE.md or a rules file?",
-      "acceptedAnswer": { "@type": "Answer", "text": "No. A rules file is written by hand, so it captures intentions. Emulo's profile is derived from real sessions, with dated receipts pointing back at the ones that support each trait, so you can check any claim it makes about you." }
+      "acceptedAnswer": { "@type": "Answer", "text": "The output is a file like that, and you can edit it like one. The difference is where it comes from. Every rule is derived from real sessions and carries dated quotes, and emulo verify checks that each quote actually exists in your logs." }
     },
     {
       "@type": "Question",
       "name": "Do my session logs leave my machine?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Session extraction, redaction, caching, and the profile itself all stay local, and secrets are redacted before anything is written. The one exception is mining: if you point it at a hosted model, the selected evidence goes to that provider. Choosing a local model keeps the whole run on your machine." }
+      "acceptedAnswer": { "@type": "Answer", "text": "The coach report makes no model call and runs entirely on your machine. For a profile, extraction, redaction, caching and the profile itself stay local, and secrets are redacted before anything is written. The one exception is the mining pass: if your agent uses a hosted model, the selected evidence goes to that provider. A local model keeps the whole run on your machine." }
     },
     {
       "@type": "Question",
       "name": "Which coding agents does it work with?",
-      "acceptedAnswer": { "@type": "Answer", "text": "It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box, and installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load the profile before a task." }
+      "acceptedAnswer": { "@type": "Answer", "text": "It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions, but it installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load the profile before a task." }
     },
     {
       "@type": "Question",
       "name": "What does it cost to run?",
-      "acceptedAnswer": { "@type": "Answer", "text": "The tool is MIT licensed and free. Mining spends model calls to read your history, so Emulo prints a read-only plan with the cost first and waits for your approval before any model work starts." }
+      "acceptedAnswer": { "@type": "Answer", "text": "The tool is MIT licensed and free. The coach report makes no model call, so running it costs nothing. Mining spends model calls to read your history, so Emulo prints a read-only plan with the cost first and waits for your approval before any model work starts." }
     },
     {
       "@type": "Question",
       "name": "How much history do I need?",
-      "acceptedAnswer": { "@type": "Answer", "text": "It mines whatever you have. Patterns get sharper with more sessions, since a trait only earns a place in the profile when separate sessions keep supporting it. The profile on this page came from 1,656 sessions over nine months." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Any. The report counts whatever you have. For a profile, more sessions help, since a rule only earns a place when separate sessions keep supporting it. The example profile on this page came from 1,656 sessions over nine months." }
     }
   ]
 }
 </script>
+
+<script>document.documentElement.classList.add("js")</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -92,18 +107,22 @@
 :root{
   --paper:#f2eee1;
   --paper-2:#f7f4ea;
+  --paper-3:#ebe6d4;
   --ink:#161309;
   --ink-2:#3b382c;
   --ink-soft:#3d3a2f;
   --ink-faint:#6f6a58;
-  --ink-dim:#8f8a76;
+  --cream:#ece6d2;
   --cream-dim:#cfc9b4;
+  --cream-faint:#9d977f;
   --rule:#c9c3ad;
   --red:#a83b23;
+  --red-lit:#e0745a;
   --gold:#e8c15a;
   --serif:"Playfair Display",Georgia,serif;
   --text:"Source Serif 4",Georgia,serif;
   --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --ease:cubic-bezier(.22,.9,.3,1);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -117,29 +136,31 @@ body{
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
 }
-/* ghost-log canvas sits under everything */
-#ghost{position:fixed;inset:0;z-index:1;pointer-events:none}
-/* paper grain above the canvas, below content */
+::selection{background:var(--red);color:var(--paper-2)}
+/* paper grain, under the content */
 body::before{
-  content:"";position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.5;
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-a{color:inherit}
+a{color:inherit;text-underline-offset:3px;text-decoration-thickness:1px}
+a:focus-visible,button:focus-visible,.cmd:focus-visible{outline:2px solid var(--red);outline-offset:3px}
 img{max-width:100%;display:block}
-.wrap{max-width:1120px;margin:0 auto;padding:0 32px;position:relative;z-index:3}
-
-/* ---------- type utilities ---------- */
-.label{
-  font-family:var(--mono);font-size:11px;font-weight:500;
-  letter-spacing:.32em;text-transform:uppercase;color:var(--ink-faint);
+code{font-family:var(--mono);font-size:.84em}
+.wrap{max-width:1180px;margin:0 auto;padding:0 40px;position:relative;z-index:3}
+h2{
+  font-family:var(--serif);font-weight:600;font-size:clamp(32px,3.7vw,50px);
+  letter-spacing:-.012em;line-height:1.06;text-wrap:balance;
 }
-.label .red{color:var(--red)}
+.mono-label{
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  letter-spacing:.24em;text-transform:uppercase;color:var(--ink-faint);
+}
 
 /* ---------- nav ---------- */
 nav{
   position:relative;z-index:4;
   display:flex;justify-content:space-between;align-items:center;
-  max-width:1120px;margin:0 auto;padding:26px 32px;
+  max-width:1180px;margin:0 auto;padding:26px 40px;
 }
 .wordmark{
   font-family:var(--mono);font-weight:500;font-size:14px;
@@ -153,88 +174,67 @@ nav{
   transition:color .2s ease,border-color .2s ease;
 }
 .nav-links a:hover{border-bottom-color:var(--red);color:var(--ink)}
-
-/* The one action in the bar. Solid ink against paper is the strongest
-   contrast this palette has, and it is spent once -- every other link stays a
-   quiet mono label so this one is unmistakably the thing to press. */
+/* The one filled control in the bar. */
 .nav-links a.nav-cta{
-  padding:9px 18px;
-  border:1px solid var(--ink);
-  background:var(--ink);
-  color:var(--paper);
-  font-weight:500;
-  border-bottom-color:var(--ink);
-  transition:background .2s ease,border-color .2s ease,color .2s ease;
+  padding:9px 18px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);
+  font-weight:500;transition:background .2s ease,border-color .2s ease;
 }
 .nav-links a.nav-cta:hover{background:var(--red);border-color:var(--red);color:var(--paper)}
-.nav-links a:focus-visible{outline:2px solid var(--red);outline-offset:3px}
 
-/* ---------- hero ---------- */
-.hero{position:relative;padding:40px 0 0}
-.hero .wrap{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:center;gap:0}
-.hero-copy{position:relative;z-index:5;padding:56px 0 72px}
-.plate{display:flex;align-items:center;gap:14px;margin-bottom:34px}
-.plate .tick{width:34px;height:1px;background:var(--red);transform-origin:left}
+/* ---------- hero: the report is the exhibit ---------- */
+.hero{position:relative;z-index:3;padding:34px 0 88px}
+.hero .wrap{
+  display:grid;grid-template-columns:minmax(0,.74fr) minmax(0,1.26fr);
+  grid-template-areas:"h h" "sub ex" "cmd ex" "act ex" ". ex";
+  grid-template-rows:auto auto auto auto 1fr;
+  column-gap:64px;align-items:start;
+}
+.hero h1{grid-area:h}
+.hero .hero-sub{grid-area:sub}
+.hero .hero-cmd{grid-area:cmd}
+.hero .hero-actions{grid-area:act}
+.hero .exhibit{grid-area:ex;margin-top:6px}
 h1{
   font-family:var(--serif);font-weight:600;
-  font-size:clamp(44px,6.2vw,78px);
-  line-height:1.02;letter-spacing:-.015em;
-  margin-bottom:28px;
+  font-size:clamp(40px,5.6vw,80px);
+  line-height:1.02;letter-spacing:-.02em;
+  margin-bottom:52px;max-width:15.5em;text-wrap:balance;
 }
-h1 .fix{white-space:nowrap}
-h1 .fix i{font-style:italic;color:var(--red)}
-.hero-sub{
-  font-size:19px;max-width:46ch;color:var(--ink-soft);margin-bottom:40px;
-}
+h1 i{font-style:italic;color:var(--red)}
+.hero-sub{font-size:18px;max-width:40ch;color:var(--ink-soft);margin-bottom:34px}
 .hero-sub b{font-weight:600;color:var(--ink)}
-.hero-art{position:relative;align-self:stretch;min-height:520px}
-.hero-art .art{
-  position:absolute;right:-20px;top:50%;transform:translateY(-50%);
-  width:min(500px,41vw);
-  perspective:900px;
-}
-.hero-art img{
-  mix-blend-mode:multiply;filter:contrast(1.02);width:100%;
-  will-change:transform;
-}
-/* soft ink wash grounding the portrait */
-.hero-art::before{
-  content:"";position:absolute;right:-16%;top:2%;width:120%;height:100%;
-  background:radial-gradient(closest-side,rgba(22,19,9,.075),transparent 72%);
-}
 
-/* ---------- entrance choreography ---------- */
-.rise{opacity:0;transform:translateY(26px)}
-body.loaded .rise{
-  animation:rise 1s cubic-bezier(.22,.9,.3,1) forwards;
+/* commands */
+.cmd{
+  display:inline-flex;align-items:center;gap:18px;
+  border:1px solid var(--ink);padding:16px 18px 16px 22px;
+  font-family:var(--mono);font-size:15px;letter-spacing:.01em;
+  background:var(--paper-2);cursor:pointer;color:var(--ink);
+  transition:background .2s ease,transform .15s ease;
 }
-body.loaded .rise.d1{animation-delay:.12s}
-body.loaded .rise.d2{animation-delay:.26s}
-body.loaded .rise.d3{animation-delay:.42s}
-@keyframes rise{to{opacity:1;transform:none}}
-.hero-art img{opacity:0}
-body.loaded .hero-art img{animation:art-in 1.6s cubic-bezier(.22,.9,.3,1) .2s forwards}
-@keyframes art-in{
-  from{opacity:0;transform:scale(1.04) translateY(10px)}
-  to{opacity:1;transform:none}
+.cmd:hover{background:#fbf9f1}
+.cmd:active{transform:translateY(1px)}
+.cmd .dollar{color:var(--red);margin-right:10px}
+.cmd .copy{
+  font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--ink-faint);border-left:1px solid var(--rule);padding-left:16px;
+  min-width:78px;text-align:right;transition:color .2s ease;
 }
-body.loaded .plate .tick{animation:tick 1s cubic-bezier(.7,0,.2,1) .1s both}
-@keyframes tick{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@media (prefers-reduced-motion: reduce){
-  .rise{opacity:1 !important;transform:none !important;animation:none !important}
-  .hero-art img{opacity:1 !important;animation:none !important}
-  .plate .tick{animation:none !important}
+.cmd:hover .copy{color:var(--red)}
+.cmd.done .copy{color:var(--red)}
+.cmd-note{
+  margin-top:14px;font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  color:var(--ink-faint);max-width:52ch;
 }
-
-/* ---------- CTA block ---------- */
-.cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch}
+.cmd-note code{color:var(--ink-soft);font-size:12.5px}
+.hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:22px;margin-top:34px}
+.hero-cmd{margin-top:0}
 .btn-star{
   display:inline-flex;align-items:center;gap:12px;
   background:var(--ink);color:var(--paper-2);text-decoration:none;
-  font-family:var(--mono);font-size:14px;letter-spacing:.06em;
-  padding:16px 26px;border:1px solid var(--ink);
-  position:relative;overflow:hidden;
-  transition:color .25s ease;
+  font-family:var(--mono);font-size:13px;letter-spacing:.06em;
+  padding:13px 20px;border:1px solid var(--ink);
+  position:relative;overflow:hidden;transition:color .25s ease;
 }
 .btn-star::after{
   content:"";position:absolute;inset:0;background:var(--paper-2);
@@ -244,165 +244,166 @@ body.loaded .plate .tick{animation:tick 1s cubic-bezier(.7,0,.2,1) .1s both}
 .btn-star:hover::after{transform:scaleX(1);transform-origin:left}
 .btn-star:hover{color:var(--ink)}
 .btn-star > *{position:relative;z-index:1}
-.btn-star .star{color:var(--gold)}
-.btn-star:hover .star{color:var(--red)}
-.btn-star .count{
-  border-left:1px solid rgba(242,238,225,.3);padding-left:12px;
-}
+.btn-star svg{width:15px;height:15px;fill:var(--gold);transition:fill .25s ease}
+.btn-star:hover svg{fill:var(--red)}
+.btn-star .count{border-left:1px solid rgba(242,238,225,.3);padding-left:12px}
+.btn-star .count:empty{display:none}
 .btn-star:hover .count{border-left-color:rgba(22,19,9,.3)}
-.cmd{
-  display:inline-flex;align-items:center;gap:16px;
-  border:1px solid var(--ink);padding:15px 18px 15px 22px;
-  font-family:var(--mono);font-size:14px;letter-spacing:.02em;
-  background:var(--paper-2);cursor:pointer;
-  transition:background .2s ease;
+.text-link{
+  font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+  text-decoration:none;color:var(--ink-soft);border-bottom:1px solid var(--rule);padding-bottom:3px;
+  transition:color .2s ease,border-color .2s ease;
 }
-.cmd:hover{background:#efe9d8}
-.cmd .dollar{color:var(--red)}
-.cmd button{
-  all:unset;cursor:pointer;font-family:var(--mono);font-size:10px;
-  letter-spacing:.24em;text-transform:uppercase;color:var(--ink-faint);
-  border-left:1px solid var(--rule);padding-left:16px;
-  transition:color .2s ease;
-}
-.cmd:hover button{color:var(--red)}
-.alt-cmd{
-  margin-top:14px;font-family:var(--mono);font-size:12.5px;
-  letter-spacing:.02em;color:var(--ink-faint);
-}
-.alt-cmd code{font-family:var(--mono);color:var(--ink-soft);font-size:12.5px}
+.text-link:hover{color:var(--red);border-bottom-color:var(--red)}
 
-/* ---------- faq ---------- */
-.faq .q-list{border-top:1px solid var(--rule)}
-.faq .q{border-bottom:1px solid var(--rule);padding:26px 0}
-.faq .q h3{
-  font-family:var(--serif);font-weight:600;font-size:21px;
-  line-height:1.3;margin-bottom:10px;color:var(--ink);
+/* the terminal plate */
+.exhibit{position:relative}
+.term{
+  background:var(--ink);color:var(--cream);
+  border:1px solid var(--ink);
+  padding:26px 30px 30px;
+  font-family:var(--mono);font-size:13.2px;line-height:1.68;
+  box-shadow:0 44px 70px -42px rgba(22,19,9,.55),0 10px 22px -14px rgba(22,19,9,.35);
+  position:relative;
 }
-.faq .q p{font-size:16.5px;color:var(--ink-soft);max-width:72ch}
-.faq .q p + p{margin-top:10px}
-.faq .q code{
-  font-family:var(--mono);font-size:14px;
-  background:var(--paper-2);border:1px solid var(--rule);padding:1px 5px;
+.term-head{
+  display:flex;justify-content:space-between;gap:16px;
+  font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--cream-faint);
+  padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid #2e2a1c;
 }
+.term-head .live{color:var(--gold)}
+.term .l{display:block;white-space:pre-wrap;overflow-wrap:break-word;min-height:1.68em}
+.term .in{padding-left:3ch}
+.term .p{color:var(--red-lit)}
+.term .n{color:var(--gold)}
+.term .t{color:var(--paper-2);font-weight:500}
+.term .m{color:var(--cream-dim)}
+.term .dim{color:var(--cream-faint)}
+.term .redact{
+  display:inline-block;height:.95em;vertical-align:-.1em;
+  background:#4a4533;border-radius:1px;
+}
+.term .caret{
+  display:inline-block;width:.6em;height:1.1em;vertical-align:-.2em;
+  background:var(--cream);margin-left:2px;
+}
+.js .term .caret{animation:blink 1.05s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+/* printing: only when JS is on, and never for reduced motion */
+.js .term.printing .l{opacity:0;transform:translateY(5px)}
+.js .term.printing .l.on{opacity:1;transform:none;transition:opacity .28s var(--ease),transform .28s var(--ease)}
+.term .typed{white-space:pre}
 
-/* ---------- stat strip ---------- */
-.stats{border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);position:relative;z-index:3;background:var(--paper)}
-.stats .wrap{display:grid;grid-template-columns:repeat(3,1fr)}
-.stat{padding:30px 24px;text-align:center;position:relative}
-.stat + .stat::before{content:"";position:absolute;left:0;top:22%;height:56%;width:1px;background:var(--rule)}
-.stat .n{font-family:var(--serif);font-weight:700;font-size:40px;line-height:1;margin-bottom:8px;font-variant-numeric:tabular-nums}
-.stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-faint)}
+/* museum label pinned under the plate */
+.exhibit figcaption{
+  position:relative;z-index:2;
+  width:min(440px,84%);margin:-22px 0 0 auto;margin-right:-18px;
+  background:var(--paper-2);border:1px solid var(--ink);
+  padding:16px 20px 17px;
+  box-shadow:0 18px 30px -24px rgba(22,19,9,.5);
+}
+.exhibit figcaption strong{
+  display:block;font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:18px;line-height:1.25;margin-bottom:6px;
+}
+.exhibit figcaption span{display:block;font-size:14px;line-height:1.5;color:var(--ink-soft)}
+
+/* ---------- sources manifest ---------- */
+.manifest{position:relative;z-index:3;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);background:var(--paper)}
+.manifest .wrap{display:grid;grid-template-columns:1.25fr 1.35fr .8fr}
+.manifest div.cell{padding:22px 26px 24px 0}
+.manifest div.cell + div.cell{padding-left:26px;border-left:1px solid var(--rule)}
+.manifest .mono-label{display:block;margin-bottom:6px}
+.manifest p{font-size:15.5px;line-height:1.5;color:var(--ink)}
 
 /* ---------- sections ---------- */
-section{padding:104px 0;position:relative;z-index:3}
-.sec-head{display:flex;align-items:baseline;gap:20px;margin-bottom:56px}
-.sec-head .num{
-  font-family:var(--serif);font-style:italic;font-size:20px;color:var(--red);
-  min-width:44px;
-}
-h2{
-  font-family:var(--serif);font-weight:600;font-size:clamp(30px,3.6vw,46px);
-  letter-spacing:-.01em;line-height:1.08;
+section{padding:112px 0;position:relative;z-index:3}
+.step-no{
+  font-family:var(--serif);font-style:italic;font-weight:500;color:var(--red);
+  font-size:22px;line-height:1;
 }
 
-/* not memory */
-.split{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--ink)}
-.split > div{padding:44px 44px 48px}
-.split .left{border-right:1px solid var(--ink);background:var(--paper)}
-.split .right{background:var(--paper-2)}
-.split h3{font-family:var(--serif);font-size:26px;font-weight:600;margin:14px 0 16px}
-.split p{color:var(--ink-soft);max-width:42ch}
-.split ul{list-style:none;margin-top:22px}
-.split li{
-  padding:10px 0;border-top:1px dotted var(--rule);
-  font-size:16px;color:var(--ink-soft);
-}
-.split .right li::before{content:"— ";color:var(--red)}
-.split .left li{color:var(--ink-faint)}
+/* mine: portrait with its wall label, steps beside it */
+.mine .wrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:80px;align-items:start}
+.portrait img{width:100%;max-width:470px;mix-blend-mode:multiply;filter:contrast(1.02);margin:-24px 0 0 -18px}
+.wall-label{max-width:430px;border-top:1px solid var(--ink);padding-top:16px;margin-top:6px}
+.wall-label strong{display:block;font-family:var(--serif);font-style:italic;font-weight:500;font-size:19px;margin-bottom:12px}
+.wall-label ul{list-style:none;margin-bottom:14px}
+.wall-label li{font-size:16px;line-height:1.5;padding:9px 0;border-top:1px dotted var(--rule);color:var(--ink-soft)}
+.wall-label li:first-child{border-top:0;padding-top:0}
+.wall-label li b{font-weight:600;color:var(--ink)}
+.wall-label small{display:block;font-family:var(--mono);font-size:11.5px;line-height:1.65;color:var(--ink-faint);letter-spacing:.02em}
+.mine h2{margin:6px 0 20px}
+.mine .lede{font-size:18px;color:var(--ink-soft);max-width:48ch;margin-bottom:44px}
+.seq{list-style:none;border-top:1px solid var(--ink)}
+.seq li{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:26px 0 28px;border-bottom:1px solid var(--rule)}
+.seq li .step-no{padding-top:4px}
+.seq h3{font-family:var(--mono);font-weight:500;font-size:16px;letter-spacing:.01em;margin-bottom:8px}
+.seq h3 .p{color:var(--red);margin-right:10px}
+.seq p{font-size:16.5px;color:var(--ink-soft);max-width:52ch}
+.seq p code{background:var(--paper-2);border:1px solid var(--rule);padding:1px 5px;color:var(--ink)}
+.agent-route{margin-top:22px;font-size:15.5px;color:var(--ink-faint);max-width:54ch}
+.agent-route code{color:var(--ink-soft)}
 
-/* laws */
-.laws{border:1px solid var(--ink);background:var(--paper-2)}
-.laws-head{
-  padding:18px 32px;border-bottom:1px solid var(--ink);
-  display:flex;justify-content:space-between;align-items:center;gap:12px;
+/* verify: the dark plate */
+.verify{background:var(--ink);color:var(--paper-2)}
+.verify .wrap{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:80px;align-items:start}
+.verify .step-no{color:var(--gold)}
+.verify h2{color:var(--paper-2);margin:12px 0 22px}
+.verify .lede{font-size:18px;color:var(--cream-dim);max-width:44ch}
+.verify .lede code{color:var(--gold);font-size:.88em}
+.verdicts{border-top:1px solid #3b3726}
+.verdict{display:grid;grid-template-columns:138px 1fr;gap:24px;align-items:start;padding:26px 0;border-bottom:1px solid #3b3726}
+.stamp{
+  justify-self:start;font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;
+  border:1px solid var(--cream-faint);color:var(--cream);padding:6px 10px;white-space:nowrap;
 }
-.law{
-  display:grid;grid-template-columns:90px 1fr 84px;align-items:center;gap:20px;
-  padding:24px 32px;border-top:1px dotted var(--rule);
-}
-.law:first-of-type{border-top:0}
-.law .lex{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--ink-faint)}
-.law .t{font-family:var(--text);font-size:19px}
-.law .t b{font-weight:600}
-.law .score{
-  justify-self:end;font-family:var(--mono);font-size:13px;
-  border:1px solid var(--ink);padding:5px 10px;
-}
-/* stamp-in for scores */
-.reveal.in .score{animation:stamp .5s cubic-bezier(.34,1.4,.44,1) both}
-.reveal.in .law:nth-child(2) .score{animation-delay:.25s}
-.reveal.in .law:nth-child(3) .score{animation-delay:.45s}
-.reveal.in .law:nth-child(4) .score{animation-delay:.65s}
+.stamp.ok{border-color:var(--gold);color:var(--gold)}
+.stamp.bad{border-color:var(--red-lit);color:var(--red-lit)}
+.verdict q{display:block;font-family:var(--serif);font-size:21px;line-height:1.3;color:var(--paper-2);quotes:"\201C" "\201D";margin-bottom:6px}
+.verdict q .frac{font-family:var(--mono);font-size:.72em;color:var(--gold);letter-spacing:.04em}
+.verdict p{font-size:15.5px;color:var(--cream-dim);max-width:46ch}
+.js .verdicts.reveal .stamp{opacity:0}
+.verdicts.reveal.in .stamp{animation:stamp .5s cubic-bezier(.34,1.4,.44,1) both}
+.verdicts.reveal.in .verdict:nth-child(2) .stamp{animation-delay:.28s}
+.verdicts.reveal.in .verdict:nth-child(3) .stamp{animation-delay:.52s}
 @keyframes stamp{
   from{opacity:0;transform:scale(1.7) rotate(-6deg)}
   60%{opacity:1;transform:scale(.94) rotate(1deg)}
   to{opacity:1;transform:none}
 }
-@media (prefers-reduced-motion: reduce){
-  .reveal.in .score{animation:none}
+.verify-after{margin-top:28px;font-size:15.5px;color:var(--cream-dim);max-width:60ch}
+.verify-after code{color:var(--gold);font-size:.9em}
+.direction{
+  grid-column:1 / -1;margin-top:24px;padding-top:34px;border-top:1px solid #3b3726;
+  display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:80px;
 }
-.uncomfortable{
-  margin:26px 32px 32px;border:1px solid var(--rule);padding:28px 32px;text-align:center;
-  background:repeating-linear-gradient(0deg,transparent,transparent 26px,rgba(22,19,9,.035) 27px);
-}
-.uncomfortable .label{margin-bottom:12px;display:block}
-.uncomfortable q{font-family:var(--serif);font-style:italic;font-size:22px;line-height:1.4;quotes:"\201C" "\201D"}
-.yours-note{
-  margin-top:22px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-faint);text-align:center;
-}
-.yours-note b{color:var(--red);font-weight:500}
-
-/* how (dark plate) */
-.how{background:var(--ink);color:var(--paper-2)}
-.how .sec-head .num{color:var(--gold)}
-.how h2{color:var(--paper-2)}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--ink-2)}
-.step{padding:40px 36px 44px;border-right:1px solid var(--ink-2)}
-.step:last-child{border-right:0}
-.step .num{font-family:var(--serif);font-style:italic;font-size:44px;color:var(--gold);line-height:1;margin-bottom:20px}
-.step h3{font-family:var(--serif);font-size:23px;font-weight:600;margin-bottom:12px;color:var(--paper-2)}
-.step p{color:var(--cream-dim);font-size:16px}
-.step code{font-family:var(--mono);font-size:14px;background:#2a2718;padding:1px 6px;color:var(--gold)}
-.privacy{margin-top:26px;font-size:16px;color:var(--cream-dim);max-width:72ch}
-.privacy b{font-weight:600;color:var(--paper-2)}
+.direction h3{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1.2;color:var(--paper-2)}
+.direction p{font-size:16.5px;color:var(--cream-dim);max-width:58ch}
+.direction a{color:var(--gold);white-space:nowrap}
+.direction a:hover{color:var(--paper-2)}
 
 /* pricing ledger */
 .pricing{background:var(--paper-2)}
-.pricing .sec-head{align-items:flex-start}
-.pricing .sec-head .label{display:block;margin:4px 0 12px}
+.pricing .head{max-width:760px;margin-bottom:52px}
+.pricing .head p{margin-top:16px;font-size:18px;color:var(--ink-soft);max-width:56ch}
 .price-ledger{
-  display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
+  display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);
   border:1px solid var(--ink);background:var(--paper);
 }
-.price-pane{padding:48px;position:relative}
+.price-pane{padding:46px 48px 48px;position:relative}
 .price-free{border-right:1px solid var(--ink)}
-.price-pro{background:var(--ink);color:var(--paper-2)}
 .price-pane h3{
   font-family:var(--serif);font-size:clamp(28px,3vw,38px);font-weight:600;
-  line-height:1.08;margin:16px 0 18px;
+  line-height:1.08;margin-bottom:16px;
 }
-.price-pane > p{color:var(--ink-soft);max-width:44ch}
-.price-pro > p{color:var(--cream-dim)}
-.price-mark{display:flex;align-items:baseline;gap:10px;margin:34px 0 28px}
-.price-mark strong{font-family:var(--serif);font-size:48px;line-height:1}
+.price-pane > p{color:var(--ink-soft);max-width:46ch}
+.price-mark{display:flex;align-items:baseline;gap:10px;margin:30px 0 4px}
+.price-mark strong{font-family:var(--serif);font-size:52px;line-height:1;font-variant-numeric:tabular-nums}
 .price-mark span{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
-.price-list{list-style:none;margin:28px 0 34px;border-top:1px dotted var(--rule)}
-.price-list li{padding:11px 0;border-bottom:1px dotted var(--rule);color:var(--ink-soft)}
+.price-list{list-style:none;margin:26px 0 32px;border-top:1px dotted var(--rule)}
+.price-list li{padding:11px 0;border-bottom:1px dotted var(--rule);color:var(--ink-soft);font-size:16.5px}
 .price-list li::before{content:"+";font-family:var(--mono);color:var(--red);margin-right:12px}
-.price-pro .price-list{border-color:var(--ink-2)}
-.price-pro .price-list li{border-color:var(--ink-2);color:var(--cream-dim)}
-.price-pro .price-list li::before{color:var(--gold)}
 .price-link{
   display:inline-flex;align-items:center;justify-content:space-between;gap:24px;
   min-width:230px;border-bottom:1px solid var(--ink);padding:11px 0;
@@ -410,60 +411,36 @@ h2{
   text-decoration:none;transition:color .2s ease,padding .2s ease;
 }
 .price-link:hover{color:var(--red);padding-left:6px}
-.price-link::after{content:"→";font-size:17px}
-.pro-label{display:block;color:var(--gold);margin-bottom:30px}
-.pro-plans{margin:32px 0 26px;border-top:1px solid var(--ink-2)}
-.pro-plan{
-  display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:20px;
-  padding:20px 0;border-bottom:1px solid var(--ink-2);
+.price-link::after{content:"\2192";font-size:17px}
+/* the paid pane is deliberately the quieter one */
+.price-build{background:var(--paper-2)}
+.price-build h3{font-size:clamp(24px,2.3vw,30px)}
+.price-build .lede{font-family:var(--serif);font-style:italic;font-size:19px;line-height:1.35;color:var(--ink);margin-bottom:14px;max-width:34ch}
+.price-build > p{font-size:16px}
+.build-price{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;
+  margin:24px 0 20px;padding:14px 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);
 }
-.pro-plan strong{font-family:var(--serif);font-size:25px;font-weight:600}
-.pro-plan small{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--cream-dim)}
-.pro-plan .amount{font-family:var(--serif);font-size:31px;line-height:1;white-space:nowrap}
-.pro-plan .amount span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--cream-dim)}
-.pro-plan .amount s{font-size:17px;color:var(--cream-dim);text-decoration-thickness:1px}
-.pro-plan .amount em{
-  display:inline-block;margin-left:8px;border:1px solid var(--gold);padding:5px 7px;
-  font-family:var(--mono);font-size:9px;font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);
-}
-.pro-plan a{
-  border:1px solid var(--paper-2);padding:10px 13px;color:var(--paper-2);text-decoration:none;
-  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
-  transition:background .2s ease,color .2s ease,transform .2s ease;
-}
-.pro-plan a:hover{background:var(--paper-2);color:var(--ink)}
-.pro-plan a:active{transform:translateY(1px)}
+.build-price strong{font-family:var(--serif);font-size:30px;line-height:1}
+.build-price span{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.price-build .intake{font-size:15px;line-height:1.6;color:var(--ink-soft)}
+.price-build .intake code{background:var(--paper);border:1px solid var(--rule);padding:1px 5px;color:var(--ink);white-space:nowrap}
+.price-build .intake a{color:var(--red)}
 
-
-/* works with — slow marquee */
-.works{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:24px 0;overflow:hidden;position:relative;z-index:3;background:var(--paper)}
-.works .lane{display:flex;width:max-content;animation:lane 28s linear infinite}
-.works .set{display:flex;align-items:center}
-.works span{
-  font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--ink-faint);padding:0 34px;white-space:nowrap;
-}
-.works .dot{color:var(--red);padding:0}
-@keyframes lane{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@media (prefers-reduced-motion: reduce){
-  .works .lane{animation:none;width:auto;flex-wrap:wrap;justify-content:center}
-  .works .set:last-child{display:none}
-}
+/* faq */
+.faq h2{margin-bottom:44px}
+.faq .q-list{border-top:1px solid var(--ink)}
+.faq .q{border-bottom:1px solid var(--rule);padding:26px 0;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:48px}
+.faq .q h3{font-family:var(--serif);font-weight:600;font-size:21px;line-height:1.3;color:var(--ink)}
+.faq .q p{font-size:16.5px;color:var(--ink-soft);max-width:66ch}
+.faq .q p a{color:var(--red)}
 
 /* final */
-.final{text-align:center;padding:130px 0 96px;position:relative}
-.final .engrave{
-  width:190px;margin:0 auto 36px;mix-blend-mode:multiply;opacity:.92;
-}
-.final h2{font-size:clamp(38px,5vw,64px);margin-bottom:18px}
-.final .sub{color:var(--ink-soft);font-size:19px;margin-bottom:44px}
-.final .cta-row{justify-content:center}
-.barcode{
-  margin:72px auto 0;width:180px;height:34px;
-  background:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 5px,var(--ink) 5px 9px,transparent 9px 11px,var(--ink) 11px 12px,transparent 12px 16px);
-  opacity:.85;
-}
-footer{padding:28px 0 44px;position:relative;z-index:3}
+.final{text-align:center;padding:96px 0 88px}
+.final .engrave{width:170px;margin:0 auto 30px;mix-blend-mode:multiply;opacity:.94}
+.final h2{font-size:clamp(38px,5vw,64px);margin-bottom:34px}
+.final .row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:16px}
+footer{padding:28px 0 44px;position:relative;z-index:3;border-top:1px solid var(--rule)}
 footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
 footer span,footer a{
   font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
@@ -471,84 +448,76 @@ footer span,footer a{
 }
 footer a:hover{color:var(--red)}
 
-/* reveal on scroll */
-.reveal{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.22,.9,.3,1),transform .8s cubic-bezier(.22,.9,.3,1)}
-.reveal.in{opacity:1;transform:none}
+/* entrance */
+.js .rise{opacity:0;transform:translateY(22px)}
+.js body.loaded .rise{animation:rise .95s var(--ease) forwards}
+.js body.loaded .rise.d1{animation-delay:.1s}
+.js body.loaded .rise.d2{animation-delay:.22s}
+.js body.loaded .rise.d3{animation-delay:.34s}
+@keyframes rise{to{opacity:1;transform:none}}
+.js .reveal{opacity:0;transform:translateY(20px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.js .reveal.in{opacity:1;transform:none}
+/* the portrait arrives once and then stays still */
+.js .portrait.reveal img{opacity:0;transform:scale(1.035);transition:opacity 1.4s var(--ease),transform 1.6s var(--ease)}
+.js .portrait.reveal.in img{opacity:1;transform:none}
 
-/* staggered children inside revealed blocks */
-.split.reveal .left,.split.reveal .right,
-.steps.reveal .step{
-  opacity:0;transform:translateY(20px);
-  transition:opacity .7s cubic-bezier(.22,.9,.3,1),transform .7s cubic-bezier(.22,.9,.3,1);
-}
-.split.reveal.in .left{opacity:1;transform:none;transition-delay:.1s}
-.split.reveal.in .right{opacity:1;transform:none;transition-delay:.28s}
-.steps.reveal.in .step{opacity:1;transform:none}
-.steps.reveal.in .step:nth-child(1){transition-delay:.1s}
-.steps.reveal.in .step:nth-child(2){transition-delay:.28s}
-.steps.reveal.in .step:nth-child(3){transition-delay:.46s}
-
-/* hover life */
-.law{transition:background .25s ease}
-.law:hover{background:#f0ebd7}
-.law:hover .lex{color:var(--red)}
-.split > div{transition:background .3s ease}
-.split .right:hover{background:#fbf8ee}
-.split .left:hover{background:#f4f0e4}
-.step{transition:background .3s ease}
-.step:hover{background:#1e1b10}
-.step .num{transition:transform .3s cubic-bezier(.22,.9,.3,1)}
-.step:hover .num{transform:translateX(6px)}
-
-/* scroll progress hairline */
 #progress{
   position:fixed;top:0;left:0;right:0;height:2px;z-index:9;
-  background:var(--red);transform:scaleX(0);transform-origin:left;
-  pointer-events:none;
+  background:var(--red);transform:scaleX(0);transform-origin:left;pointer-events:none;
 }
 
 @media (prefers-reduced-motion: reduce){
-  .reveal,.split.reveal .left,.split.reveal .right,.steps.reveal .step{opacity:1;transform:none;transition:none}
+  .js .rise,.js .reveal,.js .portrait.reveal img{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
+  .js .verdicts.reveal .stamp{opacity:1;animation:none !important}
+  .js .term .caret{animation:none}
 }
 
 /* ---------- responsive ---------- */
-@media (max-width: 960px){
-  .hero .wrap{grid-template-columns:1fr}
-  .hero-copy{padding:24px 0 40px}
-  .hero-art{min-height:0;order:-1;height:340px;margin-top:-10px}
-  .hero-art .art{right:50%;transform:translate(50%,-50%);top:50%;width:min(420px,88vw)}
-  .hero-art::before{right:0;width:100%}
-  .split{grid-template-columns:1fr}
-  .split .left{border-right:0;border-bottom:1px solid var(--ink)}
-  .steps{grid-template-columns:1fr}
-  .step{border-right:0;border-bottom:1px solid var(--ink-2)}
-  .step:last-child{border-bottom:0}
+@media (max-width: 1080px){
+  .hero .wrap{grid-template-columns:1fr;grid-template-areas:"h" "sub" "cmd" "ex" "act";grid-template-rows:auto;column-gap:0}
+  .hero .exhibit{margin-top:44px}
+  h1{margin-bottom:28px}
+  .hero-sub{max-width:56ch}
+  .exhibit figcaption{margin-right:0}
+  .mine .wrap,.verify .wrap,.direction{grid-template-columns:1fr;gap:48px}
+  .portrait{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:end}
+  .portrait img{margin:0}
+  .direction{gap:14px}
+}
+@media (max-width: 860px){
+  .manifest .wrap{grid-template-columns:1fr}
+  .manifest div.cell{padding:16px 0}
+  .manifest div.cell + div.cell{padding-left:0;border-left:0;border-top:1px dotted var(--rule)}
   .price-ledger{grid-template-columns:1fr}
   .price-free{border-right:0;border-bottom:1px solid var(--ink)}
-  .law{grid-template-columns:64px 1fr;grid-template-rows:auto auto;align-items:start}
-  .law .lex{padding-top:5px}
-  .law .score{grid-column:2;justify-self:start}
-  section{padding:72px 0}
+  .faq .q{grid-template-columns:1fr;gap:10px}
+  section{padding:80px 0}
 }
-@media (max-width: 560px){
-  .wrap{padding:0 20px}
-  nav{padding:20px}
-  .nav-links{gap:14px;flex-wrap:wrap;justify-content:flex-end}
-  .stats .wrap{grid-template-columns:1fr}
-  .stat + .stat::before{display:none}
-  .stat{border-top:1px dotted var(--rule)}
-  .cta-row{flex-direction:column;align-items:stretch}
-  .btn-star,.cmd{justify-content:center}
-  .cmd{font-size:12.5px;gap:10px;padding:14px 12px 14px 14px}
-  .price-pane{padding:32px 24px}
-  .pro-plan{grid-template-columns:1fr auto}
-  .pro-plan a{grid-column:1 / -1;text-align:center}
+@media (max-width: 600px){
+  .wrap{padding:0 16px}
+  nav{padding:18px 16px}
+  .wordmark{letter-spacing:.36em}
+  .nav-links{gap:14px}
+  .nav-links a{font-size:11px;letter-spacing:.08em}
+  .nav-links a.nav-cta{display:none}
+  .hero{padding:18px 0 64px}
+  .hero-sub{font-size:17px}
+  .cmd{display:flex;width:100%;justify-content:space-between;font-size:14px;padding:15px 14px 15px 16px}
+  .cmd .copy{min-width:0;padding-left:12px}
+  .term{padding:18px 14px 22px;font-size:12px}
+  .term-head{font-size:9.5px;letter-spacing:.14em}
+  .exhibit figcaption{width:calc(100% - 20px);margin:-16px 0 0 20px;padding:14px 16px}
+  .portrait{grid-template-columns:1fr}
+  .portrait img{max-width:320px;margin:0 auto}
+  .verdict{grid-template-columns:1fr;gap:12px}
+  .price-pane{padding:32px 22px 36px}
+  .final{padding:88px 0 72px}
+  footer .wrap{flex-direction:column;align-items:flex-start}
 }
 </style>
 </head>
 <body>
 
-<canvas id="ghost" aria-hidden="true"></canvas>
 <div id="progress" aria-hidden="true"></div>
 
 <nav>
@@ -558,231 +527,192 @@ footer a:hover{color:var(--red)}
     <a href="#pricing">Pricing</a>
     <a href="https://github.com/ohad6k/emulo">GitHub</a>
     <a href="https://discord.gg/QMnYtVcxk2">Discord</a>
-    <!-- ?start=1 means "land on the download page and start the file, with no
-         second press". The download page reads the parameter once, presses its
-         own button, and strips the parameter from the address bar, so a reload,
-         a bookmark, the back button or a shared link never fires a download at
-         somebody who pressed nothing. -->
     <a class="nav-cta" href="https://github.com/ohad6k/emulo">Get Emulo</a>
   </div>
 </nav>
 
 <header class="hero">
   <div class="wrap">
-    <div class="hero-copy">
-      <div class="plate rise"><span class="tick"></span><span class="label">Mined from real sessions · not written by hand</span></div>
-      <h1 class="rise d1">Your AI agents act like they just met you. <span class="fix"><i>Emulo fixes that.</i></span></h1>
-      <p class="hero-sub rise d2">It mines your real <b>Claude Code, Codex, Copilot and OpenCode</b> sessions into a <b>you.md</b> your agent reads before every task. Not what you told it. What your work already proved.</p>
-      <div class="cta-row rise d3">
+      <h1 class="rise">Find where you keep <i>repeating yourself</i> to your coding agent.</h1>
+      <p class="hero-sub rise d1">One command reads the AI coding logs already on your machine and counts four things: the ask you resent unchanged, the context you explained again after the agent lost it, the request you rephrased turn after turn, and how often you open by correcting the last answer. <b>Every finding comes with the dated messages behind it.</b> It makes no model call, and nothing leaves your machine.</p>
+      <div class="hero-cmd rise d2">
+        <button class="cmd" type="button" data-cmd="uvx emulo --coach" aria-label="Copy the command uvx emulo --coach">
+          <span><span class="dollar">$</span>uvx emulo --coach</span>
+          <span class="copy" aria-hidden="true">Copy</span>
+        </button>
+        <p class="cmd-note">or <code>pip install emulo</code>, then <code>emulo --coach</code>. About 90 seconds on a large history.</p>
+      </div>
+      <div class="hero-actions rise d3">
         <a class="btn-star" href="https://github.com/ohad6k/emulo">
-          <span class="star">★</span> <span>Star on GitHub</span> <span class="count" id="star-count"></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.8 6.2 6.7.6-5.1 4.5 1.5 6.6L12 17.1l-5.9 3.4 1.5-6.6-5.1-4.5 6.7-.6z"/></svg>
+          <span>Star on GitHub</span> <span class="count" id="star-count"></span>
         </a>
-        <span class="cmd" title="Copy install command">
-          <span><span class="dollar">$</span> npx skills add ohad6k/emulo@emulo</span>
-          <button aria-label="Copy command">Copy</button>
-        </span>
+        <a class="text-link" href="#mine">Then mine a profile</a>
       </div>
-      <p class="alt-cmd rise d3">or <code>pip install emulo</code> to run it yourself</p>
-    </div>
-    <div class="hero-art">
-      <div class="art" id="hero-art">
-        <img src="assets/emulo.png" alt="Emulo engraving: a human and a machine head back to back" fetchpriority="high">
+
+    <figure class="exhibit rise d2">
+      <div class="term" id="term" aria-label="An Emulo coach report, trimmed">
+        <div class="term-head" aria-hidden="true"><span>Terminal</span><span class="live">No model call</span></div>
+        <span class="l"><span class="p">$ </span><span class="typed" data-text="uvx emulo --coach">uvx emulo --coach</span></span>
+        <span class="l">emulo usage report</span>
+        <span class="l">read <span class="n">912</span> sessions, <span class="n">4,289</span> of your messages, 2026-07-07 to 2026-09-24</span>
+        <span class="l">sources: claude 912</span>
+        <span class="l"> </span>
+        <span class="l t">1. You resend the same message instead of changing it.</span>
+        <span class="l in m"><span class="n">11</span> message(s). When the same real ask goes out three times in a row, the model had already given everything that prompt could get. Rewording once beats sending it again.</span>
+        <span class="l in">2026-<span class="redact" style="width:1.2em" aria-label="redacted"></span>-<span class="redact" style="width:1.2em" aria-label="redacted"></span>  <span class="dim">"[your message, dated]"</span>  x<span class="redact" style="width:.7em" aria-label="redacted"></span></span>
+        <span class="l in dim">[trimmed for this page]</span>
+        <span class="l"> </span>
+        <span class="l m">This reads only the messages you typed, which is all emulo keeps. It cannot see cost, tokens, tool calls, or whether the agent was right, so it never scores those. Every line above is countable from your own logs.<span class="caret" aria-hidden="true"></span></span>
       </div>
-    </div>
+      <figcaption>
+        <strong>A real run, 24 September 2026</strong>
+        <span>912 Claude Code sessions, trimmed to the first finding. The receipt is blanked here. On your machine each one prints your own message and its date.</span>
+      </figcaption>
+    </figure>
   </div>
 </header>
 
-<div class="stats">
+<div class="manifest">
   <div class="wrap">
-    <div class="stat"><div class="n" data-count="1656" data-format="comma">0</div><div class="k">Sessions mined</div></div>
-    <div class="stat"><div class="n" data-count="30" data-format="m">0.0M</div><div class="k">Tokens of just me</div></div>
-    <div class="stat"><div class="n" data-count="9">0</div><div class="k">Months of history</div></div>
+    <div class="cell"><span class="mono-label">Reads</span><p>Claude Code, Codex, Copilot CLI, OpenCode and Google Antigravity logs</p></div>
+    <div class="cell"><span class="mono-label">Installs a profile into</span><p>Claude Code, Codex, Cursor, Gemini, OpenCode, or any AGENTS.md repo</p></div>
+    <div class="cell"><span class="mono-label">Also</span><p>An MCP server, MIT licensed</p></div>
   </div>
 </div>
 
-<section id="not-memory">
+<section class="mine" id="mine">
   <div class="wrap">
-    <div class="sec-head reveal"><span class="num">I.</span><h2>Not memory.</h2></div>
-    <div class="split reveal">
-      <div class="left">
-        <span class="label">Memory</span>
-        <h3>What you told the model</h3>
-        <p>Your CLAUDE.md, your rules file, the preferences you remembered to write down on a good day.</p>
+    <figure class="portrait reveal">
+      <img src="assets/emulo.png" alt="Emulo engraving: a human and a machine head back to back" loading="lazy">
+      <figcaption class="wall-label">
+        <strong>you.md, an excerpt</strong>
         <ul>
-          <li>Written once, goes stale</li>
-          <li>Only the rules you noticed</li>
-          <li>How you think you work</li>
+          <li><b>Done means it runs live.</b> Never trust "done" off a code edit.</li>
+          <li><b>Fix the one thing.</b> Rewriting what isn't broken gets rejected.</li>
+          <li><b>No walls of text.</b> Short, concrete, no hype.</li>
         </ul>
-      </div>
-      <div class="right">
-        <span class="label red">Emulo</span>
-        <h3>What your work proved</h3>
-        <p>Mined from the raw session logs: every rejection, every "that's not done", every time you asked for proof.</p>
-        <ul>
-          <li>What you reject on sight</li>
-          <li>What "done" actually means to you</li>
-          <li>How you talk when you're really working</li>
-        </ul>
-      </div>
+        <small>From the author's own profile, mined from 1,656 sessions over nine months. Yours comes from your logs and will read nothing like it.</small>
+      </figcaption>
+    </figure>
+
+    <div class="mine-copy">
+      <h2 class="reveal">When a report is not enough, mine a profile.</h2>
+      <p class="lede reveal">A you.md is a plain file your agent reads before a task: the rules that keep showing up across your sessions, each one carrying the dated quotes it came from. You can open it, edit it, or delete it.</p>
+      <ol class="seq reveal">
+        <li>
+          <span class="step-no">1</span>
+          <div>
+            <h3><span class="p">$</span>emulo</h3>
+            <p>Reads the same logs, keeps only what you typed, redacts secrets, and writes your history into chunks with a <code>RUN_ME.md</code> beside them. No model call yet.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-no">2</span>
+          <div>
+            <h3>read emulo-out/RUN_ME.md and follow it</h3>
+            <p>Say that to your coding agent. This is the step that spends model calls: it reads each chunk and writes <code>you.md</code>, and it shows you the plan and the cost before it starts.</p>
+          </div>
+        </li>
+      </ol>
+      <p class="agent-route reveal">Prefer to stay inside your agent? <code>npx skills add ohad6k/emulo@emulo</code>, then tell it <code>run emulo</code>.</p>
     </div>
   </div>
 </section>
 
-<section id="laws">
+<section class="verify" id="verify">
   <div class="wrap">
-    <div class="sec-head reveal"><span class="num">II.</span><h2>The rules nobody wrote down.</h2></div>
-    <div class="laws reveal">
-      <div class="laws-head">
-        <span class="label">Laws · ranked by how many of the 20 mining agents found each</span>
-        <span class="label red">17/20 consensus</span>
-      </div>
-      <div class="law">
-        <span class="lex">LEX I</span>
-        <span class="t"><b>Done means it runs live.</b> Never trust "done" off a code edit.</span>
-        <span class="score">17/20</span>
-      </div>
-      <div class="law">
-        <span class="lex">LEX II</span>
-        <span class="t"><b>Fix the one thing.</b> Rewriting what isn't broken gets rejected.</span>
-        <span class="score">15/20</span>
-      </div>
-      <div class="law">
-        <span class="lex">LEX III</span>
-        <span class="t"><b>No walls of text.</b> Short, concrete, no hype.</span>
-        <span class="score">14/20</span>
-      </div>
-      <div class="uncomfortable">
-        <span class="label">The uncomfortable one</span>
-        <q>asks for proof more the closer a task gets to shipping, and never on day one</q>
+    <div>
+      <span class="step-no reveal">3</span>
+      <h2 class="reveal">Check every quote before you trust a single rule.</h2>
+      <p class="lede reveal"><code>emulo verify you.md</code> pulls every quote out of the profile and searches your mined sessions for it. A rule is only as good as its receipt, and this is how you find out which receipts are real.</p>
+      <p class="verify-after reveal">Then install what survives: <code>emulo --install you.md --target claude</code>, or codex, cursor, gemini, opencode, agents. Whether a rule is vague, or true of every developer alive, is still your call.</p>
+    </div>
+    <div>
+      <div class="verdicts reveal">
+        <div class="verdict">
+          <span class="stamp ok">traced</span>
+          <div><q><span class="frac">29/30</span> quotes traced to a real session.</q><p>The quote is in your logs. The rule behind it has something to stand on.</p></div>
+        </div>
+        <div class="verdict">
+          <span class="stamp">one session</span>
+          <div><q>That is context, not a rule.</q><p>Found, but only once. Worth reading before you keep it.</p></div>
+        </div>
+        <div class="verdict">
+          <span class="stamp bad">NOT FOUND</span>
+          <div><q>Cut those rules.</q><p>The quote appears in no session, so the receipt was invented. The command exits non-zero.</p></div>
+        </div>
       </div>
     </div>
-    <p class="yours-note reveal">This is one person's mine. <b>Yours is pulled from your own logs and will read nothing like it.</b></p>
-  </div>
-</section>
-
-<section class="how" id="how">
-  <div class="wrap">
-    <div class="sec-head reveal"><span class="num">III.</span><h2>How the mine works.</h2></div>
-    <div class="steps reveal">
-      <div class="step">
-        <div class="num">1</div>
-        <h3>Reads your history</h3>
-        <p>Pulls every message you typed from your local Claude Code, Codex, Copilot CLI, OpenCode and Antigravity logs. Strips tool output, pasted errors, file dumps. Keeps only your words.</p>
-      </div>
-      <div class="step">
-        <div class="num">2</div>
-        <h3>Mines the patterns</h3>
-        <p>Agents read each slice of your history and pull the repeated traits: how you define done, what you reject, when you ask for proof, how you actually talk.</p>
-      </div>
-      <div class="step">
-        <div class="num">3</div>
-        <h3>Writes <code>you.md</code></h3>
-        <p>The repeated traits merge into one profile, with dated receipts from real sessions. Installs as a skill, so your agent reads it before every task.</p>
-      </div>
+    <div class="direction reveal">
+      <h3>Where this is going, and where it is today.</h3>
+      <p>The aim is an agent that already works the way you do. It is an aim, not a result. In a 60 run test written down in advance, a real mined profile changed the output compared with no profile at all, but it did not beat an invented profile of the same length. <a href="/placebo">Read the test</a></p>
     </div>
-    <p class="privacy reveal"><b>Emulo reads your private session logs, so it is built to never move them.</b> Everything runs on your machine, secrets are redacted before a single line is written, and the profile stays in a local file you can open, edit, or delete.</p>
   </div>
 </section>
 
 <section class="pricing" id="pricing">
   <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="num">IV.</span>
-      <div>
-        <span class="label">Free forever, and one thing I do by hand</span>
-        <h2>The tool is free. The judgment is the part you pay for.</h2>
-        <p>Emulo runs on your machine and stays free and MIT forever. What it cannot do is tell you which of the rules it mined are actually true about you. That pass is judgment, and I do it by hand.</p>
-      </div>
+    <div class="head reveal">
+      <h2>The tool is free, and it stays free.</h2>
+      <p>Everything above runs from one MIT licensed tool on your own machine. There is one small paid thing next to it, done by hand, and you never need it to get value from the rest.</p>
     </div>
     <div class="price-ledger reveal">
       <article class="price-pane price-free">
-        <span class="label">Emulo</span>
         <h3>Free and open source.</h3>
-        <p>Mine your own sessions and keep the resulting you.md on your machine. The core product stays useful without a cloud account.</p>
+        <p>No account, no cloud, nothing to sign up for. Your logs and your profile stay local files.</p>
         <div class="price-mark"><strong>$0</strong><span>forever</span></div>
         <ul class="price-list">
-          <li>Local session mining</li>
-          <li>Editable, portable you.md</li>
-          <li>MIT licensed source</li>
-          <li>No subscription</li>
+          <li>The coach report, with no model call</li>
+          <li>Local mining into an editable, portable you.md</li>
+          <li>emulo verify on every quote in it</li>
+          <li>No subscription, and MIT licensed source</li>
         </ul>
         <a class="price-link" href="https://github.com/ohad6k/emulo">Get Emulo</a>
       </article>
 
-      <article class="price-pane price-pro">
-        <span class="label pro-label">Profile Build</span>
-        <h3>I read your receipts and cut what cannot be defended.</h3>
-        <p>Mining takes seconds. Deciding which of the mined rules are actually true about you, and cutting the rest, is the part that takes judgment, and it is the part most people never finish. I do that pass by hand.</p>
-        <ul class="price-list">
-          <li>Every rule whose quote appears in none of your sessions removed, not softened</li>
-          <li>Every rule that would be true of any developer removed as well</li>
-          <li>What survives restructured into work, design, write and video layers</li>
-          <li>The exact install lines for the agents you actually use</li>
-          <li>A written read of what your own logs say about how you work the model</li>
-        </ul>
-        <div class="pro-plans">
-          <div class="pro-plan">
-            <div><strong>Profile Build</strong><small>Back in three business days</small></div>
-            <div class="amount">$300 <span>one time</span></div>
-          </div>
-        </div>
-        <p class="pro-note">You send two files, both written by the free tool on your own machine: <code>python emulo.py</code> for the draft, then <code>python emulo.py --coach --json</code> for the receipts. I never ask for your session logs and I never see them. If it does not contain at least three rules you agree with and would never have thought to write down, I refund you and tell you why. Paid by invoice or PayPal, so it does not go through a store. <a href="mailto:ohadkrispin@gmail.com?subject=Emulo%20Profile%20Build">ohadkrispin@gmail.com</a></p>
+      <article class="price-pane price-build">
+        <h3>Profile Build</h3>
+        <p class="lede">An editing pass on a profile you already mined and verified.</p>
+        <p>I read your you.md against its verify results, cut the rules whose quotes did not trace or that would be true of any developer, and tighten what is left into short rules an agent can act on. You are paying for the editing time. It is not a promise about how your agent will behave.</p>
+        <div class="build-price"><strong>$300</strong><span>one time</span><span aria-hidden="true">&middot;</span><span>Back in three business days</span></div>
+        <p class="intake">You send two files, both written by the free tool on your machine: your <code>you.md</code> and the output of <code>emulo verify you.md --json</code>. I never ask for your session logs and I never see them. Paid by invoice or PayPal. Write to <a href="mailto:ohadkrispin@gmail.com?subject=Emulo%20Profile%20Build">ohadkrispin@gmail.com</a></p>
       </article>
     </div>
   </div>
 </section>
 
-<div class="works" aria-label="Works with Claude Code, Codex, Cursor, Copilot CLI and OpenCode">
-  <div class="lane">
-    <div class="set">
-      <span>Claude Code</span><span class="dot">·</span>
-      <span>Codex</span><span class="dot">·</span>
-      <span>Cursor</span><span class="dot">·</span>
-      <span>Copilot CLI</span><span class="dot">·</span>
-      <span>OpenCode</span><span class="dot">·</span>
-    </div>
-    <div class="set" aria-hidden="true">
-      <span>Claude Code</span><span class="dot">·</span>
-      <span>Codex</span><span class="dot">·</span>
-      <span>Cursor</span><span class="dot">·</span>
-      <span>Copilot CLI</span><span class="dot">·</span>
-      <span>OpenCode</span><span class="dot">·</span>
-    </div>
-  </div>
-</div>
-
 <section class="faq" id="faq">
   <div class="wrap">
-    <div class="sec-head reveal"><span class="num">IV.</span><h2>Questions.</h2></div>
+    <h2 class="reveal">Questions.</h2>
     <div class="q-list reveal">
       <div class="q">
         <h3>How do I make my AI agent write code the way I do?</h3>
-        <p>Give it evidence instead of instructions. Your session logs already record how you decide, what you reject, and what you call done. Emulo reads those logs, mines the repeated patterns, and writes a <code>you.md</code> your agent loads before every task, so it starts from your standards instead of a blank slate.</p>
+        <p>Start with what it keeps missing. The free report shows where you repeat yourself to the agent. Mining goes further: it turns the rules that recur across your sessions into a <code>you.md</code> your agent loads before a task, with dated quotes behind every rule. Whether that changes how the agent works for you is worth testing on your own work. Our own <a href="/placebo">60 run test</a> is public, including the part that did not go our way.</p>
       </div>
       <div class="q">
         <h3>How is this different from agent memory?</h3>
-        <p>Memory stores what you told the model. Emulo mines what your work already proved about you, which is a different input entirely.</p>
-        <p>That is why it reads raw session logs and not your <code>CLAUDE.md</code>. The rules you remembered to write down on a good day are a small and flattering subset of how you actually work.</p>
+        <p>Memory stores what you told the model. Emulo reads the messages you actually typed across many sessions and pulls out what keeps recurring, with the dates it came from. The rules you remembered to write down on a good day are usually a smaller set than that.</p>
       </div>
       <div class="q">
         <h3>Is this just a CLAUDE.md or a rules file?</h3>
-        <p>No. A rules file is written by hand, so it captures intentions. Emulo's profile is derived from real sessions, with dated receipts pointing back at the ones that support each trait, so you can check any claim it makes about you.</p>
+        <p>The output is a file like that, and you can edit it like one. The difference is where it comes from. Every rule is derived from real sessions and carries dated quotes, and <code>emulo verify</code> checks that each quote actually exists in your logs.</p>
       </div>
       <div class="q">
         <h3>Do my session logs leave my machine?</h3>
-        <p>Session extraction, redaction, caching, and the profile itself all stay local, and secrets are redacted before anything is written. The one exception is mining: if you point it at a hosted model, the selected evidence goes to that provider. Choosing a local model keeps the whole run on your machine.</p>
+        <p>The coach report makes no model call and runs entirely on your machine. For a profile, extraction, redaction, caching and the profile itself stay local, and secrets are redacted before anything is written. The one exception is the mining pass: if your agent uses a hosted model, the selected evidence goes to that provider. A local model keeps the whole run on your machine.</p>
       </div>
       <div class="q">
         <h3>Which coding agents does it work with?</h3>
-        <p>It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box, and installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load the profile before a task.</p>
+        <p>It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions, but it installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load the profile before a task.</p>
       </div>
       <div class="q">
         <h3>What does it cost to run?</h3>
-        <p>The tool is MIT licensed and free. Mining spends model calls to read your history, so Emulo prints a read-only plan with the cost first and waits for your approval before any model work starts.</p>
+        <p>The tool is MIT licensed and free. The coach report makes no model call, so running it costs nothing. Mining spends model calls to read your history, so Emulo prints a read-only plan with the cost first and waits for your approval before any model work starts.</p>
       </div>
       <div class="q">
         <h3>How much history do I need?</h3>
-        <p>It mines whatever you have. Patterns get sharper with more sessions, since a trait only earns a place in the profile when separate sessions keep supporting it. The profile on this page came from 1,656 sessions over nine months.</p>
+        <p>Any. The report counts whatever you have. For a profile, more sessions help, since a rule only earns a place when separate sessions keep supporting it. The example profile on this page came from 1,656 sessions over nine months.</p>
       </div>
     </div>
   </div>
@@ -790,26 +720,24 @@ footer a:hover{color:var(--red)}
 
 <section class="final">
   <div class="wrap">
-    <img class="engrave reveal" src="assets/emulo.png" alt="">
-    <h2 class="reveal">Stop starting from zero.</h2>
-    <p class="sub reveal">One command. Your logs become the profile your agent reads first.</p>
-    <div class="cta-row reveal">
+    <img class="engrave reveal" src="assets/emulo.png" alt="" loading="lazy">
+    <h2 class="reveal">Start with the free report.</h2>
+    <div class="row reveal">
+      <button class="cmd" type="button" data-cmd="uvx emulo --coach" aria-label="Copy the command uvx emulo --coach">
+        <span><span class="dollar">$</span>uvx emulo --coach</span>
+        <span class="copy" aria-hidden="true">Copy</span>
+      </button>
       <a class="btn-star" href="https://github.com/ohad6k/emulo">
-        <span class="star">★</span> <span>Star on GitHub</span> <span class="count" id="star-count-2"></span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.8 6.2 6.7.6-5.1 4.5 1.5 6.6L12 17.1l-5.9 3.4 1.5-6.6-5.1-4.5 6.7-.6z"/></svg>
+        <span>Star on GitHub</span> <span class="count" id="star-count-2"></span>
       </a>
-      <span class="cmd" title="Copy install command">
-        <span><span class="dollar">$</span> npx skills add ohad6k/emulo@emulo</span>
-        <button aria-label="Copy command">Copy</button>
-      </span>
     </div>
-    <p class="alt-cmd reveal">or <code>pip install emulo</code> to run it yourself</p>
-    <div class="barcode reveal" aria-hidden="true"></div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <span>Emulo · MIT · built from my own logs</span>
+    <span>Emulo · MIT · built by <a href="https://ohad-motion.vercel.app/">Ohad Krispin</a></span>
     <span>
       <a href="https://github.com/ohad6k/emulo">GitHub</a> &nbsp;·&nbsp;
       <a href="https://discord.gg/QMnYtVcxk2">Discord</a> &nbsp;·&nbsp;
@@ -824,9 +752,8 @@ footer a:hover{color:var(--red)}
 <script>
 const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// entrance choreography
+// entrance
 window.addEventListener("load", () => document.body.classList.add("loaded"));
-// fallback if load stalls on slow font fetch
 setTimeout(() => document.body.classList.add("loaded"), 1200);
 
 // live star count; if the API fails the button just says "Star on GitHub"
@@ -839,78 +766,74 @@ fetch("https://api.github.com/repos/ohad6k/emulo")
   })
   .catch(() => {});
 
-// copy command: whole chip is clickable, selection fallback if clipboard is blocked
-const CMD = "npx skills add ohad6k/emulo@emulo";
-document.querySelectorAll(".cmd").forEach(chip => {
-  const btn = chip.querySelector("button");
-  chip.addEventListener("click", e => {
-    e.preventDefault();
+// copy a command; selection fallback if the clipboard is blocked
+document.querySelectorAll(".cmd[data-cmd]").forEach(chip => {
+  const label = chip.querySelector(".copy");
+  chip.addEventListener("click", () => {
+    const text = chip.dataset.cmd;
     const done = ok => {
-      btn.textContent = ok ? "Copied" : "Select + C";
-      setTimeout(() => btn.textContent = "Copy", 1400);
+      label.textContent = ok ? "Copied" : "Select + C";
+      chip.classList.toggle("done", ok);
+      setTimeout(() => { label.textContent = "Copy"; chip.classList.remove("done"); }, 1400);
     };
-    navigator.clipboard.writeText(CMD).then(() => done(true)).catch(() => {
+    const fallback = () => {
       const range = document.createRange();
       range.selectNodeContents(chip.querySelector("span"));
       const sel = window.getSelection();
       sel.removeAllRanges(); sel.addRange(range);
-      done(document.execCommand && document.execCommand("copy"));
-    });
+      let ok = false;
+      try { ok = document.execCommand && document.execCommand("copy"); } catch (e) {}
+      done(!!ok);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => done(true)).catch(fallback);
+    } else fallback();
   });
 });
 
 // reveal on scroll
 const io = new IntersectionObserver(entries => {
   entries.forEach(en => { if (en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); } });
-}, { threshold: .12 });
+}, { threshold: .14 });
 document.querySelectorAll(".reveal").forEach(el => io.observe(el));
 
-// stat count-up
-function countUp(el){
-  const target = parseInt(el.dataset.count, 10);
-  const fmt = el.dataset.format;
-  const dur = 1400, t0 = performance.now();
-  const render = v => {
-    if (fmt === "comma") el.textContent = Math.round(v).toLocaleString("en-US");
-    else if (fmt === "m") el.textContent = (v / 10).toFixed(1) + "M";
-    else el.textContent = Math.round(v);
+// the report prints: the command types, then each line lands in order.
+// Everything is in the HTML already, so without JS or with reduced motion
+// the full report simply shows.
+(function(){
+  const term = document.getElementById("term");
+  if (!term || reduced) return;
+  const lines = [...term.querySelectorAll(".l")];
+  const typed = term.querySelector(".typed");
+  const full = typed.dataset.text;
+  term.classList.add("printing");
+  typed.textContent = "";
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    typed.textContent = full;
+    lines.forEach(l => l.classList.add("on"));
   };
-  if (reduced){ render(target); return; }
-  (function tick(now){
-    const p = Math.min((now - t0) / dur, 1);
-    render(target * (1 - Math.pow(1 - p, 3)));
-    if (p < 1) requestAnimationFrame(tick);
-  })(t0);
-}
-const statIo = new IntersectionObserver(entries => {
-  entries.forEach(en => { if (en.isIntersecting){ countUp(en.target); statIo.unobserve(en.target); } });
-}, { threshold: .6 });
-document.querySelectorAll(".stat .n").forEach(el => statIo.observe(el));
-
-// hero engraving parallax: mouse drift + scroll, lerped for weight
-const art = document.querySelector("#hero-art img");
-if (art){
-  // release the entrance animation's forwards-fill so parallax can own transform
-  art.addEventListener("animationend", () => {
-    art.style.opacity = "1";
-    art.style.animation = "none";
-  }, { once: true });
-}
-if (art && !reduced && matchMedia("(pointer:fine)").matches && innerWidth > 960){
-  let mx = 0, my = 0, tx = 0, ty = 0;
-  addEventListener("mousemove", e => {
-    mx = (e.clientX / innerWidth - .5) * 14;
-    my = (e.clientY / innerHeight - .5) * 10;
-  }, { passive: true });
-  (function step(){
-    tx += (mx - tx) * .06; ty += (my - ty) * .06;
-    const sy = Math.min(scrollY, 800) * .045;
-    const bob = Math.sin(performance.now() / 1400) * 5;
-    art.style.transform =
-      `translate(${tx}px, ${ty - sy + bob}px) rotateY(${(tx * .42).toFixed(2)}deg) rotateX(${(-ty * .38).toFixed(2)}deg)`;
-    requestAnimationFrame(step);
-  })();
-}
+  setTimeout(finish, 6000); // never leave the exhibit half printed
+  const start = () => {
+    lines[0].classList.add("on");
+    let i = 0;
+    (function type(){
+      if (finished) return;
+      typed.textContent = full.slice(0, ++i);
+      if (i < full.length) return setTimeout(type, 42 + Math.random() * 38);
+      let k = 1;
+      setTimeout(function next(){
+        if (finished || k >= lines.length) return finish();
+        lines[k++].classList.add("on");
+        setTimeout(next, k === 2 ? 520 : 95);
+      }, 380);
+    })();
+  };
+  if (document.readyState === "complete") setTimeout(start, 500);
+  else window.addEventListener("load", () => setTimeout(start, 500));
+})();
 
 // scroll progress hairline
 const prog = document.getElementById("progress");
@@ -923,88 +846,6 @@ const paintProg = () => {
 addEventListener("scroll", () => {
   if (!progTick){ progTick = true; requestAnimationFrame(paintProg); }
 }, { passive: true });
-
-// ghost log lines: faint fragments of a mined history drifting under the page
-(function(){
-  if (reduced) return;
-  const cv = document.getElementById("ghost");
-  const ctx = cv.getContext("2d");
-  const FRAGS = [
-    "$ npx skills add ohad6k/emulo@emulo",
-    "done means it runs live",
-    "fix the one thing",
-    "show me, don't tell me",
-    "session 0412 · 02:14",
-    "rejected: wall of text",
-    "you.md",
-    "LEX I · 17/20",
-    "prove it first",
-    "keeps only your words",
-    "1,656 sessions",
-    "not done yet",
-    "what your work proved",
-    "session 1093 · 23:47",
-    "no fake data",
-    "redacted before writing"
-  ];
-  let W, H, dpr, parts = [];
-  // deterministic-ish PRNG so density stays stable
-  let s = 42;
-  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
-  function size(){
-    dpr = Math.min(devicePixelRatio || 1, 1.5);
-    W = innerWidth; H = innerHeight;
-    cv.width = W * dpr; cv.height = H * dpr;
-    cv.style.width = W + "px"; cv.style.height = H + "px";
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.font = "11px 'IBM Plex Mono', monospace";
-  }
-  function spawn(i, fresh){
-    const depth = .4 + rnd() * .6;
-    parts[i] = {
-      text: FRAGS[Math.floor(rnd() * FRAGS.length)],
-      x: rnd() * W,
-      y: fresh ? H + 20 + rnd() * 80 : rnd() * H,
-      v: (0.06 + rnd() * .12) * depth,
-      depth,
-      o: 0,
-      life: 0,
-      maxLife: 1400 + rnd() * 1200
-    };
-  }
-  const N = Math.min(26, Math.floor(innerWidth / 55));
-  for (let i = 0; i < N; i++) spawn(i, false);
-  size();
-  addEventListener("resize", size, { passive: true });
-  let running = true;
-  document.addEventListener("visibilitychange", () => {
-    running = !document.hidden;
-    if (running) requestAnimationFrame(frame);
-  });
-  window.__ghost = {
-    pause(){ running = false; },
-    resume(){ if (!running){ running = true; requestAnimationFrame(frame); } }
-  };
-  function frame(){
-    if (!running) return;
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = "#161309";
-    for (let i = 0; i < parts.length; i++){
-      const p = parts[i];
-      p.y -= p.v;
-      p.life++;
-      const fadeIn = Math.min(p.life / 120, 1);
-      const fadeOut = Math.min((p.maxLife - p.life) / 160, 1);
-      p.o = .052 * p.depth * Math.min(fadeIn, fadeOut);
-      if (p.life > p.maxLife || p.y < -20){ spawn(i, true); continue; }
-      ctx.globalAlpha = Math.max(p.o, 0);
-      ctx.fillText(p.text, p.x, p.y);
-    }
-    ctx.globalAlpha = 1;
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-})();
 </script>
 </body>
 </html>
