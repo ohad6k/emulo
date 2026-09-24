@@ -551,5 +551,159 @@ class CoachHistoryEdgeTest(unittest.TestCase):
             self.assertEqual(len(report["clean"]), 4)
 
 
+def desktop_turn(text, minute=0):
+    # The shape Claude Desktop logs for a prompt sent through its SDK session,
+    # which is how the real mining prompts were recorded.
+    return {
+        "type": "user",
+        "entrypoint": "claude-desktop",
+        "promptSource": "sdk",
+        "isSidechain": False,
+        "userType": "external",
+        "timestamp": f"2026-09-20T10:{minute:02d}:00Z",
+        "message": {"role": "user", "content": text},
+    }
+
+
+class EmuloChunkTest(unittest.TestCase):
+    """Emulo's own mining chunks are not something the user typed.
+
+    Mining a history means handing chunks to an agent. Each prompt that carries
+    a chunk is logged as a user message, so the next run read Emulo's own output
+    back as the person's words: --coach counted the markers quoted inside it, and
+    mining learned from its own input. On one real history, 10 of 66
+    restated-context matches came from these prompts.
+    """
+
+    SOURCE_MESSAGES = [
+        "as i said, the header stays fixed on scroll",
+        "i already told you to keep the release notes short",
+        "like i said, never deploy from a feature branch",
+        "use pnpm for every install in this repo",
+    ]
+    GENUINE = "ship the settings page once the suite is green"
+
+    def _real_chunk(self, tmp):
+        """A chunk written by Emulo's own writer, not a hand-typed guess."""
+        source = Path(tmp) / "source-logs"
+        write_jsonl(source / "session.jsonl", [
+            codex_turn(text, minute) for minute, text in enumerate(self.SOURCE_MESSAGES)
+        ])
+        mined = emulo.mine_files(emulo.discover_files([str(source)]))
+        out = Path(tmp) / "emulo-out"
+        count = emulo.write_outputs(mined["blocks"], str(out), 1)
+        self.assertEqual(count, 1)
+        chunk = (out / "chunks" / "chunk-01.txt").read_text(encoding="utf-8")
+        self.assertTrue(chunk.startswith("===== session:"), chunk[:60])
+        return chunk, (out / "RUN_ME.md").read_text(encoding="utf-8")
+
+    def _history(self, tmp, *texts):
+        logs = Path(tmp) / "logs"
+        write_jsonl(logs / "session.jsonl", [
+            desktop_turn(text, minute) for minute, text in enumerate(texts)
+        ])
+        return logs
+
+    def _coach(self, tmp, logs):
+        proc = subprocess.run(
+            [sys.executable, str(EMULO), "--coach", "--path", str(logs), "--json"],
+            capture_output=True, text=True, cwd=tmp,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return json.loads(proc.stdout)
+
+    def test_a_chunk_sent_under_an_instruction_is_not_extracted(self):
+        # The real shape: the chunk follows an instruction, so it never opens the message.
+        with tempfile.TemporaryDirectory() as tmp:
+            chunk, _ = self._real_chunk(tmp)
+            prompt = "Pull evidence for four domains from this chunk.\n\n" + chunk
+            logs = self._history(tmp, prompt, self.GENUINE)
+            texts = [text for _, text in emulo.user_messages(str(logs / "session.jsonl"))]
+            self.assertEqual(texts, [self.GENUINE])
+
+    def test_a_chunk_pasted_on_its_own_is_not_extracted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            chunk, _ = self._real_chunk(tmp)
+            logs = self._history(tmp, chunk, self.GENUINE)
+            texts = [text for _, text in emulo.user_messages(str(logs / "session.jsonl"))]
+            self.assertEqual(texts, [self.GENUINE])
+
+    def test_a_chunk_with_windows_line_endings_is_not_extracted(self):
+        # The real prompts were logged with CRLF line endings.
+        with tempfile.TemporaryDirectory() as tmp:
+            chunk, _ = self._real_chunk(tmp)
+            prompt = ("Below is one chunk.\n\n" + chunk).replace("\n", "\r\n")
+            logs = self._history(tmp, prompt, self.GENUINE)
+            texts = [text for _, text in emulo.user_messages(str(logs / "session.jsonl"))]
+            self.assertEqual(texts, [self.GENUINE])
+
+    def test_coach_does_not_count_markers_inside_a_chunk(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            chunk, _ = self._real_chunk(tmp)
+            prompt = "Pull evidence for four domains from this chunk.\n\n" + chunk
+            logs = self._history(tmp, prompt, prompt + "\n", self.GENUINE)
+            report = self._coach(tmp, logs)
+            self.assertEqual(report["messages"], 1)
+            self.assertIsNone(by_key(report, "restated_context"))
+
+    def test_mining_does_not_read_its_own_chunk_back(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            chunk, _ = self._real_chunk(tmp)
+            prompt = "Pull evidence for four domains from this chunk.\n\n" + chunk
+            logs = self._history(tmp, prompt, self.GENUINE)
+            mined = emulo.mine_files(emulo.discover_files([str(logs)]))
+            self.assertEqual(mined["messages"], 1)
+            corpus = "\n".join(mined["blocks"])
+            self.assertIn(self.GENUINE, corpus)
+            for text in self.SOURCE_MESSAGES:
+                self.assertNotIn(text, corpus)
+
+    def test_an_adaptive_receipt_packet_is_injected(self):
+        packet = emulo.render_receipt_packet({"receipts": [{
+            "receipt_id": "rcpt-0123456789abcdef0123",
+            "session_id": "0123456789abcdef",
+            "source": "claude",
+            "date": "2026-09-20",
+            "text": "as i said, the header stays fixed on scroll",
+        }]})
+        self.assertTrue(emulo.is_injected_context("Read this packet.\n\n" + packet))
+
+    def test_the_marker_named_in_prose_is_kept(self):
+        # Only a whole line in Emulo's exact format counts, so talking about the
+        # format, or a line that merely looks similar, is still your message.
+        for text in (
+            "the chunk opens with ===== session:abc source:claude ===== and I want that gone",
+            "why does it print\n=====\nsession: abc\nand then stop",
+            "===== session notes =====\nkeep the header fixed",
+            "===== session:abc =====\nno source on this line, so it is not Emulo's",
+            "===== session:abc source:claude =====\rjunk after a bare carriage return",
+            "====== session:abc source:claude =====\nsix on the left is a heading, not a chunk",
+            "===== session:abc source:claude ======\nsix on the right is a heading, not a chunk",
+            "==== session:abc source:claude ====\nfour on each side is a heading, not a chunk",
+            "see: ===== session:abc source:claude =====\nwhy does emulo print this line?",
+        ):
+            self.assertFalse(emulo.is_injected_context(text), text)
+
+    def test_run_me_reaches_the_agent_as_a_tool_result_and_is_not_extracted(self):
+        # Guard, not evidence for the fix: the documented flow has you type one short
+        # instruction, which is your own message and is kept, and the agent reads
+        # RUN_ME.md through a tool, which Claude Code logs as a tool result.
+        with tempfile.TemporaryDirectory() as tmp:
+            _, run_me = self._real_chunk(tmp)
+            instruction = "read emulo-out/RUN_ME.md and follow it"
+            tool_result = {
+                "type": "user",
+                "timestamp": "2026-09-20T10:05:00Z",
+                "toolUseResult": {"type": "text"},
+                "message": {"role": "user", "content": [
+                    {"type": "tool_result", "tool_use_id": "toolu_1", "content": run_me},
+                ]},
+            }
+            logs = Path(tmp) / "logs"
+            write_jsonl(logs / "session.jsonl", [desktop_turn(instruction), tool_result])
+            texts = [text for _, text in emulo.user_messages(str(logs / "session.jsonl"))]
+            self.assertEqual(texts, [instruction])
+
+
 if __name__ == "__main__":
     unittest.main()

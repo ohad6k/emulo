@@ -228,9 +228,26 @@ USER_LINE_MARKERS = (
     '"type": "USER_INPUT"',
 )
 
+# Emulo's own chunk format: every session in a chunk, segment or receipt packet
+# opens with one of these lines, and nothing else writes them. Mining a history
+# means handing chunks to an agent, and each prompt that carries one is logged
+# as a user message, so the next run read Emulo's own output back as the
+# person's words. --coach counted the markers quoted inside it, and mining
+# learned from its own input. Matched as a whole line anywhere in the message,
+# not as a prefix, because the chunk usually follows an instruction. Explicit
+# ASCII classes and \r?\n instead of re.MULTILINE keep this identical to the
+# browser port, where ^ and $ also break on a bare \r.
+EMULO_CHUNK_MARKER = re.compile(
+    r"(?:\A|\n)===== (?:session:[A-Za-z0-9_-]+ source:[a-z0-9_-]+"
+    r"|receipt:[A-Za-z0-9_-]+ session:[A-Za-z0-9_-]+ source:[a-z0-9_-]+ date:[A-Za-z0-9_-]+)"
+    r" =====[ \t]*(?:\r?\n|\Z)"
+)
+
 def is_injected_context(text):
     stripped = text.lstrip()
-    return any(stripped.startswith(prefix) for prefix in INJECTED_CONTEXT_PREFIXES)
+    if any(stripped.startswith(prefix) for prefix in INJECTED_CONTEXT_PREFIXES):
+        return True
+    return EMULO_CHUNK_MARKER.search(stripped) is not None
 
 def _opencode_ts(ms):
     try:
@@ -4344,7 +4361,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-EMULO_VERSION = "0.6.4"
+EMULO_VERSION = "0.6.5"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 AUTOPILOT_HEAD_SCHEMA = "emulo.autopilot-head/v1"
 AUTOPILOT_GENERATION_SCHEMA = "emulo.autopilot-generation/v1"

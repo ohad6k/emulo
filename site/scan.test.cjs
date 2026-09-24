@@ -290,3 +290,69 @@ test('unclosed curly quotes stay linear on a long paste, so the page never freez
   core.usageReport([record]);
   assert.ok(performance.now() - start < 2000, 'masking a long German-quoted paste must stay fast');
 });
+
+function emuloChunk(messages) {
+  // A chunk written by Emulo's own Python writer, so the page is tested against the real format.
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'emulo-scan-chunk-'));
+  try {
+    const source = path.join(root, 'source');
+    fs.mkdirSync(source, { recursive: true });
+    fs.writeFileSync(path.join(source, 'session.jsonl'), messages.map((text, index) => line({
+      timestamp: `2026-07-08T10:0${index}:00Z`,
+      payload: { type: 'message', role: 'user', content: [{ text }] },
+    })).join('\n'), 'utf8');
+    const python = spawnSync('python', ['-c', [
+      'import os, sys',
+      'import emulo',
+      'mined = emulo.mine_files(emulo.discover_files([sys.argv[1]]))',
+      'out = os.path.join(sys.argv[2], "emulo-out")',
+      'emulo.write_outputs(mined["blocks"], out, 1)',
+      'sys.stdout.buffer.write(open(os.path.join(out, "chunks", "chunk-01.txt"), "rb").read())',
+    ].join('\n'), source, root], { cwd: path.join(__dirname, '..'), encoding: 'utf8' });
+    assert.equal(python.status, 0, python.stderr);
+    assert.match(python.stdout, /^===== session:[A-Za-z0-9_-]+ source:[a-z0-9_-]+ =====\n/);
+    return python.stdout;
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test('an Emulo chunk sent to an agent is not read back as the user, same as Python', async () => {
+  // Mining a history means handing chunks to an agent, and each of those prompts is logged as a
+  // user message. Reading them back counted the markers inside them as the person restating things.
+  const chunk = emuloChunk([
+    'as i said, the header stays fixed on scroll',
+    'i already told you to keep the release notes short',
+    'like i said, never deploy from a feature branch',
+  ]);
+  const genuine = ['ship the settings page once the suite is green', 'use pnpm for every install'];
+  const report = await coachParity([
+    genuine[0],
+    `Pull evidence for four domains from this chunk.\n\n${chunk}`,
+    chunk,
+    `Below is one chunk.\r\n\r\n${chunk.replace(/\n/g, '\r\n')}`,
+    genuine[1],
+  ]);
+  assert.equal(report.messages, 2);
+  assert.equal(report.findings.find((item) => item.key === 'restated_context'), undefined);
+});
+
+test('only a whole line in Emulo\'s exact chunk format marks a message as injected', () => {
+  const { core } = loadCore();
+  assert.equal(core.isInjectedContext('Read this.\n\n===== session:0123456789abcdef source:claude =====\n[2026-09-20]\nhi'), true);
+  assert.equal(core.isInjectedContext('Read this.\r\n\r\n===== session:0123456789abcdef source:claude =====\r\n[2026-09-20]\r\nhi'), true);
+  assert.equal(core.isInjectedContext('Packet.\n\n===== receipt:rcpt-0123456789abcdef0123 session:0123456789abcdef source:claude date:2026-09-20 =====\nhi\n'), true);
+  for (const text of [
+    'the chunk opens with ===== session:abc source:claude ===== and I want that gone',
+    'why does it print\n=====\nsession: abc\nand then stop',
+    '===== session notes =====\nkeep the header fixed',
+    '===== session:abc =====\nno source on this line, so it is not Emulo\'s',
+    '===== session:abc source:claude =====\rjunk after a bare carriage return',
+    '====== session:abc source:claude =====\nsix on the left is a heading, not a chunk',
+    '===== session:abc source:claude ======\nsix on the right is a heading, not a chunk',
+    '==== session:abc source:claude ====\nfour on each side is a heading, not a chunk',
+    'see: ===== session:abc source:claude =====\nwhy does emulo print this line?',
+  ]) {
+    assert.equal(core.isInjectedContext(text), false, text);
+  }
+});
