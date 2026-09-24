@@ -320,9 +320,14 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
     return hits / Math.max(lines.length, 1) > 0.25;
   }
 
+  // Emulo's own chunk format, the same pattern as EMULO_CHUNK_MARKER in emulo.py. A mining
+  // prompt that carries a chunk is logged as a user message, and reading it back counted
+  // Emulo's own output as the person's words. No m flag: ^ and $ would also break on a bare \r.
+  const EMULO_CHUNK_MARKER = /(?:^|\n)===== (?:session:[A-Za-z0-9_-]+ source:[a-z0-9_-]+|receipt:[A-Za-z0-9_-]+ session:[A-Za-z0-9_-]+ source:[a-z0-9_-]+ date:[A-Za-z0-9_-]+) =====[ \t]*(?:\r?\n|$)/;
+
   function isInjectedContext(text) {
     const stripped = String(text || '').trimStart();
-    return INJECTED_CONTEXT_PREFIXES.some((prefix) => stripped.startsWith(prefix));
+    return INJECTED_CONTEXT_PREFIXES.some((prefix) => stripped.startsWith(prefix)) || EMULO_CHUNK_MARKER.test(stripped);
   }
 
   function isHumanTurn(record) {
