@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1600, height=900, initial-scale=1" />
+<title>Ledger — Every subscription your company forgot about.</title>
+<style>
+  :root{
+    --ink:#07090d;
+    --ink2:#0c1017;
+    --paper:#ece8e0;
+    --muted:#8a8f99;
+    --amber:#f5c063;
+    --amber-d:#e8a92f;
+    --mint:#68e0be;
+    --line:rgba(236,232,224,.12);
+    --col:680px;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  #art{position:fixed;inset:0;display:block;z-index:0}
+  .veil{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 8% 0%, rgba(245,192,99,.07), transparent 55%),
+      radial-gradient(90% 80% at 100% 100%, rgba(104,224,190,.05), transparent 60%),
+      radial-gradient(140% 120% at 50% 50%, transparent 40%, rgba(3,4,7,.72) 100%);
+    mix-blend-mode:normal;
+  }
+  .veil::after{
+    content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.016) 0 1px, transparent 1px 3px);
+  }
+
+  .stage{
+    position:relative;z-index:2;
+    height:100vh;width:100vw;
+    padding:60px 0 56px 94px;
+    display:flex;flex-direction:column;align-items:flex-start;
+    max-width:calc(var(--col) + 94px);
+  }
+  .stage > *{animation:rise .95s cubic-bezier(.18,.82,.24,1) both;animation-delay:var(--d,0s)}
+  @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+  /* brand */
+  .brand{display:flex;align-items:center;gap:12px}
+  .mark{width:26px;height:26px;overflow:visible}
+  .mark rect{fill:var(--amber)}
+  .mark .b1{animation:barA 3.6s ease-in-out infinite}
+  .mark .b2{animation:barA 3.6s ease-in-out .35s infinite;opacity:.72}
+  .mark .b3{animation:barA 3.6s ease-in-out .7s infinite;opacity:.45}
+  @keyframes barA{0%,100%{transform:scaleX(1)}45%{transform:scaleX(.42)}}
+  .mark rect{transform-origin:3px center}
+  .brand span{
+    font-size:15px;font-weight:600;letter-spacing:.26em;text-transform:uppercase;
+  }
+  .brand .tick{
+    margin-left:6px;width:5px;height:5px;border-radius:50%;background:var(--mint);
+    box-shadow:0 0 0 0 rgba(104,224,190,.5);animation:ping 2.6s ease-out infinite;
+  }
+
+  h1{
+    margin-top:46px;
+    font-size:70px;line-height:1.02;letter-spacing:-.038em;font-weight:600;
+    text-wrap:balance;
+  }
+  h1 em{
+    font-family:Georgia,"Times New Roman",serif;font-style:italic;font-weight:400;
+    letter-spacing:-.012em;color:var(--amber);
+    animation:emglow 5.2s ease-in-out infinite;
+  }
+  @keyframes emglow{
+    0%,100%{text-shadow:0 0 34px rgba(245,192,99,.16)}
+    50%{text-shadow:0 0 54px rgba(245,192,99,.42)}
+  }
+
+  .actions{margin-top:40px;display:flex;align-items:center;gap:30px}
+  .cta{
+    position:relative;overflow:hidden;border:0;cursor:pointer;
+    font-family:inherit;font-size:15.5px;font-weight:650;letter-spacing:.01em;
+    color:#120d02;background:linear-gradient(180deg,#ffd58a,var(--amber-d));
+    padding:16px 32px;border-radius:100px;
+    animation:ctaGlow 3.4s ease-in-out infinite;
+  }
+  @keyframes ctaGlow{
+    0%,100%{box-shadow:0 8px 30px rgba(232,169,47,.22), 0 0 0 1px rgba(255,214,140,.35) inset}
+    50%{box-shadow:0 10px 46px rgba(232,169,47,.42), 0 0 0 1px rgba(255,236,200,.6) inset}
+  }
+  .cta::after{
+    content:"";position:absolute;inset:-2px;
+    background:linear-gradient(105deg,transparent 36%,rgba(255,255,255,.6) 50%,transparent 64%);
+    transform:translateX(-130%);
+    animation:sheen 4.6s cubic-bezier(.4,0,.2,1) infinite;
+  }
+  @keyframes sheen{0%{transform:translateX(-130%)}55%,100%{transform:translateX(130%)}}
+  .ghost{
+    color:var(--paper);text-decoration:none;font-size:15px;letter-spacing:.005em;
+    display:inline-flex;align-items:center;gap:9px;position:relative;padding-bottom:4px;
+  }
+  .ghost::before{
+    content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;
+    background:linear-gradient(90deg,rgba(236,232,224,.14) 0 40%,var(--amber) 50%,rgba(236,232,224,.14) 60% 100%);
+    background-size:260% 100%;animation:underline 4.2s linear infinite;
+  }
+  @keyframes underline{from{background-position:120% 0}to{background-position:-120% 0}}
+  .ghost .arw{display:inline-block;animation:nudge 2.4s ease-in-out infinite;color:var(--amber)}
+  @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+
+  .what{margin-top:52px;display:flex;align-items:center;gap:16px;width:100%}
+  .what h2{
+    font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--muted);white-space:nowrap;
+  }
+  .what .rule{height:1px;background:var(--line);flex:0 0 26px}
+  .what .rule.grow{flex:1 1 auto;background:linear-gradient(90deg,rgba(236,232,224,.22),transparent)}
+
+  .caps{list-style:none;margin-top:26px;display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;width:100%}
+  .caps li{
+    position:relative;padding:14px 14px 14px 18px;border-radius:10px;
+    display:flex;gap:13px;align-items:flex-start;
+    background:rgba(236,232,224,.02);
+    transition:background .6s ease, transform .6s cubic-bezier(.2,.8,.2,1);
+  }
+  .caps li::before{
+    content:"";position:absolute;left:0;top:12px;bottom:12px;width:1.5px;border-radius:2px;
+    background:var(--amber);transform:scaleY(.16);transform-origin:top;opacity:.28;
+    transition:transform .7s cubic-bezier(.2,.8,.2,1), opacity .7s ease;
+  }
+  .caps li i{
+    font-family:var(--mono);font-style:normal;font-size:10.5px;letter-spacing:.16em;
+    color:var(--muted);padding-top:3px;transition:color .6s ease;
+  }
+  .caps li span{font-size:15px;line-height:1.45;color:rgba(236,232,224,.74);transition:color .6s ease}
+  .caps li.on{background:rgba(245,192,99,.055);transform:translateX(5px)}
+  .caps li.on::before{transform:scaleY(1);opacity:1}
+  .caps li.on i{color:var(--amber)}
+  .caps li.on span{color:#fff}
+
+  .used{
+    margin-top:auto;display:flex;align-items:center;gap:11px;
+    font-family:var(--mono);font-size:12px;letter-spacing:.11em;color:var(--muted);
+  }
+  .used .dot{
+    width:6px;height:6px;border-radius:50%;background:var(--mint);
+    box-shadow:0 0 0 0 rgba(104,224,190,.55);animation:ping 2.8s ease-out infinite;
+  }
+  @keyframes ping{
+    0%{box-shadow:0 0 0 0 rgba(104,224,190,.5)}
+    70%{box-shadow:0 0 0 11px rgba(104,224,190,0)}
+    100%{box-shadow:0 0 0 0 rgba(104,224,190,0)}
+  }
+</style>
+</head>
+<body>
+<canvas id="art"></canvas>
+<div class="veil"></div>
+
+<main class="stage">
+  <div class="brand" style="--d:.04s">
+    <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
+      <rect class="b1" x="3" y="4.6" width="18" height="2.4" rx="1.2"/>
+      <rect class="b2" x="3" y="10.8" width="14" height="2.4" rx="1.2"/>
+      <rect class="b3" x="3" y="17" width="9" height="2.4" rx="1.2"/>
+    </svg>
+    <span>Ledger</span>
+    <span class="tick"></span>
+  </div>
+
+  <h1 style="--d:.13s">Every subscription<br>your company <em>forgot</em><br>about.</h1>
+
+  <div class="actions" style="--d:.24s">
+    <button class="cta">Start free</button>
+    <a class="ghost" href="#">See how it works <span class="arw">&#8594;</span></a>
+  </div>
+
+  <div class="what" style="--d:.32s">
+    <span class="rule"></span>
+    <h2>What it does</h2>
+    <span class="rule grow"></span>
+  </div>
+
+  <ul class="caps" style="--d:.4s">
+    <li><i>01</i><span>Finds the charges nobody recognises.</span></li>
+    <li><i>02</i><span>Groups them by the person who signed up.</span></li>
+    <li><i>03</i><span>Cancels in one click and records who approved it.</span></li>
+    <li><i>04</i><span>Warns you before the annual renewal lands.</span></li>
+  </ul>
+
+  <p class="used" style="--d:.5s"><span class="dot"></span>Used by 40 teams across 12 countries.</p>
+</main>
+
+<script>
+(function(){
+  var cv = document.getElementById('art');
+  var ctx = cv.getContext('2d');
+  var TAU = Math.PI * 2;
+  var W = 0, H = 0, DPR = 1, cx = 0, cy = 0, R = 0, ruleGrad = null;
+  var caps = Array.prototype.slice.call(document.querySelectorAll('.caps li'));
+  var lastStage = -1;
+
+  function rnd(a, b){ return a + Math.random() * (b - a); }
+  function norm(a){ a %= TAU; return a < 0 ? a + TAU : a; }
+  function clamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
+  function ease(t){ return t < 0 ? 0 : (t > 1 ? 1 : t * t * (3 - 2 * t)); }
+
+  function makeGlow(color){
+    var s = 72, c = document.createElement('canvas');
+    c.width = c.height = s;
+    var g = c.getContext('2d');
+    var gr = g.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+    gr.addColorStop(0, color);
+    gr.addColorStop(0.42, color.replace(/[\d.]+\)$/, '0.28)'));
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, s, s);
+    return c;
+  }
+  var glowA = makeGlow('rgba(255,198,96,0.9)');
+  var glowM = makeGlow('rgba(110,230,196,0.85)');
+  var glowBig = makeGlow('rgba(245,192,99,0.5)');
+
+  /* ---------- entities ---------- */
+  var N = 58, tokens = [], anchors = [], dust = [];
+  for (var i = 0; i < N; i++){
+    var band = i % 3;
+    var m = i % 7;
+    tokens.push({
+      ang: (i / N) * TAU + rnd(-0.05, 0.05),
+      rad: R,
+      band: band,
+      bandF: 0.40 + band * 0.195 + rnd(-0.018, 0.018),
+      spin: rnd(0.004, 0.013) * (band === 1 ? -1 : 1),
+      barW: rnd(9, 25),
+      size: rnd(1.7, 2.9),
+      group: i % 5,
+      fate: (m === 0 || m === 1) ? 'cancel' : (m === 5 ? 'renew' : (m === 6 ? 'none' : 'group')),
+      hitT: -99,
+      seed: rnd(0, TAU)
+    });
+  }
+  for (var a = 0; a < 5; a++){
+    anchors.push({ base: (a / 5) * TAU + 0.3, pulse: 0, x: 0, y: 0 });
+  }
+  for (var d = 0; d < 110; d++){
+    dust.push({ x: Math.random(), y: Math.random(), vx: rnd(-0.09, 0.05), vy: rnd(-0.24, -0.06), r: rnd(0.5, 1.5), a: rnd(0.05, 0.22) });
+  }
+
+  function layout(){
+    W = window.innerWidth; H = window.innerHeight;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    cx = W * 0.725; cy = H * 0.502;
+    R = Math.min(H * 0.402, W * 0.235);
+    for (var i = 0; i < tokens.length; i++) tokens[i].rad = R * tokens[i].bandF;
+    ruleGrad = ctx.createLinearGradient(0, 0, W * 0.68, 0);
+    ruleGrad.addColorStop(0, 'rgba(236,232,224,0.055)');
+    ruleGrad.addColorStop(0.55, 'rgba(236,232,224,0.022)');
+    ruleGrad.addColorStop(1, 'rgba(236,232,224,0)');
+  }
+  window.addEventListener('resize', layout);
+  layout();
+
+  /* ---------- helpers ---------- */
+  function quadPoint(x0, y0, cxp, cyp, x1, y1, t){
+    var u = 1 - t;
+    return [u*u*x0 + 2*u*t*cxp + t*t*x1, u*u*y0 + 2*u*t*cyp + t*t*y1];
+  }
+
+  var t0 = performance.now();
+
+  function frame(now){
+    var t = (now - t0) / 1000;
+    ctx.clearRect(0, 0, W, H);
+
+    /* --- base wash --- */
+    var bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#080a0f');
+    bg.addColorStop(0.55, '#0a0d14');
+    bg.addColorStop(1, '#070910');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    /* --- drifting ledger rules (left field) --- */
+    var off = (t * 8) % 30;
+    ctx.strokeStyle = ruleGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var y = -30 + off; y < H + 30; y += 30){
+      ctx.moveTo(0, Math.round(y) + 0.5);
+      ctx.lineTo(W * 0.68, Math.round(y) + 0.5);
+    }
+    ctx.stroke();
+
+    /* --- breathing halo behind the dial --- */
+    var hb = 1 + Math.sin(t * 0.5) * 0.09;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(glowBig, cx - R * 1.85 * hb, cy - R * 1.85 * hb, R * 3.7 * hb, R * 3.7 * hb);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+
+    /* --- narration stages tied to the four capability lines --- */
+    var stageDur = 4.6;
+    var st = (t / stageDur) % 4;
+    var w = [0, 0, 0, 0];
+    for (var s = 0; s < 4; s++){
+      var dd = Math.abs(st - s);
+      if (dd > 2) dd = 4 - dd;
+      w[s] = 0.42 + 0.58 * Math.max(0, 1 - dd);
+    }
+    var activeStage = Math.floor(st) % 4;
+    if (activeStage !== lastStage){
+      for (var q = 0; q < caps.length; q++) caps[q].classList.toggle('on', q === activeStage);
+      lastStage = activeStage;
+    }
+
+    /* --- dial architecture --- */
+    ctx.save();
+    ctx.lineWidth = 1;
+    var ringR = [0.30, 0.475, 0.665, 0.855, 1];
+    for (var r0 = 0; r0 < ringR.length; r0++){
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * ringR[r0], 0, TAU);
+      ctx.strokeStyle = 'rgba(236,232,224,' + (r0 === ringR.length - 1 ? 0.16 : 0.062) + ')';
+      ctx.stroke();
+    }
+    /* rotating dashed outer ring */
+    ctx.save();
+    ctx.setLineDash([2, 13]);
+    ctx.lineDashOffset = -t * 22;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 1.085, 0, TAU);
+    ctx.strokeStyle = 'rgba(236,232,224,0.13)';
+    ctx.stroke();
+    ctx.restore();
+
+    /* twelve period ticks */
+    for (var k = 0; k < 12; k++){
+      var ta = (k / 12) * TAU - Math.PI / 2;
+      var long = (k % 3 === 0);
+      var r1 = R * 1.015, r2 = R * (long ? 1.062 : 1.038);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(ta) * r1, cy + Math.sin(ta) * r1);
+      ctx.lineTo(cx + Math.cos(ta) * r2, cy + Math.sin(ta) * r2);
+      ctx.strokeStyle = 'rgba(236,232,224,' + (long ? 0.34 : 0.15) + ')';
+      ctx.lineWidth = long ? 1.4 : 1;
+      ctx.stroke();
+    }
+    /* slow annual progress arc */
+    var prog = (t % 26) / 26;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 1.085, -Math.PI / 2, -Math.PI / 2 + prog * TAU);
+    ctx.strokeStyle = 'rgba(245,192,99,0.30)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.restore();
+
+    /* --- anchors (the people who signed up) --- */
+    for (var ai = 0; ai < anchors.length; ai++){
+      var an = anchors[ai];
+      var aa = an.base + t * 0.055;
+      an.x = cx + Math.cos(aa) * R * 0.235;
+      an.y = cy + Math.sin(aa) * R * 0.235;
+      an.pulse = Math.max(0, an.pulse - 0.016);
+    }
+
+    /* --- sweep wedge --- */
+    var sw = t * 0.46;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (var i2 = 0; i2 < 30; i2++){
+      var a1 = sw - i2 * 0.036;
+      var al = 0.05 * Math.pow(1 - i2 / 30, 2.1);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, R * 1.02, a1 - 0.038, a1);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(245,192,99,' + al + ')';
+      ctx.fill();
+    }
+    var ex = cx + Math.cos(sw) * R * 1.02, ey = cy + Math.sin(sw) * R * 1.02;
+    var lg = ctx.createLinearGradient(cx, cy, ex, ey);
+    lg.addColorStop(0, 'rgba(245,192,99,0)');
+    lg.addColorStop(0.55, 'rgba(245,192,99,0.22)');
+    lg.addColorStop(1, 'rgba(255,225,170,0.85)');
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(ex, ey);
+    ctx.strokeStyle = lg;
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    ctx.drawImage(glowA, ex - 26, ey - 26, 52, 52);
+    ctx.restore();
+
+    /* --- tokens --- */
+    for (var i3 = 0; i3 < tokens.length; i3++){
+      var tk = tokens[i3];
+      tk.ang += tk.spin * 0.016;
+      var dif = norm(sw - tk.ang);
+      if (dif < 0.055 && t - tk.hitT > 5) tk.hitT = t;
+
+      var energy = Math.exp(-dif * 2.7);
+      var age = t - tk.hitT;
+      var p = clamp(age / 3.4, 0, 1);
+      var seen = tk.hitT > -50;
+      var x = cx + Math.cos(tk.ang) * tk.rad;
+      var y = cy + Math.sin(tk.ang) * tk.rad;
+      var dir = Math.cos(tk.ang) >= 0 ? 1 : -1;
+      var bw = tk.barW;
+      var bx = dir > 0 ? x + 6 : x - 6 - bw;
+
+      /* group link */
+      if (tk.fate === 'group' && seen){
+        var an2 = anchors[tk.group];
+        var f = ease(clamp((age - 0.35) / 1.5, 0, 1));
+        var hold = age > 3.4 ? 0.30 : 1;
+        var mx = (x + an2.x) / 2, my = (y + an2.y) / 2;
+        var ccx = cx + (mx - cx) * 0.55, ccy = cy + (my - cy) * 0.55;
+        ctx.beginPath();
+        var steps = 20;
+        for (var sIdx = 0; sIdx <= steps * f; sIdx++){
+          var pt = quadPoint(x, y, ccx, ccy, an2.x, an2.y, sIdx / steps);
+          if (sIdx === 0) ctx.moveTo(pt[0], pt[1]); else ctx.lineTo(pt[0], pt[1]);
+        }
+        ctx.strokeStyle = 'rgba(104,224,190,' + (0.42 * f * hold * w[1]) + ')';
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+        if (f > 0.98 && age < 2.2) an2.pulse = 1;
+      }
+
+      /* base ledger bar */
+      var barA = 0.10 + energy * 0.34;
+      if (seen && tk.fate === 'cancel' && age > 3.4) barA = 0.055;
+      ctx.fillStyle = 'rgba(236,232,224,' + barA + ')';
+      ctx.fillRect(bx, y - 0.75, bw, 1.5);
+
+      /* dot */
+      var lit = energy * (0.55 + 0.45 * w[0]);
+      var col = 'rgba(236,232,224,' + (0.22 + lit * 0.6) + ')';
+      if (seen && age < 3.4){
+        if (tk.fate === 'group') col = 'rgba(120,232,200,' + (0.35 + 0.5 * p) + ')';
+        if (tk.fate === 'renew') col = 'rgba(255,205,120,' + (0.4 + 0.5 * p) + ')';
+      }
+      ctx.beginPath();
+      ctx.arc(x, y, tk.size + lit * 1.5, 0, TAU);
+      ctx.fillStyle = col;
+      ctx.fill();
+
+      if (lit > 0.16){
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        var g2 = (tk.fate === 'group' && seen && age < 3.4) ? glowM : glowA;
+        var gs = 20 + lit * 24;
+        ctx.globalAlpha = lit * 0.85;
+        ctx.drawImage(g2, x - gs / 2, y - gs / 2, gs, gs);
+        ctx.restore();
+        /* detection ring */
+        if (age < 1.1 && seen){
+          var rr = ease(age / 1.1);
+          ctx.beginPath();
+          ctx.arc(x, y, 4 + rr * 20, 0, TAU);
+          ctx.strokeStyle = 'rgba(255,214,140,' + (0.5 * (1 - rr) * w[0]) + ')';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+
+      /* cancel: strike-through + approval mark */
+      if (tk.fate === 'cancel' && seen){
+        var sf = ease(clamp((age - 0.5) / 0.9, 0, 1));
+        var fade = age > 3.4 ? 0.45 : 1;
+        ctx.beginPath();
+        ctx.moveTo(bx - 3, y);
+        ctx.lineTo(bx - 3 + (bw + 6) * sf, y);
+        ctx.strokeStyle = 'rgba(245,192,99,' + (0.85 * fade * w[2]) + ')';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        if (age > 1.5){
+          var cf = ease(clamp((age - 1.5) / 0.7, 0, 1)) * (age > 3.4 ? 0.4 : 1);
+          var kx = dir > 0 ? bx + bw + 8 : bx - 12;
+          ctx.beginPath();
+          ctx.moveTo(kx, y);
+          ctx.lineTo(kx + 2.4, y + 2.8);
+          ctx.lineTo(kx + 7, y - 3.4);
+          ctx.strokeStyle = 'rgba(104,224,190,' + (0.8 * cf * w[2]) + ')';
+          ctx.lineWidth = 1.3;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+          ctx.lineCap = 'butt';
+        }
+      }
+
+      /* renewal warning arc near the rim */
+      if (tk.fate === 'renew' && seen && age < 5.2){
+        var rf = ease(clamp(age / 1.2, 0, 1));
+        var puls = 0.55 + 0.45 * Math.sin(t * 4 + tk.seed);
+        var span = 0.10 * rf;
+        ctx.beginPath();
+        ctx.arc(cx, cy, R * 1.045, tk.ang - span, tk.ang + span);
+        ctx.strokeStyle = 'rgba(255,200,110,' + (0.75 * puls * (1 - age / 5.2) * w[3]) + ')';
+        ctx.lineWidth = 2.6;
+        ctx.stroke();
+        var wx = cx + Math.cos(tk.ang) * R * 1.11, wy = cy + Math.sin(tk.ang) * R * 1.11;
+        ctx.beginPath();
+        ctx.moveTo(wx, wy - 3.2);
+        ctx.lineTo(wx + 3, wy + 2.2);
+        ctx.lineTo(wx - 3, wy + 2.2);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,205,120,' + (0.8 * rf * puls * (1 - age / 5.2) * w[3]) + ')';
+        ctx.fill();
+      }
+    }
+
+    /* --- anchors on top --- */
+    for (var ai2 = 0; ai2 < anchors.length; ai2++){
+      var A = anchors[ai2];
+      var pl = A.pulse;
+      ctx.beginPath();
+      ctx.arc(A.x, A.y, 8.5 + pl * 4, 0, TAU);
+      ctx.strokeStyle = 'rgba(104,224,190,' + (0.20 + pl * 0.55) * w[1] + ')';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(A.x, A.y, 2.2, 0, TAU);
+      ctx.fillStyle = 'rgba(160,240,215,' + (0.45 + pl * 0.5) * w[1] + ')';
+      ctx.fill();
+      if (pl > 0.02){
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = pl * 0.7;
+        ctx.drawImage(glowM, A.x - 22, A.y - 22, 44, 44);
+        ctx.restore();
+      }
+    }
+
+    /* centre core */
+    var core = 0.6 + 0.4 * Math.sin(t * 1.1);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.35 + core * 0.3;
+    ctx.drawImage(glowA, cx - 40, cy - 40, 80, 80);
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3.2, 0, TAU);
+    ctx.fillStyle = 'rgba(255,232,190,0.9)';
+    ctx.fill();
+
+    /* --- drifting dust across the whole field --- */
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (var di = 0; di < dust.length; di++){
+      var p2 = dust[di];
+      p2.x += p2.vx * 0.0006; p2.y += p2.vy * 0.0006;
+      if (p2.y < -0.02) { p2.y = 1.02; p2.x = Math.random(); }
+      if (p2.x < -0.02) p2.x = 1.02;
+      if (p2.x > 1.02) p2.x = -0.02;
+      var fl = 0.6 + 0.4 * Math.sin(t * 1.6 + di);
+      ctx.beginPath();
+      ctx.arc(p2.x * W, p2.y * H, p2.r, 0, TAU);
+      ctx.fillStyle = 'rgba(236,232,224,' + (p2.a * fl * 0.6) + ')';
+      ctx.fill();
+    }
+    ctx.restore();
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

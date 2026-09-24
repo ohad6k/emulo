@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Ledger Folio</title>
+<style>
+  :root{
+    --ground:#DCDACC;
+    --paper:#F2F0E6;
+    --paper-2:#E9E7DA;
+    --ink:#1A1D17;
+    --ink-2:#4A4E43;
+    --ink-3:#6B6F5F;
+    --rule:#C6C4B2;
+    --rule-strong:#A9A794;
+    --red:#9E2B1E;
+    --red-soft:rgba(158,43,30,.09);
+    --hatch:rgba(158,43,30,.075);
+    --sweep:rgba(26,29,23,.05);
+    --shadow:0 1px 0 rgba(0,0,0,.05), 0 26px 50px -30px rgba(26,29,23,.55);
+    --serif:"Bodoni MT","Didot","Hoefler Text","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0E0F0A;
+      --paper:#191A14;
+      --paper-2:#14150F;
+      --ink:#EDEADB;
+      --ink-2:#B4B2A0;
+      --ink-3:#83816F;
+      --rule:#33352A;
+      --rule-strong:#4A4C3C;
+      --red:#DB6A54;
+      --red-soft:rgba(219,106,84,.13);
+      --hatch:rgba(219,106,84,.10);
+      --sweep:rgba(237,234,219,.055);
+      --shadow:0 0 0 1px rgba(237,234,219,.05), 0 26px 60px -34px #000;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0E0F0A;
+    --paper:#191A14;
+    --paper-2:#14150F;
+    --ink:#EDEADB;
+    --ink-2:#B4B2A0;
+    --ink-3:#83816F;
+    --rule:#33352A;
+    --rule-strong:#4A4C3C;
+    --red:#DB6A54;
+    --red-soft:rgba(219,106,84,.13);
+    --hatch:rgba(219,106,84,.10);
+    --sweep:rgba(237,234,219,.055);
+    --shadow:0 0 0 1px rgba(237,234,219,.05), 0 26px 60px -34px #000;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);display:grid;place-items:center}
+
+  .stage{width:1600px;height:900px;padding:22px;transform-origin:50% 50%;flex:none}
+  .sheet{
+    position:relative;width:100%;height:100%;overflow:hidden;
+    background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--red);
+    box-shadow:var(--shadow);padding:30px 38px 26px;display:flex;flex-direction:column;
+  }
+
+  .sweep{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:3}
+  .sweep::before{
+    content:"";position:absolute;left:0;right:0;top:0;height:300px;
+    background:linear-gradient(180deg,transparent,var(--sweep),transparent);
+    animation:sweep 16s linear infinite;
+  }
+  @keyframes sweep{from{transform:translateY(-340px)}to{transform:translateY(920px)}}
+
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:40px}
+  .eyebrow{font-size:10px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-3)}
+  .wordmark{margin:10px 0 0;font-family:var(--serif);font-weight:400;font-size:54px;line-height:1;letter-spacing:.015em;color:var(--ink)}
+  .sub{margin-top:10px;font-size:12.5px;letter-spacing:.05em;color:var(--ink-2)}
+  .facts{display:flex;gap:46px}
+  .fact{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .k{font-size:9.5px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3)}
+  .v{font-family:var(--mono);font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}
+
+  .drule{margin-top:20px;height:2px;border-top:2px solid var(--ink);border-bottom:1px solid var(--rule-strong)}
+
+  .grid{
+    margin-top:18px;flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);
+    gap:1px;background:var(--rule);border:1px solid var(--rule);
+  }
+  .cell{background:var(--paper);padding:20px 22px 18px;display:flex;flex-direction:column;position:relative}
+  .cell.empty{
+    background-color:var(--paper-2);
+    background-image:repeating-linear-gradient(135deg,transparent 0 11px,var(--hatch) 11px 12px);
+    animation:hatch 7s linear infinite;
+  }
+  @keyframes hatch{from{background-position:0 0}to{background-position:16.97px 0}}
+
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .ln{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--red)}
+  .stamp{font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;padding:5px 8px;border:1px solid var(--rule-strong);color:var(--ink-3);white-space:nowrap}
+  .stamp.none{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+
+  .acct{margin-top:16px;font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);text-wrap:balance}
+
+  .fig{margin-top:auto;min-height:54px;display:flex;align-items:baseline;gap:10px}
+  .num{font-family:var(--mono);font-weight:700;font-size:62px;line-height:.87;letter-spacing:-.015em;color:var(--ink);font-variant-numeric:tabular-nums}
+  .unit{font-size:14px;font-weight:500;letter-spacing:.06em;color:var(--ink-3)}
+  .caret{align-self:flex-end;width:2px;height:34px;margin-bottom:3px;background:var(--red);animation:blink 1.2s steps(1,end) infinite}
+  @keyframes blink{0%,55%{opacity:1}56%,100%{opacity:0}}
+
+  .ruled{margin-top:16px;height:2px;background:var(--rule-strong);position:relative;overflow:hidden}
+  .ruled::after{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:0;background:var(--ink);
+    animation:ink 7.2s cubic-bezier(.22,.8,.3,1) var(--d,0s) infinite;
+  }
+  @keyframes ink{
+    0%{width:0;opacity:1}
+    34%{width:100%;opacity:1}
+    80%{width:100%;opacity:1}
+    89%{width:100%;opacity:0}
+    90%{width:0;opacity:0}
+    100%{width:0;opacity:0}
+  }
+  .ruled.pending{height:0;background:transparent;border-top:2px dashed var(--rule-strong)}
+  .ruled.pending::after{display:none}
+
+  .meta{margin-top:12px;display:flex;justify-content:space-between;align-items:baseline;gap:14px;font-family:var(--mono);font-size:11px;line-height:1.4;color:var(--ink-3)}
+  .meta .val{color:var(--ink-2);text-align:right}
+
+  .foot{margin-top:20px}
+  .tape{display:block;width:100%;height:38px;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 52px,#000 calc(100% - 52px),transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 52px,#000 calc(100% - 52px),transparent);}
+  .footrow{margin-top:14px;display:flex;justify-content:space-between;align-items:flex-end;gap:48px}
+  .notes p{margin:0;font-size:12px;line-height:1.55;color:var(--ink-2);max-width:900px}
+  .notes p + p{margin-top:3px;color:var(--ink-3)}
+  .legend{display:flex;gap:22px;align-items:center;font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+  .legend span{display:flex;align-items:center;gap:8px}
+  .sw{width:9px;height:9px;display:inline-block}
+  .sw-rec{background:var(--ink)}
+  .sw-non{border:1.5px solid var(--red)}
+
+  @media (prefers-reduced-motion: reduce){
+    .sweep::before{animation-duration:75s}
+    .ruled::after{animation:none;width:100%;opacity:.45}
+    .cell.empty{animation:none}
+    .caret{animation:none}
+  }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="sheet">
+    <div class="sweep"></div>
+
+    <header class="head">
+      <div class="mark">
+        <div class="eyebrow">Product metrics</div>
+        <h1 class="wordmark">Ledger</h1>
+        <div class="sub">What the product measured in the period, and what it did not.</div>
+      </div>
+      <div class="facts">
+        <div class="fact"><span class="k">Period</span><span class="v">Last 30 days</span></div>
+        <div class="fact"><span class="k">Coverage</span><span class="v">4 of 8 recorded</span></div>
+        <div class="fact"><span class="k">Local clock</span><span class="v" id="clock">--:--:--</span></div>
+      </div>
+    </header>
+
+    <div class="drule"></div>
+
+    <section class="grid">
+      <article class="cell">
+        <div class="top"><span class="ln">01</span><span class="stamp">Recorded</span></div>
+        <div class="acct">Active installs</div>
+        <div class="fig"><span class="num">1,284</span><span class="unit">installs</span></div>
+        <div class="ruled" style="--d:0s"></div>
+        <div class="meta"><span>active_installs</span><span class="val"></span></div>
+      </article>
+
+      <article class="cell empty">
+        <div class="top"><span class="ln">02</span><span class="stamp none">No entry</span></div>
+        <div class="acct">Weekly active users</div>
+        <div class="fig"><span class="caret"></span></div>
+        <div class="ruled pending"></div>
+        <div class="meta"><span>weekly_active_users</span><span class="val">null</span></div>
+      </article>
+
+      <article class="cell">
+        <div class="top"><span class="ln">03</span><span class="stamp">Recorded</span></div>
+        <div class="acct">Median session</div>
+        <div class="fig"><span class="num">12.4</span><span class="unit">minutes</span></div>
+        <div class="ruled" style="--d:1.8s"></div>
+        <div class="meta"><span>median_session_minutes</span><span class="val">12 min 24 s</span></div>
+      </article>
+
+      <article class="cell empty">
+        <div class="top"><span class="ln">04</span><span class="stamp none">No entry</span></div>
+        <div class="acct">Retention, day 30</div>
+        <div class="fig"><span class="caret"></span></div>
+        <div class="ruled pending"></div>
+        <div class="meta"><span>retention_d30</span><span class="val">null</span></div>
+      </article>
+
+      <article class="cell">
+        <div class="top"><span class="ln">05</span><span class="stamp">Recorded</span></div>
+        <div class="acct">Crash-free rate</div>
+        <div class="fig"><span class="num">99.2</span><span class="unit">%</span></div>
+        <div class="ruled" style="--d:3.6s"></div>
+        <div class="meta"><span>crash_free_rate_pct</span><span class="val">0.8 % not crash-free</span></div>
+      </article>
+
+      <article class="cell empty">
+        <div class="top"><span class="ln">06</span><span class="stamp none">No entry</span></div>
+        <div class="acct">Paid conversions</div>
+        <div class="fig"><span class="caret"></span></div>
+        <div class="ruled pending"></div>
+        <div class="meta"><span>paid_conversions</span><span class="val">null</span></div>
+      </article>
+
+      <article class="cell">
+        <div class="top"><span class="ln">07</span><span class="stamp">Recorded</span></div>
+        <div class="acct">Support tickets</div>
+        <div class="fig"><span class="num">37</span><span class="unit">tickets</span></div>
+        <div class="ruled" style="--d:5.4s"></div>
+        <div class="meta"><span>support_tickets</span><span class="val">1.2 a day</span></div>
+      </article>
+
+      <article class="cell empty">
+        <div class="top"><span class="ln">08</span><span class="stamp none">No entry</span></div>
+        <div class="acct">Net promoter score</div>
+        <div class="fig"><span class="caret"></span></div>
+        <div class="ruled pending"></div>
+        <div class="meta"><span>nps</span><span class="val">null</span></div>
+      </article>
+    </section>
+
+    <footer class="foot">
+      <canvas id="tape" class="tape" aria-hidden="true"></canvas>
+      <div class="footrow">
+        <div class="notes">
+          <p>Four of the eight metrics have no measurement for this period. They are shown blank rather than zero, because a blank is not a 0.</p>
+          <p>Field names are copied from the source record. Right-hand notes are arithmetic on the figure beside them; nothing on this sheet is estimated.</p>
+        </div>
+        <div class="legend">
+          <span><i class="sw sw-rec"></i>Recorded 4</span>
+          <span><i class="sw sw-non"></i>No entry 4</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  function fit() {
+    var s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+    stage.style.transform = 'scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
+  var clock = document.getElementById('clock');
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function tick() {
+    var d = new Date();
+    clock.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  var cv = document.getElementById('tape');
+  var ctx = cv.getContext('2d');
+  var RECORDED = [true, false, true, false, true, false, true, false];
+  var cols = {};
+  function readCols() {
+    var cs = getComputedStyle(document.documentElement);
+    cols = {
+      ink: cs.getPropertyValue('--ink').trim() || '#1A1D17',
+      rule: cs.getPropertyValue('--rule').trim() || '#C6C4B2',
+      red: cs.getPropertyValue('--red').trim() || '#9E2B1E',
+      paper: cs.getPropertyValue('--paper').trim() || '#F2F0E6'
+    };
+  }
+  readCols();
+  var mqDark = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mqDark.addEventListener) { mqDark.addEventListener('change', readCols); }
+  else if (mqDark.addListener) { mqDark.addListener(readCols); }
+
+  var W = 0, H = 38, dpr = Math.min(2, window.devicePixelRatio || 1);
+  function resize() {
+    var w = cv.clientWidth;
+    if (w && w !== W) {
+      W = w;
+      cv.width = Math.round(W * dpr);
+      cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+  }
+
+  var SLOT = 27, UNIT = SLOT * 8;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var SPEED = reduce ? 4 : 18;
+
+  function frame(t) {
+    resize();
+    if (W) {
+      var off = ((t / 1000) * SPEED) % UNIT;
+      var y = Math.round(H / 2);
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.strokeStyle = cols.rule;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5);
+      ctx.stroke();
+      ctx.globalAlpha = 0.65;
+      ctx.beginPath();
+      ctx.moveTo(0, 0.5); ctx.lineTo(W, 0.5);
+      ctx.moveTo(0, H - 0.5); ctx.lineTo(W, H - 0.5);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      for (var x = -UNIT - off; x < W + UNIT; x += UNIT) {
+        for (var i = 0; i < 8; i++) {
+          var cx = Math.round(x + SLOT / 2 + i * SLOT);
+          if (cx < -14 || cx > W + 14) continue;
+          ctx.fillStyle = cols.paper;
+          ctx.fillRect(cx - 8, y - 9, 16, 18);
+          if (RECORDED[i]) {
+            ctx.fillStyle = cols.ink;
+            ctx.fillRect(cx - 5, y - 5, 10, 10);
+          } else {
+            ctx.strokeStyle = cols.red;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(cx - 4.5, y - 4.5, 9, 9);
+            ctx.beginPath();
+            ctx.moveTo(cx - 4.5, y + 4.5);
+            ctx.lineTo(cx + 4.5, y - 4.5);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

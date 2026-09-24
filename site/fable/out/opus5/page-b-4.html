@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Orbit</title>
+    <style>
+      :root{
+        --bg:#08090b;
+        --ink:#f4f5f6;
+        --dim:#9aa1a9;
+        --faint:rgba(255,255,255,.45);
+        --line:rgba(255,255,255,.09);
+        --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+        --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+      }
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;background:var(--bg);}
+      body{font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+
+      .page{
+        position:relative;width:1000px;height:1400px;margin:0 auto;
+        background:var(--bg);color:var(--ink);overflow:hidden;
+      }
+
+      /* ---------- atmosphere ---------- */
+      .grid{
+        position:absolute;inset:0;
+        background-image:
+          linear-gradient(rgba(255,255,255,.021) 1px,transparent 1px),
+          linear-gradient(90deg,rgba(255,255,255,.021) 1px,transparent 1px);
+        background-size:50px 50px;background-position:center;
+        -webkit-mask-image:radial-gradient(ellipse 62% 46% at 50% 54%,#000 20%,rgba(0,0,0,.35) 60%,transparent 82%);
+        mask-image:radial-gradient(ellipse 62% 46% at 50% 54%,#000 20%,rgba(0,0,0,.35) 60%,transparent 82%);
+      }
+      .glow{
+        position:absolute;inset:0;
+        background:
+          radial-gradient(circle 520px at 50% 54%,rgba(150,182,226,.15),rgba(150,182,226,.045) 38%,transparent 66%),
+          radial-gradient(circle 300px at 78% 12%,rgba(255,255,255,.05),transparent 70%);
+        animation:breathe 12s ease-in-out infinite;
+      }
+      .vignette{
+        position:absolute;inset:0;pointer-events:none;
+        background:radial-gradient(ellipse 78% 62% at 50% 46%,transparent 40%,rgba(0,0,0,.58) 100%);
+      }
+      .horizon{
+        position:absolute;top:747px;left:0;width:1000px;height:1px;
+        background:linear-gradient(90deg,transparent 0,rgba(255,255,255,.11) 9%,rgba(255,255,255,.11) 19%,transparent 26%,transparent 74%,rgba(255,255,255,.11) 81%,rgba(255,255,255,.11) 91%,transparent 100%);
+      }
+
+      /* ---------- type ---------- */
+      .mark{
+        position:absolute;left:64px;top:58px;display:flex;align-items:center;gap:11px;
+        color:var(--ink);
+      }
+      .mark span{font-size:16.5px;font-weight:600;letter-spacing:.02em}
+
+      .hero{position:absolute;left:64px;top:142px;width:660px;z-index:3}
+      h1{
+        margin:0;font-size:60px;line-height:1.05;font-weight:640;
+        letter-spacing:-.032em;color:#fafbfc;
+        text-shadow:0 2px 40px rgba(0,0,0,.6);
+      }
+      .sub{
+        margin:24px 0 0;font-size:18.5px;line-height:1.5;color:var(--dim);
+        max-width:400px;letter-spacing:-.005em;
+      }
+
+      .cta{position:absolute;left:64px;top:368px;display:flex;align-items:center;gap:28px;z-index:3}
+      .btn{
+        appearance:none;border:0;cursor:pointer;font-family:inherit;
+        background:#f2f3f5;color:#0a0b0d;
+        font-size:15px;font-weight:640;letter-spacing:-.005em;
+        padding:15px 30px;border-radius:8px;
+        box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 10px 30px rgba(0,0,0,.45);
+        transition:transform .18s ease,background .18s ease;
+      }
+      .btn:hover{background:#fff;transform:translateY(-1px)}
+      .link{
+        color:rgba(255,255,255,.66);font-size:15px;text-decoration:none;
+        border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:3px;
+        transition:color .18s ease,border-color .18s ease;
+      }
+      .link:hover{color:#fff;border-color:rgba(255,255,255,.6)}
+      .link em{font-style:normal;display:inline-block;transition:transform .18s ease}
+      .link:hover em{transform:translateX(3px)}
+
+      /* ---------- dial ---------- */
+      .dial{position:absolute;left:205px;top:452px;width:590px;height:590px;z-index:2}
+      .ring{fill:none;stroke:rgba(255,255,255,.05);stroke-width:1}
+      .arc{fill:none;stroke-linecap:round;animation:draw 1.7s cubic-bezier(.2,.75,.25,1) both}
+      .tick{fill:none;stroke:rgba(255,255,255,.26);stroke-width:7;stroke-dasharray:2 69.2}
+      .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;fill:rgba(255,255,255,.52)}
+      .core-k{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;fill:rgba(255,255,255,.42)}
+      .core-t{font-family:var(--mono);font-size:29px;letter-spacing:-.01em;fill:#ffffff}
+      .corner{font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;fill:rgba(255,255,255,.26)}
+      .band-glow{animation:pulse 5.5s ease-in-out infinite}
+      .spin-slow{transform-box:view-box;transform-origin:300px 300px;animation:spin 150s linear infinite}
+      .sat{transform-box:view-box;transform-origin:300px 300px;animation:spin 30s linear infinite}
+
+      /* ---------- capabilities ---------- */
+      .what{position:absolute;left:64px;top:1088px;width:872px;z-index:3}
+      .eyebrow{
+        font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;
+        color:rgba(255,255,255,.34);margin:0 0 22px;
+      }
+      .grid2{display:grid;grid-template-columns:1fr 1fr;column-gap:56px;row-gap:22px;margin:0;padding:0;list-style:none}
+      .cap{
+        display:flex;gap:14px;align-items:flex-start;
+        border-top:1px solid var(--line);padding-top:19px;
+      }
+      .cap svg{flex:0 0 auto;margin-top:2px;color:rgba(255,255,255,.5)}
+      .cap-k{
+        font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+        color:rgba(255,255,255,.36);margin:0 0 7px;
+      }
+      .cap-t{margin:0;font-size:15.5px;line-height:1.45;color:rgba(240,242,244,.92);letter-spacing:-.005em}
+
+      /* ---------- footer ---------- */
+      .foot{
+        position:absolute;left:64px;top:1330px;width:872px;z-index:3;
+        border-top:1px solid var(--line);padding-top:20px;
+        display:flex;align-items:center;justify-content:space-between;
+      }
+      .foot p{margin:0;font-size:13.5px;color:rgba(255,255,255,.5);letter-spacing:.005em}
+      .dots{display:flex;gap:7px}
+      .dots i{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.3);display:block}
+
+      /* ---------- motion ---------- */
+      @keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+      @keyframes spin{to{transform:rotate(360deg)}}
+      @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+      @keyframes breathe{0%,100%{opacity:.85}50%{opacity:1}}
+      @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+      @keyframes fadein{from{opacity:0;transform:scale(.965)}to{opacity:1;transform:none}}
+      .mark,.hero,.cta,.what,.foot{animation:rise .9s cubic-bezier(.2,.75,.25,1) both}
+      .mark{animation-delay:.05s}
+      .hero{animation-delay:.14s}
+      .cta{animation-delay:.3s}
+      .what{animation-delay:.46s}
+      .foot{animation-delay:.56s}
+      .dial{animation:fadein 1.4s cubic-bezier(.2,.75,.25,1) both;animation-delay:.2s}
+
+      @media (prefers-reduced-motion:reduce){
+        *{animation:none !important}
+        .arc{stroke-dashoffset:0 !important}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="grid"></div>
+      <div class="glow"></div>
+      <div class="horizon"></div>
+
+      <div class="mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <ellipse cx="12" cy="12" rx="10.5" ry="5" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".5" transform="rotate(-28 12 12)"/>
+          <circle cx="21.3" cy="7.1" r="1.6" fill="currentColor"/>
+        </svg>
+        <span>Orbit</span>
+      </div>
+
+      <div class="hero">
+        <h1>Find the hour<br />every office is awake.</h1>
+        <p class="sub">Scheduling for teams across time zones.</p>
+      </div>
+
+      <div class="cta">
+        <button class="btn" type="button">Start free</button>
+        <a class="link" href="#">See how it works <em>&rarr;</em></a>
+      </div>
+
+      <div class="dial">
+        <svg width="590" height="590" viewBox="0 0 600 600" role="img" aria-label="A 24-hour UTC dial showing four office working windows and the two-hour window where all four overlap.">
+          <defs>
+            <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="9"/>
+            </filter>
+            <filter id="soft2" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="4"/>
+            </filter>
+          </defs>
+
+          <text class="corner" x="16" y="34">EXAMPLE &middot; FOUR OFFICES</text>
+
+          <!-- guide rings -->
+          <circle class="ring" cx="300" cy="300" r="250"/>
+          <circle class="ring" cx="300" cy="300" r="222"/>
+          <circle class="ring" cx="300" cy="300" r="194"/>
+          <circle class="ring" cx="300" cy="300" r="166"/>
+          <circle cx="300" cy="300" r="120" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="1 6"/>
+
+          <!-- outer orbit + hour ticks -->
+          <circle class="spin-slow" cx="300" cy="300" r="286" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="1" stroke-dasharray="1 9"/>
+          <circle class="tick" cx="300" cy="300" r="272"/>
+
+          <!-- overlap window -->
+          <g class="band-glow">
+            <path d="M 369.36 558.86 A 268 268 0 0 1 230.64 558.86 L 268.94 415.91 A 120 120 0 0 0 331.06 415.91 Z"
+                  fill="rgba(200,220,255,.5)" filter="url(#soft)" opacity=".55"/>
+          </g>
+          <path d="M 369.36 558.86 A 268 268 0 0 1 230.64 558.86 L 268.94 415.91 A 120 120 0 0 0 331.06 415.91 Z"
+                fill="rgba(255,255,255,.1)"/>
+          <path d="M 331.06 415.91 L 372.45 570.44" stroke="rgba(255,255,255,.85)" stroke-width="1.4" fill="none"/>
+          <path d="M 268.94 415.91 L 227.55 570.44" stroke="rgba(255,255,255,.85)" stroke-width="1.4" fill="none"/>
+          <path d="M 372.45 570.44 A 280 280 0 0 1 227.55 570.44" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+          <!-- office windows, mapped to UTC -->
+          <path class="arc" style="--len:660;stroke-dasharray:660;stroke-dashoffset:660;animation-delay:.35s"
+                d="M 476.78 123.22 A 250 250 0 0 1 235.30 541.48" stroke="rgba(255,255,255,.86)" stroke-width="9"/>
+          <path class="arc" style="--len:530;stroke-dasharray:530;stroke-dashoffset:530;animation-delay:.48s"
+                d="M 492.23 189.00 A 222 222 0 0 1 242.55 514.43" stroke="rgba(255,255,255,.62)" stroke-width="9"/>
+          <path class="arc" style="--len:462;stroke-dasharray:462;stroke-dashoffset:462;animation-delay:.61s"
+                d="M 437.18 437.18 A 194 194 0 0 1 106.00 300.00" stroke="rgba(255,255,255,.44)" stroke-width="9"/>
+          <path class="arc" style="--len:396;stroke-dasharray:396;stroke-dashoffset:396;animation-delay:.74s"
+                d="M 342.96 460.34 A 166 166 0 0 1 156.24 217.00" stroke="rgba(255,255,255,.3)" stroke-width="9"/>
+
+          <!-- window start markers -->
+          <circle cx="476.78" cy="123.22" r="3" fill="rgba(255,255,255,.9)"/>
+          <text class="lbl" x="492" y="127">BER &middot; 09&ndash;19</text>
+          <circle cx="492.23" cy="189.00" r="3" fill="rgba(255,255,255,.7)"/>
+          <text class="lbl" x="508" y="193">LON &middot; 09&ndash;18</text>
+          <circle cx="437.18" cy="437.18" r="3" fill="rgba(255,255,255,.55)"/>
+          <text class="lbl" x="453" y="441">NYC &middot; 09&ndash;18</text>
+          <circle cx="342.96" cy="460.34" r="3" fill="rgba(255,255,255,.42)"/>
+          <text class="lbl" x="359" y="464">SFO &middot; 08&ndash;17</text>
+
+          <!-- satellite -->
+          <g class="sat">
+            <circle cx="300" cy="14" r="7" fill="rgba(255,255,255,.5)" filter="url(#soft2)"/>
+            <circle cx="300" cy="14" r="3.4" fill="#ffffff"/>
+          </g>
+
+          <!-- core readout -->
+          <text class="core-k" x="300" y="252" text-anchor="middle">EVERYONE AWAKE</text>
+          <text class="core-t" x="300" y="300" text-anchor="middle">15:00&ndash;17:00</text>
+          <text class="core-k" x="300" y="331" text-anchor="middle">UTC</text>
+        </svg>
+      </div>
+
+      <div class="what">
+        <p class="eyebrow">What it does</p>
+        <ul class="grid2">
+          <li class="cap">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+              <circle cx="9" cy="12" r="6.4"/><circle cx="15" cy="12" r="6.4"/>
+            </svg>
+            <div>
+              <p class="cap-k">Overlap</p>
+              <p class="cap-t">Finds the hours every office is awake at the same time.</p>
+            </div>
+          </li>
+          <li class="cap">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.4"/><path d="M12 7.2V12l3.4 1.9"/>
+            </svg>
+            <div>
+              <p class="cap-k">One clock</p>
+              <p class="cap-t">Shows one shared clock instead of five converted ones.</p>
+            </div>
+          </li>
+          <li class="cap">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+              <rect x="3.6" y="5.6" width="16.8" height="14.8" rx="2.2"/><path d="M3.6 10.2h16.8M8.4 3.4v4.2M15.6 3.4v4.2"/>
+            </svg>
+            <div>
+              <p class="cap-k">Booking</p>
+              <p class="cap-t">Books the meeting in everyone's local calendar.</p>
+            </div>
+          </li>
+          <li class="cap">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 21V3.6M6 4.4h11.6l-3 4 3 4H6"/>
+            </svg>
+            <div>
+              <p class="cap-k">Fairness</p>
+              <p class="cap-t">Flags the person who always gets the 6am call.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="foot">
+        <p>Used by 40 teams across 12 countries.</p>
+        <div class="dots" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+
+      <div class="vignette"></div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Orbit</title>
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --fg:#f4f4f4;
+    --muted:#8c8c8c;
+    --line:rgba(255,255,255,.10);
+    --arc:rgba(255,255,255,.34);
+  }
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{
+    width:1000px;height:1400px;position:relative;overflow:hidden;
+    color:var(--fg);
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+
+  /* wordmark */
+  .brand{position:absolute;left:64px;top:52px;display:flex;align-items:center;gap:12px;font-size:17px;font-weight:600;letter-spacing:-.01em;}
+  .brand svg{display:block;}
+
+  /* hero visual */
+  .orbit{position:absolute;left:236px;top:36px;width:830px;height:830px;}
+  .orbit svg{width:100%;height:100%;display:block;overflow:visible;}
+  .fade{position:absolute;left:0;top:560px;width:1000px;height:360px;
+    background:linear-gradient(to bottom,rgba(10,10,10,0) 0%,rgba(10,10,10,.85) 45%,#0a0a0a 100%);}
+
+  .hand{transform-box:view-box;transform-origin:400px 400px;animation:spin 48s linear infinite;}
+  .hand.min{animation-duration:6s;}
+  .ticks{transform-box:view-box;transform-origin:400px 400px;animation:spin 240s linear infinite;}
+  .window{animation:glow 6s ease-in-out infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes glow{0%,100%{opacity:.55}50%{opacity:1}}
+
+  /* hero copy */
+  .hero{position:absolute;left:64px;top:610px;width:720px;}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 20px;}
+  h1{margin:0;font-size:92px;line-height:.98;font-weight:600;letter-spacing:-.035em;}
+  .sub{margin:26px 0 0;font-size:22px;line-height:1.35;color:#c9c9c9;max-width:520px;}
+  .cta{margin-top:36px;display:flex;align-items:center;gap:28px;}
+  .btn{
+    appearance:none;border:0;cursor:pointer;
+    background:#fff;color:#0a0a0a;font:inherit;font-size:16px;font-weight:600;
+    padding:15px 26px;border-radius:8px;letter-spacing:-.005em;
+  }
+  .link{color:var(--fg);text-decoration:none;font-size:16px;border-bottom:1px solid rgba(255,255,255,.35);padding-bottom:2px;}
+  .link span{display:inline-block;margin-left:6px;transition:transform .2s;}
+  .link:hover span{transform:translateX(3px);}
+
+  /* capabilities */
+  .cap{position:absolute;left:64px;top:938px;width:872px;}
+  .cap h2{margin:0 0 18px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500;}
+  .cap ol{list-style:none;margin:0;padding:0;border-top:1px solid var(--line);}
+  .cap li{
+    display:grid;grid-template-columns:56px 1fr 40px;align-items:center;
+    min-height:66px;border-bottom:1px solid var(--line);
+    font-size:22px;letter-spacing:-.015em;line-height:1.2;
+  }
+  .cap li .n{font-size:12px;color:var(--muted);letter-spacing:.06em;}
+  .cap li svg{display:block;justify-self:end;}
+
+  /* footer proof */
+  .proof{position:absolute;left:64px;right:64px;bottom:64px;display:flex;align-items:center;justify-content:space-between;
+    font-size:15px;color:var(--muted);}
+  .dots{display:flex;gap:7px;}
+  .dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.45);display:block;}
+</style>
+</head>
+<body>
+
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="9.5" stroke="#f4f4f4" stroke-width="1.5"/>
+      <circle cx="11" cy="11" r="2.4" fill="#f4f4f4"/>
+      <circle cx="18" cy="6" r="1.8" fill="#f4f4f4"/>
+    </svg>
+    Orbit
+  </div>
+
+  <div class="orbit" aria-hidden="true">
+    <svg viewBox="0 0 800 800">
+      <defs>
+        <line id="tk" x1="400" y1="6" x2="400" y2="16" stroke="rgba(255,255,255,.28)" stroke-width="1.5"/>
+        <line id="ck" x1="400" y1="286" x2="400" y2="296" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
+      </defs>
+
+      <!-- shared window: where every office is awake -->
+      <path class="window" d="M341.9 559.8 L266.6 766.5 A390 390 0 0 1 23.3 501 L235.8 444 A170 170 0 0 0 341.9 559.8 Z"
+            fill="rgba(255,255,255,.07)"/>
+
+      <!-- 24h tick ring -->
+      <g class="ticks">
+        <use href="#tk"/><use href="#tk" transform="rotate(15 400 400)"/><use href="#tk" transform="rotate(30 400 400)"/>
+        <use href="#tk" transform="rotate(45 400 400)"/><use href="#tk" transform="rotate(60 400 400)"/><use href="#tk" transform="rotate(75 400 400)"/>
+        <use href="#tk" transform="rotate(90 400 400)"/><use href="#tk" transform="rotate(105 400 400)"/><use href="#tk" transform="rotate(120 400 400)"/>
+        <use href="#tk" transform="rotate(135 400 400)"/><use href="#tk" transform="rotate(150 400 400)"/><use href="#tk" transform="rotate(165 400 400)"/>
+        <use href="#tk" transform="rotate(180 400 400)"/><use href="#tk" transform="rotate(195 400 400)"/><use href="#tk" transform="rotate(210 400 400)"/>
+        <use href="#tk" transform="rotate(225 400 400)"/><use href="#tk" transform="rotate(240 400 400)"/><use href="#tk" transform="rotate(255 400 400)"/>
+        <use href="#tk" transform="rotate(270 400 400)"/><use href="#tk" transform="rotate(285 400 400)"/><use href="#tk" transform="rotate(300 400 400)"/>
+        <use href="#tk" transform="rotate(315 400 400)"/><use href="#tk" transform="rotate(330 400 400)"/><use href="#tk" transform="rotate(345 400 400)"/>
+      </g>
+
+      <!-- five offices, faint full day -->
+      <g fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1.5">
+        <circle cx="400" cy="400" r="380"/>
+        <circle cx="400" cy="400" r="330"/>
+        <circle cx="400" cy="400" r="280"/>
+        <circle cx="400" cy="400" r="230"/>
+        <circle cx="400" cy="400" r="180"/>
+      </g>
+
+      <!-- each office's awake hours -->
+      <g fill="none" stroke="rgba(255,255,255,.34)" stroke-width="2.5" stroke-linecap="round" transform="rotate(-90 400 400)">
+        <circle cx="400" cy="400" r="380" stroke-dasharray="795.9 9999" stroke-dashoffset="-994.8"/>
+        <circle cx="400" cy="400" r="330" stroke-dasharray="777.6 9999" stroke-dashoffset="-1123.1"/>
+        <circle cx="400" cy="400" r="280" stroke-dasharray="684.2 9999" stroke-dashoffset="-586.4"/>
+        <circle cx="400" cy="400" r="230" stroke-dasharray="401.4 9999" stroke-dashoffset="-802.8"/>
+        <circle cx="400" cy="400" r="180" stroke-dasharray="235.6 9999" stroke-dashoffset="-565.5"/>
+      </g>
+
+      <!-- bright edge of the shared window -->
+      <path d="M270 757.2 A380 380 0 0 1 32.9 498.4" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+      <circle r="6" fill="#fff">
+        <animateMotion dur="7s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;.5;1" calcMode="linear" path="M270 757.2 A380 380 0 0 1 32.9 498.4"/>
+      </circle>
+
+      <!-- the one shared clock -->
+      <circle cx="400" cy="400" r="118" fill="#0a0a0a" stroke="rgba(255,255,255,.18)" stroke-width="1.5"/>
+      <g>
+        <use href="#ck"/><use href="#ck" transform="rotate(30 400 400)"/><use href="#ck" transform="rotate(60 400 400)"/>
+        <use href="#ck" transform="rotate(90 400 400)"/><use href="#ck" transform="rotate(120 400 400)"/><use href="#ck" transform="rotate(150 400 400)"/>
+        <use href="#ck" transform="rotate(180 400 400)"/><use href="#ck" transform="rotate(210 400 400)"/><use href="#ck" transform="rotate(240 400 400)"/>
+        <use href="#ck" transform="rotate(270 400 400)"/><use href="#ck" transform="rotate(300 400 400)"/><use href="#ck" transform="rotate(330 400 400)"/>
+      </g>
+      <g class="hand"><line x1="400" y1="400" x2="400" y2="332" stroke="#fff" stroke-width="4" stroke-linecap="round"/></g>
+      <g class="hand min"><line x1="400" y1="400" x2="400" y2="304" stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round"/></g>
+      <circle cx="400" cy="400" r="5" fill="#fff"/>
+    </svg>
+  </div>
+  <div class="fade"></div>
+
+  <section class="hero">
+    <p class="eyebrow mono">Scheduling for teams across time zones</p>
+    <h1>Every office,<br>one clock.</h1>
+    <p class="sub">Orbit finds the hours your whole team is awake and books the meeting in everyone's local calendar.</p>
+    <div class="cta">
+      <button class="btn">Start free</button>
+      <a class="link" href="#">See how it works<span>→</span></a>
+    </div>
+  </section>
+
+  <section class="cap">
+    <h2>What it does</h2>
+    <ol>
+      <li><span class="n mono">01</span><span>Finds the hours every office is awake at the same time.</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg></li>
+      <li><span class="n mono">02</span><span>Shows one shared clock instead of five converted ones.</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></li>
+      <li><span class="n mono">03</span><span>Books the meeting in everyone's local calendar.</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.5"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+      <li><span class="n mono">04</span><span>Flags the person who always gets the 6am call.</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.5"><path d="M6 20V4"/><path d="M6 4h11l-2 4 2 4H6" fill="rgba(255,255,255,.9)" stroke="#fff"/></svg></li>
+    </ol>
+  </section>
+
+  <div class="proof">
+    <span>Used by 40 teams across 12 countries.</span>
+    <span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+  </div>
+
+</body>
+</html>

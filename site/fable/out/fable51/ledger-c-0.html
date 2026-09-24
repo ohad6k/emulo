@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1600, initial-scale=1" />
+<title>Ledger</title>
+<style>
+  :root{
+    --ink:#0d0e11;
+    --ink-2:#14161b;
+    --paper:#f2eee5;
+    --muted:#8d919b;
+    --amber:#e8a33d;
+    --hair:rgba(242,238,229,.09);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--ink);color:var(--paper);overflow:hidden}
+  body{font-family:Inter,"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;-webkit-font-smoothing:antialiased;display:grid;place-items:center}
+  .page{position:relative;width:1600px;height:900px;overflow:hidden;background:var(--ink)}
+
+  .glow{position:absolute;left:-260px;top:160px;width:980px;height:980px;border-radius:50%;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(232,163,61,.17),rgba(232,163,61,0) 72%);
+    filter:blur(30px);animation:drift 22s ease-in-out infinite alternate}
+  @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(180px,-140px) scale(1.18)}}
+
+  .copy{position:absolute;left:0;top:0;width:780px;height:900px;padding:52px 0 52px 84px;display:flex;flex-direction:column;z-index:2}
+
+  h1{margin:0;display:flex;align-items:center;gap:12px;font-size:20px;font-weight:600;letter-spacing:.01em}
+  h1 svg{display:block}
+  h1 svg rect{fill:var(--paper);opacity:.35;animation:cycle 3.6s infinite}
+  h1 svg rect:nth-child(2){animation-delay:1.2s}
+  h1 svg rect:nth-child(3){animation-delay:2.4s}
+  @keyframes cycle{0%,28%{fill:var(--amber);opacity:1}40%,100%{fill:var(--paper);opacity:.35}}
+
+  .hero{margin-top:auto}
+  .lede{margin:0 0 40px;max-width:640px;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    font-size:68px;line-height:1.0;letter-spacing:-.022em;font-weight:400}
+  .lede em{font-style:normal;color:var(--amber)}
+  .actions{display:flex;align-items:center;gap:28px;margin:0}
+  button{appearance:none;border:0;cursor:pointer;background:var(--amber);color:#171207;font:600 16px/1 inherit;font-family:inherit;
+    padding:17px 26px;border-radius:9px;box-shadow:0 0 0 0 rgba(232,163,61,.35);animation:breathe 3.2s ease-in-out infinite}
+  @keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(232,163,61,0)}50%{box-shadow:0 0 34px 2px rgba(232,163,61,.28)}}
+  .actions a{color:var(--paper);font-size:16px;text-decoration:none;border-bottom:1px solid rgba(242,238,229,.35);padding-bottom:3px}
+  .actions a span{display:inline-block;margin-left:6px;animation:nudge 2.2s ease-in-out infinite}
+  @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+
+  .cap{margin-top:64px;max-width:600px}
+  h2{margin:0 0 6px;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  ol{list-style:none;margin:0;padding:0;counter-reset:cap}
+  li{counter-increment:cap;display:grid;grid-template-columns:44px 1fr;align-items:baseline;padding:13px 0;border-top:1px solid var(--hair);font-size:17px;line-height:1.35}
+  li:last-child{border-bottom:1px solid var(--hair)}
+  li::before{content:"0" counter(cap);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--amber);letter-spacing:.06em}
+
+  footer{margin-top:auto;display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px}
+  footer p{margin:0}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:ping 2.4s ease-out infinite}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(232,163,61,.55)}100%{box-shadow:0 0 0 14px rgba(232,163,61,0)}}
+
+  canvas{position:absolute;right:0;top:0;display:block;
+    -webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,0) 0,#000 220px);mask-image:linear-gradient(90deg,rgba(0,0,0,0) 0,#000 220px)}
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="glow"></div>
+
+  <div class="copy">
+    <h1>
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+        <rect x="2" y="4" width="18" height="2.4" rx="1.2"/>
+        <rect x="2" y="9.8" width="18" height="2.4" rx="1.2"/>
+        <rect x="2" y="15.6" width="18" height="2.4" rx="1.2"/>
+      </svg>
+      Ledger
+    </h1>
+
+    <section class="hero">
+      <p class="lede">Every subscription your company <em>forgot about.</em></p>
+      <p class="actions"><button>Start free</button> <a href="#">See how it works<span>→</span></a></p>
+    </section>
+
+    <section class="cap">
+      <h2>What it does</h2>
+      <ol>
+        <li>Finds the charges nobody recognises.</li>
+        <li>Groups them by the person who signed up.</li>
+        <li>Cancels in one click and records who approved it.</li>
+        <li>Warns you before the annual renewal lands.</li>
+      </ol>
+    </section>
+
+    <footer><span class="dot"></span><p>Used by 40 teams across 12 countries.</p></footer>
+  </div>
+
+  <canvas id="c" width="840" height="900" aria-hidden="true"></canvas>
+</main>
+
+<script>
+(function(){
+  var cv = document.getElementById('c');
+  var ctx = cv.getContext('2d');
+  var W = 840, H = 900;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  var seed = 20240901;
+  function rnd(){ seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  function pick(a){ return a[Math.floor(rnd() * a.length)]; }
+  function clamp(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
+  function ease(p){ return 1 - Math.pow(1 - p, 3); }
+
+  var vendors = ['Halden Cloud','Quill Notes','Orbit Video','Marlow Design','Tessel API','Fennel Mail','Greyhaven Storage',
+    'Coppice Boards','Lantern Monitoring','Bramble Forms','Sable Docs','Ridge Analytics','Cinder Chat','Aster Scheduler',
+    'Kestrel Auth','Willow Payroll','Fathom Search','Pallas Screens','Moss Surveys','Dune Backups'];
+  var people = ['A. Novak','J. Osei','M. Lindqvist','R. Achebe','S. Tanaka','P. Duarte','L. Farah','E. Brandt','K. Ibarra'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  var MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+  var SANS = 'Inter, "Helvetica Neue", Helvetica, Arial, sans-serif';
+  var AMBER = '232,163,61', PAPER = '242,238,229';
+  var BG = '#0d0e11';
+
+  var ROW = 46, SPEED = 20, SCAN_SPEED = 105;
+  var X_DATE = 150, X_VENDOR = 232, X_AMOUNT = 560, X_PILL = 592;
+  var day = new Date(2026, 8, 1).getTime();
+
+  function fmtDate(ms){ var d = new Date(ms); return (d.getDate() < 10 ? '0' : '') + d.getDate() + ' ' + months[d.getMonth()]; }
+
+  function fill(r){
+    r.vendor = pick(vendors);
+    r.amount = 8 + rnd() * 420;
+    day -= (1 + Math.floor(rnd() * 3)) * 86400000;
+    r.date = fmtDate(day);
+    r.forgotten = rnd() < 0.3;
+    r.owner = pick(people);
+    r.approver = pick(people);
+    r.renew = !r.forgotten && rnd() < 0.14;
+    r.renewDays = 2 + Math.floor(rnd() * 24);
+    r.phase = rnd() * 6.28;
+    r.lit = -1;
+    r.seen = false;
+  }
+
+  var rows = [];
+  var N = Math.ceil(H / ROW) + 3;
+  for (var i = 0; i < N; i++){ var r = { y: 96 + i * ROW }; fill(r); rows.push(r); }
+
+  function rrect(x, y, w, h, rad){
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rad);
+    ctx.arcTo(x + w, y + h, x, y + h, rad);
+    ctx.arcTo(x, y + h, x, y, rad);
+    ctx.arcTo(x, y, x + w, y, rad);
+    ctx.closePath();
+  }
+
+  function pill(x, cy, text, alpha, filled, dotAlpha){
+    if (alpha <= 0) return;
+    ctx.font = '12px ' + MONO;
+    var padL = dotAlpha !== undefined ? 24 : 12;
+    var w = ctx.measureText(text).width + padL + 12;
+    var h = 24;
+    ctx.globalAlpha = alpha;
+    rrect(x, cy - h / 2, w, h, 12);
+    if (filled){ ctx.fillStyle = 'rgba(' + AMBER + ',0.16)'; ctx.fill(); ctx.strokeStyle = 'rgba(' + AMBER + ',0.5)'; }
+    else { ctx.fillStyle = 'rgba(' + PAPER + ',0.03)'; ctx.fill(); ctx.strokeStyle = 'rgba(' + PAPER + ',0.18)'; }
+    ctx.lineWidth = 1; ctx.stroke();
+    if (dotAlpha !== undefined){
+      ctx.beginPath(); ctx.arc(x + 13, cy, 3, 0, 6.2832);
+      ctx.fillStyle = 'rgba(' + AMBER + ',' + (0.35 + 0.65 * dotAlpha) + ')'; ctx.fill();
+    }
+    ctx.fillStyle = filled ? 'rgba(' + AMBER + ',1)' : 'rgba(' + PAPER + ',0.7)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + padL, cy + 0.5);
+    ctx.globalAlpha = 1;
+  }
+
+  function drawRow(r, t){
+    var y = r.y, cy = y + ROW / 2;
+    var a = r.lit >= 0 ? t - r.lit : -1;
+    var f = a < 0 ? 0 : ease(clamp(a / 0.5));
+    var cancel = a < 2.7 ? 0 : ease(clamp((a - 2.7) / 0.7));
+
+    if (f > 0){
+      ctx.fillStyle = 'rgba(' + AMBER + ',' + (0.11 * f * (1 - 0.7 * cancel)) + ')';
+      rrect(X_DATE - 18, y + 4, 840 - X_DATE - 4, ROW - 8, 8); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(' + PAPER + ',0.06)';
+    ctx.fillRect(X_DATE, y + ROW - 0.5, 840 - X_DATE - 20, 1);
+
+    var base = 0.5, textColor;
+    if (cancel > 0) textColor = 'rgba(' + PAPER + ',' + (0.5 - 0.25 * cancel) + ')';
+    else if (f > 0) textColor = 'rgba(' + (232 + (242 - 232) * (1 - f)) + ',' + (163 + (238 - 163) * (1 - f)) + ',' + (61 + (229 - 61) * (1 - f)) + ',' + (base + 0.5 * f) + ')';
+    else textColor = 'rgba(' + PAPER + ',' + base + ')';
+
+    ctx.textBaseline = 'middle';
+    ctx.font = '12px ' + MONO; ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(' + PAPER + ',0.32)';
+    ctx.fillText(r.date, X_DATE, cy + 0.5);
+
+    ctx.font = '15px ' + SANS; ctx.fillStyle = textColor;
+    ctx.fillText(r.vendor, X_VENDOR, cy);
+
+    ctx.font = '13px ' + MONO; ctx.textAlign = 'right';
+    ctx.fillText('$' + r.amount.toFixed(2), X_AMOUNT, cy + 0.5);
+
+    if (cancel > 0){
+      ctx.strokeStyle = 'rgba(' + AMBER + ',0.7)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(X_VENDOR - 4, cy); ctx.lineTo(X_VENDOR - 4 + (X_AMOUNT - X_VENDOR + 8) * cancel, cy); ctx.stroke();
+    }
+
+    if (a > 0.3){
+      var p = ease(clamp((a - 0.3) / 0.55));
+      var x = X_PILL + (1 - p) * 36;
+      var swap = clamp((a - 2.5) / 0.3);
+      if (swap < 1) pill(x, cy, 'Signed up by ' + r.owner, p * (1 - swap), true);
+      if (swap > 0) pill(x, cy, 'Cancelled  \u00b7  approved by ' + r.approver, p * swap, false);
+    } else if (r.renew){
+      pill(X_PILL, cy, 'Renews in ' + r.renewDays + ' days', 1, false, 0.5 + 0.5 * Math.sin(t * 3 + r.phase));
+    }
+  }
+
+  var last = 0, prevScan = -1e9;
+  function frame(now){
+    var t = now / 1000;
+    var dt = last ? Math.min(0.05, t - last) : 0; last = t;
+
+    ctx.clearRect(0, 0, W, H);
+
+    var maxY = -1e9;
+    for (var i = 0; i < rows.length; i++){ rows[i].y -= SPEED * dt; if (rows[i].y > maxY) maxY = rows[i].y; }
+    for (i = 0; i < rows.length; i++){ if (rows[i].y < -ROW){ rows[i].y = maxY + ROW; maxY += ROW; fill(rows[i]); } }
+
+    var cycle = (H + 340) / SCAN_SPEED;
+    var scanY = (t % cycle) * SCAN_SPEED - 170;
+    if (scanY < prevScan) for (i = 0; i < rows.length; i++) rows[i].seen = false;
+    prevScan = scanY;
+    for (i = 0; i < rows.length; i++){
+      var r = rows[i];
+      if (!r.seen && r.y + ROW / 2 <= scanY){ r.seen = true; if (r.forgotten && r.lit < 0) r.lit = t; }
+    }
+
+    ctx.fillStyle = 'rgba(' + PAPER + ',0.08)';
+    ctx.fillRect(X_DATE - 32, 0, 1, H);
+
+    for (i = 0; i < rows.length; i++) drawRow(rows[i], t);
+
+    var g = ctx.createLinearGradient(0, scanY - 150, 0, scanY);
+    g.addColorStop(0, 'rgba(' + AMBER + ',0)'); g.addColorStop(1, 'rgba(' + AMBER + ',0.09)');
+    ctx.fillStyle = g; ctx.fillRect(X_DATE - 32, scanY - 150, W - X_DATE + 32, 150);
+    ctx.fillStyle = 'rgba(' + AMBER + ',0.75)'; ctx.fillRect(X_DATE - 32, scanY, W - X_DATE + 32, 1);
+    ctx.beginPath(); ctx.arc(X_DATE - 31.5, scanY + 0.5, 3.5, 0, 6.2832); ctx.fill();
+
+    var top = ctx.createLinearGradient(0, 0, 0, 130);
+    top.addColorStop(0, BG); top.addColorStop(0.62, BG); top.addColorStop(1, 'rgba(13,14,17,0)');
+    ctx.fillStyle = top; ctx.fillRect(0, 0, W, 130);
+    var bot = ctx.createLinearGradient(0, H - 140, 0, H);
+    bot.addColorStop(0, 'rgba(13,14,17,0)'); bot.addColorStop(1, BG);
+    ctx.fillStyle = bot; ctx.fillRect(0, H - 140, W, 140);
+
+    ctx.font = '11px ' + MONO; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(' + PAPER + ',0.4)';
+    ctx.textAlign = 'left'; ctx.fillText('DATE', X_DATE, 62); ctx.fillText('VENDOR', X_VENDOR, 62); ctx.fillText('STATUS', X_PILL, 62);
+    ctx.textAlign = 'right'; ctx.fillText('MONTHLY', X_AMOUNT, 62);
+    ctx.fillStyle = 'rgba(' + PAPER + ',0.12)'; ctx.fillRect(X_DATE, 80, W - X_DATE - 20, 1);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

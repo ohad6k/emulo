@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger</title>
+<style>
+  html, body {
+    margin: 0;
+    width: 1600px;
+    height: 900px;
+    overflow: hidden;
+    background: #000;
+    color: #fff;
+    font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  canvas { position: absolute; top: 0; left: 0; }
+  #bg { width: 1600px; height: 900px; }
+  #orb { width: 1600px; height: 900px; }
+
+  .stage { position: absolute; inset: 0; }
+
+  .eyebrow {
+    position: absolute; left: 80px; top: 76px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
+    color: rgba(255,255,255,.5);
+  }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #fff;
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.55); opacity: 1; }
+    60%      { box-shadow: 0 0 0 10px rgba(255,255,255,0); opacity: .7; }
+  }
+
+  .wordmark {
+    position: absolute; left: 72px; top: 96px;
+    font-size: 220px; line-height: 1; font-weight: 700;
+    letter-spacing: -.06em;
+    animation: rise 1.4s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .period {
+    position: absolute; left: 82px; top: 352px;
+    font-size: 22px; color: rgba(255,255,255,.55); letter-spacing: -.01em;
+    animation: rise 1.4s .15s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .period b { color: #fff; font-weight: 500; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .metrics {
+    position: absolute; left: 80px; right: 80px; bottom: 60px;
+    display: grid; grid-template-columns: repeat(8, 1fr);
+    border-top: 1px solid rgba(255,255,255,.14);
+  }
+  .m {
+    padding: 26px 22px 0 0;
+    margin-left: 22px;
+    position: relative;
+    animation: rise 1.2s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .m:first-child { margin-left: 0; }
+  .m + .m::before {
+    content: ""; position: absolute; left: -22px; top: 26px; bottom: 6px;
+    width: 1px; background: rgba(255,255,255,.1);
+  }
+  .m .k {
+    font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase;
+    color: rgba(255,255,255,.5); white-space: nowrap;
+  }
+  .m .v {
+    margin-top: 16px; font-size: 54px; line-height: 1; font-weight: 600;
+    letter-spacing: -.04em; font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .m .v small { font-size: 20px; font-weight: 500; letter-spacing: 0; margin-left: 4px; color: rgba(255,255,255,.7); }
+  .m .v.na { color: rgba(255,255,255,.4); animation: breathe 3.2s ease-in-out infinite; }
+  @keyframes breathe {
+    0%, 100% { opacity: .55; }
+    50%      { opacity: 1; }
+  }
+  .m .s {
+    margin-top: 12px; font-size: 12.5px; color: rgba(255,255,255,.4);
+    white-space: nowrap;
+  }
+  .m .bar {
+    position: absolute; left: 0; right: 22px; top: -1px; height: 1px;
+    background: #fff; transform-origin: left; transform: scaleX(0);
+    animation: grow 1.6s .4s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes grow { to { transform: scaleX(var(--w)); } }
+
+  .sweep {
+    position: absolute; left: 80px; right: 80px; bottom: 60px; height: 1px;
+    overflow: hidden; pointer-events: none;
+  }
+  .sweep i {
+    position: absolute; top: 0; left: -240px; width: 240px; height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.9), rgba(255,255,255,0));
+    animation: sweep 7s linear infinite;
+  }
+  @keyframes sweep { to { transform: translateX(1680px); } }
+</style>
+</head>
+<body>
+<canvas id="bg" width="1600" height="900"></canvas>
+<canvas id="orb" width="1600" height="900"></canvas>
+
+<div class="stage">
+  <div class="eyebrow"><span class="dot"></span>Product metrics</div>
+  <div class="wordmark">Ledger</div>
+  <div class="period">Last <b>30 days</b></div>
+  <div class="metrics" id="metrics"></div>
+  <div class="sweep"><i></i></div>
+</div>
+
+<script>
+(function () {
+  var DATA = {
+    product: "Ledger",
+    period: "last 30 days",
+    metrics: {
+      active_installs: 1284,
+      weekly_active_users: null,
+      median_session_minutes: 12.4,
+      retention_d30: null,
+      crash_free_rate_pct: 99.2,
+      paid_conversions: null,
+      support_tickets: 37,
+      nps: null
+    }
+  };
+
+  var M = [
+    { key: "active_installs",        label: "Active installs",     fmt: function (n) { return Math.round(n).toLocaleString("en-US"); }, sub: "devices" },
+    { key: "weekly_active_users",    label: "Weekly active users", fmt: function (n) { return Math.round(n).toLocaleString("en-US"); }, sub: "users" },
+    { key: "median_session_minutes", label: "Median session",      fmt: function (n) { return n.toFixed(1); }, unit: "min", sub: "per session" },
+    { key: "retention_d30",          label: "Retention D30",       fmt: function (n) { return n.toFixed(1); }, unit: "%", sub: "of cohort", bar: 100 },
+    { key: "crash_free_rate_pct",    label: "Crash-free rate",     fmt: function (n) { return n.toFixed(1); }, unit: "%", sub: "of sessions", bar: 100 },
+    { key: "paid_conversions",       label: "Paid conversions",    fmt: function (n) { return Math.round(n).toLocaleString("en-US"); }, sub: "upgrades" },
+    { key: "support_tickets",        label: "Support tickets",     fmt: function (n) { return Math.round(n).toString(); }, sub: "opened" },
+    { key: "nps",                    label: "NPS",                 fmt: function (n) { return Math.round(n).toString(); }, sub: "score" }
+  ];
+
+  var root = document.getElementById("metrics");
+  var counters = [];
+
+  M.forEach(function (m, i) {
+    var val = DATA.metrics[m.key];
+    var cell = document.createElement("div");
+    cell.className = "m";
+    cell.style.animationDelay = (0.35 + i * 0.07) + "s";
+
+    var k = document.createElement("div"); k.className = "k"; k.textContent = m.label;
+    var v = document.createElement("div"); v.className = "v";
+    var s = document.createElement("div"); s.className = "s";
+
+    if (val === null || val === undefined) {
+      v.className = "v na";
+      v.textContent = "--";
+      s.textContent = "not reported";
+    } else {
+      var num = document.createElement("span");
+      num.textContent = m.fmt(0);
+      v.appendChild(num);
+      if (m.unit) { var u = document.createElement("small"); u.textContent = m.unit; v.appendChild(u); }
+      s.textContent = m.sub;
+      counters.push({ el: num, target: val, fmt: m.fmt, delay: 350 + i * 70 });
+      if (m.bar) {
+        var b = document.createElement("div"); b.className = "bar";
+        b.style.setProperty("--w", (val / m.bar).toFixed(4));
+        cell.appendChild(b);
+      }
+    }
+
+    cell.appendChild(k); cell.appendChild(v); cell.appendChild(s);
+    root.appendChild(cell);
+  });
+
+  /* count-up */
+  var t0 = null;
+  function ease(x) { return 1 - Math.pow(1 - x, 4); }
+  function countFrame(ts) {
+    if (t0 === null) t0 = ts;
+    var pending = false;
+    counters.forEach(function (c) {
+      var p = (ts - t0 - c.delay) / 1500;
+      if (p < 0) { pending = true; return; }
+      if (p > 1) p = 1; else pending = true;
+      c.el.textContent = c.fmt(c.target * ease(p));
+    });
+    if (pending) requestAnimationFrame(countFrame);
+  }
+  requestAnimationFrame(countFrame);
+
+  /* background: drifting ruled lines */
+  var bg = document.getElementById("bg").getContext("2d");
+  var W = 1600, H = 900;
+
+  function drawBg(t) {
+    bg.clearRect(0, 0, W, H);
+    var g = bg.createRadialGradient(1150, 390, 0, 1150, 390, 620);
+    g.addColorStop(0, "rgba(255,255,255,0.07)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    bg.fillStyle = g; bg.fillRect(0, 0, W, H);
+
+    bg.lineWidth = 1;
+    var rows = 26;
+    for (var i = 0; i < rows; i++) {
+      var y0 = 40 + i * 34 + Math.sin(t * 0.0004 + i * 0.5) * 6;
+      var a = 0.035 + 0.03 * (0.5 + 0.5 * Math.sin(t * 0.0006 + i * 0.35));
+      bg.strokeStyle = "rgba(255,255,255," + a.toFixed(3) + ")";
+      bg.beginPath();
+      for (var x = 0; x <= W; x += 20) {
+        var y = y0 + Math.sin(x * 0.0035 + t * 0.00055 + i * 0.4) * 9
+                   + Math.sin(x * 0.0012 - t * 0.0003) * 5;
+        if (x === 0) bg.moveTo(x, y); else bg.lineTo(x, y);
+      }
+      bg.stroke();
+    }
+  }
+
+  /* hero: rotating point sphere with orbit */
+  var oc = document.getElementById("orb").getContext("2d");
+  var CX = 1150, CY = 390, R = 268;
+  var pts = [];
+  for (var lat = -80; lat <= 80; lat += 8) {
+    var phi = lat * Math.PI / 180;
+    var step = 360 / Math.max(6, Math.round(44 * Math.cos(phi)));
+    for (var lon = 0; lon < 360; lon += step) {
+      var th = lon * Math.PI / 180;
+      pts.push([Math.cos(phi) * Math.cos(th), Math.sin(phi), Math.cos(phi) * Math.sin(th)]);
+    }
+  }
+  var tilt = 0.42, ct = Math.cos(tilt), st = Math.sin(tilt);
+
+  function drawOrb(t) {
+    oc.clearRect(0, 0, W, H);
+    var ry = t * 0.00022, cy = Math.cos(ry), sy = Math.sin(ry);
+
+    /* orbit ring behind */
+    oc.save();
+    oc.translate(CX, CY);
+    oc.rotate(-0.32);
+    oc.strokeStyle = "rgba(255,255,255,0.18)";
+    oc.lineWidth = 1;
+    oc.beginPath(); oc.ellipse(0, 0, R * 1.38, R * 0.3, 0, Math.PI, Math.PI * 2); oc.stroke();
+    oc.restore();
+
+    /* points */
+    var proj = [];
+    for (var i = 0; i < pts.length; i++) {
+      var p = pts[i];
+      var x = p[0] * cy - p[2] * sy;
+      var z = p[0] * sy + p[2] * cy;
+      var y = p[1] * ct - z * st;
+      var zz = p[1] * st + z * ct;
+      proj.push([x, y, zz]);
+    }
+    proj.sort(function (a, b) { return a[2] - b[2]; });
+    for (var j = 0; j < proj.length; j++) {
+      var q = proj[j];
+      var d = (q[2] + 1) / 2;
+      var a = 0.08 + 0.85 * d * d;
+      var r = 0.7 + 1.9 * d;
+      oc.fillStyle = "rgba(255,255,255," + a.toFixed(3) + ")";
+      oc.beginPath(); oc.arc(CX + q[0] * R, CY + q[1] * R, r, 0, Math.PI * 2); oc.fill();
+    }
+
+    /* horizon line through the sphere */
+    oc.strokeStyle = "rgba(255,255,255,0.12)";
+    oc.beginPath(); oc.moveTo(CX - R * 1.55, CY); oc.lineTo(CX + R * 1.55, CY); oc.stroke();
+
+    /* orbit ring front + satellite */
+    oc.save();
+    oc.translate(CX, CY);
+    oc.rotate(-0.32);
+    oc.strokeStyle = "rgba(255,255,255,0.45)";
+    oc.beginPath(); oc.ellipse(0, 0, R * 1.38, R * 0.3, 0, 0, Math.PI); oc.stroke();
+    var ang = t * 0.0009;
+    var sx = Math.cos(ang) * R * 1.38, syy = Math.sin(ang) * R * 0.3;
+    var front = Math.sin(ang) >= 0;
+    oc.fillStyle = front ? "#fff" : "rgba(255,255,255,0.35)";
+    oc.beginPath(); oc.arc(sx, syy, front ? 5 : 3.5, 0, Math.PI * 2); oc.fill();
+    if (front) {
+      oc.strokeStyle = "rgba(255,255,255,0.35)";
+      oc.beginPath(); oc.arc(sx, syy, 11 + 4 * Math.sin(t * 0.004), 0, Math.PI * 2); oc.stroke();
+    }
+    oc.restore();
+  }
+
+  function loop(t) {
+    drawBg(t);
+    drawOrb(t);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

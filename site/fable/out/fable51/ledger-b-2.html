@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger</title>
+<style>
+  :root{
+    --bg:#070707;
+    --fg:#f2f0ea;
+    --dim:#7a7873;
+    --faint:rgba(242,240,234,.12);
+    --sig:#e8b04b;
+    --sans:"Inter Tight","Inter","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:900px;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{position:relative}
+
+  #field{position:absolute;left:0;top:0;width:1600px;height:900px;display:block}
+  .veil{position:absolute;inset:0;pointer-events:none;
+    background:
+      linear-gradient(180deg,rgba(7,7,7,.85) 0,rgba(7,7,7,0) 14%),
+      linear-gradient(0deg,rgba(7,7,7,.97) 0,rgba(7,7,7,.92) 17%,rgba(7,7,7,0) 38%),
+      linear-gradient(90deg,rgba(7,7,7,.93) 0,rgba(7,7,7,.9) 36%,rgba(7,7,7,.5) 54%,rgba(7,7,7,0) 70%);
+  }
+
+  .top{position:absolute;left:80px;right:80px;top:56px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--dim)}
+  .mark{display:flex;align-items:center;gap:12px;color:var(--fg);font-family:var(--sans);font-size:18px;font-weight:600;letter-spacing:-.01em}
+  .mark i{width:8px;height:8px;border-radius:50%;background:var(--sig);display:block;animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,176,75,.55);opacity:1}50%{box-shadow:0 0 0 9px rgba(232,176,75,0);opacity:.8}}
+
+  h1{position:absolute;left:80px;top:196px;width:760px;font-size:118px;line-height:.92;letter-spacing:-.045em;font-weight:600;color:var(--fg)}
+  h1 .l{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
+  h1 .l span{display:block;transform:translateY(112%);animation:rise 1.1s cubic-bezier(.16,1,.3,1) forwards}
+  h1 .l:nth-child(2) span{animation-delay:.09s}
+  h1 .l:nth-child(3) span{animation-delay:.18s}
+  h1 .l:nth-child(4) span{animation-delay:.27s}
+  h1 em{font-style:normal;color:var(--sig)}
+  @keyframes rise{to{transform:translateY(0)}}
+
+  .cta{position:absolute;left:80px;top:652px;display:flex;align-items:center;gap:32px;opacity:0;animation:fade 1s .55s ease forwards}
+  .cta button{appearance:none;border:0;cursor:pointer;height:54px;padding:0 30px;background:var(--fg);color:var(--bg);font:500 16px/1 var(--sans);letter-spacing:-.005em;border-radius:3px;transition:transform .2s ease,background .2s ease}
+  .cta button:hover{background:#fff;transform:translateY(-1px)}
+  .cta a{color:var(--fg);text-decoration:none;font-size:16px;letter-spacing:-.005em;display:inline-flex;align-items:center;gap:10px;border-bottom:1px solid var(--faint);padding-bottom:3px}
+  .cta a svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.6}
+  @keyframes fade{to{opacity:1}}
+
+  .caps{position:absolute;left:80px;right:80px;top:772px;border-top:1px solid var(--faint);padding-top:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:40px;opacity:0;animation:fade 1s .8s ease forwards}
+  .caps h2{position:absolute;top:-1px;right:0;transform:translateY(-100%);padding-bottom:10px;font:400 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .caps li{list-style:none}
+  .caps b{display:block;font:400 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--sig);margin-bottom:12px}
+  .caps p{font-size:16px;line-height:1.35;letter-spacing:-.01em;color:rgba(242,240,234,.86);max-width:300px}
+
+  .scan{position:absolute;right:38px;top:130px;height:560px;width:2px;background:rgba(242,240,234,.08)}
+  .scan i{position:absolute;left:0;top:0;width:2px;height:0;background:var(--sig);display:block}
+  .scan span{position:absolute;left:-6px;top:582px;transform-origin:0 0;transform:rotate(90deg);white-space:nowrap;font:400 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+</style>
+</head>
+<body>
+
+<canvas id="field" width="1600" height="900"></canvas>
+<div class="veil"></div>
+
+<div class="top">
+  <div class="mark"><i></i>Ledger</div>
+  <div>Used by 40 teams across 12 countries.</div>
+</div>
+
+<h1>
+  <span class="l"><span>Every subscription</span></span>
+  <span class="l"><span>your company</span></span>
+  <span class="l"><span><em>forgot</em> about.</span></span>
+</h1>
+
+<div class="cta">
+  <button>Start free</button>
+  <a href="#">See how it works <svg viewBox="0 0 16 16"><path d="M3 13L13 3M6 3h7v7"/></svg></a>
+</div>
+
+<ul class="caps">
+  <h2>What it does</h2>
+  <li><b>Find</b><p>Finds the charges nobody recognises.</p></li>
+  <li><b>Group</b><p>Groups them by the person who signed up.</p></li>
+  <li><b>Cancel</b><p>Cancels in one click and records who approved it.</p></li>
+  <li><b>Warn</b><p>Warns you before the annual renewal lands.</p></li>
+</ul>
+
+<div class="scan"><i id="scanFill"></i><span>Scanning ledger</span></div>
+
+<script>
+(function(){
+  const c=document.getElementById('field');
+  const ctx=c.getContext('2d');
+  const W=1600,H=900,DPR=Math.min(2,window.devicePixelRatio||1);
+  c.width=W*DPR;c.height=H*DPR;ctx.scale(DPR,DPR);
+
+  const V=['Figma','Notion','Slack','Zoom','Linear','Vercel','Datadog','Loom','Miro','Grammarly','Airtable','Calendly','Zapier','1Password','Postman','Sentry','Intercom','Webflow','Typeform','Canva','Amplitude','Retool','Asana','Dropbox','Hotjar','Mailchimp','Lucidchart','DocuSign','Twilio','Segment','Framer','Cloudflare','Mixpanel','Ahrefs','Descript'];
+  const P=['Maya R.','Tom K.','Priya S.','Jonas W.','Elena M.','Sam O.','Noa L.','Chris D.','Aiko T.','Ben H.','Sara F.','Leo P.','Ivan C.','Dana G.'];
+  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'];
+  const ROW=46,SPEED=19,PERIOD=9.5;
+  const FG='242,240,234',SIG='232,176,75';
+
+  const r=(a,b)=>a+Math.random()*(b-a);
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const money=n=>'$'+n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+
+  function mkRow(y){
+    const annual=Math.random()<.3;
+    const bad=Math.random()<.32;
+    return {
+      y,
+      date:String(Math.floor(r(1,28))).padStart(2,'0')+' '+pick(M),
+      vendor:pick(V),
+      owner:bad&&Math.random()<.5?'unknown':pick(P),
+      cadence:annual?'annual':'monthly',
+      amount:money(annual?Math.round(r(48,480))*10:Math.round(r(9,240))),
+      bad,annual,found:-1,
+      tag:bad?(annual?'renews soon':'unrecognised'):''
+    };
+  }
+  let rows=[];
+  for(let y=-ROW;y<H+ROW;y+=ROW)rows.push(mkRow(y));
+  // Pre-found top part so first frame isn't empty
+  rows.forEach(rw=>{ if(rw.y<H*.36) rw.found=-10; });
+
+  const fill=document.getElementById('scanFill');
+  const ease=x=>1-Math.pow(1-x,3);
+  let last=performance.now()/1000,t0=last;
+
+  function frame(now){
+    const t=now/1000;
+    let dt=t-last; if(dt>.05)dt=.05; last=t;
+    const T=t-t0;
+
+    // move rows
+    for(const rw of rows) rw.y-=SPEED*dt;
+    while(rows.length&&rows[0].y<-ROW) rows.shift();
+    while(rows[rows.length-1].y<H+ROW) rows.push(mkRow(rows[rows.length-1].y+ROW));
+
+    // scan
+    const ph=(T%PERIOD)/PERIOD;
+    const scanY=-70+ph*(H+140);
+    const ba=Math.min(1,ph/.05,(1-ph)/.05);
+    fill.style.height=(ph*560).toFixed(1)+'px';
+
+    for(const rw of rows){
+      if(rw.found<0&&scanY>=rw.y+ROW*.5&&scanY-rw.y<ROW*2.2) rw.found=T;
+    }
+
+    ctx.clearRect(0,0,W,H);
+    ctx.font='13px "SF Mono","JetBrains Mono",Menlo,Consolas,monospace';
+    ctx.textBaseline='middle';
+
+    for(const rw of rows){
+      const cy=rw.y+ROW/2;
+      const age=rw.found<0?-1:T-rw.found;
+      let a=.2,flash=0;
+      if(age>=0){
+        flash=Math.exp(-age*2.2);
+        a=rw.bad?.92:.2+.12*(1-Math.exp(-age*3));
+        a=Math.min(1,a+flash*.6);
+      }
+      // rule
+      ctx.fillStyle='rgba('+FG+',.045)';
+      ctx.fillRect(80,rw.y+ROW-1,1440,1);
+
+      const col='rgba('+FG+','+a.toFixed(3)+')';
+      ctx.fillStyle=col;
+      ctx.textAlign='left';
+      ctx.fillText(rw.date,80,cy);
+      ctx.fillText(rw.vendor,250,cy);
+      ctx.fillStyle=rw.owner==='unknown'&&age>=0?'rgba('+SIG+','+a.toFixed(3)+')':col;
+      ctx.fillText(rw.owner,620,cy);
+      ctx.fillStyle=col;
+      ctx.fillText(rw.cadence,900,cy);
+      ctx.textAlign='right';
+      ctx.fillText(rw.amount,1520,cy);
+
+      if(rw.bad&&age>=0){
+        const s=ease(Math.min(1,age/.4));
+        ctx.fillStyle='rgba('+SIG+','+(.95*s).toFixed(3)+')';
+        ctx.fillRect(232-3*s,cy-3*s,6*s,6*s);
+        ctx.textAlign='left';
+        ctx.globalAlpha=s;
+        ctx.fillText(rw.tag,1160,cy);
+        ctx.globalAlpha=1;
+        // sweep line under the vendor as the "cancel" affordance
+        const sw=ease(Math.min(1,Math.max(0,(age-.15)/.7)));
+        ctx.fillStyle='rgba('+SIG+',.55)';
+        ctx.fillRect(250,cy+11,110*sw,1);
+      }
+      if(age>=0&&!rw.bad){
+        const s=Math.min(1,age/.5);
+        ctx.fillStyle='rgba('+FG+','+(.35*s).toFixed(3)+')';
+        ctx.textAlign='left';
+        ctx.fillText('ok',1160,cy);
+      }
+    }
+
+    // beam
+    const g=ctx.createLinearGradient(0,scanY-170,0,scanY);
+    g.addColorStop(0,'rgba('+FG+',0)');
+    g.addColorStop(1,'rgba('+FG+','+(.09*ba).toFixed(3)+')');
+    ctx.fillStyle=g;
+    ctx.fillRect(0,scanY-170,W,170);
+    ctx.fillStyle='rgba('+FG+','+(.75*ba).toFixed(3)+')';
+    ctx.fillRect(0,scanY,W,1);
+    ctx.fillStyle='rgba('+SIG+','+(.9*ba).toFixed(3)+')';
+    ctx.fillRect(1520-6,scanY-1,6,3);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

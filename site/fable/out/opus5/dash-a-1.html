@@ -1,0 +1,418 @@
+<title>Ledger Greensheet</title>
+<style>
+  :root{
+    --paper:#F2F3EB;
+    --band:#E1EADB;
+    --ink:#18251D;
+    --ink2:#46564A;
+    --muted:#8A968B;
+    --rule:#C3CCBB;
+    --rail:#DCE2D4;
+    --red:#B33A2B;
+    --green:#2F6B45;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono",monospace;
+  }
+  html,body{height:100%;overflow:hidden;}
+  body{margin:0;background:#0E130F;display:grid;place-items:center;color:var(--ink);
+       font-family:var(--mono);-webkit-font-smoothing:antialiased;}
+  #stage{position:relative;width:1600px;height:900px;overflow:hidden;background:var(--paper);
+         transform-origin:center center;box-shadow:0 0 0 1px #000, 0 24px 60px rgba(0,0,0,.55);}
+  #grain,#sweep{position:absolute;inset:0;width:1600px;height:900px;pointer-events:none;}
+  #grain{z-index:1;}
+  #sweep{z-index:9;mix-blend-mode:multiply;}
+
+  /* ---- tractor-feed rails ---- */
+  .rail{position:absolute;top:0;bottom:0;width:44px;z-index:4;background:var(--rail);}
+  .rail.left{left:0;border-right:1px dashed rgba(24,37,29,.35);}
+  .rail.right{right:0;border-left:1px dashed rgba(24,37,29,.35);}
+  .rail::before{content:"";position:absolute;inset:0;
+    background-image:radial-gradient(circle 5.5px at 22px 21px, var(--paper) 0 5.5px, rgba(24,37,29,.38) 5.6px 6.4px, transparent 6.5px);
+    background-size:44px 42px;}
+
+  /* ---- the sheet ---- */
+  .sheet{position:absolute;left:44px;right:44px;top:0;bottom:0;z-index:3;
+    padding:30px 40px 24px 50px;box-sizing:border-box;display:flex;flex-direction:column;
+    background-image:repeating-linear-gradient(to bottom,
+      var(--band) 0 90px, rgba(255,255,255,0) 90px 180px);}
+  .sheet::before{content:"";position:absolute;left:24px;top:0;bottom:0;width:5px;
+    border-left:1px solid rgba(179,58,43,.45);border-right:1px solid rgba(179,58,43,.45);}
+
+  /* ---- header ---- */
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:40px;}
+  .eyebrow{font-size:10.5px;letter-spacing:.22em;color:var(--ink2);text-transform:uppercase;margin:0 0 6px;}
+  .wordmark{font-family:var(--serif);font-size:70px;line-height:.9;letter-spacing:-.015em;margin:0;font-weight:600;}
+  .wordmark em{font-style:normal;color:var(--red);}
+  .meta{display:flex;gap:0;margin-top:14px;}
+  .meta div{padding:0 18px;border-left:1px solid var(--rule);}
+  .meta div:first-child{padding-left:0;border-left:none;}
+  .meta dt{font-size:9.5px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin:0 0 3px;}
+  .meta dd{margin:0;font-size:13px;letter-spacing:.04em;font-variant-numeric:tabular-nums;}
+  .live{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);
+        margin-right:7px;vertical-align:1px;animation:beat 1.9s ease-in-out infinite;}
+  @keyframes beat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+
+  .coverage{text-align:right;padding-left:26px;border-left:1px solid var(--rule);}
+  .coverage h2{font-size:9.5px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin:0 0 10px;font-weight:400;}
+  .cov{display:flex;gap:6px;justify-content:flex-end;margin-bottom:10px;}
+  .cov i{width:15px;height:15px;display:block;border:1px solid var(--ink);
+         animation:covpulse 5.5s ease-in-out infinite;animation-delay:var(--d);}
+  .cov i.on{background:var(--ink);}
+  .cov i.off{border-color:rgba(179,58,43,.7);
+    background-image:repeating-linear-gradient(45deg,transparent 0 3px,rgba(179,58,43,.3) 3px 4px);}
+  @keyframes covpulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .cov-count{font-size:26px;letter-spacing:.02em;font-variant-numeric:tabular-nums;}
+  .cov-count small{font-size:12px;color:var(--ink2);letter-spacing:.14em;}
+  .cov-note{font-size:10.5px;color:var(--red);letter-spacing:.06em;margin:6px 0 0;}
+
+  .doublerule{margin-top:16px;border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);height:3px;flex:none;}
+
+  /* ---- ledger grid ---- */
+  .grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);min-height:0;}
+  .cell{position:relative;padding:16px 20px 14px;display:flex;flex-direction:column;
+        border-left:1px solid var(--rule);min-width:0;}
+  .cell:nth-child(4n+1){border-left:none;}
+  .cell:nth-child(n+5){border-top:1px solid var(--rule);}
+  .cell header{display:flex;justify-content:space-between;align-items:center;}
+  .lineno{font-size:10px;letter-spacing:.18em;color:var(--muted);}
+  .chip{font-size:9px;letter-spacing:.16em;padding:3px 7px;text-transform:uppercase;}
+  .chip.posted{background:rgba(47,107,69,.14);color:var(--green);border:1px solid rgba(47,107,69,.35);}
+  .chip.open{color:var(--red);border:1px solid rgba(179,58,43,.55);}
+  .chip.open::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;
+    background:var(--red);margin-right:6px;vertical-align:1px;animation:beat 2.6s ease-in-out infinite;}
+  .cell h3{margin:14px 0 0;font-size:12px;letter-spacing:.15em;text-transform:uppercase;font-weight:600;color:var(--ink2);}
+  .value{margin-top:10px;display:flex;align-items:baseline;gap:8px;}
+  .num{font-size:58px;line-height:1;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;}
+  .unit{font-size:13px;letter-spacing:.1em;color:var(--ink2);}
+  .note{margin:8px 0 0;font-size:11px;line-height:1.45;color:var(--muted);letter-spacing:.02em;max-width:26ch;}
+  .viz{margin-top:auto;padding-top:12px;}
+
+  /* recorded: unit blocks */
+  .blocks{display:flex;gap:4px;align-items:flex-end;}
+  .blocks span{width:17px;height:17px;border:1px solid var(--ink2);position:relative;overflow:hidden;}
+  .blocks span::after{content:"";position:absolute;left:0;right:0;bottom:0;height:100%;background:var(--ink);
+    transform-origin:bottom;transform:scaleY(var(--h,1));
+    animation-name:blockfill;animation-duration:9s;animation-timing-function:ease-out;
+    animation-iteration-count:infinite;animation-delay:var(--d);}
+  @keyframes blockfill{0%{transform:scaleY(0)}9%{transform:scaleY(var(--h,1))}90%{transform:scaleY(var(--h,1))}97%,100%{transform:scaleY(0)}}
+
+  /* recorded: tally + dials */
+  .stroke{fill:none;stroke:var(--ink);stroke-width:1.7;stroke-linecap:round;
+    stroke-dasharray:28;animation-name:inkstroke;animation-duration:11s;animation-timing-function:linear;
+    animation-iteration-count:infinite;animation-delay:var(--d);}
+  @keyframes inkstroke{0%{stroke-dashoffset:28}6%{stroke-dashoffset:0}88%{stroke-dashoffset:0}94%,100%{stroke-dashoffset:28}}
+  .dial-track{fill:none;stroke:var(--rule);stroke-width:5;}
+  .dial-arc{fill:none;stroke:var(--ink);stroke-width:5;stroke-linecap:butt;
+    stroke-dasharray:150.8;transform:rotate(-90deg);transform-origin:32px 32px;transform-box:view-box;
+    animation:dialsweep 8s ease-in-out infinite;}
+  @keyframes dialsweep{0%{stroke-dashoffset:150.8}30%{stroke-dashoffset:119.6}88%{stroke-dashoffset:119.6}98%,100%{stroke-dashoffset:150.8}}
+  .dial-hand{stroke:var(--red);stroke-width:1.6;stroke-linecap:round;transform-origin:32px 32px;transform-box:view-box;
+    animation:handsweep 8s ease-in-out infinite;}
+  @keyframes handsweep{0%{transform:rotate(0deg);opacity:1}30%{transform:rotate(74.4deg)}88%{transform:rotate(74.4deg);opacity:1}94%{opacity:0}95%{transform:rotate(0deg);opacity:0}100%{transform:rotate(0deg);opacity:1}}
+  .dial-tick{stroke:var(--muted);stroke-width:1;}
+  .arc-track{fill:none;stroke:var(--rule);stroke-width:6;}
+  .arc-val{fill:none;stroke:var(--ink);stroke-width:6;stroke-dasharray:238.76;stroke-dashoffset:238.76;
+    transform:rotate(-90deg);transform-origin:48px 48px;transform-box:view-box;
+    animation:arcdraw 2.2s .3s cubic-bezier(.2,.8,.25,1) forwards, arcbreathe 5.4s 2.6s ease-in-out infinite;}
+  @keyframes arcdraw{to{stroke-dashoffset:1.91}}
+  @keyframes arcbreathe{0%,100%{opacity:1}50%{opacity:.72}}
+  .arc-gap{fill:none;stroke:var(--red);stroke-width:6;stroke-dasharray:1.91 238.76;
+    transform:rotate(-90deg);transform-origin:48px 48px;transform-box:view-box;}
+  .arc-orbit{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:1.5 7;opacity:.55;
+    transform-origin:48px 48px;transform-box:view-box;animation:orbit 34s linear infinite;}
+  @keyframes orbit{to{transform:rotate(360deg)}}
+  .dialrow{display:flex;align-items:center;gap:12px;}
+  .dialrow p{margin:0;font-size:10.5px;letter-spacing:.06em;color:var(--ink2);line-height:1.5;}
+
+  /* open (no value) lines */
+  .cell.open .num{color:var(--muted);}
+  .field{height:46px;border:1px solid rgba(179,58,43,.35);display:flex;align-items:center;padding:0 12px;
+    background-image:repeating-linear-gradient(45deg,transparent 0 7px,rgba(24,37,29,.06) 7px 8px);
+    animation:hatchdrift 3.4s linear infinite;}
+  @keyframes hatchdrift{from{background-position:0 0}to{background-position:11.3137px 0}}
+  .caret{width:8px;height:20px;background:var(--ink);animation:blink 1.15s steps(1) infinite;}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  .field span{font-size:10px;letter-spacing:.18em;color:var(--red);margin-left:12px;}
+
+  /* ---- adding-machine tape ---- */
+  .tape{margin-top:14px;height:64px;flex:none;position:relative;overflow:hidden;background:var(--paper);
+    border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);}
+  .tape::before,.tape::after{content:"";position:absolute;left:0;right:0;height:6px;z-index:2;
+    background-image:radial-gradient(circle 3px at 9px 3px, var(--rail) 0 3px, transparent 3.5px);
+    background-size:18px 6px;}
+  .tape::before{top:0}.tape::after{bottom:0}
+  .tapetrack{display:flex;width:max-content;animation:reel 46s linear infinite;height:100%;align-items:center;}
+  .tapetrack span{font-size:15px;letter-spacing:.16em;white-space:nowrap;padding-right:60px;
+    font-variant-numeric:tabular-nums;color:var(--ink2);}
+  .tapetrack b{color:var(--ink);}
+  .tapetrack i{color:var(--red);font-style:normal;}
+  @keyframes reel{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;}
+    .arc-val{stroke-dashoffset:1.91;}
+    .dial-arc{stroke-dashoffset:119.6;}
+    .dial-hand{transform:rotate(74.4deg);}
+    .stroke{stroke-dashoffset:0;}
+    .blocks span::after{transform:scaleY(var(--h,1));}
+  }
+</style>
+
+<div id="stage">
+  <canvas id="grain"></canvas>
+  <div class="rail left"></div>
+  <div class="rail right"></div>
+
+  <div class="sheet">
+    <div class="head">
+      <div>
+        <p class="eyebrow">General ledger &middot; product metrics sheet</p>
+        <h1 class="wordmark">Ledger<em>.</em></h1>
+        <dl class="meta">
+          <div><dt>Period</dt><dd>Last 30 days</dd></div>
+          <div><dt>Folio</dt><dd>01 of 01</dd></div>
+          <div><dt>Lines</dt><dd>08 entered</dd></div>
+          <div><dt>Sheet open</dt><dd><span class="live"></span><span id="clock">00:00:00</span></dd></div>
+        </dl>
+      </div>
+      <div class="coverage">
+        <h2>Posting status</h2>
+        <div class="cov" id="cov"></div>
+        <div class="cov-count">4<small> / 8 POSTED</small></div>
+        <p class="cov-note">4 lines carry no value this period</p>
+      </div>
+    </div>
+
+    <div class="doublerule"></div>
+
+    <div class="grid">
+      <article class="cell">
+        <header><span class="lineno">L&middot;01</span><span class="chip posted">Posted</span></header>
+        <h3>Active installs</h3>
+        <div class="value"><span class="num" data-target="1284" data-dec="0">0</span><span class="unit">installs</span></div>
+        <p class="note">Devices reporting in to the sheet during the period.</p>
+        <div class="viz">
+          <div class="blocks" id="blocks"></div>
+          <p class="note" style="margin-top:7px">each mark = 100 installs</p>
+        </div>
+      </article>
+
+      <article class="cell open">
+        <header><span class="lineno">L&middot;02</span><span class="chip open">Open</span></header>
+        <h3>Weekly active users</h3>
+        <div class="value"><span class="num">&mdash;</span></div>
+        <p class="note">No value returned for this period.</p>
+        <div class="viz"><div class="field"><span class="caret"></span><span>NOT RECORDED</span></div></div>
+      </article>
+
+      <article class="cell">
+        <header><span class="lineno">L&middot;03</span><span class="chip posted">Posted</span></header>
+        <h3>Median session</h3>
+        <div class="value"><span class="num" data-target="12.4" data-dec="1">0.0</span><span class="unit">minutes</span></div>
+        <p class="note">Midpoint session length; half of sessions ran longer.</p>
+        <div class="viz dialrow">
+          <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+            <circle class="dial-track" cx="32" cy="32" r="24"></circle>
+            <circle class="dial-arc" cx="32" cy="32" r="24"></circle>
+            <line class="dial-tick" x1="32" y1="5" x2="32" y2="11"></line>
+            <line class="dial-tick" x1="59" y1="32" x2="53" y2="32"></line>
+            <line class="dial-tick" x1="32" y1="59" x2="32" y2="53"></line>
+            <line class="dial-tick" x1="5" y1="32" x2="11" y2="32"></line>
+            <line class="dial-hand" x1="32" y1="32" x2="32" y2="14"></line>
+            <circle cx="32" cy="32" r="2" fill="#18251D"></circle>
+          </svg>
+          <p>12.4 of a<br>60&#8209;minute dial</p>
+        </div>
+      </article>
+
+      <article class="cell open">
+        <header><span class="lineno">L&middot;04</span><span class="chip open">Open</span></header>
+        <h3>D30 retention</h3>
+        <div class="value"><span class="num">&mdash;</span></div>
+        <p class="note">No value returned for this period.</p>
+        <div class="viz"><div class="field"><span class="caret"></span><span>NOT RECORDED</span></div></div>
+      </article>
+
+      <article class="cell">
+        <header><span class="lineno">L&middot;05</span><span class="chip posted">Posted</span></header>
+        <h3>Crash&#8209;free sessions</h3>
+        <div class="value"><span class="num" data-target="99.2" data-dec="1">0.0</span><span class="unit">per cent</span></div>
+        <p class="note">Sessions that ended without a crash report.</p>
+        <div class="viz dialrow">
+          <svg width="72" height="72" viewBox="0 0 96 96" aria-hidden="true">
+            <circle class="arc-orbit" cx="48" cy="48" r="44"></circle>
+            <circle class="arc-track" cx="48" cy="48" r="38"></circle>
+            <circle class="arc-val" cx="48" cy="48" r="38"></circle>
+            <circle class="arc-gap" cx="48" cy="48" r="38"></circle>
+          </svg>
+          <p><b style="color:#B33A2B">0.8%</b> of sessions<br>crashed &mdash; the gap<br>at the top of the ring</p>
+        </div>
+      </article>
+
+      <article class="cell open">
+        <header><span class="lineno">L&middot;06</span><span class="chip open">Open</span></header>
+        <h3>Paid conversions</h3>
+        <div class="value"><span class="num">&mdash;</span></div>
+        <p class="note">No value returned for this period.</p>
+        <div class="viz"><div class="field"><span class="caret"></span><span>NOT RECORDED</span></div></div>
+      </article>
+
+      <article class="cell">
+        <header><span class="lineno">L&middot;07</span><span class="chip posted">Posted</span></header>
+        <h3>Support tickets</h3>
+        <div class="value"><span class="num" data-target="37" data-dec="0">0</span><span class="unit">tickets</span></div>
+        <p class="note">Tickets opened against Ledger in the period.</p>
+        <div class="viz">
+          <svg id="tally" width="250" height="26" viewBox="0 0 250 26" aria-hidden="true"></svg>
+          <p class="note" style="margin-top:6px">struck in fives &middot; 7 groups + 2</p>
+        </div>
+      </article>
+
+      <article class="cell open">
+        <header><span class="lineno">L&middot;08</span><span class="chip open">Open</span></header>
+        <h3>Net promoter score</h3>
+        <div class="value"><span class="num">&mdash;</span></div>
+        <p class="note">No value returned for this period.</p>
+        <div class="viz"><div class="field"><span class="caret"></span><span>NOT RECORDED</span></div></div>
+      </article>
+    </div>
+
+    <div class="tape">
+      <div class="tapetrack" id="tapetrack"></div>
+    </div>
+  </div>
+
+  <canvas id="sweep"></canvas>
+</div>
+
+<script>
+(function(){
+  var W=1600,H=900;
+  var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- fit the fixed 1600x900 sheet into the window ---------- */
+  var stage=document.getElementById("stage");
+  function fit(){
+    var s=Math.min(1,window.innerWidth/W,window.innerHeight/H);
+    stage.style.transform="scale("+s+")";
+  }
+  fit(); window.addEventListener("resize",fit);
+
+  /* ---------- posting-status squares ---------- */
+  var posted=[true,false,true,false,true,false,true,false];
+  var cov=document.getElementById("cov");
+  posted.forEach(function(p,i){
+    var s=document.createElement("i");
+    s.className=p?"on":"off";
+    s.style.setProperty("--d",(i*0.22)+"s");
+    cov.appendChild(s);
+  });
+
+  /* ---------- unit blocks: 12 full hundreds + 0.84 of one ---------- */
+  var blocks=document.getElementById("blocks");
+  for(var b=0;b<13;b++){
+    var el=document.createElement("span");
+    el.style.setProperty("--d",(b*0.09)+"s");
+    if(b===12) el.style.setProperty("--h","0.84");
+    blocks.appendChild(el);
+  }
+
+  /* ---------- 37 tally strokes, grouped in fives ---------- */
+  var NS="http://www.w3.org/2000/svg";
+  var tally=document.getElementById("tally"), left=37, x=4, k=0;
+  function stroke(x1,y1,x2,y2){
+    var l=document.createElementNS(NS,"line");
+    l.setAttribute("x1",x1);l.setAttribute("y1",y1);
+    l.setAttribute("x2",x2);l.setAttribute("y2",y2);
+    l.setAttribute("class","stroke");
+    l.style.setProperty("--d",(k*0.045)+"s");
+    tally.appendChild(l); k++;
+  }
+  while(left>0){
+    var n=Math.min(5,left); left-=n;
+    var bars=(n===5)?4:n;
+    for(var i=0;i<bars;i++) stroke(x+i*5,3,x+i*5,21);
+    if(n===5) stroke(x-3,21,x+18,3);
+    x+=(n===5)?28:(bars-1)*5+16;
+  }
+
+  /* ---------- count-up to the recorded figures ---------- */
+  function fmt(v,d){ return d ? v.toFixed(d) : Math.round(v).toLocaleString("en-US"); }
+  var nums=[].slice.call(document.querySelectorAll(".num[data-target]"));
+  nums.forEach(function(el){
+    var target=parseFloat(el.getAttribute("data-target")),
+        dec=parseInt(el.getAttribute("data-dec"),10);
+    if(reduce){ el.textContent=fmt(target,dec); return; }
+    var t0=null, dur=1500;
+    function step(ts){
+      if(t0===null) t0=ts;
+      var p=Math.min(1,(ts-t0)/dur), e=1-Math.pow(1-p,3);
+      el.textContent=fmt(target*e,dec);
+      if(p<1) requestAnimationFrame(step); else el.textContent=fmt(target,dec);
+    }
+    requestAnimationFrame(step);
+  });
+
+  /* ---------- sheet-open clock ---------- */
+  var start=Date.now(), clock=document.getElementById("clock");
+  function pad(n){ return (n<10?"0":"")+n; }
+  function tick(){
+    var s=Math.floor((Date.now()-start)/1000);
+    clock.textContent=pad(Math.floor(s/3600))+":"+pad(Math.floor(s/60)%60)+":"+pad(s%60);
+  }
+  tick(); setInterval(tick,1000);
+
+  /* ---------- adding-machine tape ---------- */
+  var line='<b>ACTIVE INSTALLS</b> 1,284 &nbsp;&#8226;&nbsp; <b>MEDIAN SESSION</b> 12.4 MIN &nbsp;&#8226;&nbsp; '+
+           '<b>CRASH-FREE SESSIONS</b> 99.2% &nbsp;&#8226;&nbsp; <b>SUPPORT TICKETS</b> 37 &nbsp;&#8226;&nbsp; '+
+           '<i>OPEN LINES:</i> WEEKLY ACTIVE USERS &nbsp;&#8226;&nbsp; D30 RETENTION &nbsp;&#8226;&nbsp; '+
+           'PAID CONVERSIONS &nbsp;&#8226;&nbsp; NPS &nbsp;&#8226;&nbsp; <i>PERIOD:</i> LAST 30 DAYS &nbsp;&#8226;&nbsp; ';
+  document.getElementById("tapetrack").innerHTML="<span>"+line+"</span><span>"+line+"</span>";
+
+  /* ---------- canvas 1: paper grain, drawn once ---------- */
+  var gcv=document.getElementById("grain"), gctx=gcv.getContext("2d"),
+      DPR=Math.min(2,window.devicePixelRatio||1);
+  gcv.width=W*DPR; gcv.height=H*DPR; gctx.setTransform(DPR,0,0,DPR,0,0);
+  var tile=document.createElement("canvas"); tile.width=tile.height=256;
+  var tctx=tile.getContext("2d"), img=tctx.createImageData(256,256), d=img.data;
+  for(var p=0;p<d.length;p+=4){
+    var v=Math.random();
+    d[p]=24; d[p+1]=37; d[p+2]=29;
+    d[p+3]= v>0.86 ? 10+Math.random()*16 : (v<0.06 ? 6 : 0);
+  }
+  tctx.putImageData(img,0,0);
+  gctx.fillStyle=gctx.createPattern(tile,"repeat");
+  gctx.fillRect(0,0,W,H);
+
+  /* ---------- canvas 2: carriage sweep + paper dust ---------- */
+  var scv=document.getElementById("sweep"), c=scv.getContext("2d");
+  scv.width=W*DPR; scv.height=H*DPR; c.setTransform(DPR,0,0,DPR,0,0);
+  var motes=[];
+  for(var m=0;m<30;m++){
+    motes.push({x:Math.random()*W,y:Math.random()*H,r:0.5+Math.random()*1.4,
+                vx:-5+Math.random()*10,vy:-7+Math.random()*4,a:0.05+Math.random()*0.09});
+  }
+  var t0=performance.now(), last=t0;
+  function frame(now){
+    var dt=Math.min(0.06,(now-last)/1000); last=now;
+    c.clearRect(0,0,W,H);
+    var x=(((now-t0)%11000)/11000)*(W+180)-90;
+    var g=c.createLinearGradient(x-110,0,x+16,0);
+    g.addColorStop(0,"rgba(24,37,29,0)");
+    g.addColorStop(0.8,"rgba(24,37,29,0.035)");
+    g.addColorStop(1,"rgba(24,37,29,0)");
+    c.fillStyle=g; c.fillRect(x-110,0,126,H);
+    c.fillStyle="rgba(24,37,29,0.075)"; c.fillRect(x,0,1,H);
+    for(var i=0;i<motes.length;i++){
+      var o=motes[i];
+      o.x+=o.vx*dt; o.y+=o.vy*dt;
+      if(o.y<-4){o.y=H+4;o.x=Math.random()*W;}
+      if(o.x<-4)o.x=W+4; if(o.x>W+4)o.x=-4;
+      c.beginPath(); c.arc(o.x,o.y,o.r,0,6.2832);
+      c.fillStyle="rgba(24,37,29,"+o.a+")"; c.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+  if(!reduce) requestAnimationFrame(frame);
+})();
+</script>

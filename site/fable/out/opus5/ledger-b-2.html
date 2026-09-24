@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1600, initial-scale=1" />
+<title>Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#050505;
+    --w:#ffffff;
+    --dim:#9a9a9a;
+    --faint:#6a6a6a;
+    --sans:"Inter Tight", system-ui, -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden;background:var(--ink)}
+  body{
+    font-family:var(--sans);
+    color:var(--w);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* ---------- layers ---------- */
+  #fx{position:fixed;inset:0;display:block;z-index:0}
+  .scrim{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:
+      linear-gradient(90deg,#050505 0%,#050505 39%,rgba(5,5,5,.72) 52%,rgba(5,5,5,0) 64%),
+      linear-gradient(180deg,rgba(5,5,5,.85) 0%,rgba(5,5,5,0) 22%),
+      linear-gradient(180deg,rgba(5,5,5,0) 68%,rgba(5,5,5,.78) 80%,#050505 90%),
+      radial-gradient(120% 90% at 50% 50%,rgba(5,5,5,0) 45%,rgba(5,5,5,.75) 100%);
+  }
+  .grain{
+    position:fixed;left:-10%;top:-10%;width:120%;height:120%;
+    z-index:2;pointer-events:none;opacity:.045;mix-blend-mode:screen;
+    animation:grain 1.6s steps(3) infinite;
+  }
+  @keyframes grain{
+    0%{transform:translate(0,0)}
+    33%{transform:translate(-1.2%,1%)}
+    66%{transform:translate(1%,-1.4%)}
+    100%{transform:translate(0,0)}
+  }
+
+  .edge{
+    position:fixed;left:48px;top:0;bottom:0;width:1px;z-index:3;
+    background:linear-gradient(180deg,transparent 0,rgba(255,255,255,.11) 16%,rgba(255,255,255,.11) 84%,transparent 100%);
+  }
+  .edge i{
+    position:absolute;left:-2px;width:5px;height:5px;border-radius:50%;
+    background:#fff;box-shadow:0 0 12px rgba(255,255,255,.85);
+    animation:trav 9.5s cubic-bezier(.55,0,.45,1) infinite;
+  }
+  @keyframes trav{
+    0%{top:14%;opacity:0}
+    9%{opacity:1}
+    90%{opacity:1}
+    100%{top:86%;opacity:0}
+  }
+
+  /* ---------- content ---------- */
+  main{position:fixed;z-index:4;left:96px;top:252px;width:900px}
+
+  .brand{display:flex;align-items:center;gap:14px;margin:0 0 46px}
+  .mark{display:inline-flex;flex-direction:column;justify-content:center;gap:3px;width:20px}
+  .mark i{display:block;height:2px;background:#fff;transform-origin:left center;animation:markbar 2.8s ease-in-out infinite}
+  .mark i:nth-child(1){animation-delay:0s}
+  .mark i:nth-child(2){animation-delay:.32s;opacity:.72}
+  .mark i:nth-child(3){animation-delay:.64s;opacity:.44}
+  @keyframes markbar{0%,100%{transform:scaleX(.42)}45%{transform:scaleX(1)}}
+  .brand span{font-size:14px;font-weight:600;letter-spacing:.17em;color:#fff}
+
+  h1{
+    margin:0;font-weight:700;font-size:82px;line-height:1.0;
+    letter-spacing:-.032em;color:#fff;
+  }
+  h1 .ln{display:block}
+  .l3{position:relative;display:inline-block}
+  .out{
+    color:transparent;
+    -webkit-text-stroke:1.25px rgba(255,255,255,.72);
+  }
+  .fill{
+    position:absolute;left:0;top:0;color:#fff;white-space:nowrap;
+    -webkit-mask-image:linear-gradient(100deg,transparent 34%,#000 47%,#000 53%,transparent 66%);
+    mask-image:linear-gradient(100deg,transparent 34%,#000 47%,#000 53%,transparent 66%);
+    -webkit-mask-size:300% 100%;mask-size:300% 100%;
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    animation:sweep 6s ease-in-out infinite;
+  }
+  @keyframes sweep{
+    0%{-webkit-mask-position:135% 0;mask-position:135% 0}
+    60%,100%{-webkit-mask-position:-55% 0;mask-position:-55% 0}
+  }
+
+  .cta{display:flex;align-items:center;gap:30px;margin-top:52px}
+  .btn{
+    position:relative;appearance:none;border:0;cursor:pointer;
+    background:#fff;color:#080808;font-family:inherit;font-size:15px;font-weight:600;
+    letter-spacing:-.005em;padding:15px 30px;border-radius:3px;
+  }
+  .btn::after{
+    content:"";position:absolute;inset:0;border:1px solid rgba(255,255,255,.9);border-radius:3px;
+    animation:ring 3s cubic-bezier(.3,.7,.3,1) infinite;pointer-events:none;
+  }
+  @keyframes ring{
+    0%{transform:scale(1);opacity:.5}
+    70%{transform:scale(1.13);opacity:0}
+    100%{transform:scale(1.13);opacity:0}
+  }
+  .link{
+    position:relative;display:inline-flex;align-items:center;gap:9px;
+    color:#dcdcdc;text-decoration:none;font-size:15px;font-weight:500;letter-spacing:-.005em;
+    padding-bottom:5px;
+  }
+  .link .u{
+    position:absolute;left:0;right:0;bottom:0;height:1px;
+    background:linear-gradient(90deg,rgba(255,255,255,.16) 0 38%,rgba(255,255,255,.9) 50%,rgba(255,255,255,.16) 62% 100%);
+    background-size:260% 100%;
+    animation:shim 3.6s linear infinite;
+  }
+  @keyframes shim{0%{background-position:150% 0}100%{background-position:-150% 0}}
+  .link svg{animation:arrow 2.4s ease-in-out infinite}
+  @keyframes arrow{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+
+  /* ---------- footer rail ---------- */
+  footer{position:fixed;z-index:4;left:96px;right:96px;bottom:32px}
+  .head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin-bottom:26px;
+  }
+  .head .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--faint)}
+  .head .use{font-size:13px;color:#8e8e8e;letter-spacing:-.005em}
+  ul{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:44px;margin:0;padding:0}
+  li{
+    position:relative;padding-top:18px;color:#8b8b8b;
+    border-top:1px solid rgba(255,255,255,.12);
+    animation:railtext 14s linear infinite;
+  }
+  li .bar{
+    position:absolute;left:0;top:-1px;height:1px;width:100%;background:#fff;
+    transform:scaleX(0);transform-origin:left center;
+    animation:railbar 14s linear infinite;
+  }
+  li .ix{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;opacity:.55;margin-bottom:9px;color:inherit}
+  li p{margin:0;font-size:14.5px;line-height:1.5;letter-spacing:-.008em;color:inherit;max-width:270px}
+  li:nth-child(1),li:nth-child(1) .bar{animation-delay:0s}
+  li:nth-child(2),li:nth-child(2) .bar{animation-delay:3.5s}
+  li:nth-child(3),li:nth-child(3) .bar{animation-delay:7s}
+  li:nth-child(4),li:nth-child(4) .bar{animation-delay:10.5s}
+  @keyframes railbar{
+    0%{transform:scaleX(0);opacity:1}
+    17%{transform:scaleX(1);opacity:1}
+    23%{transform:scaleX(1);opacity:1}
+    25%{transform:scaleX(1);opacity:0}
+    26%,100%{transform:scaleX(0);opacity:0}
+  }
+  @keyframes railtext{
+    0%{color:#8b8b8b}
+    5%{color:#f4f4f4}
+    22%{color:#f4f4f4}
+    28%{color:#8b8b8b}
+    100%{color:#8b8b8b}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="fx"></canvas>
+<div class="scrim"></div>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#noise)"/>
+</svg>
+
+<div class="edge"><i></i></div>
+
+<main>
+  <div class="brand">
+    <span class="mark"><i></i><i></i><i></i></span>
+    <span>Ledger</span>
+  </div>
+
+  <h1>
+    <span class="ln">Every subscription</span>
+    <span class="ln">your company</span>
+    <span class="ln l3"><span class="out">forgot about.</span><span class="fill" aria-hidden="true">forgot about.</span></span>
+  </h1>
+
+  <div class="cta">
+    <button class="btn">Start free</button>
+    <a class="link" href="#">See how it works
+      <svg width="15" height="9" viewBox="0 0 15 9" fill="none" aria-hidden="true">
+        <path d="M0 4.5h13M9.4 1l3.6 3.5L9.4 8" stroke="currentColor" stroke-width="1.3"/>
+      </svg>
+      <span class="u"></span>
+    </a>
+  </div>
+</main>
+
+<footer>
+  <div class="head">
+    <span class="lbl">What it does</span>
+    <span class="use">Used by 40 teams across 12 countries.</span>
+  </div>
+  <ul>
+    <li><span class="bar"></span><span class="ix">01</span><p>Finds the charges nobody recognises.</p></li>
+    <li><span class="bar"></span><span class="ix">02</span><p>Groups them by the person who signed up.</p></li>
+    <li><span class="bar"></span><span class="ix">03</span><p>Cancels in one click and records who approved it.</p></li>
+    <li><span class="bar"></span><span class="ix">04</span><p>Warns you before the annual renewal lands.</p></li>
+  </ul>
+</footer>
+
+<script>
+(function(){
+  var c = document.getElementById('fx');
+  var g = c.getContext('2d');
+
+  var W, H, DPR, vpX, vpY, nearY, nearL, nearR, scanY, scanX0;
+
+  function layout(){
+    W = window.innerWidth  || 1600;
+    H = window.innerHeight || 900;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    c.width  = Math.round(W * DPR);
+    c.height = Math.round(H * DPR);
+    c.style.width  = W + 'px';
+    c.style.height = H + 'px';
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    vpX   = W * 0.74;
+    vpY   = H * 0.175;
+    nearY = H * 1.72;
+    nearL = -W * 0.45;
+    nearR =  W * 1.95;
+    scanY = Math.round(H * 0.66) + 0.5;
+    scanX0 = W * 0.40;
+  }
+  layout();
+  window.addEventListener('resize', layout);
+
+  var K = 3.4, N = 26, DZ = 0.145, V = 0.115;
+  var COLS = [0.245, 0.615, 0.775, 0.965];
+
+  var seen = {}, seenCount = 0, pings = [];
+
+  function fr(n){ var s = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); }
+  function sm(a, b, v){ var t = (v - a) / (b - a); t = t < 0 ? 0 : (t > 1 ? 1 : t); return t * t * (3 - 2 * t); }
+
+  var t0 = null;
+
+  function draw(now){
+    if (t0 === null) t0 = now;
+    var t = (now - t0) / 1000;
+
+    g.fillStyle = '#050505';
+    g.fillRect(0, 0, W, H);
+
+    /* horizon light */
+    var rg = g.createRadialGradient(vpX, vpY, 0, vpX, vpY, Math.max(W, H) * 0.5);
+    rg.addColorStop(0,   'rgba(255,255,255,' + (0.058 + 0.02 * Math.sin(t * 0.55)).toFixed(4) + ')');
+    rg.addColorStop(0.35,'rgba(255,255,255,0.020)');
+    rg.addColorStop(1,   'rgba(255,255,255,0)');
+    g.fillStyle = rg;
+    g.fillRect(0, 0, W, H);
+
+    /* converging column rules */
+    var sFar = 0.62;
+    var yF  = vpY + (nearY - vpY) * sFar;
+    var xlF = vpX + (nearL - vpX) * sFar;
+    var xrF = vpX + (nearR - vpX) * sFar;
+    for (var ci = 0; ci < COLS.length; ci++){
+      var px = xlF + COLS[ci] * (xrF - xlF);
+      var lg = g.createLinearGradient(vpX, vpY, px, yF);
+      lg.addColorStop(0,    'rgba(255,255,255,0)');
+      lg.addColorStop(0.22, 'rgba(255,255,255,0.03)');
+      lg.addColorStop(1,    'rgba(255,255,255,0.11)');
+      g.strokeStyle = lg;
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(vpX, vpY);
+      g.lineTo(px, yF);
+      g.stroke();
+    }
+
+    /* ledger rows travelling toward the viewer */
+    var phase = (t * V) % DZ;
+    var k = Math.floor(t * V / DZ);
+
+    for (var i = 1; i <= N; i++){
+      var z = i * DZ - phase;
+      if (z <= 0.02) continue;
+      var s = 1 / (1 + K * z);
+      var y = vpY + (nearY - vpY) * s;
+      if (y > H + 80) continue;
+
+      var xl = vpX + (nearL - vpX) * s;
+      var xr = vpX + (nearR - vpX) * s;
+      var w  = xr - xl;
+      var a  = sm(0.028, 0.10, s);
+      if (a <= 0.002) continue;
+
+      var id = i + k;
+      var r1 = fr(id * 1.7 + 2.3);
+      var r2 = fr(id * 4.1 + 9.1);
+      var r3 = fr(id * 7.3 + 1.9);
+      var flagged = fr(id * 3.1 + 7.7) < 0.17;
+
+      var lit = 0;
+      if (flagged && y >= scanY) lit = sm(0, 70, y - scanY);
+
+      if (flagged && y >= scanY && !seen[id]){
+        seen[id] = 1; seenCount++;
+        if (seenCount > 400){ seen = {}; seenCount = 0; }
+        pings.push({ x: xl + 0.955 * w, y: scanY, t: t });
+      }
+
+      /* ruling */
+      g.strokeStyle = 'rgba(255,255,255,' + (a * (0.10 + 0.10 * lit)).toFixed(4) + ')';
+      g.lineWidth = Math.max(0.6, s * 1.5);
+      g.beginPath();
+      g.moveTo(xl, y);
+      g.lineTo(xr, y);
+      g.stroke();
+
+      /* record blocks */
+      var hb = Math.max(1.3, 15 * s);
+      var base = a * (0.26 + 0.26 * r3);
+      var alpha = base + (0.72 - base) * lit;
+      g.fillStyle = 'rgba(255,255,255,' + alpha.toFixed(4) + ')';
+
+      var b1x = xl + 0.055 * w, b1w = 0.046 * w;
+      var b2x = xl + 0.300 * w, b2w = (0.055 + 0.205 * r1) * w;
+      var b3w = (0.028 + 0.052 * r2) * w, b3x = xl + 0.945 * w - b3w;
+      var dotx = xl + 0.205 * w, dotw = 0.017 * w;
+
+      g.fillRect(b1x, y - hb / 2, b1w, hb);
+      g.fillRect(dotx, y - hb / 2, dotw, hb);
+      g.fillRect(b2x, y - hb / 2, b2w, hb);
+      g.fillRect(b3x, y - hb / 2, b3w, hb);
+
+      /* flagged record: marked, boxed, held */
+      if (lit > 0.01){
+        g.save();
+        g.shadowColor = 'rgba(255,255,255,0.55)';
+        g.shadowBlur = 14 * lit;
+        g.fillStyle = 'rgba(255,255,255,' + (0.9 * lit).toFixed(4) + ')';
+        g.fillRect(xl + 0.022 * w, y - hb * 0.75, 0.014 * w, hb * 1.5);
+        g.restore();
+
+        var bx = xl + 0.275 * w, bw = 0.69 * w, bh = hb * 3.1;
+        g.strokeStyle = 'rgba(255,255,255,' + (0.55 * lit).toFixed(4) + ')';
+        g.lineWidth = 1;
+        g.strokeRect(bx, y - bh / 2, bw, bh);
+      }
+    }
+
+    /* scan band */
+    var band = g.createLinearGradient(0, scanY - 90, 0, scanY + 90);
+    band.addColorStop(0,   'rgba(255,255,255,0)');
+    band.addColorStop(0.5, 'rgba(255,255,255,0.05)');
+    band.addColorStop(1,   'rgba(255,255,255,0)');
+    g.fillStyle = band;
+    g.fillRect(scanX0, scanY - 90, W - scanX0, 180);
+
+    /* scan line */
+    var sl = g.createLinearGradient(scanX0, 0, W, 0);
+    sl.addColorStop(0,    'rgba(255,255,255,0)');
+    sl.addColorStop(0.16, 'rgba(255,255,255,0.30)');
+    sl.addColorStop(1,    'rgba(255,255,255,0.55)');
+    g.strokeStyle = sl;
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(scanX0, scanY);
+    g.lineTo(W, scanY);
+    g.stroke();
+
+    /* scan head marker */
+    var mx = scanX0 + 62;
+    var pulse = 0.5 + 0.5 * Math.sin(t * 2.2);
+    g.strokeStyle = 'rgba(255,255,255,' + (0.30 + 0.35 * pulse).toFixed(3) + ')';
+    g.beginPath();
+    g.moveTo(mx + 0.5, scanY - 7);
+    g.lineTo(mx + 0.5, scanY + 7);
+    g.stroke();
+    g.fillStyle = 'rgba(255,255,255,' + (0.35 + 0.55 * pulse).toFixed(3) + ')';
+    g.beginPath();
+    g.arc(mx + 0.5, scanY, 2.6, 0, 6.2832);
+    g.fill();
+
+    /* glint travelling along the scan line */
+    var gp = (t * 0.14) % 1;
+    var gx = scanX0 + gp * (W - scanX0);
+    var gl = g.createLinearGradient(gx - 130, 0, gx + 130, 0);
+    gl.addColorStop(0,   'rgba(255,255,255,0)');
+    gl.addColorStop(0.5, 'rgba(255,255,255,0.85)');
+    gl.addColorStop(1,   'rgba(255,255,255,0)');
+    g.fillStyle = gl;
+    g.fillRect(gx - 130, scanY - 1, 260, 2);
+
+    /* detection pings */
+    for (var p = pings.length - 1; p >= 0; p--){
+      var e = (t - pings[p].t) / 1.1;
+      if (e >= 1){ pings.splice(p, 1); continue; }
+      g.strokeStyle = 'rgba(255,255,255,' + ((1 - e) * 0.6).toFixed(4) + ')';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.arc(pings[p].x, pings[p].y, 3 + 26 * e, 0, 6.2832);
+      g.stroke();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

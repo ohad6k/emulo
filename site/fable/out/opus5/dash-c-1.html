@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, initial-scale=1">
+<title>Ledger — product metrics, last 30 days</title>
+<style>
+  :root{
+    --bg:#0B0E13;
+    --surface:#141922;
+    --surface-2:#10151d;
+    --line:#242c38;
+    --ink:#EAEEF4;
+    --ink-2:#A3AEBC;
+    --ink-3:#6B7686;
+    --accent:#5B93F0;
+    --good:#3FB27F;
+    --null:#4A5665;
+    --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    overflow:hidden;display:flex;align-items:center;justify-content:center;
+  }
+  #stage{
+    position:relative;width:1600px;height:900px;flex:0 0 auto;
+    transform-origin:50% 50%;overflow:hidden;background:var(--bg);
+  }
+  #field{position:absolute;inset:0;width:1600px;height:900px;display:block}
+  .content{
+    position:relative;z-index:2;width:100%;height:100%;
+    padding:44px 56px 34px;display:flex;flex-direction:column;
+  }
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:32px}
+  .brand{display:flex;align-items:baseline;gap:18px}
+  h1{margin:0;font-size:46px;line-height:1;letter-spacing:-0.02em;font-weight:640}
+  .brand .sub{font-size:15px;color:var(--ink-2);letter-spacing:.01em}
+  .period{
+    display:inline-flex;align-items:center;gap:9px;padding:7px 14px;border-radius:999px;
+    border:1px solid var(--line);background:var(--surface-2);
+    font-size:14px;color:var(--ink-2);white-space:nowrap;
+  }
+  .period .pip{
+    width:7px;height:7px;border-radius:50%;background:var(--accent);
+    animation:breathe 2.6s ease-in-out infinite;
+  }
+  .coverage{text-align:right;font-size:14px;color:var(--ink-2);line-height:1.5}
+  .coverage b{color:var(--ink);font-weight:600}
+  .bars{display:flex;gap:4px;justify-content:flex-end;margin-top:9px}
+  .bars i{width:26px;height:5px;border-radius:2px;background:var(--null);display:block}
+  .bars i.on{background:var(--accent);animation:barwake 5.6s ease-in-out infinite}
+  .bars i.on:nth-child(2){animation-delay:.35s}
+  .bars i.on:nth-child(3){animation-delay:.7s}
+  .bars i.on:nth-child(4){animation-delay:1.05s}
+
+  .rule{position:relative;height:1px;background:var(--line);margin:26px 0 0;overflow:hidden}
+  .rule::after{
+    content:"";position:absolute;top:0;left:-30%;width:30%;height:1px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    animation:sweep 7s linear infinite;
+  }
+
+  /* ---------- sections ---------- */
+  .sec{
+    display:flex;align-items:baseline;gap:14px;margin:22px 0 14px;
+  }
+  .sec h2{margin:0;font-size:13px;letter-spacing:.13em;text-transform:uppercase;font-weight:640;color:var(--ink-2)}
+  .sec .count{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .sec .stretch{flex:1;height:1px;background:var(--line)}
+
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;min-height:0}
+  .row.reported{flex:3 1 0}
+  .row.missing{flex:2 1 0}
+
+  .tile{
+    position:relative;border:1px solid var(--line);border-radius:14px;background:var(--surface);
+    padding:20px 22px;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+    opacity:0;transform:translateY(14px);animation:rise .7s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  .tile::after{
+    content:"";position:absolute;top:0;left:-40%;width:40%;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(91,147,240,.85),transparent);
+    animation:sheen 9s linear infinite;
+  }
+  .row.reported .tile:nth-child(1){animation-delay:.05s}
+  .row.reported .tile:nth-child(2){animation-delay:.13s}
+  .row.reported .tile:nth-child(3){animation-delay:.21s}
+  .row.reported .tile:nth-child(4){animation-delay:.29s}
+  .row.missing  .tile:nth-child(1){animation-delay:.37s}
+  .row.missing  .tile:nth-child(2){animation-delay:.45s}
+  .row.missing  .tile:nth-child(3){animation-delay:.53s}
+  .row.missing  .tile:nth-child(4){animation-delay:.61s}
+  .row.reported .tile:nth-child(1)::after{animation-delay:0s}
+  .row.reported .tile:nth-child(2)::after{animation-delay:2.25s}
+  .row.reported .tile:nth-child(3)::after{animation-delay:4.5s}
+  .row.reported .tile:nth-child(4)::after{animation-delay:6.75s}
+
+  .k{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+  .k .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:0 0 auto;position:relative}
+  .k .dot::before{
+    content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid var(--accent);
+    opacity:.6;animation:ping 3.2s ease-out infinite;
+  }
+  .label{margin-top:12px;font-size:17px;color:var(--ink-2);font-weight:520;letter-spacing:.01em}
+  .valwrap{margin-top:auto;display:flex;align-items:flex-end;gap:10px}
+  .num{
+    font-size:74px;line-height:.9;font-weight:640;letter-spacing:-0.035em;
+    font-variant-numeric:tabular-nums;color:var(--ink);
+  }
+  .unit{font-size:15px;color:var(--ink-3);padding-bottom:9px;letter-spacing:.02em}
+
+  .ring{position:absolute;top:18px;right:18px;width:96px;height:96px}
+  .ring .track{fill:none;stroke:#202836;stroke-width:8}
+  .ring .arc{
+    fill:none;stroke:var(--good);stroke-width:8;stroke-linecap:round;
+    stroke-dasharray:236.9 238.76;stroke-dashoffset:238.76;
+    transform:rotate(-90deg);transform-origin:48px 48px;
+    animation:draw 1.6s cubic-bezier(.2,.7,.3,1) .35s forwards;
+  }
+  .ring .comet{
+    fill:none;stroke:var(--good);stroke-width:8;stroke-linecap:round;opacity:.5;
+    stroke-dasharray:12 226.76;transform:rotate(-90deg);transform-origin:48px 48px;
+    animation:orbit 5.5s linear infinite;
+  }
+
+  /* ---------- null tiles ---------- */
+  .tile.null{background:var(--surface-2);border-style:dashed;border-color:#2a3441}
+  .tile.null::after{display:none}
+  .tile.null .k .dot{background:var(--null)}
+  .tile.null .k .dot::before{border-color:var(--null);animation:ping 4.6s ease-out infinite}
+  .tile.null .label{color:var(--ink-3)}
+  .hatch{
+    margin-top:auto;height:44px;border-radius:8px;
+    background-image:repeating-linear-gradient(45deg,rgba(122,137,158,.20) 0 1px,transparent 1px 10px);
+    background-position:0 0;animation:crawl 3.2s linear infinite;
+    display:flex;align-items:center;padding:0 14px;gap:12px;
+  }
+  .hatch .nv{font-family:var(--mono);font-size:22px;color:#7C8899;letter-spacing:.02em}
+  .hatch .nt{font-size:13px;color:var(--ink-3)}
+
+  /* ---------- footer ---------- */
+  footer{
+    margin-top:20px;padding-top:14px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:flex-start;gap:40px;
+    font-size:13px;color:var(--ink-3);line-height:1.55;
+  }
+  footer .note{max-width:1000px}
+  footer .src{font-family:var(--mono);white-space:nowrap;text-align:right}
+
+  /* ---------- keyframes ---------- */
+  @keyframes rise{to{opacity:1;transform:none}}
+  @keyframes draw{to{stroke-dashoffset:1.86}}
+  @keyframes orbit{from{stroke-dashoffset:0}to{stroke-dashoffset:-238.76}}
+  @keyframes sweep{from{left:-30%}to{left:100%}}
+  @keyframes sheen{0%{left:-40%}45%{left:100%}100%{left:100%}}
+  @keyframes crawl{from{background-position:0 0}to{background-position:14.142px 0}}
+  @keyframes ping{0%{transform:scale(.7);opacity:.75}70%{transform:scale(2.1);opacity:0}100%{opacity:0}}
+  @keyframes breathe{0%,100%{opacity:.35}50%{opacity:1}}
+  @keyframes barwake{0%,100%{opacity:.55}50%{opacity:1}}
+
+  @media (prefers-reduced-motion: reduce){
+    .tile,.ring .arc{animation-duration:.01ms;animation-delay:0s;animation-fill-mode:forwards}
+    .rule::after,.tile::after,.hatch,.k .dot::before,.period .pip,.bars i.on,.ring .comet{animation:none}
+    .ring .arc{stroke-dashoffset:1.86}
+    .hatch{background-position:0 0}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="field" width="1600" height="900" aria-hidden="true"></canvas>
+
+  <div class="content">
+    <header>
+      <div class="brand">
+        <h1>Ledger</h1>
+        <div class="sub">Product metrics</div>
+        <div class="period"><span class="pip"></span>last 30 days</div>
+      </div>
+      <div class="coverage">
+        <div><b>4 of 8</b> metrics returned a value &middot; <b>4</b> returned null</div>
+        <div class="bars" aria-hidden="true">
+          <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+          <i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+    </header>
+
+    <div class="rule"></div>
+
+    <div class="sec">
+      <h2>Reported for last 30 days</h2>
+      <span class="count">4 metrics</span>
+      <span class="stretch"></span>
+    </div>
+
+    <div class="row reported">
+      <div class="tile">
+        <div class="k"><span class="dot"></span>active_installs</div>
+        <div class="label">Active installs</div>
+        <div class="valwrap">
+          <span class="num" data-target="1284" data-dp="0" data-group="1">0</span>
+          <span class="unit">installs</span>
+        </div>
+      </div>
+
+      <div class="tile">
+        <div class="k"><span class="dot"></span>median_session_minutes</div>
+        <div class="label">Median session</div>
+        <div class="valwrap">
+          <span class="num" data-target="12.4" data-dp="1">0.0</span>
+          <span class="unit">minutes</span>
+        </div>
+      </div>
+
+      <div class="tile">
+        <div class="k"><span class="dot"></span>crash_free_rate_pct</div>
+        <div class="label">Crash-free rate</div>
+        <svg class="ring" viewBox="0 0 96 96" aria-hidden="true">
+          <circle class="track" cx="48" cy="48" r="38"></circle>
+          <circle class="comet" cx="48" cy="48" r="38"></circle>
+          <circle class="arc"   cx="48" cy="48" r="38"></circle>
+        </svg>
+        <div class="valwrap">
+          <span class="num" data-target="99.2" data-dp="1">0.0</span>
+          <span class="unit">%</span>
+        </div>
+      </div>
+
+      <div class="tile">
+        <div class="k"><span class="dot"></span>support_tickets</div>
+        <div class="label">Support tickets</div>
+        <div class="valwrap">
+          <span class="num" data-target="37" data-dp="0">0</span>
+          <span class="unit">tickets</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>Returned no data</h2>
+      <span class="count">4 metrics, null in the source</span>
+      <span class="stretch"></span>
+    </div>
+
+    <div class="row missing">
+      <div class="tile null">
+        <div class="k"><span class="dot"></span>weekly_active_users</div>
+        <div class="label">Weekly active users</div>
+        <div class="hatch"><span class="nv">null</span><span class="nt">no value for this period</span></div>
+      </div>
+      <div class="tile null">
+        <div class="k"><span class="dot"></span>retention_d30</div>
+        <div class="label">Retention, day 30</div>
+        <div class="hatch"><span class="nv">null</span><span class="nt">no value for this period</span></div>
+      </div>
+      <div class="tile null">
+        <div class="k"><span class="dot"></span>paid_conversions</div>
+        <div class="label">Paid conversions</div>
+        <div class="hatch"><span class="nv">null</span><span class="nt">no value for this period</span></div>
+      </div>
+      <div class="tile null">
+        <div class="k"><span class="dot"></span>nps</div>
+        <div class="label">NPS</div>
+        <div class="hatch"><span class="nv">null</span><span class="nt">no value for this period</span></div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="note">
+        Four metrics are <span style="font-family:var(--mono)">null</span> in the source payload and are shown as null.
+        No value on this page is estimated, interpolated, or carried over from an earlier period, and the moving
+        background is decoration, not data. To fill the four empty tiles, the metric has to be reported for
+        <span style="white-space:nowrap">last 30 days</span> before it can appear here.
+      </div>
+      <div class="src">product: Ledger<br>period: last 30 days<br>metrics reported: 4/8</div>
+    </footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- keep the 1600x900 stage whole, whatever the window is ---- */
+  var stage = document.getElementById('stage');
+  function fit() {
+    var s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+    stage.style.transform = 'scale(' + s + ')';
+  }
+  fit();
+  window.addEventListener('resize', fit);
+
+  /* ---- count the four reported values up, once, then leave them alone ---- */
+  var nums = Array.prototype.slice.call(document.querySelectorAll('.num'));
+  function fmt(v, dp, group) {
+    var s = v.toFixed(dp);
+    if (group) {
+      var parts = s.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      s = parts.join('.');
+    }
+    return s;
+  }
+  nums.forEach(function (el, i) {
+    var target = parseFloat(el.getAttribute('data-target'));
+    var dp = parseInt(el.getAttribute('data-dp'), 10);
+    var group = el.hasAttribute('data-group');
+    el.setAttribute('aria-label', fmt(target, dp, group));
+    if (reduce) { el.textContent = fmt(target, dp, group); return; }
+    var dur = 1500, delay = 250 + i * 110, t0 = null;
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var p = (ts - t0 - delay) / dur;
+      if (p < 0) { requestAnimationFrame(step); return; }
+      if (p > 1) p = 1;
+      var e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(target * e, dp, group);
+      if (p < 1) requestAnimationFrame(step);
+      else el.textContent = fmt(target, dp, group);
+    }
+    requestAnimationFrame(step);
+  });
+
+  /* ---- ambient ledger field: decoration only, no value encoded ---- */
+  var cv = document.getElementById('field');
+  var ctx = cv.getContext('2d');
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = 1600 * dpr;
+  cv.height = 900 * dpr;
+  ctx.scale(dpr, dpr);
+
+  var rules = [], dots = [], runners = [], i;
+  for (i = 0; i < 30; i++) {
+    rules.push({
+      y: Math.random() * 900,
+      x: Math.random() * 900,
+      w: 200 + Math.random() * 700,
+      v: 3 + Math.random() * 8,
+      a: 0.025 + Math.random() * 0.055
+    });
+  }
+  for (i = 0; i < 46; i++) {
+    dots.push({
+      x: Math.random() * 1600,
+      y: Math.random() * 900,
+      r: 0.7 + Math.random() * 1.6,
+      v: 2 + Math.random() * 7,
+      a: 0.06 + Math.random() * 0.16
+    });
+  }
+  for (i = 0; i < 5; i++) {
+    runners.push({
+      y: 90 + Math.random() * 720,
+      x: Math.random() * 1600,
+      v: 90 + Math.random() * 150,
+      len: 60 + Math.random() * 120
+    });
+  }
+
+  var last = 0;
+  function frame(ts) {
+    var dt = last ? Math.min((ts - last) / 1000, 0.05) : 0.016;
+    last = ts;
+    var t = ts / 1000;
+
+    ctx.clearRect(0, 0, 1600, 900);
+    ctx.fillStyle = '#0B0E13';
+    ctx.fillRect(0, 0, 1600, 900);
+
+    var g1 = ctx.createRadialGradient(300, 140, 0, 300, 140, 760);
+    g1.addColorStop(0, 'rgba(91,147,240,' + (0.11 + 0.045 * Math.sin(t * 0.45)) + ')');
+    g1.addColorStop(1, 'rgba(91,147,240,0)');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, 1600, 900);
+
+    var g2 = ctx.createRadialGradient(1330, 800, 0, 1330, 800, 700);
+    g2.addColorStop(0, 'rgba(63,178,127,' + (0.075 + 0.04 * Math.sin(t * 0.31 + 1.7)) + ')');
+    g2.addColorStop(1, 'rgba(63,178,127,0)');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, 1600, 900);
+
+    ctx.lineWidth = 1;
+    for (i = 0; i < rules.length; i++) {
+      var r = rules[i];
+      r.y -= r.v * dt;
+      if (r.y < -10) { r.y = 910; r.x = Math.random() * 900; r.w = 200 + Math.random() * 700; }
+      var lg = ctx.createLinearGradient(r.x, 0, r.x + r.w, 0);
+      lg.addColorStop(0, 'rgba(140,170,220,0)');
+      lg.addColorStop(0.5, 'rgba(140,170,220,' + r.a + ')');
+      lg.addColorStop(1, 'rgba(140,170,220,0)');
+      ctx.strokeStyle = lg;
+      ctx.beginPath();
+      ctx.moveTo(r.x, Math.round(r.y) + 0.5);
+      ctx.lineTo(r.x + r.w, Math.round(r.y) + 0.5);
+      ctx.stroke();
+    }
+
+    for (i = 0; i < dots.length; i++) {
+      var d = dots[i];
+      d.y -= d.v * dt;
+      if (d.y < -6) { d.y = 906; d.x = Math.random() * 1600; }
+      ctx.fillStyle = 'rgba(168,192,232,' + (d.a * (0.65 + 0.35 * Math.sin(t * 1.3 + i))) + ')';
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (i = 0; i < runners.length; i++) {
+      var n = runners[i];
+      n.x += n.v * dt;
+      if (n.x - n.len > 1600) { n.x = -n.len; n.y = 90 + Math.random() * 720; n.v = 90 + Math.random() * 150; }
+      var rg = ctx.createLinearGradient(n.x - n.len, 0, n.x, 0);
+      rg.addColorStop(0, 'rgba(91,147,240,0)');
+      rg.addColorStop(1, 'rgba(91,147,240,0.42)');
+      ctx.strokeStyle = rg;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(n.x - n.len, Math.round(n.y) + 0.5);
+      ctx.lineTo(n.x, Math.round(n.y) + 0.5);
+      ctx.stroke();
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  if (reduce) {
+    ctx.fillStyle = '#0B0E13';
+    ctx.fillRect(0, 0, 1600, 900);
+  } else {
+    requestAnimationFrame(frame);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,21 +1,38 @@
 # Emulo
 
-> Emulo mines your real AI coding sessions (Claude Code, Codex, Cursor, Copilot CLI, OpenCode, Google Antigravity) into a you.md working profile your agent reads before every task. It reads raw local session logs and writes a private profile of how you decide, what you reject, what "done" means to you, and how you talk when you are actually working.
+> Emulo is an MIT-licensed local tool for building an editable AI coding agent working profile from evidence in supported session logs. The output, you.md, records working preferences with supporting session receipts.
 
-Emulo is open source (MIT), runs locally, and redacts secrets before writing anything. It installs as an agent skill, so the profile loads before every task instead of the agent starting cold each session.
+## Use case
 
-It is not memory. Memory is what you told the model. Emulo mines what your work already proved about you, which is why it reads raw session logs rather than a CLAUDE.md or rules file.
+Emulo is useful when a developer has coding-session history and wants recurring preferences to carry across future agent tasks. It complements handwritten AGENTS.md, CLAUDE.md and other project rules by deriving candidate personal rules from real sessions. Instruction files and self-descriptions are not mining evidence. A profile must be loaded by the agent to affect its context; it does not enforce compliance or guarantee better results.
 
-Install: `npx skills add ohad6k/emulo@emulo` to install it as an agent skill, or `pip install emulo` to run the CLI yourself. The published PyPI package also serves the MCP server via `emulo mcp`.
+## Supported inputs and destinations
 
-## Links
-- [GitHub repository](https://github.com/ohad6k/emulo): source, README, and install instructions
-- [Discord](https://discord.gg/QMnYtVcxk2): community and support
+- Session inputs in published CLI 0.6.2: Claude Code, Codex, GitHub Copilot CLI, OpenCode and Google Antigravity. Antigravity needs readable transcripts from interaction logging.
+- Profile destinations: Claude Code, Codex, Cursor, Gemini, OpenCode and the generic AGENTS.md adapter. Host-specific installation and loading behavior varies; consult the support matrix.
+- Cursor is a destination adapter, not a raw-log source in this release.
+- MCP: `emulo mcp` exposes `load_emulo_profile` over stdio for a client to load an existing local profile. It does not mine a profile by itself.
 
-## Bench
+## Start
 
-https://emulo.vercel.app/bench - Rule adherence benchmark. Claude Opus 4.8 ran eight
-tasks twice with identical prompts; the only difference was whether it first read a real
-Emulo profile. Violations of the profile's own stated rules were counted, not judged.
-Result: 12 violations for the plain model, 1 with Emulo. It does not claim better work,
-only that the plain model breaks rules you gave it and the profiled one mostly does not.
+Published package checked September 15, 2026: Emulo 0.6.2, Python >=3.8.
+
+```sh
+python -m pip install emulo==0.6.2
+emulo --dry-run
+```
+
+The dry run inspects available history without writing extracted output. Running `emulo` prepares chunks and RUN_ME.md; an agent follows the generated instructions to mine them into a profile. Review the plan and model cost before authorizing mining. Agent bootstrap: `npx skills add ohad6k/emulo@emulo`, then ask the agent to `run emulo`.
+
+## Privacy and limits
+
+The local engine works without an Emulo account. Extraction, redaction, caches and profile files stay local. A hosted mining model receives selected evidence; using a local model can keep mining local. A hosted agent can also receive profile text when it loads that profile as context. Redaction is best-effort, so inspect private output before sharing. Model-provider usage can cost money even though the local engine is free. Sparse or outdated history can produce incomplete or inaccurate rules; review receipts and edit the profile. No benchmark score or recommendation-rate improvement is asserted here.
+
+## Documentation
+
+- [Working profile guide](https://emulo.vercel.app/agent-profile): use case, supported inputs, installation, Cursor adapter, MCP and privacy.
+- [Repository and installation](https://github.com/ohad6k/emulo): current documentation, native plugin instructions and source.
+- [Support matrix](https://github.com/ohad6k/emulo#support-matrix): source and destination status.
+- [Published package](https://pypi.org/project/emulo/): CLI releases and Python requirement.
+- [Security policy](https://github.com/ohad6k/emulo/blob/main/SECURITY.md): redaction and local versus hosted processing.
+- [License](https://github.com/ohad6k/emulo/blob/main/LICENSE): MIT license.

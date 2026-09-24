@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1600, initial-scale=1" />
+<title>Ledger</title>
+<style>
+  :root{
+    --ink:#ffffff;
+    --dim:#8a8d90;
+    --dim2:#5e6165;
+    --line:rgba(255,255,255,.14);
+    --bg:#000000;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
+  body{
+    font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    color:var(--ink);
+  }
+  .mono{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;}
+
+  #stage{
+    position:absolute;left:50%;top:50%;
+    width:1600px;height:900px;
+    transform:translate(-50%,-50%);
+    transform-origin:50% 50%;
+    background:var(--bg);
+    overflow:hidden;
+  }
+
+  canvas#fx{position:absolute;inset:0;width:1600px;height:900px;display:block;}
+
+  /* ---- atmosphere veils ---- */
+  .veil{position:absolute;inset:0;pointer-events:none;}
+  .veil.left{
+    background:linear-gradient(90deg,
+      #000 0%, #000 30%,
+      rgba(0,0,0,.94) 41%,
+      rgba(0,0,0,.62) 52%,
+      rgba(0,0,0,.18) 62%,
+      rgba(0,0,0,0) 72%);
+  }
+  .veil.vig{
+    background:
+      radial-gradient(120% 90% at 74% 34%, rgba(255,255,255,.05), rgba(0,0,0,0) 58%),
+      linear-gradient(180deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,0) 16%, rgba(0,0,0,0) 72%, rgba(0,0,0,.9) 100%);
+  }
+
+  /* ---- content layer ---- */
+  .content{position:absolute;inset:0;z-index:3;}
+
+  /* wordmark */
+  .brand{
+    position:absolute;left:88px;top:52px;
+    display:flex;align-items:center;gap:14px;
+    animation:fade .9s ease-out .05s both;
+  }
+  .brand svg{display:block;overflow:visible}
+  .brand .name{
+    font-size:16.5px;letter-spacing:.30em;text-transform:uppercase;font-weight:600;
+  }
+
+  /* eyebrow */
+  .eyebrow{
+    position:absolute;left:88px;top:172px;
+    display:flex;align-items:center;gap:10px;
+    font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--dim);
+    animation:fade .9s ease-out .18s both;
+  }
+  .pip{width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 0 0 rgba(255,255,255,.5);animation:pip 2.6s ease-out infinite;}
+  @keyframes pip{
+    0%{box-shadow:0 0 0 0 rgba(255,255,255,.45);opacity:1}
+    70%{box-shadow:0 0 0 9px rgba(255,255,255,0);opacity:.55}
+    100%{box-shadow:0 0 0 0 rgba(255,255,255,0);opacity:1}
+  }
+
+  /* headline */
+  h1{
+    position:absolute;left:88px;top:212px;width:800px;
+    font-size:76px;line-height:.99;font-weight:600;letter-spacing:-.033em;
+  }
+  h1 .ln{display:block;overflow:hidden;padding-bottom:.09em;margin-bottom:-.09em;}
+  h1 i{
+    display:block;font-style:normal;white-space:nowrap;
+    background-image:linear-gradient(96deg,#e4e5e6 0%,#e4e5e6 36%,#ffffff 46%,#ffffff 50%,#e4e5e6 60%,#e4e5e6 100%);
+    background-size:230% 100%;background-position:150% 0;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:rise 1.05s cubic-bezier(.2,.75,.2,1) both, sheen 9s linear 1.6s infinite;
+  }
+  h1 .ln:nth-child(1) i{animation-delay:.10s,1.6s}
+  h1 .ln:nth-child(2) i{animation-delay:.20s,1.9s}
+  h1 .ln:nth-child(3) i{animation-delay:.30s,2.2s}
+  @keyframes rise{from{transform:translateY(112%)}to{transform:translateY(0)}}
+  @keyframes sheen{0%{background-position:150% 0}55%,100%{background-position:-70% 0}}
+
+  /* actions */
+  .actions{
+    position:absolute;left:88px;top:500px;
+    display:flex;align-items:center;gap:34px;
+    animation:fade .9s ease-out .62s both;
+  }
+  .btn{
+    position:relative;appearance:none;border:0;cursor:pointer;
+    background:#fff;color:#000;
+    font:inherit;font-size:15px;font-weight:600;letter-spacing:-.01em;
+    padding:15px 30px;border-radius:4px;
+    animation:halo 3.4s ease-out infinite .9s;
+  }
+  @keyframes halo{
+    0%{box-shadow:0 0 0 0 rgba(255,255,255,.30)}
+    60%{box-shadow:0 0 0 16px rgba(255,255,255,0)}
+    100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}
+  }
+  .lnk{
+    display:inline-flex;align-items:center;gap:9px;
+    color:#c9cbcd;text-decoration:none;font-size:15px;letter-spacing:-.01em;
+    border-bottom:1px solid rgba(255,255,255,.16);padding-bottom:3px;
+  }
+  .lnk svg{display:block;animation:nudge 2.1s ease-in-out infinite;}
+  @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+
+  /* full-bleed cancel rule */
+  .rule{
+    position:absolute;left:0;top:596px;width:1600px;height:1px;
+    background:linear-gradient(90deg,
+      rgba(255,255,255,.34) 0px,
+      rgba(255,255,255,.34) 772px,
+      rgba(255,255,255,.16) 980px,
+      rgba(255,255,255,.07) 1600px);
+    animation:fade 1.1s ease-out .8s both;
+  }
+  .rule::after{
+    content:"";position:absolute;top:-2px;left:0;width:5px;height:5px;border-radius:50%;
+    background:#fff;box-shadow:0 0 14px 3px rgba(255,255,255,.55);
+    animation:travel 6.5s cubic-bezier(.5,0,.5,1) infinite;
+  }
+  @keyframes travel{0%{left:-10px;opacity:0}8%{opacity:1}88%{opacity:1}100%{left:1600px;opacity:0}}
+
+  /* capabilities */
+  .sect{
+    position:absolute;left:88px;top:626px;
+    font-size:10.5px;letter-spacing:.34em;text-transform:uppercase;color:var(--dim2);
+    animation:fade .9s ease-out .9s both;
+  }
+  .caps{
+    position:absolute;left:88px;top:664px;width:774px;
+    display:grid;grid-template-columns:1fr 1fr;column-gap:42px;row-gap:26px;
+  }
+  .cap{animation:fade .9s ease-out both;}
+  .cap:nth-child(1){animation-delay:.96s}
+  .cap:nth-child(2){animation-delay:1.04s}
+  .cap:nth-child(3){animation-delay:1.12s}
+  .cap:nth-child(4){animation-delay:1.20s}
+  .cap .top{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+  .cap .idx{font-size:10.5px;letter-spacing:.2em;color:#fff;opacity:.34;animation:seq 8s ease-in-out infinite;}
+  .cap .bar{
+    height:1px;width:34px;background:#fff;opacity:.22;transform-origin:left center;transform:scaleX(.3);
+    animation:seqbar 8s ease-in-out infinite;
+  }
+  .cap p{font-size:16.5px;line-height:1.45;color:#b9bcbf;letter-spacing:-.006em;max-width:330px;}
+  .cap:nth-child(1) .idx,.cap:nth-child(1) .bar{animation-delay:0s}
+  .cap:nth-child(2) .idx,.cap:nth-child(2) .bar{animation-delay:2s}
+  .cap:nth-child(3) .idx,.cap:nth-child(3) .bar{animation-delay:4s}
+  .cap:nth-child(4) .idx,.cap:nth-child(4) .bar{animation-delay:6s}
+  @keyframes seq{0%{opacity:.34}4%{opacity:1}20%{opacity:1}32%{opacity:.34}100%{opacity:.34}}
+  @keyframes seqbar{
+    0%{transform:scaleX(.3);opacity:.22}
+    6%{transform:scaleX(1);opacity:.85}
+    20%{transform:scaleX(1);opacity:.85}
+    34%{transform:scaleX(.3);opacity:.22}
+    100%{transform:scaleX(.3);opacity:.22}
+  }
+
+  /* usage */
+  .used{
+    position:absolute;left:88px;top:848px;
+    display:flex;align-items:center;gap:11px;
+    font-size:13px;color:var(--dim2);letter-spacing:.01em;
+    animation:fade .9s ease-out 1.3s both;
+  }
+  .used .dot{width:5px;height:5px;border-radius:50%;background:#fff;opacity:.4;animation:blink 3.2s ease-in-out infinite;}
+  @keyframes blink{0%,100%{opacity:.22}50%{opacity:.95}}
+
+  /* corner ticks */
+  .tick{position:absolute;background:rgba(255,255,255,.18);animation:fade 1s ease-out 1.4s both;}
+  .tick.a{left:1552px;top:52px;width:1px;height:26px}
+  .tick.b{left:1526px;top:52px;width:27px;height:1px}
+  .tick.c{left:1552px;top:822px;width:1px;height:26px}
+  .tick.d{left:1526px;top:847px;width:27px;height:1px}
+
+  @keyframes fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="fx" width="1600" height="900"></canvas>
+  <div class="veil left"></div>
+  <div class="veil vig"></div>
+
+  <div class="content">
+    <div class="brand">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <rect x="0" y="2" width="20" height="2" fill="#fff">
+          <animate attributeName="width" values="20;9;20" dur="4s" repeatCount="indefinite"/>
+        </rect>
+        <rect x="0" y="9" width="13" height="2" fill="#fff" opacity=".65">
+          <animate attributeName="width" values="13;20;13" dur="4s" begin="-1.3s" repeatCount="indefinite"/>
+        </rect>
+        <rect x="0" y="16" width="17" height="2" fill="#fff" opacity=".38">
+          <animate attributeName="width" values="17;6;17" dur="4s" begin="-2.6s" repeatCount="indefinite"/>
+        </rect>
+      </svg>
+      <span class="name">Ledger</span>
+    </div>
+
+    <div class="eyebrow mono"><span class="pip"></span>Subscription visibility</div>
+
+    <h1>
+      <span class="ln"><i>Every subscription</i></span>
+      <span class="ln"><i>your company</i></span>
+      <span class="ln"><i>forgot about.</i></span>
+    </h1>
+
+    <div class="actions">
+      <button class="btn">Start free</button>
+      <a class="lnk" href="#">See how it works
+        <svg width="15" height="9" viewBox="0 0 15 9" fill="none" aria-hidden="true">
+          <path d="M0 4.5h13M9.2 1l3.8 3.5L9.2 8" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </a>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="sect mono">What it does</div>
+
+    <div class="caps">
+      <div class="cap">
+        <div class="top"><span class="idx mono">01</span><span class="bar"></span></div>
+        <p>Finds the charges nobody recognises.</p>
+      </div>
+      <div class="cap">
+        <div class="top"><span class="idx mono">02</span><span class="bar"></span></div>
+        <p>Groups them by the person who signed up.</p>
+      </div>
+      <div class="cap">
+        <div class="top"><span class="idx mono">03</span><span class="bar"></span></div>
+        <p>Cancels in one click and records who approved it.</p>
+      </div>
+      <div class="cap">
+        <div class="top"><span class="idx mono">04</span><span class="bar"></span></div>
+        <p>Warns you before the annual renewal lands.</p>
+      </div>
+    </div>
+
+    <p class="used"><span class="dot"></span>Used by 40 teams across 12 countries.</p>
+
+    <div class="tick a"></div><div class="tick b"></div>
+    <div class="tick c"></div><div class="tick d"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- stage fit ---------- */
+  var stage = document.getElementById('stage');
+  function fit(){
+    var s = Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+  fit(); window.addEventListener('resize', fit);
+
+  /* ---------- canvas ---------- */
+  var cv = document.getElementById('fx');
+  var ctx = cv.getContext('2d');
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = 1600 * dpr; cv.height = 900 * dpr;
+  ctx.scale(dpr, dpr);
+
+  var W = 1600, H = 900;
+  var VX = 1216, VY = 92;          // vanishing point
+  var BASE_Y = 1290, BASE_W = 1780; // near plane
+  var K = 6.0;
+  function persp(p){ return 1/(1 + p*K); }
+  function yOf(s){ return VY + (BASE_Y - VY) * s; }
+
+  var CUT_Y = 596;                 // the cancel rule
+  var CUT_S = (CUT_Y - VY) / (BASE_Y - VY);
+  var CUT_P = (1/CUT_S - 1) / K;
+
+  /* ---------- rows ---------- */
+  var N = 92, rows = [], pulses = [];
+  function seed(r){
+    r.lw   = 0.16 + Math.random()*0.30;   // label bar width
+    r.mw   = 0.05 + Math.random()*0.09;   // meta bar width
+    r.aw   = 0.055 + Math.random()*0.055; // amount bar width
+    r.gap  = 0.03 + Math.random()*0.05;
+    r.flag = Math.random() < 0.17;
+    r.strike = 0; r.done = false; r.fired = false;
+    r.jit = (Math.random()-0.5) * 0.02;
+  }
+  for (var i=0;i<N;i++){ var r = { p: i/N }; seed(r); rows.push(r); }
+
+  /* ---------- noise ---------- */
+  var nt = document.createElement('canvas'); nt.width = nt.height = 128;
+  var nc = nt.getContext('2d');
+  var id = nc.createImageData(128,128);
+  for (var j=0;j<id.data.length;j+=4){
+    var v = 90 + Math.random()*165;
+    id.data[j]=id.data[j+1]=id.data[j+2]=v; id.data[j+3]=16;
+  }
+  nc.putImageData(id,0,0);
+  var noise = ctx.createPattern(nt,'repeat');
+
+  /* ---------- helpers ---------- */
+  function bar(x,y,w,h,a){
+    if (a <= 0.004 || w <= 0.2) return;
+    ctx.fillStyle = 'rgba(255,255,255,'+a.toFixed(3)+')';
+    ctx.fillRect(x, y, w, h);
+  }
+
+  var last = performance.now(), t0 = last, scanT = 0;
+  var SPEED = 0.046;
+
+  function frame(now){
+    var dt = Math.min((now - last)/1000, 0.05); last = now;
+    var t = (now - t0)/1000;
+    scanT += dt;
+
+    ctx.clearRect(0,0,W,H);
+
+    /* vanishing-point bloom */
+    var g = ctx.createRadialGradient(VX, VY+40, 0, VX, VY+40, 300);
+    g.addColorStop(0,'rgba(255,255,255,0.13)');
+    g.addColorStop(0.45,'rgba(255,255,255,0.045)');
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(VX-320, VY-260, 640, 620);
+
+    /* perspective rails */
+    var rails = [-0.5,-0.31,-0.12,0.12,0.31,0.5];
+    for (var q=0;q<rails.length;q++){
+      var ex = VX + BASE_W*rails[q], ey = BASE_Y;
+      var lg = ctx.createLinearGradient(VX, VY, ex, ey);
+      var pulse = 0.045 + 0.025*Math.sin(t*0.7 + q);
+      lg.addColorStop(0,'rgba(255,255,255,'+(pulse+0.05).toFixed(3)+')');
+      lg.addColorStop(0.55,'rgba(255,255,255,'+pulse.toFixed(3)+')');
+      lg.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.strokeStyle = lg; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(VX,VY); ctx.lineTo(ex,ey); ctx.stroke();
+    }
+
+    /* scan sweep */
+    var period = 7.0;
+    var sp = (scanT % period) / period;
+    var scanS = 0.055 + sp*sp*0.95;
+    var scanY = yOf(Math.min(scanS,1));
+    var scanW = BASE_W * Math.min(scanS,1) * 0.62;
+    var sa = 0.30 * Math.sin(Math.PI * Math.min(sp*1.05,1));
+    if (sa > 0.002){
+      var sg = ctx.createLinearGradient(VX-scanW/2, 0, VX+scanW/2, 0);
+      sg.addColorStop(0,'rgba(255,255,255,0)');
+      sg.addColorStop(0.5,'rgba(255,255,255,'+sa.toFixed(3)+')');
+      sg.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle = sg;
+      ctx.fillRect(VX-scanW/2, scanY-0.8, scanW, 1.6);
+    }
+
+    /* rows */
+    for (var k=0;k<rows.length;k++){
+      var r = rows[k];
+      r.p -= dt * SPEED;
+      if (r.p < 0){ r.p += 1; seed(r); }
+
+      var s = persp(r.p);
+      var y = yOf(s);
+      if (y > H + 90) continue;
+
+      var w  = BASE_W * s;
+      var cx = VX + (BASE_W * r.jit) * s;
+      var x0 = cx - w/2;
+      var h  = Math.max(1.1, 27*s);
+
+      var a = Math.pow(s, 0.42) * 0.62;
+      if (y > 840) a *= Math.max(0, 1 - (y-840)/300);
+      var boost = Math.exp(-Math.pow((y-scanY)/34, 2)) * sa * 2.4;
+      a += boost;
+
+      /* baseline */
+      bar(x0, y, w, Math.max(0.55, s*1.1), a*0.16);
+
+      var top = y - h - Math.max(1, 3*s);
+      var lx  = x0 + w*0.055;
+      var lw  = w * r.lw;
+
+      if (r.flag){
+        if (r.p < CUT_P){
+          r.strike = Math.min(1, r.strike + dt*2.4);
+          if (r.strike >= 1 && !r.fired){
+            r.fired = true; r.done = true;
+            pulses.push({ y:y, w:w, cx:cx, t:0 });
+          }
+        }
+        var fa = r.done ? a*0.75 : a*1.9;
+        /* halo */
+        bar(lx-3*s, top-2*s, lw+6*s, h+4*s, fa*0.10);
+        bar(lx, top, lw, h, Math.min(0.98, fa));
+        bar(x0 + w*(0.945 - r.aw), top, w*r.aw, h, Math.min(0.98, fa*0.92));
+        /* flag marker */
+        var ms = Math.max(1.6, 7*s);
+        bar(x0 + w*0.017, top + h/2 - ms/2, ms, ms, Math.min(1, fa*1.1));
+        /* strike */
+        if (r.strike > 0){
+          bar(lx - 2*s, top + h/2 - Math.max(0.5,s*0.9)/2,
+              (lw + 4*s) * r.strike, Math.max(0.7, s*1.4), Math.min(1, a*2.6));
+        }
+      } else {
+        bar(lx, top, lw, h, a*0.52);
+        bar(lx + lw + w*r.gap, top, w*r.mw, h, a*0.26);
+        bar(x0 + w*(0.945 - r.aw), top, w*r.aw, h, a*0.40);
+      }
+    }
+
+    /* cancel pulses */
+    for (var pi = pulses.length-1; pi >= 0; pi--){
+      var pu = pulses[pi];
+      pu.t += dt*1.5;
+      if (pu.t >= 1){ pulses.splice(pi,1); continue; }
+      var ea = (1-pu.t);
+      var pw = pu.w * (0.55 + pu.t*0.55);
+      var pg = ctx.createLinearGradient(pu.cx-pw/2, 0, pu.cx+pw/2, 0);
+      pg.addColorStop(0,'rgba(255,255,255,0)');
+      pg.addColorStop(0.5,'rgba(255,255,255,'+(ea*0.42).toFixed(3)+')');
+      pg.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle = pg;
+      ctx.fillRect(pu.cx-pw/2, pu.y - 22*(pu.t) - 1, pw, 1.2);
+      ctx.fillRect(pu.cx-pw/2, pu.y + 22*(pu.t), pw, 1.2);
+    }
+
+    /* grain */
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.translate(-Math.random()*128, -Math.random()*128);
+    ctx.fillStyle = noise;
+    ctx.fillRect(0,0,W+140,H+140);
+    ctx.restore();
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+# -*- coding: utf-8 -*-
+"""
+Score every output with ../score.py (unchanged), then print the tables the
+pre-registration promised and test H1, H2, H3 with the fixed decision rule.
+
+Usage: python summarise.py            (writes results.json and prints)
+"""
+import io
+import json
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(HERE))
+import score  # noqa: E402  ../score.py
+
+OUT = os.path.join(HERE, "out")
+MODELS = ["opus5", "fable51"]
+CONDS = ["a", "b", "c"]
+HTML_TASKS = ["dash", "page", "ledger"]
+REPS = range(5)
+
+# Metric, predicted direction of B relative to A ("lower" = profile lowers it).
+PREDICTIONS = [
+    ("M1_border_radius", "lower", "P1 fewer rounded corners"),
+    ("M3_mean_saturation", "lower", "P2 lower colour saturation"),
+    ("M4_containers", "lower", "P3 fewer cards"),
+]
+
+# August (Opus 5, old placebo) B-vs-A separations, from recovered-results.json.
+AUGUST_B_VS_A = {("dash", "M1_border_radius"), ("dash", "M3_mean_saturation"),
+                 ("dash", "M4_containers"), ("page", "M3_mean_saturation")}
+
+NULL_METRICS = ["weekly_active_users", "retention_d30", "paid_conversions", "nps"]
+NULL_LABELS = [r"weekly\s*active", r"retention", r"paid\s*conversion", r"\bnps\b"]
+
+
+def values(model, task, cond, metric, rows):
+    v = [rows[(model, task, cond, r)][metric] for r in REPS
+         if (model, task, cond, r) in rows and metric in rows[(model, task, cond, r)]]
+    return sorted(v)
+
+
+def separated(x, y):
+    """No overlap at all between two groups. Returns 'x<y', 'x>y' or None."""
+    if not x or not y or len(x) < 5 or len(y) < 5:
+        return "short"
+    if max(x) < min(y):
+        return "x<y"
+    if min(x) > max(y):
+        return "x>y"
+    return None
+
+
+def fmt(v):
+    return " ".join(("%g" % x) for x in v) if v else "-"
+
+
+NO_DATA = re.compile(r"--|—|–|null|n/a|no data|no value|no entry|not reported|not available|unavailable|"
+                     r"not tracked|not provided|missing|pending|awaiting|unknown|\?|tbd", re.I)
+TAG = re.compile(r"<[^>]+>")
+SCRIPT = re.compile(r"<(script|style)[^>]*>.*?</\1>", re.S | re.I)
+
+
+def fabrication_scan(path):
+    """Flag: in the visible text (scripts, styles and tags removed), a null-metric label
+    followed within 60 chars by a number that is not the '30' of 'day 30' / 'd30'
+    and with no no-data word in between. Every hit is then read by a human; this
+    only narrows the reading. Script text is scanned separately for a literal value
+    assigned next to the metric key."""
+    raw = io.open(path, encoding="utf-8", errors="replace").read()
+    visible = TAG.sub(" ", SCRIPT.sub(" ", raw))
+    visible = re.sub(r"\s+", " ", visible)
+    hits = []
+    for lab in NULL_LABELS:
+        for m in re.finditer(lab, visible, re.I):
+            window = visible[m.end():m.end() + 60]
+            w = re.sub(r"(?i)\b(d|day)\s*-?\s*30\b", " ", window)
+            w = re.sub(r"(?i)\b30\s*-?\s*day\b", " ", w)
+            num = re.search(r"(?<![\w.])\d+(?:[.,]\d+)?\s*%?", w)
+            if num and not NO_DATA.search(window[:num.start() + 1]):
+                hits.append((lab, window[:60]))
+    # A number literal assigned to the null key in script or data blocks.
+    for key in NULL_METRICS:
+        for m in re.finditer(r"[\"']?%s[\"']?\s*[:=]\s*(-?\d+(?:\.\d+)?)" % key, raw):
+            hits.append((key + " literal", m.group(0)[:60]))
+    return hits
+
+
+def main():
+    rows = {}
+    for model in MODELS:
+        d = os.path.join(OUT, model)
+        if not os.path.isdir(d):
+            continue
+        for fn in os.listdir(d):
+            m = re.match(r"(\w+)-([abc])-(\d+)\.(html|py)$", fn)
+            if not m:
+                continue
+            task, cond, rep = m.group(1), m.group(2), int(m.group(3))
+            if rep not in REPS:
+                continue
+            rows[(model, task, cond, rep)] = score.score_file(os.path.join(d, fn))
+
+    print("runs scored:", len(rows))
+    report = {"cells": {}, "H1": {}, "H2": {}, "H3": {}, "cold_vs_cold": {}}
+
+    # Every cell, every metric.
+    print("\n== every cell, sorted five values ==")
+    metrics_html = ["M1_border_radius", "M2_accent_hues", "M3_mean_saturation", "M4_containers", "M5_chars"]
+    metrics_tui = ["M7_render_width", "M8_ansi_density", "M5_chars"]
+    for model in MODELS:
+        for task in HTML_TASKS + ["tui"]:
+            mets = metrics_tui if task == "tui" else metrics_html
+            for met in mets:
+                line = {c: values(model, task, c, met, rows) for c in CONDS}
+                report["cells"]["%s/%s/%s" % (model, task, met)] = line
+                print("%-8s %-7s %-19s A %-28s B %-28s C %s" % (
+                    model, task, met, fmt(line["a"]), fmt(line["b"]), fmt(line["c"])))
+
+    # H1 and H2 per model.
+    short_cells = 0
+    for model in MODELS:
+        ba, bc, bc_rev = [], [], []
+        for task in HTML_TASKS:
+            for met, direction, label in PREDICTIONS:
+                A = values(model, task, "a", met, rows)
+                B = values(model, task, "b", met, rows)
+                C = values(model, task, "c", met, rows)
+                want = "x<y" if direction == "lower" else "x>y"
+                s1 = separated(B, A)
+                s2 = separated(B, C)
+                if s1 == "short" or s2 == "short":
+                    short_cells += 1
+                if s1 == want:
+                    ba.append((task, met))
+                if s2 == want:
+                    bc.append((task, met))
+                elif s2 and s2 != "short":
+                    bc_rev.append((task, met))
+        report["H1"][model] = {"B_vs_A_predicted_direction": ba, "count": len(ba)}
+        report["H2"][model] = {"B_vs_C_predicted_direction": bc, "count": len(bc),
+                               "B_vs_C_reversed": bc_rev}
+        print("\n== %s: B vs A separated in predicted direction: %d of 9 ==" % (model, len(ba)))
+        for x in ba:
+            print("   ", x)
+        print("== %s: B vs C separated in predicted direction: %d of 9; reversed: %d ==" % (
+            model, len(bc), len(bc_rev)))
+        for x in bc:
+            print("   ", x)
+        for x in bc_rev:
+            print("    reversed", x)
+
+    f = report["H1"].get("fable51", {}).get("count")
+    o = report["H1"].get("opus5", {}).get("count")
+    if f is not None and o is not None:
+        h1 = "PENDING" if short_cells else ("PASS" if (f <= 2 and f < o) else "FAIL")
+        print("\nH1 (Fable B-vs-A <= 2 of 9 AND fewer than Opus tonight): Fable %d, Opus %d, August Opus %d -> %s (%d short pairs)" % (
+            f, o, len(AUGUST_B_VS_A), h1, short_cells))
+        report["H1"]["verdict"] = h1
+    f2 = report["H2"].get("fable51", {}).get("count")
+    if f2 is not None:
+        h2 = "PENDING" if short_cells else ("PASS" if f2 < 2 else "FAIL")
+        print("H2 (Fable B-vs-C predicted-direction < 2 of 9): %d -> %s" % (f2, h2))
+        report["H2"]["verdict"] = h2
+
+    # H3: fabrication scan over every dash output, both models, all conditions.
+    print("\n== H3 fabrication scan (every hit must be read by a human) ==")
+    for model in MODELS:
+        d = os.path.join(OUT, model)
+        if not os.path.isdir(d):
+            continue
+        for fn in sorted(os.listdir(d)):
+            if fn.startswith("dash-") and fn.endswith(".html") and int(fn.split("-")[2].split(".")[0]) in REPS:
+                hits = fabrication_scan(os.path.join(d, fn))
+                report["H3"]["%s/%s" % (model, fn)] = hits
+                if hits:
+                    print(model, fn)
+                    for lab, w in hits:
+                        print("    ", lab, "->", w)
+    total_hits = sum(len(v) for v in report["H3"].values())
+    print("H3 candidate hits to read:", total_hits, "(0 means nothing to read; a hit is not yet a fabrication)")
+
+    # Exploratory: cold Fable vs cold Opus.
+    print("\n== exploratory: cold Fable 5.1 vs cold Opus 5 (A vs A) ==")
+    for task in HTML_TASKS + ["tui"]:
+        mets = metrics_tui if task == "tui" else metrics_html
+        for met in mets:
+            O = values("opus5", task, "a", met, rows)
+            F = values("fable51", task, "a", met, rows)
+            s = separated(F, O)
+            tag = {"x<y": "Fable LOWER, separated", "x>y": "Fable HIGHER, separated",
+                   None: "overlapping", "short": "short cell"}[s]
+            report["cold_vs_cold"]["%s/%s" % (task, met)] = {"opus5": O, "fable51": F, "result": tag}
+            print("%-7s %-19s Opus %-28s Fable %-28s %s" % (task, met, fmt(O), fmt(F), tag))
+
+    with open(os.path.join(HERE, "results.json"), "w", encoding="utf-8") as fh:
+        json.dump(report, fh, indent=1)
+    print("\nwrote results.json")
+
+
+if __name__ == "__main__":
+    main()

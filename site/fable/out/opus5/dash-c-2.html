@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, initial-scale=1">
+<title>Ledger — last 30 days</title>
+<style>
+  :root{
+    --bg:#0c1014;
+    --panel:#141a21;
+    --panel-2:#111720;
+    --line:#232c37;
+    --ink:#e8edf4;
+    --ink-2:#9aa7b6;
+    --ink-3:#6b7788;
+    --accent:#4fd3c4;
+    --accent-2:#7fb2ff;
+    --warn:#e2a33c;
+    --dim:#2c3644;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;width:100%;overflow:hidden;background:var(--bg)}
+  body{
+    font-family:"Inter","Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  #bg{position:fixed;inset:-20%;z-index:0;
+    background:
+      radial-gradient(38% 46% at 22% 18%, rgba(79,211,196,.10), transparent 70%),
+      radial-gradient(34% 40% at 82% 74%, rgba(127,178,255,.09), transparent 70%),
+      radial-gradient(30% 34% at 60% 10%, rgba(226,163,60,.05), transparent 70%);
+    animation:bgDrift 46s ease-in-out infinite alternate;
+    filter:blur(4px);
+  }
+  @keyframes bgDrift{
+    0%{transform:translate3d(-2%,-1%,0) scale(1)}
+    50%{transform:translate3d(2%,2%,0) scale(1.06)}
+    100%{transform:translate3d(-1%,1.5%,0) scale(1.02)}
+  }
+
+  #stage{
+    position:absolute;left:50%;top:50%;
+    width:1600px;height:900px;
+    transform-origin:50% 50%;
+    transform:translate(-50%,-50%);
+    display:flex;flex-direction:column;
+    padding:30px 44px 22px;
+    z-index:1;
+  }
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:40px}
+  .title{display:flex;align-items:baseline;gap:16px}
+  h1{font-size:40px;line-height:1;letter-spacing:-.02em;font-weight:650}
+  .period{font-size:16px;color:var(--ink-2);letter-spacing:.01em}
+  .sub{margin-top:9px;font-size:13.5px;color:var(--ink-2);max-width:760px;line-height:1.45}
+  .counts{display:flex;gap:26px;align-items:flex-end;padding-bottom:2px}
+  .count{text-align:right}
+  .count b{display:block;font-size:26px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+  .count span{font-size:11.5px;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase}
+  .count.ok b{color:var(--accent)}
+  .count.none b{color:var(--ink-3)}
+
+  .rule{position:relative;height:1px;background:var(--line);margin:16px 0 18px;overflow:hidden}
+  .rule::after{
+    content:"";position:absolute;top:0;left:0;height:1px;width:230px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    animation:scan 7.5s linear infinite;
+  }
+  @keyframes scan{0%{transform:translateX(-240px)}100%{transform:translateX(1520px)}}
+
+  /* ---------- grid ---------- */
+  main{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 1fr;gap:20px;min-height:0}
+
+  .tile{
+    position:relative;border:1px solid var(--line);border-radius:12px;
+    background:linear-gradient(160deg,var(--panel),var(--panel-2));
+    padding:16px 18px 14px;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+  }
+  .tile.has::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
+    background:linear-gradient(180deg,var(--accent),rgba(79,211,196,0));
+    animation:edge 5.5s ease-in-out infinite alternate;
+  }
+  @keyframes edge{0%{opacity:.35}100%{opacity:1}}
+  .tile.empty{background:var(--panel-2);border-style:dashed;border-color:#28313d}
+
+  .head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  h2{font-size:14.5px;font-weight:600;letter-spacing:-.005em}
+  .key{margin-top:3px;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:10.5px;color:var(--ink-3);letter-spacing:.02em}
+  .chip{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:20px;white-space:nowrap;border:1px solid}
+  .chip.ok{color:var(--accent);border-color:rgba(79,211,196,.35);background:rgba(79,211,196,.07)}
+  .chip.no{color:var(--ink-3);border-color:#2e3946}
+
+  .value{margin-top:12px;font-size:44px;line-height:1;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .value .unit{font-size:17px;font-weight:500;color:var(--ink-2);margin-left:6px;letter-spacing:0}
+  .value.none{font-size:28px;color:var(--ink-3);font-weight:500;letter-spacing:-.01em}
+
+  .viz{flex:1;min-height:0;margin:12px 0 10px;position:relative}
+  .viz canvas,.viz svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .note{font-size:11.5px;line-height:1.4;color:var(--ink-3)}
+
+  /* dots */
+  /* dial + ring glow */
+  .glow{animation:glow 3.4s ease-in-out infinite}
+  @keyframes glow{0%,100%{opacity:.35}50%{opacity:1}}
+  .flow{animation:flow 3s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-64}}
+  .halo{transform-origin:center;animation:halo 4.2s ease-out infinite}
+  @keyframes halo{0%{transform:scale(.86);opacity:.5}70%{transform:scale(1.12);opacity:0}100%{opacity:0}}
+
+  /* tickets */
+  .ticks{position:absolute;inset:0;display:flex;align-items:flex-end;gap:3px}
+  .tick{flex:1;height:62%;border-radius:2px;background:var(--dim);transform-origin:50% 100%;animation:tickPulse 3s linear infinite}
+  @keyframes tickPulse{
+    0%{background:var(--dim);transform:scaleY(1)}
+    4%{background:var(--warn);transform:scaleY(1.55)}
+    16%{background:var(--dim);transform:scaleY(1)}
+    100%{background:var(--dim);transform:scaleY(1)}
+  }
+
+  /* empty hatch */
+  .hatch{position:absolute;inset:0;overflow:hidden;border-radius:6px;background:rgba(255,255,255,.012)}
+  .hatch i{
+    position:absolute;top:-60%;left:-60%;width:220%;height:220%;
+    background:repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 1px,transparent 1px 13px);
+    animation:hatchMove 9s linear infinite;
+  }
+  @keyframes hatchMove{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(18px,18px,0)}}
+  .hatch b{
+    position:absolute;top:0;bottom:0;width:120px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);
+    animation:hatchScan 6.5s ease-in-out infinite;
+  }
+  @keyframes hatchScan{0%{transform:translateX(-140px)}100%{transform:translateX(360px)}}
+
+  footer{margin-top:16px;display:flex;justify-content:space-between;gap:36px;font-size:11.5px;color:var(--ink-3);line-height:1.45}
+  footer b{color:var(--ink-2);font-weight:500}
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001s !important;animation-iteration-count:1 !important}
+  }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+
+<div id="stage">
+  <header>
+    <div>
+      <div class="title">
+        <h1>Ledger</h1>
+        <div class="period">last 30 days</div>
+      </div>
+      <p class="sub">Every value on this page comes from the metrics payload for this period. Four of the eight metrics returned <b>null</b>; those tiles are left empty rather than estimated. This is a snapshot — the numbers do not change while the page is open.</p>
+    </div>
+    <div class="counts">
+      <div class="count ok"><b>4</b><span>with a value</span></div>
+      <div class="count none"><b>4</b><span>no data</span></div>
+      <div class="count"><b>8</b><span>metrics total</span></div>
+    </div>
+  </header>
+
+  <div class="rule"></div>
+
+  <main>
+    <!-- 1: active installs -->
+    <section class="tile has">
+      <div class="head">
+        <div><h2>Active installs</h2><div class="key">active_installs</div></div>
+        <div class="chip ok">value</div>
+      </div>
+      <div class="value">1,284</div>
+      <div class="viz"><canvas id="c-installs"></canvas></div>
+      <p class="note">1,284 dots, one per install. Position is decorative; the count is the measurement.</p>
+    </section>
+
+    <!-- 2: weekly active users (null) -->
+    <section class="tile empty">
+      <div class="head">
+        <div><h2>Weekly active users</h2><div class="key">weekly_active_users</div></div>
+        <div class="chip no">no data</div>
+      </div>
+      <div class="value none">No data</div>
+      <div class="viz"><div class="hatch"><i></i><b></b></div></div>
+      <p class="note">The payload returned null for this period. Empty means no value was collected, not 0.</p>
+    </section>
+
+    <!-- 3: median session -->
+    <section class="tile has">
+      <div class="head">
+        <div><h2>Median session length</h2><div class="key">median_session_minutes</div></div>
+        <div class="chip ok">value</div>
+      </div>
+      <div class="value">12.4<span class="unit">minutes</span></div>
+      <div class="viz"><svg id="s-dial" viewBox="0 0 240 120" preserveAspectRatio="xMidYMax meet" aria-label="Dial reading 12.4 on a 0 to 30 minute scale"></svg></div>
+      <p class="note">Needle fixed at 12.4 on a 0–30 minute scale. Median, not mean.</p>
+    </section>
+
+    <!-- 4: retention d30 (null) -->
+    <section class="tile empty">
+      <div class="head">
+        <div><h2>30-day retention</h2><div class="key">retention_d30</div></div>
+        <div class="chip no">no data</div>
+      </div>
+      <div class="value none">No data</div>
+      <div class="viz"><div class="hatch"><i></i><b></b></div></div>
+      <p class="note">The payload returned null for this period. Empty means no value was collected, not 0.</p>
+    </section>
+
+    <!-- 5: crash-free -->
+    <section class="tile has">
+      <div class="head">
+        <div><h2>Crash-free sessions</h2><div class="key">crash_free_rate_pct</div></div>
+        <div class="chip ok">value</div>
+      </div>
+      <div class="value">99.2<span class="unit">%</span></div>
+      <div class="viz"><svg id="s-ring" viewBox="0 0 200 130" preserveAspectRatio="xMidYMid meet" aria-label="Ring showing 99.2 percent crash-free and 0.8 percent not crash-free"></svg></div>
+      <p class="note">99.2% crash-free. The remaining 0.8% of sessions were not crash-free.</p>
+    </section>
+
+    <!-- 6: paid conversions (null) -->
+    <section class="tile empty">
+      <div class="head">
+        <div><h2>Paid conversions</h2><div class="key">paid_conversions</div></div>
+        <div class="chip no">no data</div>
+      </div>
+      <div class="value none">No data</div>
+      <div class="viz"><div class="hatch"><i></i><b></b></div></div>
+      <p class="note">The payload returned null for this period. Empty means no value was collected, not 0.</p>
+    </section>
+
+    <!-- 7: support tickets -->
+    <section class="tile has">
+      <div class="head">
+        <div><h2>Support tickets</h2><div class="key">support_tickets</div></div>
+        <div class="chip ok">value</div>
+      </div>
+      <div class="value">37</div>
+      <div class="viz"><div class="ticks" id="ticks" aria-label="37 marks, one per ticket"></div></div>
+      <p class="note">37 marks, one per ticket. No previous period was supplied, so there is no comparison.</p>
+    </section>
+
+    <!-- 8: nps (null) -->
+    <section class="tile empty">
+      <div class="head">
+        <div><h2>NPS</h2><div class="key">nps</div></div>
+        <div class="chip no">no data</div>
+      </div>
+      <div class="value none">No data</div>
+      <div class="viz"><div class="hatch"><i></i><b></b></div></div>
+      <p class="note">The payload returned null for this period. Empty means no value was collected, not 0.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div>Nothing on this page is estimated, projected, or carried over from an earlier period. A tile shows a number only where the payload supplied one.</div>
+    <div style="text-align:right;white-space:nowrap">Source: metrics payload for <b>Ledger</b>, <b>last 30 days</b>. Motion is decorative and encodes no trend.</div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---- fit 1600x900 into any window, never scroll ---- */
+  var stage = document.getElementById('stage');
+  function fit(){
+    var s = Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+  fit();
+  window.addEventListener('resize', fit);
+
+  /* ---- 37 ticket marks ---- */
+  var ticks = document.getElementById('ticks');
+  var TICKETS = 37, cycle = 3;
+  for (var i = 0; i < TICKETS; i++){
+    var d = document.createElement('div');
+    d.className = 'tick';
+    d.style.animationDelay = (i * (cycle / TICKETS)).toFixed(3) + 's';
+    ticks.appendChild(d);
+  }
+
+  /* ---- dial: 12.4 on a 0-30 scale ---- */
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function el(n, attrs){
+    var e = document.createElementNS(SVGNS, n);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function polar(cx, cy, r, deg){
+    var a = deg * Math.PI / 180;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  }
+  function arc(cx, cy, r, a0, a1){
+    var p0 = polar(cx, cy, r, a0), p1 = polar(cx, cy, r, a1);
+    var large = (a1 - a0) > 180 ? 1 : 0;
+    return 'M' + p0[0].toFixed(2) + ' ' + p0[1].toFixed(2) +
+           ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2);
+  }
+
+  (function dial(){
+    var svg = document.getElementById('s-dial');
+    var cx = 120, cy = 112, r = 84;
+    var VALUE = 12.4, MAX = 30;
+    var a0 = 180, a1 = 360;
+    var av = a0 + (VALUE / MAX) * (a1 - a0);
+
+    svg.appendChild(el('path', {d: arc(cx, cy, r, a0, a1), fill:'none', stroke:'#242e3a', 'stroke-width':10, 'stroke-linecap':'round'}));
+    svg.appendChild(el('path', {d: arc(cx, cy, r, a0, av), fill:'none', stroke:'#4fd3c4', 'stroke-width':10, 'stroke-linecap':'round', opacity:.9}));
+
+    var f = el('path', {d: arc(cx, cy, r, a0, av), fill:'none', stroke:'#bff6ee', 'stroke-width':3, 'stroke-linecap':'round',
+      'stroke-dasharray':'5 27', opacity:.75});
+    f.setAttribute('class','flow');
+    svg.appendChild(f);
+
+    // scale ticks at 0, 10, 20, 30 minutes
+    [0, 10, 20, 30].forEach(function(v){
+      var a = a0 + (v / MAX) * (a1 - a0);
+      var p1 = polar(cx, cy, r - 14, a), p2 = polar(cx, cy, r - 21, a), pt = polar(cx, cy, r - 32, a);
+      svg.appendChild(el('line', {x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1], stroke:'#43505f', 'stroke-width':1.5}));
+      var t = el('text', {x:pt[0], y:pt[1] + 4, fill:'#6b7788', 'font-size':'10.5', 'text-anchor':'middle',
+        'font-family':'ui-monospace,Menlo,Consolas,monospace'});
+      t.textContent = v;
+      svg.appendChild(t);
+    });
+
+    var np = polar(cx, cy, r - 6, av);
+    var g = el('g', {});
+    var halo = el('circle', {cx:np[0], cy:np[1], r:11, fill:'none', stroke:'#4fd3c4', 'stroke-width':1.5, opacity:.5});
+    halo.setAttribute('class','halo');
+    halo.style.transformOrigin = np[0] + 'px ' + np[1] + 'px';
+    g.appendChild(halo);
+    g.appendChild(el('line', {x1:cx, y1:cy, x2:np[0], y2:np[1], stroke:'#e8edf4', 'stroke-width':2.4, 'stroke-linecap':'round'}));
+    g.appendChild(el('circle', {cx:cx, cy:cy, r:4.5, fill:'#e8edf4'}));
+    g.appendChild(el('circle', {cx:np[0], cy:np[1], r:4, fill:'#4fd3c4'}));
+    svg.appendChild(g);
+  })();
+
+  /* ---- ring: 99.2% crash-free ---- */
+  (function ring(){
+    var svg = document.getElementById('s-ring');
+    var cx = 100, cy = 65, r = 46, C = 2 * Math.PI * r;
+    var pct = 99.2 / 100;
+
+    var halo = el('circle', {cx:cx, cy:cy, r:r, fill:'none', stroke:'#4fd3c4', 'stroke-width':1.2, opacity:.4});
+    halo.setAttribute('class','halo');
+    halo.style.transformOrigin = cx + 'px ' + cy + 'px';
+    svg.appendChild(halo);
+
+    svg.appendChild(el('circle', {cx:cx, cy:cy, r:r, fill:'none', stroke:'#212a35', 'stroke-width':13}));
+
+    var g = el('g', {transform:'rotate(-90 ' + cx + ' ' + cy + ')'});
+    g.appendChild(el('circle', {cx:cx, cy:cy, r:r, fill:'none', stroke:'#4fd3c4', 'stroke-width':13,
+      'stroke-dasharray': (C * pct).toFixed(2) + ' ' + C.toFixed(2)}));
+    g.appendChild(el('circle', {cx:cx, cy:cy, r:r, fill:'none', stroke:'#e2a33c', 'stroke-width':13,
+      'stroke-dasharray': (C * (1 - pct)).toFixed(2) + ' ' + C.toFixed(2),
+      'stroke-dashoffset': (-C * pct).toFixed(2)}));
+    var f = el('circle', {cx:cx, cy:cy, r:r, fill:'none', stroke:'#d8fbf5', 'stroke-width':3.5,
+      'stroke-dasharray':'6 26', opacity:.55});
+    f.setAttribute('class','flow');
+    g.appendChild(f);
+    svg.appendChild(g);
+
+    var lab = el('text', {x:cx, y:cy + 4, fill:'#9aa7b6', 'font-size':'11', 'text-anchor':'middle',
+      'font-family':'ui-monospace,Menlo,Consolas,monospace'});
+    lab.textContent = '0.8% not';
+    svg.appendChild(lab);
+    var lab2 = el('text', {x:cx, y:cy + 17, fill:'#9aa7b6', 'font-size':'11', 'text-anchor':'middle',
+      'font-family':'ui-monospace,Menlo,Consolas,monospace'});
+    lab2.textContent = 'crash-free';
+    svg.appendChild(lab2);
+  })();
+
+  /* ---- canvas: 1,284 dots, one per install ---- */
+  var cv = document.getElementById('c-installs');
+  var ctx = cv.getContext('2d');
+  var W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var N = 1284, dots = [];
+
+  function size(){
+    var r = cv.getBoundingClientRect();
+    W = Math.max(1, Math.round(r.width));
+    H = Math.max(1, Math.round(r.height));
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function seed(){
+    dots.length = 0;
+    for (var i = 0; i < N; i++){
+      dots.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - .5) * 0.16,
+        vy: (Math.random() - .5) * 0.12,
+        p: Math.random() * Math.PI * 2,
+        s: 0.5 + Math.random() * 0.9
+      });
+    }
+  }
+  size(); seed();
+  window.addEventListener('resize', function(){ size(); seed(); });
+
+  var t = 0;
+  function frame(){
+    t += 0.016;
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < N; i++){
+      var d = dots[i];
+      d.x += d.vx; d.y += d.vy;
+      if (d.x < -2) d.x = W + 2; else if (d.x > W + 2) d.x = -2;
+      if (d.y < -2) d.y = H + 2; else if (d.y > H + 2) d.y = -2;
+      var a = 0.30 + 0.55 * (0.5 + 0.5 * Math.sin(t * d.s + d.p));
+      ctx.fillStyle = 'rgba(79,211,196,' + a.toFixed(3) + ')';
+      ctx.fillRect(d.x, d.y, 1.7, 1.7);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

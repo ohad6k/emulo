@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emulo | Fable 5.1 vs Opus 5, 120 generated UIs on day one</title>
+<meta name="description" content="Claude Fable 5.1 and Claude Opus 5 built the same 60 pages on the night Fable shipped. Same prompt, three system prompts: cold, a mined profile, a placebo. Every output is here, live and unedited, with a pre-registered scorecard.">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="canonical" href="https://emulo.vercel.app/fable">
+<meta property="og:title" content="Fable 5.1 vs Opus 5, 120 generated UIs on day one">
+<meta property="og:description" content="Same prompt, two models, three system prompts. Every output live and unedited. Pre-registered, and the placebo is in the room.">
+<meta property="og:image" content="https://emulo.vercel.app/fable/shots/fable51/dash-a-0.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f2eee1;
+  --paper-2:#f7f4ea;
+  --ink:#161309;
+  --ink-soft:#3d3a2f;
+  --ink-faint:#6f6a58;
+  --ink-dim:#8f8a76;
+  --cream-dim:#cfc9b4;
+  --rule:#c9c3ad;
+  --red:#a83b23;
+  --serif:"Playfair Display",Georgia,serif;
+  --text:"Source Serif 4",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{max-width:100%;overflow-x:hidden;scroll-behavior:smooth}
+body{max-width:100%;background:var(--paper);color:var(--ink);font-family:var(--text);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+a{color:inherit}
+.wrap{position:relative;z-index:3;width:100%;max-width:1180px;margin:0 auto;padding:0 32px}
+.label{display:block;color:var(--ink-faint);font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.28em;text-transform:uppercase}
+.label .red{color:var(--red)}
+h1,h2,h3{font-family:var(--serif);font-weight:600}
+h2{font-size:clamp(28px,3.4vw,40px);line-height:1.1;letter-spacing:-.015em}
+h2 i{font-style:italic;color:var(--red);font-weight:500}
+p.lede{max-width:640px;font-size:19px;color:var(--ink-soft)}
+p.lede b{color:var(--ink);font-weight:600}
+.mono{font-family:var(--mono)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+nav{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:26px 32px;border-bottom:1px solid var(--rule)}
+.wordmark{font-family:var(--mono);font-size:14px;font-weight:500;letter-spacing:.46em;text-decoration:none}
+.nav-link{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--ink-faint)}
+.nav-link:hover,.nav-link:focus-visible{color:var(--red)}
+
+/* ---------- hero ---------- */
+.hero{position:relative;z-index:3;padding:72px 0 8px;border-bottom:1px solid var(--rule)}
+.eyebrow{display:flex;gap:14px;align-items:center;margin-bottom:26px}
+.eyebrow::before{content:"";flex:none;width:34px;height:1px;background:var(--red)}
+h1{max-width:900px;font-size:clamp(42px,6.4vw,78px);line-height:.98;letter-spacing:-.022em}
+h1 i{font-style:italic;color:var(--red);font-weight:500}
+.hero-copy{max-width:660px;margin-top:28px;font-size:20px;color:var(--ink-soft)}
+.hero-copy b{color:var(--ink);font-weight:600}
+.hero-facts{display:flex;gap:44px;flex-wrap:wrap;margin-top:34px;padding-top:22px;border-top:2px solid var(--ink)}
+.fact b{display:block;font-family:var(--serif);font-size:34px;line-height:1;letter-spacing:-.02em}
+.fact span{display:block;margin-top:8px}
+
+
+/* ---------- controls ---------- */
+.controls{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-end;padding:40px 0 22px;border-bottom:1px solid var(--rule)}
+.group{display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:8px 13px;border:1px solid var(--rule);font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);background:transparent;transition:all .14s ease}
+.chip:hover{border-color:var(--ink);color:var(--ink)}
+.chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--paper-2)}
+.chip[aria-pressed=true].fable{background:var(--red);border-color:var(--red)}
+.count{margin-left:auto;align-self:flex-end;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+.count b{color:var(--ink);font-weight:500}
+
+/* ---------- the wall ---------- */
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:26px 20px;padding:30px 0 20px}
+.card{display:block;text-align:left;min-width:0}
+.frame{position:relative;aspect-ratio:16/9;border:1px solid var(--ink);background:#0e0d0a;overflow:hidden}
+.frame img{display:block;width:100%;height:100%;object-fit:cover}
+.frame .live{position:absolute;inset:0;width:1600px;height:900px;border:0;transform-origin:0 0;background:#0e0d0a;pointer-events:none}
+.frame .termpre{position:absolute;inset:0;padding:12px 14px;color:#e8e2cf;font:9.5px/1.35 var(--mono);white-space:pre;overflow:hidden}
+.card:hover .frame{outline:2px solid var(--red);outline-offset:-1px}
+.card .meta{display:flex;justify-content:space-between;gap:10px;margin-top:9px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+.card .meta b{color:var(--ink);font-weight:500}
+.card .meta .fable{color:var(--red)}
+.card .sub{margin-top:3px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-dim)}
+.card .sub.bad{color:var(--red)}
+.empty{padding:60px 0;color:var(--ink-faint);font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+
+/* ---------- compare ---------- */
+.compare{padding:64px 0 70px;border-top:2px solid var(--ink)}
+.compare-head{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-end;margin-bottom:26px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.pane{min-width:0}
+.pane .frame{aspect-ratio:16/9}
+.pane .frame iframe{position:absolute;inset:0;width:1600px;height:900px;border:0;transform-origin:0 0;background:#0e0d0a}
+.pane .who{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+.pane .who b{font-family:var(--serif);font-size:22px;letter-spacing:-.01em;text-transform:none;color:var(--ink);font-weight:600}
+.pane .who b.fable{color:var(--red)}
+.pane .stats{display:flex;gap:18px;margin-top:10px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--ink-faint)}
+.pane .stats b{color:var(--ink);font-weight:500}
+.rep-row{display:flex;gap:6px;align-items:center}
+.rep-row .chip{padding:6px 10px}
+@media (max-width:820px){.pair{grid-template-columns:1fr}}
+
+/* ---------- scorecard ---------- */
+.score{padding:64px 0;background:var(--paper-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.verdicts{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:34px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.verdict{padding:22px 22px 24px 0;border-right:1px dotted var(--rule)}
+.verdict:last-child{border-right:0;padding-right:0}
+.verdict+.verdict{padding-left:22px}
+.verdict .v{font-family:var(--serif);font-size:30px;line-height:1;letter-spacing:-.02em;margin-top:12px}
+.verdict .v.pass{color:var(--ink)}
+.verdict .v.fail{color:var(--red)}
+.verdict .v.wait{color:var(--ink-dim)}
+.verdict p{margin-top:12px;font-size:15px;color:var(--ink-soft);line-height:1.5}
+@media (max-width:820px){.verdicts{grid-template-columns:1fr}.verdict{border-right:0;border-bottom:1px dotted var(--rule);padding-left:0!important}}
+.tbl{width:100%;border-collapse:collapse;margin-top:26px;font-size:14px}
+.tbl th{text-align:left;padding:10px 12px 10px 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);font-weight:500;border-bottom:1px solid var(--ink)}
+.tbl td{padding:9px 12px 9px 0;border-bottom:1px dotted var(--rule);vertical-align:top;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+.tbl td.t{font-family:var(--text);font-size:14.5px;white-space:normal}
+.tbl td.sep{color:var(--red);font-weight:500}
+.tbl td.dim{color:var(--ink-dim)}
+.tblwrap{overflow-x:auto}
+details{margin-top:18px}
+summary{cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+summary:hover{color:var(--red)}
+
+/* ---------- method ---------- */
+.method{padding:64px 0 80px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:30px}
+.cols p+p{margin-top:14px}
+.cols p{font-size:16px;color:var(--ink-soft)}
+.cols p b{color:var(--ink);font-weight:600}
+.cols ul{margin:14px 0 0 18px;font-size:16px;color:var(--ink-soft)}
+.cols li+li{margin-top:8px}
+.cols a{color:var(--ink);text-decoration-color:var(--rule);text-underline-offset:3px}
+.cols a:hover{color:var(--red)}
+@media (max-width:820px){.cols{grid-template-columns:1fr;gap:34px}}
+pre.sys{margin-top:12px;padding:16px 18px;border:1px solid var(--rule);background:var(--paper-2);font:12.5px/1.55 var(--mono);white-space:pre-wrap;color:var(--ink-soft)}
+
+/* ---------- viewer ---------- */
+.viewer{position:fixed;inset:0;z-index:50;display:none;background:rgba(22,19,9,.86);backdrop-filter:blur(3px)}
+.viewer[open]{display:block}
+.viewer .box{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr;padding:22px}
+.viewer .bar{display:flex;align-items:center;gap:22px;color:var(--paper-2);font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;padding:0 0 14px}
+.viewer .bar b{font-family:var(--serif);font-size:20px;letter-spacing:-.01em;text-transform:none;font-weight:600}
+.viewer .bar b.fable{color:#ffb39f}
+.viewer .bar a{color:var(--cream-dim)}
+.viewer .bar a:hover{color:#fff}
+.viewer .bar .x{margin-left:auto;padding:10px 14px;border:1px solid var(--cream-dim);color:var(--paper-2);font-family:var(--mono);font-size:11px;letter-spacing:.14em}
+.viewer .bar .x:hover{background:var(--red);border-color:var(--red)}
+.viewer .stage{position:relative;min-height:0}
+.viewer .stage iframe{position:absolute;left:50%;top:50%;width:1600px;height:900px;border:1px solid #000;background:#0e0d0a;transform-origin:50% 50%}
+.viewer .stage .cons{position:absolute;left:0;bottom:0;max-width:60%;padding:8px 10px;background:rgba(168,59,35,.92);color:#fff;font:11px/1.4 var(--mono);white-space:pre-wrap}
+
+footer{position:relative;z-index:3;border-top:1px solid var(--rule);padding:30px 0 60px}
+footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+footer a{text-decoration:none}
+footer a:hover{color:var(--red)}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="wordmark" href="/">EMULO</a>
+  <a class="nav-link" href="/placebo">The placebo test</a>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="label"><span class="red">&#9679;</span> Day one. 2026-09-01, the night Fable 5.1 shipped</span></div>
+    <h1>Fable 5.1 built sixty pages. Opus 5 built the <i>same</i> sixty.</h1>
+    <p class="hero-copy">Same four briefs, five times each, under three system prompts: <b>cold</b>, cold plus <b>my mined profile</b>, and cold plus a <b>placebo profile</b> of a person who does not exist. Every output is on this page, live and unedited. The scorecard was written before the first run.</p>
+    <div class="hero-facts" id="facts">
+      <div class="fact"><b id="f-runs">&ndash;</b><span class="label">runs, all shown</span></div>
+      <div class="fact"><b id="f-cost">&ndash;</b><span class="label">list price, total</span></div>
+      <div class="fact"><b id="f-fab">&ndash;</b><span class="label">invented numbers found</span></div>
+      <div class="fact"><b id="f-ver">&ndash;</b><span class="label">claude code</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="wall-section">
+  <div class="wrap">
+    <div class="controls" id="controls">
+      <div class="group"><span class="label">Model</span><div class="chips" data-key="model">
+        <button class="chip" data-v="all" aria-pressed="true">Both</button>
+        <button class="chip" data-v="opus5">Opus 5</button>
+        <button class="chip fable" data-v="fable51">Fable 5.1</button>
+      </div></div>
+      <div class="group"><span class="label">Brief</span><div class="chips" data-key="task">
+        <button class="chip" data-v="all" aria-pressed="true">All</button>
+        <button class="chip" data-v="dash">Dashboard</button>
+        <button class="chip" data-v="page">Landing page</button>
+        <button class="chip" data-v="ledger">Awards page</button>
+        <button class="chip" data-v="tui">Terminal</button>
+      </div></div>
+      <div class="group"><span class="label">System prompt</span><div class="chips" data-key="cond">
+        <button class="chip" data-v="all" aria-pressed="true">All</button>
+        <button class="chip" data-v="a">Cold</button>
+        <button class="chip" data-v="b">Profile</button>
+        <button class="chip" data-v="c">Placebo</button>
+      </div></div>
+      <div class="count" id="count"><b>0</b> of 0</div>
+    </div>
+    <div class="wall" id="wall"></div>
+  </div>
+</section>
+
+<section class="compare" id="compare">
+  <div class="wrap">
+    <div class="compare-head">
+      <div>
+        <span class="label">Side by side</span>
+        <h2 style="margin-top:14px">Same prompt, same night, <i>two</i> models.</h2>
+      </div>
+      <div class="group"><span class="label">Pick a run</span>
+        <div class="rep-row">
+          <div class="chips" id="cmp-task">
+            <button class="chip" data-v="dash" aria-pressed="true">Dashboard</button>
+            <button class="chip" data-v="page">Landing page</button>
+            <button class="chip" data-v="ledger">Awards page</button>
+            <button class="chip" data-v="tui">Terminal</button>
+          </div>
+          <span class="label" style="margin:0 6px">&nbsp;</span>
+          <div class="chips" id="cmp-cond">
+            <button class="chip" data-v="a" aria-pressed="true">Cold</button>
+            <button class="chip" data-v="b">Profile</button>
+            <button class="chip" data-v="c">Placebo</button>
+          </div>
+          <span class="label" style="margin:0 6px">&nbsp;</span>
+          <div class="chips" id="cmp-rep">
+            <button class="chip" data-v="0" aria-pressed="true">1</button>
+            <button class="chip" data-v="1">2</button>
+            <button class="chip" data-v="2">3</button>
+            <button class="chip" data-v="3">4</button>
+            <button class="chip" data-v="4">5</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pair">
+      <div class="pane" id="pane-opus5"></div>
+      <div class="pane" id="pane-fable51"></div>
+    </div>
+  </div>
+</section>
+
+<section class="score" id="score">
+  <div class="wrap">
+    <span class="label">Scorecard, written before the first run</span>
+    <h2 style="margin-top:14px">Three predictions. Each one could <i>fail</i>.</h2>
+    <p class="lede" style="margin-top:16px">Two groups of five separate only when they do not overlap at all. A prediction passes only on two of the three page briefs. That rule was fixed in the <a href="/fable/method/PREREGISTRATION.md.txt" style="color:var(--ink)">pre-registration</a> and the harness refuses to run if that file changes.</p>
+    <div class="verdicts" id="verdicts"></div>
+    <div class="tblwrap"><table class="tbl" id="tbl-cold"></table></div>
+    <details><summary>Every cell, sorted five values, both models</summary><div class="tblwrap"><table class="tbl" id="tbl-all"></table></div></details>
+  </div>
+</section>
+
+<section class="method">
+  <div class="wrap">
+    <span class="label">How it ran</span>
+    <h2 style="margin-top:14px">Nothing on this page was picked.</h2>
+    <div class="cols">
+      <div>
+        <p><b>Every run is Claude Code headless</b> with the default system prompt replaced by one sentence, no settings sources, no MCP servers, every tool denied, in an empty directory. Nothing on the machine can reach the model. The only thing that differs between the three conditions is the text appended to that sentence: nothing, the profile, or the placebo. The only thing that differs between the two halves is the model id.</p>
+        <p><b>The profile</b> is the file Emulo actually ships, mined from my own sessions, <span id="m-profile">&ndash;</span> bytes. <b>The placebo</b> is a working profile of a documentation lead who does not exist, <span id="m-placebo">&ndash;</span> bytes, written to be silent on every dimension the scorer measures. If a placebo moves the numbers as far as the real thing, the real thing has not shown it is the real thing.</p>
+        <p><b>The scorer</b> counts rounded corners, mean colour saturation, card-like containers, output length, and for the terminal brief, rendered width and escape-code density. It measures whether the output changed, not whether it is good. Nothing here measures good.</p>
+        <p><b>The system prompt every run shares:</b></p>
+        <pre class="sys" id="m-sys"></pre>
+      </div>
+      <div>
+        <p><b>Runs were interleaved</b> across models and conditions and executed six at a time, so neither model got a quieter hour. Screenshots were taken by one headless Chrome five seconds after load, with WebGL on. A page that threw a console error or failed a request is marked on its card rather than hidden.</p>
+        <p><b>Things this cannot say.</b> One profile document and one placebo document, so it cannot tell "mined" from "this particular text". No equivalence test, so overlap never means "the same". Two models on one night is one comparison, not a trend. And a screenshot is one frame of a moving page, which is why every card opens the live file.</p>
+        <ul>
+          <li><a href="https://github.com/ohad6k/emulo">Emulo, the tool under test</a>. Open source. Its own result is on this page and it is not flattering.</li>
+          <li><a href="/placebo">The August study</a> this replicates, with the placebo that matched the profile on every prediction.</li>
+          <li><a href="/fable/method/PREREGISTRATION.md.txt">The pre-registration</a>, <a href="/fable/method/placebo.md.txt">the placebo document</a>, <a href="/fable/method/run3.py.txt">the harness</a>, <a href="/fable/method/score.py.txt">the scorer</a>, <a href="/fable/method/summarise.py.txt">the summariser</a>, <a href="/fable/method/shoot.mjs.txt">the screenshot script</a>.</li>
+          <li><a href="/fable/method/manifest.json">manifest.json</a>, every run's exact command line, tokens, seconds and list cost. <a href="/fable/data.json">data.json</a>, every measured value.</li>
+          <li>Raw outputs: every card above opens one, and the raw file link in the viewer is the file itself, byte for byte what the model returned after a fence strip.</li>
+        </ul>
+        <p style="margin-top:22px"><b>Who made this:</b> Ohad, one person, the night the model came out. Read every number as coming from someone with a product in the comparison.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Emulo, day one study</span>
+    <span><a href="/">Open source project</a></span>
+  </div>
+</footer>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Live output">
+  <div class="box">
+    <div class="bar" id="vbar"></div>
+    <div class="stage" id="vstage"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var MODEL_NAME={opus5:"Opus 5",fable51:"Fable 5.1"};
+  var TASK_NAME={dash:"Dashboard",page:"Landing page",ledger:"Awards page",tui:"Terminal"};
+  var COND_NAME={a:"Cold",b:"Profile",c:"Placebo"};
+  var TASK_SIZE={dash:[1600,900],page:[1000,1400],ledger:[1600,900],tui:[1600,900]};
+  var data=null, items=[], filt={model:"all",task:"all",cond:"all"};
+  var cmp={task:"dash",cond:"a",rep:0};
+  var BASE=location.pathname.replace(/\/?(index\.html)?$/,"")+"/";
+  var $=function(id){return document.getElementById(id)};
+  var esc=function(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
+  var fmtS=function(x){return x==null?"-":(Math.round(x)+"s")};
+  var fmtC=function(x){return x==null?"-":("$"+x.toFixed(2))};
+  var fmtK=function(x){return x==null?"-":(x>=1000?(x/1000).toFixed(1)+"k":String(x))};
+
+  function label(it){
+    return '<span><b class="'+(it.model==="fable51"?"fable":"")+'">'+MODEL_NAME[it.model]+'</b> &middot; '+TASK_NAME[it.task]+' &middot; '+COND_NAME[it.cond]+'</span><span>#'+(it.rep+1)+'</span>';
+  }
+
+  function thumb(it){
+    if(it.task==="tui"){return '<div class="termpre" data-term="'+esc(BASE+it.term)+'"></div>';}
+    return it.shot?'<img loading="lazy" src="'+esc(BASE+it.shot)+'" alt="'+esc(MODEL_NAME[it.model]+" "+TASK_NAME[it.task]+" "+COND_NAME[it.cond])+'">':'';
+  }
+
+  function renderWall(){
+    var wall=$("wall"), html=[], n=0;
+    items.forEach(function(it){
+      if(filt.model!=="all"&&it.model!==filt.model) return;
+      if(filt.task!=="all"&&it.task!==filt.task) return;
+      if(filt.cond!=="all"&&it.cond!==filt.cond) return;
+      n++;
+      var bad=(it.console&&it.console.length)||it.exec_error;
+      html.push('<button class="card" data-id="'+esc(it.id)+'" aria-label="Open '+esc(MODEL_NAME[it.model]+" "+TASK_NAME[it.task]+" "+COND_NAME[it.cond])+' run '+(it.rep+1)+'">'
+        +'<div class="frame">'+thumb(it)+'</div>'
+        +'<div class="meta">'+label(it)+'</div>'
+        +'<div class="sub'+(bad?" bad":"")+'">'+(bad?(it.exec_error?esc(it.exec_error):esc(it.console[0])):(fmtS(it.elapsed_s)+" &middot; "+fmtK(it.output_bytes)+" bytes &middot; "+fmtC(it.cost_usd_list)))+'</div>'
+        +'</button>');
+    });
+    wall.innerHTML=n?html.join(""):'<div class="empty">Nothing in this cell yet</div>';
+    $("count").innerHTML="<b>"+n+"</b> of "+items.length;
+    fillTerms(wall);
+  }
+
+  var termCache={};
+  function fillTerms(root){
+    Array.prototype.forEach.call(root.querySelectorAll("[data-term]"),function(el){
+      var u=el.getAttribute("data-term"); if(!u) return;
+      if(termCache[u]){el.innerHTML=termCache[u];return;}
+      if(typeof fetch!=="function") return;
+      fetch(u).then(function(r){return r.text()}).then(function(t){
+        var m=t.match(/<body[^>]*>([\s\S]*)<\/body>/i); var body=m?m[1]:t;
+        termCache[u]=body; el.innerHTML=body;
+      }).catch(function(){});
+    });
+  }
+
+  function find(model,task,cond,rep){
+    for(var i=0;i<items.length;i++){var it=items[i];if(it.model===model&&it.task===task&&it.cond===cond&&it.rep===rep) return it;}
+    return null;
+  }
+
+  function scaleInto(frame,iframe,w,h){
+    var W=frame.clientWidth, H=frame.clientHeight;
+    var s=Math.min(W/w,H/h);
+    iframe.style.width=w+"px"; iframe.style.height=h+"px";
+    iframe.style.transform="translate("+((W-w*s)/2)+"px,"+((H-h*s)/2)+"px) scale("+s+")";
+  }
+
+  function renderPane(model){
+    var pane=$("pane-"+model), it=find(model,cmp.task,cmp.cond,cmp.rep);
+    if(!it){pane.innerHTML='<div class="who"><b class="'+(model==="fable51"?"fable":"")+'">'+MODEL_NAME[model]+'</b><span>not run yet</span></div><div class="frame"></div>';return;}
+    var src=BASE+(it.task==="tui"?it.term:it.file), sz=TASK_SIZE[it.task];
+    pane.innerHTML='<div class="who"><b class="'+(model==="fable51"?"fable":"")+'">'+MODEL_NAME[model]+'</b><span>'+esc(it.model_id)+'</span></div>'
+      +'<div class="frame"><iframe title="'+esc(MODEL_NAME[model]+" live output")+'" sandbox="allow-scripts" src="'+esc(src)+'"></iframe></div>'
+      +'<div class="stats"><span><b>'+fmtS(it.elapsed_s)+'</b> wall</span><span><b>'+fmtK(it.output_tokens)+'</b> out tokens</span><span><b>'+fmtK(it.thinking_tokens)+'</b> thinking</span><span><b>'+fmtC(it.cost_usd_list)+'</b> list</span>'+((it.console&&it.console.length)?'<span style="color:var(--red)">'+esc(it.console[0])+'</span>':'')+'</div>';
+    var fr=pane.querySelector(".frame"), ifr=pane.querySelector("iframe");
+    scaleInto(fr,ifr,sz[0],sz[1]);
+  }
+  function renderCompare(){renderPane("opus5");renderPane("fable51");}
+
+  // ---------- viewer ----------
+  function openViewer(id){
+    var it=null; for(var i=0;i<items.length;i++) if(items[i].id===id){it=items[i];break;}
+    if(!it) return;
+    var v=$("viewer"), bar=$("vbar"), st=$("vstage"), sz=TASK_SIZE[it.task];
+    var src=BASE+(it.task==="tui"?it.term:it.file);
+    bar.innerHTML='<b class="'+(it.model==="fable51"?"fable":"")+'">'+MODEL_NAME[it.model]+'</b><span>'+TASK_NAME[it.task]+' &middot; '+COND_NAME[it.cond]+' &middot; run '+(it.rep+1)+'</span><span>'+fmtS(it.elapsed_s)+' &middot; '+fmtK(it.output_tokens)+' out &middot; '+fmtC(it.cost_usd_list)+'</span><a href="'+esc(BASE+it.file)+'" target="_blank" rel="noopener">raw file &rarr;</a><button class="x" id="vclose">Close &times;</button>';
+    st.innerHTML='<iframe title="Live output" sandbox="allow-scripts" src="'+esc(src)+'"></iframe>'+((it.console&&it.console.length)?'<div class="cons">'+esc(it.console.join("\n"))+'</div>':'');
+    v.setAttribute("open","");
+    document.body.style.overflow="hidden";
+    fitViewer(sz);
+    $("vclose").addEventListener("click",closeViewer);
+    v._size=sz;
+  }
+  function fitViewer(sz){
+    var st=$("vstage"), ifr=st.querySelector("iframe"); if(!ifr) return;
+    var W=st.clientWidth, H=st.clientHeight, s=Math.min(W/sz[0],H/sz[1],1);
+    ifr.style.width=sz[0]+"px"; ifr.style.height=sz[1]+"px";
+    ifr.style.transform="translate(-50%,-50%) scale("+s+")";
+  }
+  function closeViewer(){var v=$("viewer");v.removeAttribute("open");$("vstage").innerHTML="";document.body.style.overflow="";}
+  $("viewer").addEventListener("click",function(e){if(e.target===this) closeViewer();});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape") closeViewer();});
+  window.addEventListener("resize",function(){var v=$("viewer");if(v.hasAttribute("open")&&v._size) fitViewer(v._size);renderCompare();});
+
+  // ---------- scorecard ----------
+  function verdictBox(title,v,text){
+    var cls=v==="PASS"?"pass":(v==="FAIL"?"fail":"wait");
+    return '<div class="verdict"><span class="label">'+title+'</span><div class="v '+cls+'">'+(v||"pending")+'</div><p>'+text+'</p></div>';
+  }
+  function renderScore(){
+    var H1=data.H1||{},H2=data.H2||{},h3=data.h3||{};
+    var fab=0; Object.keys(data.H3_hits||{}).forEach(function(k){fab+=(data.H3_hits[k]||[]).length});
+    var fo=(H1.fable51||{}).count, oo=(H1.opus5||{}).count, fc=(H2.fable51||{}).count;
+    var h1Means=H1.verdict==="FAIL"&&fo!=null&&oo!=null&&fo>oo?" <b>It went the other way: the effect got larger on the stronger model.</b>":(H1.verdict==="PASS"?" <b>It shrank, as predicted.</b>":"");
+    var h2Means=H2.verdict==="FAIL"?" <b>August's null did not replicate on Fable 5.1: the profile separated from a length-matched placebo.</b> One placebo document, so this cannot tell mined text from this particular text.":(H2.verdict==="PASS"?" <b>The placebo matched the profile again.</b>":"");
+    $("verdicts").innerHTML=
+      verdictBox("H1 &middot; the effect shrinks on the stronger model",H1.verdict,
+        "Profile against cold separated on <b>"+(fo==null?"&ndash;":fo)+" of 9</b> on Fable 5.1 and <b>"+(oo==null?"&ndash;":oo)+" of 9</b> on Opus 5 tonight. August's Opus 5 count was 4 of 9. Predicted: Fable at most 2, and fewer than Opus."+h1Means)
+      +verdictBox("H2 &middot; the placebo still matches the profile",H2.verdict,
+        "Profile against placebo separated in the predicted direction on <b>"+(fc==null?"&ndash;":fc)+" of 9</b> on Fable 5.1. August was 0 of 9. Predicted: fewer than 2."
+        +(((H2.fable51||{}).B_vs_C_reversed||[]).length?" Reversed, the placebo beat the profile on its own law: "+H2.fable51.B_vs_C_reversed.map(function(x){return x.join("/")}).join(", ")+".":"")+h2Means)
+      +verdictBox("H3 &middot; no invented numbers",h3.verdict||null,
+        "Four of the eight dashboard metrics are <code>null</code>. Predicted: zero invented values across all thirty Fable 5.1 dashboards. The scanner flagged <b>"+fab+"</b> places to read"+(h3.read!=null?", a person read all of them, and <b>"+h3.confirmed+"</b> "+(h3.confirmed===1?"was":"were")+" an invented number.":".")+(h3.note?" "+esc(h3.note):""));
+    // cold vs cold table
+    var order=data.task_order||[], rows=[], cv=data.cold_vs_cold||{};
+    var MET={M1_border_radius:"rounded corners",M2_accent_hues:"accent hues",M3_mean_saturation:"mean saturation %",M4_containers:"containers",M5_chars:"length, chars",M7_render_width:"rendered width",M8_ansi_density:"escapes per line"};
+    rows.push("<tr><th>Cold vs cold</th><th>Opus 5, five values</th><th>Fable 5.1, five values</th><th>Result</th></tr>");
+    order.forEach(function(t){
+      Object.keys(cv).forEach(function(k){
+        if(k.indexOf(t+"/")!==0) return;
+        var c=cv[k], sep=/separated/.test(c.result);
+        rows.push("<tr><td class=t>"+TASK_NAME[t]+", "+(MET[k.split("/")[1]]||k)+"</td><td>"+esc(c.opus5.join(" "))+"</td><td>"+esc(c.fable51.join(" "))+"</td><td class='"+(sep?"sep":"dim")+"'>"+esc(c.result)+"</td></tr>");
+      });
+    });
+    $("tbl-cold").innerHTML=rows.join("");
+    // every cell
+    var all=["<tr><th>Model</th><th>Brief, metric</th><th>Cold</th><th>Profile</th><th>Placebo</th></tr>"], cells=data.cells||{};
+    Object.keys(cells).forEach(function(k){
+      var p=k.split("/"), c=cells[k];
+      all.push("<tr><td>"+MODEL_NAME[p[0]]+"</td><td class=t>"+TASK_NAME[p[1]]+", "+(MET[p[2]]||p[2])+"</td><td>"+esc(c.a.join(" "))+"</td><td>"+esc(c.b.join(" "))+"</td><td>"+esc(c.c.join(" "))+"</td></tr>");
+    });
+    $("tbl-all").innerHTML=all.join("");
+  }
+
+  // ---------- wiring ----------
+  function wireChips(root,onpick){
+    root.addEventListener("click",function(e){
+      var b=e.target.closest(".chip"); if(!b) return;
+      Array.prototype.forEach.call(root.querySelectorAll(".chip"),function(x){x.setAttribute("aria-pressed","false")});
+      b.setAttribute("aria-pressed","true");
+      onpick(b.getAttribute("data-v"));
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#controls .chips"),function(g){
+    wireChips(g,function(v){filt[g.getAttribute("data-key")]=v;renderWall();});
+  });
+  wireChips($("cmp-task"),function(v){cmp.task=v;renderCompare();});
+  wireChips($("cmp-cond"),function(v){cmp.cond=v;renderCompare();});
+  wireChips($("cmp-rep"),function(v){cmp.rep=Number(v);renderCompare();});
+  $("wall").addEventListener("click",function(e){var c=e.target.closest(".card");if(c) openViewer(c.getAttribute("data-id"));});
+
+  // live preview on hover: swap the still for the real page after a beat
+  var hoverT=null;
+  $("wall").addEventListener("mouseover",function(e){
+    var c=e.target.closest(".card"); if(!c||c._live) return;
+    clearTimeout(hoverT);
+    hoverT=setTimeout(function(){
+      var id=c.getAttribute("data-id"), it=null; for(var i=0;i<items.length;i++) if(items[i].id===id){it=items[i];break;}
+      if(!it||it.task==="tui") return;
+      var fr=c.querySelector(".frame"), sz=TASK_SIZE[it.task];
+      var ifr=document.createElement("iframe"); ifr.className="live"; ifr.setAttribute("sandbox","allow-scripts"); ifr.title="live preview"; ifr.src=BASE+it.file;
+      fr.appendChild(ifr); scaleInto(fr,ifr,sz[0],sz[1]); c._live=ifr;
+    },350);
+  });
+  $("wall").addEventListener("mouseout",function(e){
+    var c=e.target.closest(".card"); if(!c) return;
+    if(e.relatedTarget&&c.contains(e.relatedTarget)) return;
+    clearTimeout(hoverT);
+    if(c._live){c._live.remove();c._live=null;}
+  });
+
+  function boot(d){
+    data=d; items=d.items||[];
+    var order={dash:0,page:1,ledger:2,tui:3};
+    items.sort(function(x,y){return (order[x.task]-order[y.task])||(x.cond<y.cond?-1:x.cond>y.cond?1:0)||(x.rep-y.rep)||(x.model<y.model?1:-1)});
+    $("f-runs").textContent=String((d.counts&&d.counts.ok)||items.length);
+    $("f-cost").textContent="$"+(d.list_cost_usd!=null?d.list_cost_usd.toFixed(0):"-");
+    $("f-fab").textContent=(d.h3&&d.h3.read!=null)?String(d.h3.confirmed):"–";
+    $("f-ver").textContent=(d.claude_code_version||"").replace(/\s*\(.*$/,"")||"-";
+    $("m-profile").textContent=d.profile_bytes!=null?d.profile_bytes.toLocaleString():"-";
+    $("m-placebo").textContent=d.placebo_bytes!=null?d.placebo_bytes.toLocaleString():"-";
+    $("m-sys").textContent=d.base_system_prompt||"";
+    renderWall(); renderCompare(); renderScore();
+  }
+  window.__fableBoot=boot;
+  if(window.__fableData){boot(window.__fableData);}
+  else{
+    fetch(BASE+"data.json").then(function(r){return r.json()}).then(boot).catch(function(err){
+      $("wall").innerHTML='<div class="empty">data.json did not load: '+esc(err&&err.message)+'</div>';
+    });
+  }
+})();
+</script>
+</body>
+</html>

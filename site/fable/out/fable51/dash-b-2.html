@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger</title>
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --fg:#f4f4f4;
+    --mute:#8a8a8a;
+    --dim:#4a4a4a;
+    --line:rgba(255,255,255,0.10);
+    --font:"Inter","SF Pro Display",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);}
+  body{
+    width:1600px;height:900px;overflow:hidden;position:relative;
+    font-family:var(--font);
+    -webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums;
+  }
+  #field{
+    position:absolute;inset:0;width:1600px;height:900px;display:block;
+    -webkit-mask-image:radial-gradient(ellipse 70% 80% at 72% 38%, #000 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.12) 100%);
+            mask-image:radial-gradient(ellipse 70% 80% at 72% 38%, #000 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.12) 100%);
+  }
+
+  /* header */
+  .head{position:absolute;left:72px;top:64px;}
+  .kicker{
+    display:flex;align-items:center;gap:10px;
+    font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--mute);
+  }
+  .dot{
+    width:8px;height:8px;border-radius:50%;background:#fff;position:relative;
+  }
+  .dot::after{
+    content:"";position:absolute;inset:-6px;border-radius:50%;border:1px solid #fff;
+    animation:ping 2.2s ease-out infinite;
+  }
+  @keyframes ping{0%{transform:scale(0.4);opacity:0.9}100%{transform:scale(1.6);opacity:0}}
+  h1{
+    margin:18px 0 0 -6px;font-size:168px;line-height:0.9;font-weight:700;letter-spacing:-0.055em;
+  }
+  .period{margin-top:26px;font-size:18px;color:var(--mute);}
+  .period b{color:var(--fg);font-weight:500;}
+
+  /* hero ring */
+  .ring{position:absolute;left:940px;top:96px;width:480px;height:480px;}
+  .ring svg{width:480px;height:480px;overflow:visible;}
+  .orbit{transform-origin:240px 240px;animation:spin 46s linear infinite;}
+  .orbit2{transform-origin:240px 240px;animation:spin 90s linear infinite reverse;}
+  .sweep{transform-origin:240px 240px;animation:spin 9s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .ring .val{
+    position:absolute;left:0;top:0;width:480px;height:480px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .ring .num{font-size:104px;font-weight:600;letter-spacing:-0.05em;line-height:1;}
+  .ring .num span{font-size:44px;color:var(--mute);font-weight:500;letter-spacing:0;margin-left:4px;}
+  .ring .lab{margin-top:10px;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--mute);}
+
+  /* metrics */
+  .grid{
+    position:absolute;left:72px;right:72px;top:584px;
+    display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:138px 138px;
+    border-top:1px solid var(--line);
+  }
+  .cell{
+    padding:22px 24px 0 0;border-bottom:1px solid var(--line);position:relative;
+  }
+  .cell + .cell{padding-left:28px;}
+  .cell:nth-child(4n+1){padding-left:0;}
+  .cell:not(:nth-child(4n+1))::before{
+    content:"";position:absolute;left:0;top:22px;bottom:22px;width:1px;background:var(--line);
+  }
+  .cell .l{font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--mute);}
+  .cell .v{margin-top:16px;font-size:56px;font-weight:600;letter-spacing:-0.04em;line-height:1;}
+  .cell .v small{font-size:22px;color:var(--mute);font-weight:500;letter-spacing:0;margin-left:6px;}
+  .cell .s{margin-top:12px;font-size:13px;color:var(--dim);}
+  .cell.null .v{color:var(--dim);position:relative;display:inline-block;}
+  .cell.null .v::after{
+    content:"";position:absolute;left:-4px;right:-4px;top:0;bottom:0;
+    background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,0.16) 50%,transparent 70%);
+    background-size:220% 100%;
+    animation:shimmer 3.6s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes shimmer{0%{background-position:120% 0}100%{background-position:-120% 0}}
+
+  /* ticker */
+  .ticker{
+    position:absolute;left:0;right:0;bottom:0;height:40px;overflow:hidden;
+    border-top:1px solid var(--line);display:flex;align-items:center;
+    font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--mute);
+  }
+  .track{display:flex;white-space:nowrap;animation:scroll 42s linear infinite;will-change:transform;}
+  .track span{padding:0 28px;}
+  .track i{font-style:normal;color:var(--fg);}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+
+<canvas id="field" width="1600" height="900"></canvas>
+
+<div class="head">
+  <div class="kicker"><span class="dot"></span>Product metrics</div>
+  <h1>Ledger</h1>
+  <div class="period">Period <b>last 30 days</b></div>
+</div>
+
+<div class="ring">
+  <svg viewBox="0 0 480 480" aria-hidden="true">
+    <g class="orbit2">
+      <circle cx="240" cy="240" r="234" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="2 10"/>
+    </g>
+    <g class="orbit">
+      <circle cx="240" cy="240" r="212" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="1 6"/>
+      <circle cx="240" cy="28" r="2.5" fill="#fff"/>
+    </g>
+    <circle cx="240" cy="240" r="176" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="10"/>
+    <circle id="arc" cx="240" cy="240" r="176" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"
+            transform="rotate(-90 240 240)" stroke-dasharray="1105.84" stroke-dashoffset="1105.84"/>
+    <g class="sweep">
+      <circle cx="240" cy="64" r="5" fill="#fff"/>
+      <circle cx="240" cy="64" r="14" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+    </g>
+  </svg>
+  <div class="val">
+    <div class="num"><span id="cf" style="font-size:inherit;color:inherit;margin:0;font-weight:inherit;letter-spacing:inherit">0.0</span><span>%</span></div>
+    <div class="lab">crash-free rate</div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="cell">
+    <div class="l">Active installs</div>
+    <div class="v" data-count="1284" data-dec="0">0</div>
+    <div class="s">Devices with the app installed</div>
+  </div>
+  <div class="cell null">
+    <div class="l">Weekly active users</div>
+    <div class="v">--</div>
+    <div class="s">No data for this period</div>
+  </div>
+  <div class="cell">
+    <div class="l">Median session</div>
+    <div class="v"><span data-count="12.4" data-dec="1">0.0</span><small>min</small></div>
+    <div class="s">Median across all sessions</div>
+  </div>
+  <div class="cell null">
+    <div class="l">Retention D30</div>
+    <div class="v">--</div>
+    <div class="s">No data for this period</div>
+  </div>
+  <div class="cell">
+    <div class="l">Crash-free rate</div>
+    <div class="v"><span data-count="99.2" data-dec="1">0.0</span><small>%</small></div>
+    <div class="s">Sessions without a crash</div>
+  </div>
+  <div class="cell null">
+    <div class="l">Paid conversions</div>
+    <div class="v">--</div>
+    <div class="s">No data for this period</div>
+  </div>
+  <div class="cell">
+    <div class="l">Support tickets</div>
+    <div class="v" data-count="37" data-dec="0">0</div>
+    <div class="s">Opened in the last 30 days</div>
+  </div>
+  <div class="cell null">
+    <div class="l">NPS</div>
+    <div class="v">--</div>
+    <div class="s">No data for this period</div>
+  </div>
+</div>
+
+<div class="ticker">
+  <div class="track" id="track"></div>
+</div>
+
+<script>
+(function(){
+  // ticker content, real values only
+  var items = [
+    ['Ledger','last 30 days'],
+    ['Active installs','1,284'],
+    ['Weekly active users','--'],
+    ['Median session','12.4 min'],
+    ['Retention D30','--'],
+    ['Crash-free rate','99.2%'],
+    ['Paid conversions','--'],
+    ['Support tickets','37'],
+    ['NPS','--']
+  ];
+  var html = items.map(function(p){return '<span>'+p[0]+' <i>'+p[1]+'</i></span>';}).join('');
+  document.getElementById('track').innerHTML = html + html;
+
+  // count-up on load
+  function ease(t){return 1-Math.pow(1-t,3);}
+  function fmt(n,dec){
+    var s = n.toFixed(dec);
+    var parts = s.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    return parts.join('.');
+  }
+  var counters = Array.prototype.slice.call(document.querySelectorAll('[data-count]'));
+  var arc = document.getElementById('arc');
+  var cf = document.getElementById('cf');
+  var CIRC = 1105.84;
+  var start = null, DUR = 1600, DELAY = 300;
+  function tick(ts){
+    if(start===null) start = ts;
+    var t = Math.min(1, Math.max(0,(ts-start-DELAY)/DUR));
+    var e = ease(t);
+    counters.forEach(function(el){
+      var target = parseFloat(el.getAttribute('data-count'));
+      var dec = parseInt(el.getAttribute('data-dec'),10);
+      el.textContent = fmt(target*e, dec);
+    });
+    cf.textContent = (99.2*e).toFixed(1);
+    arc.setAttribute('stroke-dashoffset', (CIRC*(1-0.992*e)).toFixed(2));
+    if(t<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // background field: drifting contour lines
+  var c = document.getElementById('field');
+  var ctx = c.getContext('2d');
+  var W = 1600, H = 900;
+  function draw(ts){
+    var t = ts*0.001;
+    ctx.clearRect(0,0,W,H);
+    ctx.lineWidth = 1;
+    for(var y=-40; y<H+40; y+=18){
+      var a = 0.035 + 0.045*(0.5+0.5*Math.sin(y*0.012 + t*0.5));
+      ctx.strokeStyle = 'rgba(255,255,255,'+a.toFixed(3)+')';
+      ctx.beginPath();
+      for(var x=0; x<=W; x+=10){
+        var off = 16*Math.sin(x*0.0035 + t*0.55 + y*0.011)
+                + 9*Math.sin(x*0.0092 - t*0.38 + y*0.021)
+                + 5*Math.sin(x*0.021 + t*0.9 - y*0.006);
+        var yy = y + off;
+        if(x===0) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
+      }
+      ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

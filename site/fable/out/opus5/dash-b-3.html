@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger — last 30 days</title>
+<style>
+  :root{
+    --bg:#08080A;
+    --ink:#EFEAE0;
+    --dim:#7C7D82;
+    --faint:#4C4D53;
+    --line:rgba(239,234,224,.085);
+    --line-2:rgba(239,234,224,.16);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:var(--bg)}
+  body{
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--sans);color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .stage{
+    position:relative;width:1600px;height:900px;overflow:hidden;
+    padding:48px 56px;background:var(--bg);
+  }
+  #bg{position:absolute;inset:0;width:1600px;height:900px}
+
+  /* slow cinematic light pass across the whole frame */
+  .sweep{
+    position:absolute;top:-20%;left:0;width:60%;height:140%;
+    background:linear-gradient(100deg,transparent 0%,rgba(239,234,224,.035) 45%,rgba(239,234,224,.055) 52%,transparent 100%);
+    filter:blur(14px);
+    animation:pass 19s cubic-bezier(.45,0,.55,1) infinite;
+    pointer-events:none;
+  }
+  @keyframes pass{
+    0%{transform:translateX(-70%)}
+    50%{transform:translateX(180%)}
+    100%{transform:translateX(-70%)}
+  }
+
+  .content{position:relative;display:flex;gap:64px;height:760px}
+
+  /* ---------------- left: the ledger sheet ---------------- */
+  .sheet{position:relative;width:520px;display:flex;flex-direction:column;justify-content:space-between}
+  .rules{
+    position:absolute;inset:-24px -20px;
+    background-image:repeating-linear-gradient(to bottom,transparent 0 43px,var(--line) 43px 44px);
+    background-position-y:0;
+    animation:drift 11s linear infinite;
+    -webkit-mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 88%,transparent);
+    mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 88%,transparent);
+  }
+  @keyframes drift{to{background-position-y:44px}}
+  .scan{
+    position:absolute;left:-20px;right:-20px;height:190px;top:0;
+    background:linear-gradient(to bottom,transparent,rgba(239,234,224,.05),transparent);
+    animation:scanY 9.5s linear infinite;
+  }
+  @keyframes scanY{0%{transform:translateY(-230px)}100%{transform:translateY(790px)}}
+
+  .id{position:relative}
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);
+    margin-bottom:26px;
+  }
+  h1{
+    font-size:104px;line-height:.88;font-weight:500;letter-spacing:-.045em;
+    margin-bottom:22px;
+  }
+  .period{
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:13px;letter-spacing:.05em;color:var(--dim);
+  }
+  .dot{position:relative;width:6px;height:6px;border-radius:50%;background:var(--ink);flex:none}
+  .dot::after{
+    content:"";position:absolute;inset:-3px;border-radius:50%;
+    border:1px solid var(--ink);animation:ping 2.6s ease-out infinite;
+  }
+  @keyframes ping{
+    0%{transform:scale(.6);opacity:.9}
+    70%{transform:scale(2.4);opacity:0}
+    100%{transform:scale(2.4);opacity:0}
+  }
+
+  .motif{position:relative}
+  .motif svg{display:block}
+  .rule-row{stroke:var(--line);stroke-width:1}
+  .ink-mark{fill:var(--ink)}
+  .ink-line{stroke:var(--ink);stroke-width:2;stroke-linecap:round;animation:breathe 3.8s ease-in-out infinite alternate}
+  .ink-mark{animation:breathe 3.8s ease-in-out infinite alternate}
+  @keyframes breathe{from{opacity:.5}to{opacity:1}}
+  .blank-line{
+    stroke:var(--faint);stroke-width:2;stroke-linecap:round;stroke-dasharray:2 9;
+    animation:march 4s linear infinite;
+  }
+  @keyframes march{to{stroke-dashoffset:-44}}
+  .cap{
+    margin-top:26px;font-family:var(--mono);font-size:11.5px;letter-spacing:.055em;color:var(--dim);
+  }
+
+  /* ---------------- right: the metric grid ---------------- */
+  .panel{
+    position:relative;flex:1;
+    display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);
+  }
+  .cell{padding:26px 22px 22px;display:flex;flex-direction:column}
+  .cell:nth-child(4n+1){padding-left:0}
+  .cell:not(:nth-child(4n+1)){border-left:1px solid var(--line)}
+  .cell:nth-child(n+5){border-top:1px solid var(--line)}
+  .k{font-family:var(--mono);font-size:11px;letter-spacing:.07em;color:var(--dim)}
+  .val{display:flex;align-items:baseline;gap:7px;margin-top:20px}
+  .num{font-size:48px;font-weight:500;letter-spacing:-.03em;line-height:1}
+  .unit{font-family:var(--mono);font-size:13px;color:var(--dim)}
+  .empty .num{color:var(--faint);animation:breathe 5s ease-in-out infinite alternate}
+  .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.045em;color:var(--faint);margin-top:12px}
+  .viz{margin-top:auto;height:106px;display:flex;align-items:center}
+
+  /* flow line — active installs */
+  .flow{position:relative;width:100%;height:1px;background:var(--line-2);overflow:visible}
+  .flow span{
+    position:absolute;top:-1px;left:0;width:52px;height:3px;border-radius:2px;
+    background:linear-gradient(to right,transparent,var(--ink),transparent);
+    animation:slide 3.6s linear infinite;
+  }
+  @keyframes slide{0%{transform:translateX(-60px)}100%{transform:translateX(200px)}}
+
+  /* dashed empty state */
+  .void{width:100%;height:1px;
+    background-image:linear-gradient(to right,var(--faint) 0 3px,transparent 3px 12px);
+    background-size:12px 1px;
+    animation:voidmarch 5.2s linear infinite;opacity:.75;
+  }
+  @keyframes voidmarch{to{background-position-x:12px}}
+
+  /* dial + ring */
+  .dial-hand{transform-origin:52px 52px;animation:spin 26s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .track{fill:none;stroke:var(--line-2);stroke-width:2}
+  .arc{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+  .shimmer{
+    fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;
+    stroke-dasharray:14 249.9;animation:trace 4.2s linear infinite;
+  }
+  @keyframes trace{to{stroke-dashoffset:-263.9}}
+  .tick-min{stroke:var(--line-2);stroke-width:1}
+
+  /* ticket ticks */
+  .ticks{display:flex;align-items:flex-end;gap:3px;height:34px}
+  .ticks i{display:block;width:2px;height:34px;background:var(--ink);opacity:.26;animation:wave 2.9s ease-in-out infinite}
+  @keyframes wave{0%,72%,100%{opacity:.26}18%{opacity:1}}
+
+  .foot{
+    position:absolute;left:56px;right:56px;bottom:44px;
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--faint);
+    border-top:1px solid var(--line);padding-top:14px;
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <canvas id="bg"></canvas>
+  <div class="sweep"></div>
+
+  <div class="content">
+
+    <section class="sheet">
+      <div class="rules"></div>
+      <div class="scan"></div>
+
+      <div class="id">
+        <div class="eyebrow">Product metrics</div>
+        <h1>Ledger</h1>
+        <div class="period"><span class="dot"></span>last 30 days</div>
+      </div>
+
+      <div class="motif">
+        <svg width="520" height="248" viewBox="0 0 520 248" aria-hidden="true">
+          <g>
+            <line class="rule-row" x1="0" y1="14" x2="500" y2="14"/>
+            <rect class="ink-mark" x="0" y="9" width="3" height="10" style="animation-delay:0s"/>
+            <line class="ink-line" x1="16" y1="14" x2="148" y2="14" style="animation-delay:0s"/>
+
+            <line class="rule-row" x1="0" y1="47" x2="500" y2="47"/>
+            <line class="blank-line" x1="16" y1="47" x2="148" y2="47" style="animation-duration:4s"/>
+
+            <line class="rule-row" x1="0" y1="80" x2="500" y2="80"/>
+            <rect class="ink-mark" x="0" y="75" width="3" height="10" style="animation-delay:.95s"/>
+            <line class="ink-line" x1="16" y1="80" x2="148" y2="80" style="animation-delay:.95s"/>
+
+            <line class="rule-row" x1="0" y1="113" x2="500" y2="113"/>
+            <line class="blank-line" x1="16" y1="113" x2="148" y2="113" style="animation-duration:4.7s"/>
+
+            <line class="rule-row" x1="0" y1="146" x2="500" y2="146"/>
+            <rect class="ink-mark" x="0" y="141" width="3" height="10" style="animation-delay:1.9s"/>
+            <line class="ink-line" x1="16" y1="146" x2="148" y2="146" style="animation-delay:1.9s"/>
+
+            <line class="rule-row" x1="0" y1="179" x2="500" y2="179"/>
+            <line class="blank-line" x1="16" y1="179" x2="148" y2="179" style="animation-duration:5.4s"/>
+
+            <line class="rule-row" x1="0" y1="212" x2="500" y2="212"/>
+            <rect class="ink-mark" x="0" y="207" width="3" height="10" style="animation-delay:2.85s"/>
+            <line class="ink-line" x1="16" y1="212" x2="148" y2="212" style="animation-delay:2.85s"/>
+
+            <line class="rule-row" x1="0" y1="245" x2="500" y2="245"/>
+            <line class="blank-line" x1="16" y1="245" x2="148" y2="245" style="animation-duration:6.1s"/>
+          </g>
+        </svg>
+        <div class="cap">Eight metrics on the sheet. Four inked, four still blank.</div>
+      </div>
+    </section>
+
+    <section class="panel">
+
+      <div class="cell">
+        <div class="k">Active installs</div>
+        <div class="val"><span class="num" id="installs">0</span></div>
+        <div class="n">over the period</div>
+        <div class="viz"><div class="flow"><span></span></div></div>
+      </div>
+
+      <div class="cell empty">
+        <div class="k">Weekly active users</div>
+        <div class="val"><span class="num">--</span></div>
+        <div class="n">not instrumented</div>
+        <div class="viz"><div class="void" style="animation-delay:-.4s"></div></div>
+      </div>
+
+      <div class="cell">
+        <div class="k">Median session</div>
+        <div class="val"><span class="num">12.4</span><span class="unit">min</span></div>
+        <div class="n">12.4 of 60 min</div>
+        <div class="viz">
+          <svg width="104" height="104" viewBox="0 0 104 104" aria-hidden="true">
+            <g stroke-linecap="round">
+              <line class="tick-min" x1="52" y1="4" x2="52" y2="10"/>
+              <line class="tick-min" x1="100" y1="52" x2="94" y2="52"/>
+              <line class="tick-min" x1="52" y1="100" x2="52" y2="94"/>
+              <line class="tick-min" x1="4" y1="52" x2="10" y2="52"/>
+            </g>
+            <circle class="track" cx="52" cy="52" r="42"/>
+            <circle class="arc" cx="52" cy="52" r="42"
+                    stroke-dasharray="54.5 209.4" transform="rotate(-90 52 52)"/>
+            <line class="dial-hand" x1="52" y1="52" x2="52" y2="18"
+                  stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>
+            <circle cx="52" cy="52" r="2.5" fill="var(--ink)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="cell empty">
+        <div class="k">D30 retention</div>
+        <div class="val"><span class="num">--</span></div>
+        <div class="n">not instrumented</div>
+        <div class="viz"><div class="void" style="animation-delay:-1.7s"></div></div>
+      </div>
+
+      <div class="cell">
+        <div class="k">Crash-free rate</div>
+        <div class="val"><span class="num">99.2</span><span class="unit">%</span></div>
+        <div class="n">0.8% of sessions crashed</div>
+        <div class="viz">
+          <svg width="104" height="104" viewBox="0 0 104 104" aria-hidden="true">
+            <circle class="track" cx="52" cy="52" r="42"/>
+            <circle class="arc" cx="52" cy="52" r="42"
+                    stroke-dasharray="261.8 2.1" transform="rotate(-90 52 52)"/>
+            <circle class="shimmer" cx="52" cy="52" r="42" transform="rotate(-90 52 52)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="cell empty">
+        <div class="k">Paid conversions</div>
+        <div class="val"><span class="num">--</span></div>
+        <div class="n">not instrumented</div>
+        <div class="viz"><div class="void" style="animation-delay:-3.1s"></div></div>
+      </div>
+
+      <div class="cell">
+        <div class="k">Support tickets</div>
+        <div class="val"><span class="num">37</span></div>
+        <div class="n">one mark per ticket</div>
+        <div class="viz"><div class="ticks" id="ticks"></div></div>
+      </div>
+
+      <div class="cell empty">
+        <div class="k">NPS</div>
+        <div class="val"><span class="num">--</span></div>
+        <div class="n">not instrumented</div>
+        <div class="viz"><div class="void" style="animation-delay:-4.5s"></div></div>
+      </div>
+
+    </section>
+  </div>
+
+  <div class="foot">
+    <span>Values shown are measured. Where a metric has no instrumentation the sheet shows -- rather than an estimate.</span>
+    <span>4 of 8 instrumented</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---- ticket marks: one per ticket, wave travels through them forever ----
+  var ticks = document.getElementById('ticks');
+  for (var i = 0; i < 37; i++) {
+    var b = document.createElement('i');
+    b.style.animationDelay = (-i * 0.075).toFixed(3) + 's';
+    b.style.height = (24 + (i % 3) * 5) + 'px';
+    ticks.appendChild(b);
+  }
+
+  // ---- installs counter: settles on the real value ----
+  var el = document.getElementById('installs'), target = 1284, dur = 1500, t0 = null;
+  function count(now){
+    if (t0 === null) t0 = now;
+    var p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * e).toLocaleString('en-US');
+    if (p < 1) requestAnimationFrame(count);
+  }
+  requestAnimationFrame(count);
+
+  // ---- ambient background: drifting motes, breathing light, film grain ----
+  var c = document.getElementById('bg'), x = c.getContext('2d');
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  c.width = 1600 * dpr; c.height = 900 * dpr;
+  x.scale(dpr, dpr);
+
+  var motes = [];
+  for (var m = 0; m < 90; m++) {
+    motes.push({
+      x: Math.random() * 1600,
+      y: Math.random() * 900,
+      r: 0.3 + Math.random() * 1.1,
+      vx: (Math.random() - 0.5) * 0.09,
+      vy: -0.05 - Math.random() * 0.12,
+      a: 0.05 + Math.random() * 0.2
+    });
+  }
+
+  // pre-rendered grain tile
+  var g = document.createElement('canvas'); g.width = g.height = 256;
+  var gx = g.getContext('2d'), id = gx.createImageData(256, 256);
+  for (var p = 0; p < id.data.length; p += 4) {
+    var v = 255 * Math.random();
+    id.data[p] = id.data[p+1] = id.data[p+2] = v;
+    id.data[p+3] = 22;
+  }
+  gx.putImageData(id, 0, 0);
+
+  var t = 0;
+  function frame(){
+    t += 0.006;
+
+    x.fillStyle = '#08080A';
+    x.fillRect(0, 0, 1600, 900);
+
+    // two slow breathing pools of light
+    var pools = [
+      [430 + Math.sin(t * 0.7) * 90, 400 + Math.cos(t * 0.5) * 70, 620, 0.055 + Math.sin(t) * 0.014],
+      [1180 + Math.cos(t * 0.42) * 110, 560 + Math.sin(t * 0.63) * 80, 540, 0.036 + Math.cos(t * 1.3) * 0.012]
+    ];
+    for (var i = 0; i < pools.length; i++) {
+      var q = pools[i];
+      var grd = x.createRadialGradient(q[0], q[1], 0, q[0], q[1], q[2]);
+      grd.addColorStop(0, 'rgba(239,234,224,' + Math.max(0, q[3]).toFixed(4) + ')');
+      grd.addColorStop(1, 'rgba(239,234,224,0)');
+      x.fillStyle = grd;
+      x.fillRect(0, 0, 1600, 900);
+    }
+
+    // motes
+    for (var k = 0; k < motes.length; k++) {
+      var s = motes[k];
+      s.x += s.vx; s.y += s.vy;
+      if (s.y < -10) { s.y = 910; s.x = Math.random() * 1600; }
+      if (s.x < -10) s.x = 1610; if (s.x > 1610) s.x = -10;
+      x.beginPath();
+      x.arc(s.x, s.y, s.r, 0, 6.2832);
+      x.fillStyle = 'rgba(239,234,224,' + (s.a * (0.6 + 0.4 * Math.sin(t * 3 + k))).toFixed(3) + ')';
+      x.fill();
+    }
+
+    // film grain, jittered every frame
+    var ox = -Math.random() * 256, oy = -Math.random() * 256;
+    x.globalAlpha = 0.5;
+    for (var gxp = ox; gxp < 1600; gxp += 256)
+      for (var gyp = oy; gyp < 900; gyp += 256)
+        x.drawImage(g, gxp, gyp);
+    x.globalAlpha = 1;
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,21 +1,11 @@
-"""Guards what the public pricing section is allowed to say.
+"""Keep visible offers and search metadata consistent.
 
-Rewritten 2026-08-18, in the same commit that made checkout real, which is the
-condition `docs/site-pro-pricing-withdrawn.md` set for flipping this file.
-
-History, because it explains every assertion below. The site once advertised
-Emulo Pro at $9/month and $79/year, in the visible pane and in the schema.org
-Offers, while checkout was closed and both Polar products were Private. Search
-results carried prices for something nobody could buy. The pane was withdrawn on
-2026-07-26 and this guard was written to keep it out.
-
-Checkout is live now: two Public Polar products at $12/month and $99/year, a
-production worker pointing at them, and an account page that creates the
-checkout. So the guard is inverted. It no longer keeps prices off the page. It
-keeps the page and the product from disagreeing, which is the failure that
-actually happened.
+The page currently offers free software and a manually delivered Profile Build.
+Withdrawn subscription offers must not survive in structured data. These static
+checks do not establish the state of any payment provider or deployed checkout.
 """
 
+import json
 import re
 import unittest
 from pathlib import Path
@@ -25,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site" / "index.html"
 ACCOUNT_URL = "https://emulo-production.ohad1306.workers.dev/account"
 
-# The live Polar prices. Change these only when the Polar products change.
+# Former subscription prices, excluded from the current public offer.
 MONTHLY = "12"
 YEARLY = "99"
 
@@ -71,18 +61,23 @@ class SitePricingTests(unittest.TestCase):
                 self.assertNotIn(closed, pricing)
 
     def test_visible_prices_and_structured_data_agree(self):
-        """The invariant that was actually violated: schema said $9 and $79
-        while the page said nothing, so search results sold a closed product."""
-        head = self.head()
-        self.assertIn(f'"price": "{MONTHLY}"', head)
-        self.assertIn(f'"price": "{YEARLY}"', head)
-        offers = set(re.findall(r'"price":\s*"(\d+)"', head))
-        visible = set(re.findall(r"\$(\d+)\s*<span>/", self.pricing()))
+        """Search metadata must never advertise an offer absent from the page."""
+        schemas = [json.loads(raw) for raw in re.findall(
+            r'<script type="application/ld\+json">(.*?)</script>',
+            self.head(), re.S,
+        )]
+        software = next(item for item in schemas if item.get("@type") == "SoftwareApplication")
+        offers = {item["price"] for item in software["offers"]}
+        visible = set(re.findall(r"\$(\d+)\b", self.pricing()))
         self.assertTrue(
-            visible <= offers,
-            f"prices shown on the page {sorted(visible)} are not all declared "
-            f"as schema.org Offers {sorted(offers)}",
+            offers <= visible,
+            f"schema.org prices {sorted(offers)} include offers absent from "
+            f"the visible page {sorted(visible)}",
         )
+        self.assertEqual(software["offers"], [{
+            "@type": "Offer", "name": "Open-source Emulo",
+            "price": "0", "priceCurrency": "USD",
+        }])
 
     def test_retired_prices_never_return(self):
         for rejected in RETIRED:

@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, height=900, initial-scale=1">
+<title>Ledger Metrics Sheet</title>
+<style>
+  :root{
+    --desk:#232A20;
+    --paper:#F3F5EC;
+    --band:#DCE7CF;
+    --margin:#EAEDE1;
+    --hole:#C6CFB8;
+    --hole-hi:#FAFBF4;
+    --rule:#A7BB9B;
+    --rule-soft:#C6D3BC;
+    --ink:#1A231E;
+    --ink-mid:#5A6659;
+    --ink-faint:#8C9889;
+    --red:#AE3226;
+    --red-soft:#D89C95;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono","Courier New",monospace;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--desk);}
+  body{color:var(--ink);-webkit-font-smoothing:antialiased;}
+
+  #stage{
+    position:fixed;inset:0;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(ellipse at 50% 40%, #2E3629 0%, #1B2018 78%);
+  }
+
+  #sheet{
+    position:relative;width:1600px;height:900px;flex:none;
+    transform-origin:50% 50%;
+    background:var(--paper);
+    box-shadow:0 24px 60px rgba(0,0,0,.55), 0 2px 0 rgba(0,0,0,.35);
+    overflow:hidden;
+  }
+
+  #feed{position:absolute;left:0;top:0;width:1600px;height:900px;z-index:1;}
+
+  /* the reading straightedge travelling down the sheet */
+  .sweep{
+    position:absolute;left:62px;right:62px;top:0;height:104px;z-index:6;
+    pointer-events:none;mix-blend-mode:multiply;
+    background:linear-gradient(to bottom,
+      rgba(26,35,30,0) 0%,
+      rgba(26,35,30,.030) 62%,
+      rgba(26,35,30,.070) 97%,
+      rgba(26,35,30,0) 100%);
+    border-bottom:1px solid rgba(174,50,38,.26);
+    animation:sweep 23s linear infinite;
+  }
+  @keyframes sweep{
+    from{transform:translateY(-140px);}
+    to{transform:translateY(920px);}
+  }
+
+  .page{
+    position:absolute;inset:0;z-index:3;
+    padding:34px 106px 26px;
+    display:flex;flex-direction:column;
+  }
+
+  /* ------------------------------- masthead ------------------------------ */
+  .mast{display:flex;align-items:flex-start;justify-content:space-between;gap:60px;}
+
+  .wordmark{
+    font-family:var(--mono);font-weight:700;font-size:46px;line-height:1;
+    letter-spacing:.155em;text-transform:uppercase;margin:0 0 14px;
+    color:var(--ink);
+  }
+  .standfirst{
+    font-family:var(--serif);font-size:17px;line-height:1.35;margin:0;
+    color:var(--ink-mid);max-width:46ch;
+  }
+
+  .meta{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
+  .meta-rows{display:grid;grid-template-columns:auto auto;column-gap:20px;row-gap:5px;}
+  .meta-k{
+    font-family:var(--mono);font-size:10px;letter-spacing:.19em;text-transform:uppercase;
+    color:var(--ink-faint);text-align:right;line-height:1.2;
+  }
+  .meta-v{
+    font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--ink);text-align:right;line-height:1.2;
+    font-variant-numeric:tabular-nums;
+  }
+  .meta-v .blank{color:var(--red);}
+
+  .tally{display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-top:5px;}
+  #hatch{width:248px;height:24px;display:block;}
+  .tally-cap{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.19em;text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+
+  .double-rule{margin-top:20px;border-top:2px solid var(--ink);border-bottom:1px solid var(--rule);height:4px;}
+
+  /* -------------------------------- table -------------------------------- */
+  .grid{
+    display:grid;
+    grid-template-columns:56px 1fr 300px 150px 210px;
+    column-gap:24px;
+    align-items:stretch;
+  }
+
+  .colhead{border-bottom:1px solid var(--rule);}
+  .colhead > *{
+    font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--ink-faint);padding:9px 0 8px;display:flex;align-items:flex-end;
+  }
+  .colhead .amount-col{justify-content:flex-end;padding-right:14px;padding-left:14px;}
+
+  .amount-col{border-left:1px solid var(--rule-soft);border-right:1px solid var(--rule-soft);}
+
+  .rows{flex:1;display:flex;flex-direction:column;}
+
+  .row{
+    flex:1;border-bottom:1px solid var(--rule-soft);
+    position:relative;
+  }
+  .row.band::before{
+    content:"";position:absolute;inset:0;background:var(--band);opacity:.72;z-index:-1;
+  }
+  .row:last-child{border-bottom:1px solid var(--rule);}
+
+  .row > *{display:flex;align-items:center;}
+
+  .lineno{
+    font-family:var(--mono);font-size:13px;color:var(--ink-faint);
+    font-variant-numeric:tabular-nums;letter-spacing:.04em;
+  }
+
+  .account{flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;}
+  .account .name{font-family:var(--serif);font-size:20px;line-height:1.15;color:var(--ink);}
+  .account .key{
+    font-family:var(--mono);font-size:11px;letter-spacing:.02em;color:var(--ink-faint);
+  }
+
+  .amount-col{padding:0 14px;justify-content:flex-end;}
+  .figure{
+    font-family:var(--mono);font-weight:700;font-size:34px;line-height:1;color:var(--ink);
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  }
+
+  .noentry{display:flex;align-items:flex-end;gap:9px;width:100%;height:34px;}
+  .leader{
+    flex:1;height:1px;align-self:flex-end;margin-bottom:5px;
+    border-bottom:2px dotted var(--red-soft);
+  }
+  .caret{
+    width:12px;height:30px;background:var(--red);flex:none;
+    animation:blink 1.2s steps(1,end) infinite;
+  }
+  @keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:.08;}}
+
+  .unit{
+    font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--ink-mid);
+  }
+  .unit.none{color:var(--ink-faint);}
+
+  .state{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.15em;
+    text-transform:uppercase;gap:9px;
+  }
+  .state .mark{width:9px;height:9px;flex:none;}
+  .state.posted{color:var(--ink-mid);}
+  .state.posted .mark{background:var(--ink);}
+  .state.blank{color:var(--red);}
+  .state.blank .mark{border:1.5px solid var(--red);}
+
+  /* -------------------------------- notes -------------------------------- */
+  .notes{
+    display:flex;align-items:flex-end;justify-content:space-between;gap:48px;
+    padding-top:14px;
+  }
+  .notes p{
+    font-family:var(--serif);font-size:13px;line-height:1.5;margin:0 0 5px;
+    color:var(--ink-mid);max-width:78ch;
+  }
+  .notes p:last-child{margin-bottom:0;}
+  .notes .colophon{
+    font-family:var(--mono);font-size:10px;letter-spacing:.17em;text-transform:uppercase;
+    color:var(--ink-faint);white-space:nowrap;text-align:right;line-height:1.6;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .sweep{animation:none;transform:translateY(-140px);}
+    .caret{animation:none;opacity:1;}
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="sheet">
+    <canvas id="feed" width="1600" height="900"></canvas>
+    <div class="sweep"></div>
+
+    <div class="page">
+
+      <header class="mast">
+        <div>
+          <h1 class="wordmark">Ledger</h1>
+          <p class="standfirst">Product metrics posted for the last 30 days. Figures are taken from the source record without adjustment.</p>
+        </div>
+
+        <div class="meta">
+          <div class="meta-rows">
+            <div class="meta-k">Period</div><div class="meta-v">Last 30 days</div>
+            <div class="meta-k">Prepared</div><div class="meta-v">2026-09-01</div>
+            <div class="meta-k">Lines</div><div class="meta-v">4 posted / <span class="blank">4 blank</span></div>
+          </div>
+          <div class="tally">
+            <canvas id="hatch" width="248" height="24"></canvas>
+            <div class="tally-cap">Lines 01&ndash;08 &middot; hatched = posted</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="double-rule"></div>
+
+      <div class="grid colhead">
+        <div>Line</div>
+        <div>Account</div>
+        <div class="amount-col">Entry</div>
+        <div>Unit</div>
+        <div>State</div>
+      </div>
+
+      <div class="rows">
+
+        <div class="grid row band">
+          <div class="lineno">01</div>
+          <div class="account"><span class="name">Active installs</span><span class="key">active_installs</span></div>
+          <div class="amount-col"><span class="figure">1,284</span></div>
+          <div class="unit">Installs</div>
+          <div class="state posted"><span class="mark"></span>Posted</div>
+        </div>
+
+        <div class="grid row band">
+          <div class="lineno">02</div>
+          <div class="account"><span class="name">Weekly active users</span><span class="key">weekly_active_users</span></div>
+          <div class="amount-col"><span class="noentry"><span class="leader"></span><span class="caret" style="animation-delay:0s"></span></span></div>
+          <div class="unit none">&mdash;</div>
+          <div class="state blank"><span class="mark"></span>No entry</div>
+        </div>
+
+        <div class="grid row">
+          <div class="lineno">03</div>
+          <div class="account"><span class="name">Median session length</span><span class="key">median_session_minutes</span></div>
+          <div class="amount-col"><span class="figure">12.4</span></div>
+          <div class="unit">Minutes</div>
+          <div class="state posted"><span class="mark"></span>Posted</div>
+        </div>
+
+        <div class="grid row">
+          <div class="lineno">04</div>
+          <div class="account"><span class="name">Retention, day 30</span><span class="key">retention_d30</span></div>
+          <div class="amount-col"><span class="noentry"><span class="leader"></span><span class="caret" style="animation-delay:.3s"></span></span></div>
+          <div class="unit none">&mdash;</div>
+          <div class="state blank"><span class="mark"></span>No entry</div>
+        </div>
+
+        <div class="grid row band">
+          <div class="lineno">05</div>
+          <div class="account"><span class="name">Crash-free rate</span><span class="key">crash_free_rate_pct</span></div>
+          <div class="amount-col"><span class="figure">99.2</span></div>
+          <div class="unit">Per cent</div>
+          <div class="state posted"><span class="mark"></span>Posted</div>
+        </div>
+
+        <div class="grid row band">
+          <div class="lineno">06</div>
+          <div class="account"><span class="name">Paid conversions</span><span class="key">paid_conversions</span></div>
+          <div class="amount-col"><span class="noentry"><span class="leader"></span><span class="caret" style="animation-delay:.6s"></span></span></div>
+          <div class="unit none">&mdash;</div>
+          <div class="state blank"><span class="mark"></span>No entry</div>
+        </div>
+
+        <div class="grid row">
+          <div class="lineno">07</div>
+          <div class="account"><span class="name">Support tickets</span><span class="key">support_tickets</span></div>
+          <div class="amount-col"><span class="figure">37</span></div>
+          <div class="unit">Tickets</div>
+          <div class="state posted"><span class="mark"></span>Posted</div>
+        </div>
+
+        <div class="grid row">
+          <div class="lineno">08</div>
+          <div class="account"><span class="name">Net promoter score</span><span class="key">nps</span></div>
+          <div class="amount-col"><span class="noentry"><span class="leader"></span><span class="caret" style="animation-delay:.9s"></span></span></div>
+          <div class="unit none">&mdash;</div>
+          <div class="state blank"><span class="mark"></span>No entry</div>
+        </div>
+
+      </div>
+
+      <div class="notes">
+        <div>
+          <p>Four of the eight metrics carry no value in the source record for this period. Those lines are left blank rather than filled. Nothing on this sheet is estimated, interpolated, or carried forward from an earlier period.</p>
+          <p>No trend marks: the source holds one value per metric and no history to plot. No targets or thresholds: the source carries none, so no figure here is called good or bad.</p>
+        </div>
+        <div class="colophon">Ledger<br>Sheet 1 of 1<br>Continuous feed</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var reduce = window.matchMedia &&
+               window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var css = getComputedStyle(document.documentElement);
+  function tok(n, fallback) {
+    var v = css.getPropertyValue(n);
+    return (v && v.trim()) || fallback;
+  }
+  var C_MARGIN = tok("--margin", "#EAEDE1");
+  var C_HOLE   = tok("--hole", "#C6CFB8");
+  var C_HI     = tok("--hole-hi", "#FAFBF4");
+  var C_RULE   = tok("--rule", "#A7BB9B");
+  var C_SOFT   = tok("--rule-soft", "#C6D3BC");
+  var C_INK    = tok("--ink", "#1A231E");
+
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  function ctxFor(canvas, w, h) {
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    var c = canvas.getContext("2d");
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return c;
+  }
+
+  /* ---------------- continuous-feed margins: the paper advances ---------- */
+  var W = 1600, H = 900, MW = 62, SPACING = 36, RAD = 6, FEED_PX_PER_SEC = 13;
+  var fx = ctxFor(document.getElementById("feed"), W, H);
+
+  function drawFeed(t) {
+    fx.clearRect(0, 0, W, H);
+
+    fx.fillStyle = C_MARGIN;
+    fx.fillRect(0, 0, MW, H);
+    fx.fillRect(W - MW, 0, MW, H);
+
+    fx.strokeStyle = C_SOFT;
+    fx.lineWidth = 1;
+    fx.setLineDash([2, 4]);
+    fx.beginPath();
+    fx.moveTo(MW + 0.5, 0); fx.lineTo(MW + 0.5, H);
+    fx.moveTo(W - MW - 0.5, 0); fx.lineTo(W - MW - 0.5, H);
+    fx.stroke();
+    fx.setLineDash([]);
+
+    var offset = (t * FEED_PX_PER_SEC) % SPACING;
+    var centres = [MW / 2, W - MW / 2];
+    for (var y = -SPACING + offset; y < H + SPACING; y += SPACING) {
+      for (var i = 0; i < 2; i++) {
+        var cx = centres[i];
+        fx.beginPath();
+        fx.arc(cx, y, RAD, 0, Math.PI * 2);
+        fx.fillStyle = C_HOLE;
+        fx.fill();
+        fx.beginPath();
+        fx.arc(cx, y - 0.7, RAD - 0.7, Math.PI * 1.15, Math.PI * 1.92);
+        fx.strokeStyle = C_HI;
+        fx.lineWidth = 1.3;
+        fx.stroke();
+      }
+    }
+  }
+
+  /* ---------------- posted tally: 4 hatched cells, 4 left open ----------- */
+  var POSTED = [true, false, true, false, true, false, true, false];
+  var CELL = 24, GAP = 8, PITCH = 7, HATCH_PX_PER_SEC = 6;
+  var hx = ctxFor(document.getElementById("hatch"), 248, 24);
+
+  function drawHatch(t) {
+    hx.clearRect(0, 0, 248, 24);
+    var phase = (t * HATCH_PX_PER_SEC) % PITCH;
+
+    for (var i = 0; i < 8; i++) {
+      var x = i * (CELL + GAP);
+      hx.save();
+      hx.beginPath();
+      hx.rect(x + 0.5, 0.5, CELL - 1, CELL - 1);
+      hx.strokeStyle = POSTED[i] ? C_INK : C_RULE;
+      hx.lineWidth = 1;
+      hx.stroke();
+
+      if (POSTED[i]) {
+        hx.clip();
+        hx.strokeStyle = "rgba(26,35,30,0.55)";
+        hx.lineWidth = 1;
+        for (var k = -CELL - PITCH; k < CELL * 2 + PITCH; k += PITCH) {
+          hx.beginPath();
+          hx.moveTo(x + k + phase, CELL);
+          hx.lineTo(x + k + phase + CELL, 0);
+          hx.stroke();
+        }
+      }
+      hx.restore();
+    }
+  }
+
+  /* ---------------- fit the 1600x900 sheet into whatever it gets --------- */
+  var sheet = document.getElementById("sheet");
+  function fit() {
+    var s = Math.min(window.innerWidth / W, window.innerHeight / H);
+    sheet.style.transform = "scale(" + s + ")";
+  }
+  window.addEventListener("resize", fit);
+  fit();
+
+  /* ---------------- run ------------------------------------------------- */
+  if (reduce) {
+    drawFeed(0);
+    drawHatch(0);
+  } else {
+    var start = null;
+    (function frame(now) {
+      if (start === null) start = now;
+      var t = (now - start) / 1000;
+      drawFeed(t);
+      drawHatch(t);
+      window.requestAnimationFrame(frame);
+    })(performance.now());
+  }
+})();
+</script>
+
+</body>
+</html>

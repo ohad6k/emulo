@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1000" />
+    <title>Orbit — scheduling for teams across time zones</title>
+    <style>
+      :root {
+        --bg: #08090a;
+        --ink: #f4f5f6;
+        --muted: rgba(244, 245, 246, 0.58);
+        --faint: rgba(244, 245, 246, 0.34);
+        --line: rgba(244, 245, 246, 0.11);
+        --accent: #e7b27c;
+        --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #050506;
+      }
+
+      body {
+        font-family: var(--sans);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .page {
+        position: relative;
+        width: 1000px;
+        height: 1400px;
+        margin: 0 auto;
+        overflow: hidden;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        padding: 56px 72px 56px;
+        isolation: isolate;
+      }
+
+      /* ---------- atmosphere ---------- */
+      .glow, .rings, .vignette {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .glow {
+        background:
+          radial-gradient(720px 420px at 62% 46%, rgba(255, 255, 255, 0.085), transparent 70%),
+          radial-gradient(900px 620px at 12% 8%, rgba(255, 255, 255, 0.05), transparent 68%),
+          radial-gradient(500px 300px at 88% 96%, rgba(231, 178, 124, 0.05), transparent 70%);
+      }
+
+      .vignette {
+        background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.55));
+      }
+
+      .rings {
+        display: grid;
+        place-items: center;
+      }
+      .rings svg {
+        position: absolute;
+        top: -260px;
+        right: -300px;
+        width: 980px;
+        height: 980px;
+        opacity: 0.5;
+      }
+      .ring-spin {
+        transform-origin: 490px 490px;
+        animation: spin 190s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .page > *:not(.glow):not(.rings):not(.vignette) { position: relative; z-index: 1; }
+
+      /* ---------- wordmark ---------- */
+      .mark {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 26px;
+      }
+      .mark span {
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .mark .orb-path {
+        transform-origin: 13px 13px;
+        animation: spin 26s linear infinite;
+      }
+      .mark .tag {
+        margin-left: 14px;
+        padding-left: 14px;
+        border-left: 1px solid var(--line);
+        font-size: 12.5px;
+        font-weight: 400;
+        letter-spacing: 0.01em;
+        color: var(--faint);
+      }
+
+      /* ---------- hero ---------- */
+      .hero { margin-top: 72px; }
+
+      h1 {
+        margin: 0;
+        font-size: 74px;
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        font-weight: 700;
+        max-width: 760px;
+      }
+      h1 em {
+        font-style: normal;
+        color: rgba(244, 245, 246, 0.42);
+      }
+
+      .sub {
+        margin: 24px 0 0;
+        font-size: 19px;
+        line-height: 1.5;
+        color: var(--muted);
+        letter-spacing: -0.005em;
+      }
+
+      .actions {
+        margin-top: 36px;
+        display: flex;
+        align-items: center;
+        gap: 26px;
+      }
+
+      .btn {
+        appearance: none;
+        border: 0;
+        background: var(--ink);
+        color: #0a0b0c;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+        padding: 14px 26px;
+        border-radius: 9px;
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 30px rgba(255, 255, 255, 0.14);
+      }
+
+      .link {
+        color: rgba(244, 245, 246, 0.74);
+        text-decoration: none;
+        font-size: 15px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 3px;
+        border-bottom: 1px solid var(--line);
+        transition: color 0.18s ease, border-color 0.18s ease;
+      }
+      .link:hover { color: var(--ink); border-color: rgba(244, 245, 246, 0.4); }
+      .link svg { transition: transform 0.18s ease; }
+      .link:hover svg { transform: translateX(3px); }
+
+      /* ---------- board ---------- */
+      .board { margin-top: 62px; }
+
+      .board-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+      .kicker {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--faint);
+      }
+      .board-head .note {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .board-head .note b { color: var(--ink); font-weight: 600; }
+
+      .board svg { display: block; width: 856px; height: 372px; }
+
+      .lbl { font-family: var(--mono); font-size: 12px; fill: rgba(244, 245, 246, 0.8); }
+      .off { font-family: var(--mono); font-size: 11px; fill: rgba(244, 245, 246, 0.32); }
+      .ax  { font-family: var(--mono); font-size: 10.5px; fill: rgba(244, 245, 246, 0.3); letter-spacing: 0.06em; }
+      .slot-lbl { font-family: var(--mono); font-size: 11px; fill: #0a0b0c; font-weight: 600; letter-spacing: 0.04em; }
+      .flag-lbl { font-family: var(--mono); font-size: 11px; fill: var(--accent); letter-spacing: 0.04em; }
+
+      .bar {
+        transform-box: fill-box;
+        transform-origin: left center;
+        animation: grow 1.05s cubic-bezier(0.16, 0.9, 0.28, 1) both;
+      }
+      @keyframes grow { from { transform: scaleX(0.02); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+
+      .band { animation: fadein 0.9s ease 0.95s both; }
+      .slot { animation: fadein 0.7s ease 1.25s both; }
+      .flag { animation: fadein 0.7s ease 1.5s both; }
+      @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+      .pulse { animation: pulse 3.6s ease-in-out 1.6s infinite; }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.16; }
+        50% { opacity: 0.34; }
+      }
+      .blip { animation: blip 2.4s ease-in-out 1.9s infinite; }
+      @keyframes blip {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.35; }
+      }
+
+      /* ---------- capabilities ---------- */
+      .caps {
+        margin-top: 58px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 56px;
+        row-gap: 34px;
+      }
+      .cap {
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+      }
+      .cap svg { flex: 0 0 auto; color: rgba(244, 245, 246, 0.55); margin-top: 1px; }
+      .cap p {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.5;
+        letter-spacing: -0.005em;
+        color: rgba(244, 245, 246, 0.86);
+      }
+
+      /* ---------- footer ---------- */
+      footer {
+        margin-top: auto;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      footer p { margin: 0; font-size: 13.5px; color: var(--muted); }
+      footer .dots { display: flex; gap: 5px; }
+      footer .dots i {
+        width: 5px; height: 5px; border-radius: 50%;
+        background: rgba(244, 245, 246, 0.28);
+        display: block;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; transition: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="glow"></div>
+
+      <div class="rings" aria-hidden="true">
+        <svg viewBox="0 0 980 980" fill="none">
+          <g class="ring-spin" stroke="rgba(244,245,246,0.13)">
+            <circle cx="490" cy="490" r="470" />
+            <circle cx="490" cy="490" r="360" stroke-dasharray="2 9" />
+            <ellipse cx="490" cy="490" rx="470" ry="180" transform="rotate(-24 490 490)" />
+            <ellipse cx="490" cy="490" rx="470" ry="300" transform="rotate(34 490 490)" stroke="rgba(244,245,246,0.07)" />
+            <circle cx="920" cy="600" r="4" fill="rgba(244,245,246,0.5)" stroke="none" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="vignette"></div>
+
+      <header class="mark">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+          <circle cx="13" cy="13" r="4.2" fill="#f4f5f6" />
+          <g class="orb-path">
+            <ellipse cx="13" cy="13" rx="12" ry="5.4" transform="rotate(-28 13 13)" stroke="rgba(244,245,246,0.45)" />
+            <circle cx="23.2" cy="8.3" r="2" fill="var(--accent)" />
+          </g>
+        </svg>
+        <span>Orbit</span>
+        <span class="tag">one shared clock</span>
+      </header>
+
+      <section class="hero">
+        <h1>Find the one hour<br />everyone is <em>actually</em> awake.</h1>
+        <p class="sub">Scheduling for teams across time zones.</p>
+        <div class="actions">
+          <button class="btn">Start free</button>
+          <a class="link" href="#">
+            See how it works
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 7h9M7.5 3.5 11 7l-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </div>
+      </section>
+
+      <section class="board">
+        <div class="board-head">
+          <span class="kicker">Shared clock · five offices</span>
+          <span class="note">best window <b>13:00 – 16:00</b>, four offices awake</span>
+        </div>
+
+        <svg viewBox="0 0 856 372" role="img" aria-label="A shared 24-hour clock showing the working hours of five offices, the three-hour window where four of them overlap, and the office left with a 6am call.">
+          <defs>
+            <linearGradient id="fadeRight" gradientUnits="userSpaceOnUse" x1="614" y1="0" x2="856" y2="0">
+              <stop offset="0" stop-color="#f4f5f6" stop-opacity="0.16" />
+              <stop offset="0.62" stop-color="#f4f5f6" stop-opacity="0.16" />
+              <stop offset="1" stop-color="#f4f5f6" stop-opacity="0.015" />
+            </linearGradient>
+            <linearGradient id="bandFill" gradientUnits="userSpaceOnUse" x1="0" y1="40" x2="0" y2="316">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0.13" />
+              <stop offset="1" stop-color="#ffffff" stop-opacity="0.04" />
+            </linearGradient>
+          </defs>
+
+          <!-- grid -->
+          <g stroke="rgba(244,245,246,0.08)">
+            <line x1="170" y1="40" x2="170" y2="316" />
+            <line x1="281" y1="40" x2="281" y2="316" />
+            <line x1="392" y1="40" x2="392" y2="316" />
+            <line x1="503" y1="40" x2="503" y2="316" />
+            <line x1="614" y1="40" x2="614" y2="316" />
+            <line x1="725" y1="40" x2="725" y2="316" />
+            <line x1="836" y1="40" x2="836" y2="316" />
+          </g>
+          <line x1="0" y1="316" x2="856" y2="316" stroke="rgba(244,245,246,0.12)" />
+
+          <g class="ax" text-anchor="middle">
+            <text x="170" y="24">00</text>
+            <text x="281" y="24">04</text>
+            <text x="392" y="24">08</text>
+            <text x="503" y="24">12</text>
+            <text x="614" y="24">16</text>
+            <text x="725" y="24">20</text>
+            <text x="836" y="24">24</text>
+          </g>
+
+          <!-- overlap band -->
+          <g class="band">
+            <rect x="530.75" y="40" width="83.25" height="276" fill="url(#bandFill)" />
+            <rect class="pulse" x="530.75" y="40" width="83.25" height="276" fill="#ffffff" />
+            <line x1="530.75" y1="34" x2="530.75" y2="316" stroke="rgba(244,245,246,0.55)" />
+            <line x1="614" y1="34" x2="614" y2="316" stroke="rgba(244,245,246,0.3)" stroke-dasharray="3 4" />
+          </g>
+
+          <!-- rows -->
+          <g>
+            <text class="lbl" x="0" y="64">Berlin</text>
+            <text class="off" x="106" y="64">+2</text>
+            <rect class="bar" style="animation-delay:.12s" x="364.25" y="53" width="249.75" height="18" rx="9" fill="rgba(244,245,246,0.16)" />
+
+            <text class="lbl" x="0" y="116">London</text>
+            <text class="off" x="106" y="116">+1</text>
+            <rect class="bar" style="animation-delay:.24s" x="392" y="105" width="249.75" height="18" rx="9" fill="rgba(244,245,246,0.16)" />
+
+            <text class="lbl" x="0" y="168">São Paulo</text>
+            <text class="off" x="106" y="168">−3</text>
+            <rect class="bar" style="animation-delay:.36s" x="503" y="157" width="249.75" height="18" rx="9" fill="rgba(244,245,246,0.16)" />
+
+            <text class="lbl" x="0" y="220">New York</text>
+            <text class="off" x="106" y="220">−4</text>
+            <rect class="bar" style="animation-delay:.48s" x="530.75" y="209" width="249.75" height="18" rx="9" fill="rgba(244,245,246,0.16)" />
+
+            <text class="lbl" x="0" y="272" fill="var(--accent)">San Francisco</text>
+            <text class="off" x="106" y="272">−7</text>
+            <rect class="bar" style="animation-delay:.6s" x="614" y="261" width="222" height="18" rx="9" fill="url(#fadeRight)" />
+          </g>
+
+          <!-- chosen slot -->
+          <g class="slot">
+            <rect x="530.75" y="-1" width="128" height="22" rx="6" fill="#f4f5f6" />
+            <text class="slot-lbl" x="542" y="14">13:00 BOOKED</text>
+          </g>
+
+          <!-- the 6am flag -->
+          <g class="flag">
+            <circle class="blip" cx="530.75" cy="270" r="4.5" fill="var(--accent)" />
+            <line x1="530.75" y1="270" x2="500" y2="270" stroke="var(--accent)" stroke-opacity="0.5" stroke-width="1" />
+            <text class="flag-lbl" x="494" y="274" text-anchor="end">06:00 local</text>
+          </g>
+
+          <text class="ax" x="0" y="344">SHARED CLOCK, 24H</text>
+          <text class="ax" x="836" y="344" text-anchor="end">SAN FRANCISCO CARRIES THE EARLY CALL — FLAGGED</text>
+        </svg>
+      </section>
+
+      <section class="caps">
+        <div class="cap">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="7.5" cy="10" r="5.5" stroke="currentColor" stroke-width="1.3" />
+            <circle cx="12.5" cy="10" r="5.5" stroke="currentColor" stroke-width="1.3" />
+          </svg>
+          <p>Finds the hours every office is awake at the same time.</p>
+        </div>
+
+        <div class="cap">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="7.2" stroke="currentColor" stroke-width="1.3" />
+            <path d="M10 5.8V10l3 1.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <p>Shows one shared clock instead of five converted ones.</p>
+        </div>
+
+        <div class="cap">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="2.8" y="4.4" width="14.4" height="12.4" rx="2.2" stroke="currentColor" stroke-width="1.3" />
+            <path d="M2.8 8.4h14.4M6.6 2.8v3M13.4 2.8v3M7.4 12.6l1.8 1.8 3.4-3.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <p>Books the meeting in everyone's local calendar.</p>
+        </div>
+
+        <div class="cap">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M3 14.2h14M6 14.2a4 4 0 0 1 8 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+            <path d="M10 3.4v2M4.5 5.8l1.4 1.4M15.5 5.8l-1.4 1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+          </svg>
+          <p>Flags the person who always gets the 6am call.</p>
+        </div>
+      </section>
+
+      <footer>
+        <p>Used by 40 teams across 12 countries.</p>
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      </footer>
+    </div>
+  </body>
+</html>

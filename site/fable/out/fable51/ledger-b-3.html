@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Ledger</title>
+<meta name="viewport" content="width=1600, height=900" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:900px;overflow:hidden;background:#060606;color:#fff;
+    font-family:"Inter Tight",Inter,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  /* atmosphere */
+  .glow{position:absolute;left:760px;top:60px;width:780px;height:780px;border-radius:50%;
+    background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.10) 0%,rgba(255,255,255,.035) 32%,rgba(255,255,255,0) 68%);
+    animation:breathe 7s ease-in-out infinite;pointer-events:none}
+  @keyframes breathe{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.07);opacity:1}}
+  .grid{position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+    background-size:80px 80px;
+    -webkit-mask-image:radial-gradient(ellipse at 70% 50%,#000 0%,rgba(0,0,0,.55) 40%,transparent 78%);
+            mask-image:radial-gradient(ellipse at 70% 50%,#000 0%,rgba(0,0,0,.55) 40%,transparent 78%)}
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:screen}
+  canvas#c{position:absolute;right:0;top:0;width:900px;height:900px}
+  .vignette{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.6) 100%)}
+
+  /* header */
+  header{position:absolute;left:56px;right:56px;top:40px;display:flex;justify-content:space-between;align-items:center;z-index:3}
+  .wordmark{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px;letter-spacing:-.01em}
+  .mark{width:12px;height:12px;background:#fff;border-radius:2px;animation:mark 4s ease-in-out infinite}
+  @keyframes mark{0%,100%{transform:rotate(0deg);border-radius:2px}50%{transform:rotate(180deg);border-radius:6px}}
+  .status{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+  .dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:blink 1.6s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+  /* hero */
+  .hero{position:absolute;left:56px;top:196px;width:720px;z-index:3}
+  h1{font-size:80px;line-height:.96;letter-spacing:-.035em;font-weight:600}
+  h1 .l{display:block;overflow:hidden}
+  h1 .l span{display:block;animation:rise 1.1s cubic-bezier(.2,.8,.2,1) both}
+  h1 .l:nth-child(2) span{animation-delay:.08s}
+  h1 .l:nth-child(3) span{animation-delay:.16s}
+  @keyframes rise{from{transform:translateY(110%)}to{transform:translateY(0)}}
+  h1 .fade{color:rgba(255,255,255,.42)}
+  .cta{margin-top:34px;display:flex;align-items:center;gap:26px;animation:fadein 1s .5s both}
+  @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  button{appearance:none;border:0;background:#fff;color:#000;font:inherit;font-weight:600;font-size:15px;
+    padding:14px 22px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+  button i{display:inline-block;width:14px;height:14px;position:relative}
+  button i::before{content:"";position:absolute;left:0;top:6px;width:12px;height:2px;background:#000;animation:arrow 2.2s ease-in-out infinite}
+  button i::after{content:"";position:absolute;right:1px;top:3px;width:7px;height:7px;border-top:2px solid #000;border-right:2px solid #000;transform:rotate(45deg);animation:arrow 2.2s ease-in-out infinite}
+  @keyframes arrow{0%,100%{transform:translateX(0) rotate(var(--r,0deg))}50%{transform:translateX(3px) rotate(var(--r,0deg))}}
+  button i::after{--r:45deg}
+  a.sec{color:rgba(255,255,255,.7);text-decoration:none;font-size:15px;display:flex;align-items:center;gap:8px;position:relative}
+  a.sec::after{content:"";position:absolute;left:0;bottom:-4px;height:1px;width:100%;background:rgba(255,255,255,.3)}
+
+  /* capabilities */
+  .caps{position:absolute;left:56px;top:560px;width:560px;z-index:3;animation:fadein 1s .7s both}
+  .caps h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);font-weight:500;margin-bottom:6px}
+  .caps ul{list-style:none}
+  .caps li{display:flex;align-items:center;gap:18px;height:46px;border-top:1px solid rgba(255,255,255,.1);position:relative;
+    font-size:16px;color:rgba(255,255,255,.4);transition:color .5s}
+  .caps li .n{font-size:11px;color:rgba(255,255,255,.35);width:22px}
+  .caps li .bar{position:absolute;left:0;top:-1px;height:1px;width:0;background:#fff}
+  .caps li.on{color:#fff}
+  .caps li.on .n{color:#fff}
+  .caps li.on .bar{animation:fill 3s linear forwards}
+  @keyframes fill{from{width:0}to{width:100%}}
+
+  /* footer */
+  footer{position:absolute;left:56px;right:56px;bottom:40px;display:flex;justify-content:space-between;align-items:flex-end;z-index:3;
+    font-size:13px;color:rgba(255,255,255,.5);animation:fadein 1s .9s both}
+  footer b{color:#fff;font-weight:500}
+  footer .tick{display:flex;gap:6px;align-items:flex-end;height:14px}
+  footer .tick i{display:block;width:2px;background:rgba(255,255,255,.6);animation:tick 1.2s ease-in-out infinite}
+  footer .tick i:nth-child(2){animation-delay:.15s}footer .tick i:nth-child(3){animation-delay:.3s}footer .tick i:nth-child(4){animation-delay:.45s}
+  @keyframes tick{0%,100%{height:3px}50%{height:14px}}
+</style>
+</head>
+<body>
+
+<div class="grid"></div>
+<div class="glow"></div>
+<canvas id="c" width="900" height="900"></canvas>
+<svg class="grain" width="1600" height="900" aria-hidden="true">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/></filter>
+  <rect width="1600" height="900" filter="url(#g)"/>
+</svg>
+<div class="vignette"></div>
+
+<header>
+  <div class="wordmark"><span class="mark"></span>Ledger</div>
+  <div class="status mono"><span class="dot"></span>Reading charges</div>
+</header>
+
+<section class="hero">
+  <h1>
+    <span class="l"><span>Every subscription</span></span>
+    <span class="l"><span>your company</span></span>
+    <span class="l"><span class="fade">forgot about.</span></span>
+  </h1>
+  <div class="cta">
+    <button>Start free <i></i></button>
+    <a class="sec" href="#">See how it works</a>
+  </div>
+</section>
+
+<section class="caps">
+  <h2>What it does</h2>
+  <ul id="caps">
+    <li class="on"><span class="bar"></span><span class="n mono">01</span>Finds the charges nobody recognises.</li>
+    <li><span class="bar"></span><span class="n mono">02</span>Groups them by the person who signed up.</li>
+    <li><span class="bar"></span><span class="n mono">03</span>Cancels in one click and records who approved it.</li>
+    <li><span class="bar"></span><span class="n mono">04</span>Warns you before the annual renewal lands.</li>
+  </ul>
+</section>
+
+<footer>
+  <div>Used by <b>40 teams</b> across <b>12 countries</b>.</div>
+  <div class="tick"><i></i><i></i><i></i><i></i></div>
+</footer>
+
+<script>
+(() => {
+  // capability cycle
+  const items = [...document.querySelectorAll('#caps li')];
+  let k = 0;
+  setInterval(() => {
+    items[k].classList.remove('on');
+    k = (k + 1) % items.length;
+    const el = items[k];
+    el.classList.add('on');
+    const bar = el.querySelector('.bar');
+    bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = '';
+  }, 3000);
+
+  // ledger drum
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = 900, H = 900;
+  cv.width = W * dpr; cv.height = H * dpr; ctx.scale(dpr, dpr);
+
+  const cx = 450, cy = 450, R = 318, N = 26, STEP = Math.PI * 2 / N;
+  const flagged = new Set([2, 7, 12, 17, 22]);
+  const rows = [];
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < N; i++) {
+    rows.push({ i, nameW: 120 + rnd() * 120, amtW: 34 + rnd() * 30, flag: flagged.has(i), owner: Math.floor(rnd() * 5) });
+  }
+  const dust = [];
+  for (let i = 0; i < 70; i++) dust.push({ x: rnd() * W, y: rnd() * H, s: .4 + rnd() * 1.2, v: .08 + rnd() * .25, a: .1 + rnd() * .35 });
+
+  let theta = 0, last = performance.now();
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function rr(x, y, w, h, r, fill) {
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+    if (fill) ctx.fill(); else ctx.stroke();
+  }
+
+  function frame(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    theta += dt * .22;
+    ctx.clearRect(0, 0, W, H);
+
+    // dust
+    for (const d of dust) {
+      d.y -= d.v; if (d.y < -4) { d.y = H + 4; d.x = Math.random() * W; }
+      ctx.fillStyle = `rgba(255,255,255,${d.a})`;
+      ctx.fillRect(d.x, d.y, d.s, d.s);
+    }
+
+    // scan line
+    const sweep = (now / 2600) % 1;
+    ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(60, cy + .5); ctx.lineTo(W - 40, cy + .5); ctx.stroke();
+    const sg = ctx.createLinearGradient(60 + sweep * 800 - 120, 0, 60 + sweep * 800, 0);
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(1, 'rgba(255,255,255,.8)');
+    ctx.strokeStyle = sg; ctx.beginPath(); ctx.moveTo(60 + sweep * 800 - 120, cy + .5); ctx.lineTo(60 + sweep * 800, cy + .5); ctx.stroke();
+
+    // rows sorted back to front
+    const placed = rows.map(r => {
+      const a = theta + r.i * STEP;
+      return { r, y: cy + R * Math.sin(a), z: Math.cos(a) };
+    }).sort((p, q) => p.z - q.z);
+
+    for (const p of placed) {
+      const { r, y, z } = p;
+      const t = (z + 1) / 2;
+      const s = .55 + .45 * t;
+      const alpha = .05 + .55 * t * t;
+      const rowW = 470 * s, h = 13 * s;
+      const x = cx - rowW / 2;
+      const f = r.flag ? clamp((z - .86) / .14, 0, 1) : 0;
+      const col = f > 0 ? `rgba(255,255,255,${alpha + (1 - alpha) * f})` : `rgba(255,255,255,${alpha})`;
+
+      ctx.fillStyle = col;
+      rr(x, y - h / 2, r.nameW * s, h, 3 * s, true);
+      // owner
+      const ox = x + r.nameW * s + 18 * s;
+      ctx.beginPath(); ctx.arc(ox, y, 5.5 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(6,6,6,1)';
+      for (let d = 0; d < r.owner; d++) { ctx.fillRect(ox - 3 * s + d * 1.6 * s - 1, y - 1 * s, 1 * s, 2 * s); }
+      // amount
+      ctx.fillStyle = col;
+      rr(x + rowW - r.amtW * s, y - h / 2, r.amtW * s, h, 3 * s, true);
+      // date tick
+      rr(x + rowW - r.amtW * s - 46 * s, y - h / 2, 28 * s, h, 3 * s, true);
+
+      if (f > 0) {
+        ctx.strokeStyle = `rgba(255,255,255,${f})`; ctx.lineWidth = 1;
+        const pad = 12 * s, ease = 1 - Math.pow(1 - f, 3);
+        const bw = (rowW + pad * 2) * ease, bh = h + pad * 2;
+        rr(x - pad + (rowW + pad * 2 - bw) / 2, y - bh / 2, bw, bh, 6, false);
+        ctx.fillStyle = `rgba(255,255,255,${f})`;
+        ctx.font = '500 11px "JetBrains Mono", ui-monospace, monospace';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText('FORGOTTEN', x + rowW + pad + 14, y);
+        // leader toward the copy
+        ctx.strokeStyle = `rgba(255,255,255,${f * .35})`;
+        ctx.beginPath(); ctx.moveTo(x - pad, y + .5); ctx.lineTo(x - pad - 90 * ease, y + .5); ctx.stroke();
+        ctx.fillStyle = `rgba(255,255,255,${f})`;
+        ctx.beginPath(); ctx.arc(x - pad - 90 * ease, y + .5, 2, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // drum edge hints
+    ctx.strokeStyle = 'rgba(255,255,255,.08)';
+    ctx.beginPath(); ctx.moveTo(cx - 250, cy - R - 14); ctx.lineTo(cx + 250, cy - R - 14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 250, cy + R + 14); ctx.lineTo(cx + 250, cy + R + 14); ctx.stroke();
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

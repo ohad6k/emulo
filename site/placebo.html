@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emulo | Placebo test for AI features</title>
+<meta name="description" content="Does your AI feature actually do anything? I build a fake one designed to fail, run both, and tell you which won. I ran it on my own product first and mine lost. Free for the first three.">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f2eee1;
+  --paper-2:#f7f4ea;
+  --ink:#161309;
+  --ink-soft:#3d3a2f;
+  --ink-faint:#6f6a58;
+  --ink-dim:#8f8a76;
+  --cream-dim:#cfc9b4;
+  --rule:#c9c3ad;
+  --red:#a83b23;
+  --serif:"Playfair Display",Georgia,serif;
+  --text:"Source Serif 4",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{max-width:100%;overflow-x:hidden;scroll-behavior:smooth}
+body{
+  max-width:100%;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--text);
+  font-size:17px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+/* paper grain, matches the landing page */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+a{color:inherit}
+.wrap{position:relative;z-index:3;width:100%;max-width:1120px;margin:0 auto;padding:0 32px}
+.label{
+  display:block;
+  color:var(--ink-faint);
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+}
+.label .red{color:var(--red)}
+h1,h2,h3{font-family:var(--serif);font-weight:600}
+
+/* ---------- nav ---------- */
+nav{
+  position:relative;z-index:3;
+  display:flex;align-items:center;justify-content:space-between;
+  max-width:1120px;margin:0 auto;padding:26px 32px;
+  border-bottom:1px solid var(--rule);
+}
+.wordmark{font-family:var(--mono);font-size:14px;font-weight:500;letter-spacing:.46em;text-decoration:none}
+.nav-link{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--ink-faint)}
+.nav-link:hover,.nav-link:focus-visible{color:var(--red)}
+
+/* ---------- hero ---------- */
+.hero{padding:78px 0 56px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(268px,.5fr);gap:72px;align-items:end}
+.hero-grid>*{min-width:0}
+.eyebrow{display:flex;gap:14px;align-items:center;margin-bottom:28px}
+.eyebrow::before{content:"";flex:none;width:34px;height:1px;background:var(--red)}
+h1{max-width:800px;font-size:clamp(44px,6.6vw,80px);line-height:1;letter-spacing:-.02em}
+h1 i{font-style:italic;color:var(--red);font-weight:500}
+.hero-copy{max-width:640px;margin-top:28px;font-size:20px;color:var(--ink-soft)}
+.hero-copy b{color:var(--ink);font-weight:600}
+.hero-action{margin-top:36px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.micro{max-width:360px;color:var(--ink-faint);font-size:14px;line-height:1.5}
+
+.ledger{border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.ledger-row{padding:16px 0;border-top:1px dotted var(--rule)}
+.ledger-row:first-child{border-top:0}
+.ledger-row b{display:block;margin-top:6px;font-family:var(--serif);font-size:21px;font-weight:600;line-height:1.2}
+.ledger-row .price{font-size:38px;letter-spacing:-.02em}
+
+.button{
+  display:inline-flex;align-items:center;gap:22px;
+  padding:16px 24px;border:1px solid var(--ink);background:var(--ink);
+  color:var(--paper-2);font-family:var(--mono);font-size:12px;font-weight:500;
+  letter-spacing:.1em;text-transform:uppercase;text-decoration:none;
+  transition:background .18s ease,border-color .18s ease,transform .18s ease;
+}
+.button:hover{background:var(--red);border-color:var(--red)}
+.button:active{transform:translateY(1px)}
+.button:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+
+/* ---------- the drift figure ---------- */
+.drift-band{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:56px 0 52px}
+.drift{position:relative}
+.drift-head{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:34px}
+.drift-inner{position:relative}
+.today{
+  position:absolute;top:-10px;bottom:24px;right:0;width:1px;
+  background:repeating-linear-gradient(to bottom,var(--ink-dim) 0 3px,transparent 3px 7px);
+}
+.today::after{
+  content:"TODAY";position:absolute;top:-16px;right:0;
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--ink-dim);
+}
+.track{display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px;align-items:end}
+.track+.track{margin-top:12px}
+.track-name{
+  padding-bottom:2px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);
+}
+.track-name.is-file{color:var(--red)}
+.track-art{position:relative;min-width:0}
+svg{display:block;width:100%}
+.stream{height:172px;overflow:visible}
+.stream line{stroke:var(--ink);stroke-width:1.5;stroke-opacity:.3;vector-effect:non-scaling-stroke}
+.stream .axis{stroke:var(--ink);stroke-width:1;stroke-opacity:1;vector-effect:non-scaling-stroke}
+.stream .curve{fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.stream .dot{stroke:var(--ink);stroke-width:9;stroke-opacity:1;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.filetrack{height:56px}
+.filetrack .base{stroke:var(--ink-dim);stroke-width:1;stroke-dasharray:1 6;vector-effect:non-scaling-stroke}
+.filetrack .commit{stroke:var(--ink);stroke-width:3;vector-effect:non-scaling-stroke}
+.filetrack .measure{stroke:var(--red);stroke-width:2;vector-effect:non-scaling-stroke}
+.filetrack .cap{stroke:var(--red);stroke-width:2;vector-effect:non-scaling-stroke}
+.curve-note{
+  position:absolute;left:0;top:-2px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);
+}
+.span-note{
+  position:absolute;left:16px;top:-1px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);
+}
+.gap-note{
+  position:absolute;left:0;bottom:-24px;
+  font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--red);
+}
+.drift figcaption{display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px;margin-top:58px}
+.drift figcaption p{max-width:660px;color:var(--ink-soft)}
+.drift figcaption .note{margin-top:16px;font-size:15px;color:var(--ink-faint)}
+
+/* ---------- sections ---------- */
+section{padding:88px 0}
+.section-grid{display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px}
+h2{font-size:clamp(32px,3.8vw,50px);line-height:1.05;letter-spacing:-.015em;max-width:14ch}
+.lede{max-width:660px;margin-top:20px;font-size:18px;color:var(--ink-soft)}
+code{font-family:var(--mono);font-size:.86em}
+
+.deliverables{margin-top:46px;border-top:2px solid var(--ink)}
+.deliverable{
+  display:grid;grid-template-columns:132px minmax(180px,.6fr) minmax(0,1.4fr);gap:22px;
+  padding:24px 0;border-bottom:1px solid var(--rule);
+}
+.deliverable .num{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--red)}
+.deliverable h3{font-size:21px;line-height:1.25}
+.deliverable p{color:var(--ink-soft)}
+.deliverable .verdict{
+  display:block;margin-top:8px;
+  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--red);
+}
+
+.specimen{display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px;margin-top:46px}
+.specimen-body{max-width:760px}
+.specimen-card{
+  margin-top:14px;padding:26px 28px;background:var(--paper-2);
+  border:1px solid var(--rule);border-left:2px solid var(--red);
+}
+.specimen-card .rule{font-family:var(--serif);font-size:20px;font-weight:600;line-height:1.35}
+.specimen-card .act{margin-top:12px;font-size:16px;color:var(--ink-soft)}
+.specimen-card .act span{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--red)}
+.specimen-card .receipt{margin-top:16px;padding-top:14px;border-top:1px dotted var(--rule);font-family:var(--mono);font-size:12px;color:var(--ink-faint);overflow-wrap:anywhere}
+.specimen .micro{max-width:none;margin-top:14px}
+
+/* ---------- the boundary and the second offer ---------- */
+.boundary{display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px;margin-top:46px}
+.boundary-card{
+  max-width:760px;padding:28px 30px;background:var(--paper-2);
+  border:1px solid var(--rule);border-left:2px solid var(--red);
+}
+.boundary-card .stmt{font-family:var(--serif);font-size:clamp(21px,2.2vw,25px);font-weight:600;line-height:1.32}
+.boundary-card .stmt em{font-style:italic;color:var(--red)}
+.boundary-card .warn{margin-top:18px;padding-top:16px;border-top:1px dotted var(--rule);color:var(--ink-soft);font-size:16px}
+.boundary-card .warn+.warn{border-top:0;padding-top:0;margin-top:12px}
+.boundary-card .warn b{color:var(--ink);font-weight:600}
+.boundary .micro{max-width:760px;margin-top:16px}
+
+/* ---------- dark scope ---------- */
+.scope{background:var(--ink);color:var(--paper-2)}
+.scope h2{color:var(--paper-2)}
+.scope .label{color:var(--cream-dim)}
+.scope-grid{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #423e31;border-bottom:1px solid #423e31;margin-top:46px}
+.scope-block{padding:32px 34px 34px 0}
+.scope-block+.scope-block{padding-left:34px;border-left:1px solid #423e31}
+.scope-block h3{font-size:23px;margin-bottom:14px;color:var(--paper-2)}
+.scope-block p,.scope-block li{color:#cdc7b3}
+.scope-block ul{list-style:none}
+.scope-block li{padding:8px 0;border-top:1px dotted #423e31}
+.scope-block li:first-child{border-top:0}
+
+/* ---------- close ---------- */
+.final{padding:96px 0 84px}
+.final-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:72px;align-items:end}
+.final h2{max-width:16ch}
+.final p{margin-top:20px;max-width:600px;color:var(--ink-soft);font-size:18px}
+.final-action{border-top:2px solid var(--ink);padding-top:24px}
+.price-line{padding-bottom:22px;margin-bottom:22px;border-bottom:1px dotted var(--rule)}
+.price-line b{display:block;font-family:var(--serif);font-size:34px;font-weight:600;line-height:1.15;letter-spacing:-.02em}
+.price-line span{display:block;margin-top:6px;color:var(--ink-faint);font-size:15px}
+.final-action .button{margin-bottom:16px}
+
+footer{border-top:1px solid var(--rule);padding:26px 0 40px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+footer span,footer a{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);text-decoration:none}
+
+@media (max-width:900px){
+  .hero-grid,.final-grid{grid-template-columns:1fr;gap:44px}
+  .hero{padding:56px 0 44px}
+  .section-grid,.specimen,.drift figcaption{grid-template-columns:1fr;gap:14px}
+  .scope-grid{grid-template-columns:1fr}
+  .scope-block{padding:26px 0;border-bottom:1px solid #423e31}
+  .scope-block+.scope-block{padding-left:0;border-left:0}
+  .scope-block:last-child{border-bottom:0}
+  .deliverable{grid-template-columns:52px minmax(0,1fr);gap:16px}
+  .deliverable p{grid-column:2}
+  .boundary{grid-template-columns:1fr;gap:14px}
+  section{padding:66px 0}
+}
+@media (max-width:640px){
+  .wrap{padding-left:20px;padding-right:20px}
+  nav{padding:20px}
+  .nav-link{letter-spacing:.1em}
+  h1{font-size:clamp(36px,10.4vw,44px);overflow-wrap:break-word}
+  .hero-copy{font-size:18px;overflow-wrap:break-word}
+  .track{grid-template-columns:1fr;gap:8px;align-items:start}
+  .track-name{padding-bottom:0}
+  .track+.track{margin-top:26px}
+  .today{bottom:52px}
+  .gap-note{position:static;display:block;margin-top:8px}
+  .stream{height:126px}
+  .drift figcaption{margin-top:60px}
+  .specimen-card,.boundary-card{padding:20px}
+  .hero-action{flex-direction:column;align-items:stretch}
+  .button{width:100%;justify-content:space-between}
+  .final-action .button{width:100%}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button{transition:none}}
+</style>
+<style>
+/* ---- a shorter page: bigger type, fewer words, more air ---- */
+section{padding:80px 0}
+.lede{font-size:20px;line-height:1.55}
+.mid{max-width:720px;margin:0 auto}
+.mid h2{max-width:18ch}
+
+.slots{display:flex;gap:8px;align-items:center;margin-top:20px}
+.slot{width:30px;height:6px;background:var(--red)}
+.slots span{margin-left:8px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+
+/* the one visual on the page: two run series, side by side */
+.runs{margin-top:44px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.run{display:grid;grid-template-columns:minmax(150px,.5fr) minmax(0,1fr);gap:24px;align-items:center;padding:26px 0}
+.run + .run{border-top:1px dotted var(--rule)}
+.run-name{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+.run-name b{display:block;margin-top:5px;font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:normal;text-transform:none;color:var(--ink)}
+.digits{display:flex;gap:14px;flex-wrap:wrap}
+.digits i{font-style:normal;font-family:var(--serif);font-size:clamp(38px,5vw,58px);font-weight:600;line-height:1;letter-spacing:-.02em}
+.run.win .digits i{color:var(--red)}
+.run.lose .digits i{color:var(--cream-dim)}
+.runs-note{margin-top:22px;max-width:660px;color:var(--ink-soft);font-size:17px}
+
+.steps{margin-top:44px;border-top:2px solid var(--ink)}
+.step{display:grid;grid-template-columns:52px minmax(0,1fr);gap:20px;padding:24px 0;border-bottom:1px solid var(--rule)}
+.step .num{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--red)}
+.step h3{font-size:21px;line-height:1.3}
+.step p{margin-top:6px;color:var(--ink-soft);font-size:17px}
+
+details.more{margin-top:40px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+details.more summary{padding:20px 0;cursor:pointer;list-style:none;
+  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::after{content:" +";color:var(--red)}
+details.more[open] summary::after{content:" \2013";color:var(--red)}
+details.more summary:hover{color:var(--red)}
+details.more .inner{padding-bottom:32px;max-width:720px}
+details.more .inner p{margin-top:14px;color:var(--ink-soft);font-size:16px}
+details.more .inner h4{margin-top:26px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+.tblwrap{margin-top:14px;overflow-x:auto}
+table.res{width:100%;border-collapse:collapse;font-size:15px;min-width:520px}
+table.res th,table.res td{padding:11px 16px 11px 0;border-bottom:1px dotted var(--rule);text-align:left;vertical-align:top}
+table.res th{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);font-weight:500;border-bottom:1px solid var(--ink)}
+table.res td.n{font-family:var(--mono);font-size:14px;white-space:nowrap;color:var(--ink-soft)}
+table.res td.v{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);white-space:nowrap}
+
+/* ---- the form ---- */
+form.sub{margin-top:38px}
+.f{padding:22px 0;border-bottom:1px solid var(--rule)}
+.f:first-child{border-top:2px solid var(--ink)}
+.f label{display:block;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+.f label .req{color:var(--red)}
+.f input[type=text],.f textarea{width:100%;margin-top:12px;padding:12px 14px;background:var(--paper);
+  border:1px solid var(--rule);border-radius:0;color:var(--ink);font-family:var(--text);font-size:18px;line-height:1.5}
+.f textarea{min-height:64px;resize:vertical}
+.f input[type=text]:focus,.f textarea:focus{outline:0;border-color:var(--ink);border-left:2px solid var(--red)}
+.f input[type=text]::placeholder,.f textarea::placeholder{color:var(--ink-dim)}
+.opts{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap}
+.f .opt{display:flex;align-items:center;gap:11px;flex:1 1 210px;padding:14px 16px;background:var(--paper);
+  border:1px solid var(--rule);cursor:pointer;font-family:var(--text);font-size:17px;font-weight:400;
+  letter-spacing:normal;text-transform:none;color:var(--ink);transition:border-color .12s}
+.f .opt:hover{border-color:var(--ink-faint)}
+.f .opt input{margin:0;accent-color:var(--red);flex:none}
+.f .opt.on{border-color:var(--ink);border-left:2px solid var(--red);background:var(--paper-2)}
+.subact{margin-top:30px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+button.button{cursor:pointer;font:inherit;font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+button.button[disabled]{opacity:.35;cursor:not-allowed}
+button.button[disabled]:hover{background:var(--ink);border-color:var(--ink)}
+.sublink{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);
+  text-decoration:none;border:0;border-bottom:1px solid var(--rule);cursor:pointer;background:none;padding:0 0 3px}
+.sublink:hover{color:var(--red)}
+.saymsg{margin-top:18px;font-family:var(--mono);font-size:12px;color:var(--ink-faint);min-height:17px}
+.saymsg.ready{color:var(--red)}
+.fallback{margin-top:22px;padding:20px 22px;background:var(--paper);border:1px solid var(--rule);border-left:2px solid var(--red)}
+.fallback p{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.fallback textarea{width:100%;margin-top:12px;min-height:190px;background:transparent;border:0;color:var(--ink);
+  font-family:var(--mono);font-size:13px;line-height:1.6;resize:vertical}
+.fallback textarea:focus{outline:0}
+
+@media (max-width:900px){
+  section{padding:60px 0}
+  .run{grid-template-columns:1fr;gap:12px}
+  .digits i{font-size:clamp(32px,11vw,46px)}
+  .step{grid-template-columns:40px minmax(0,1fr);gap:14px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="wordmark" href="/">EMULO</a>
+  <a class="nav-link" href="/">Open source project</a>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="mid">
+      <div class="eyebrow"><span class="label"><span class="red">&#9679;</span> The control nobody builds</span></div>
+      <h1>Does your AI feature actually do anything?</h1>
+      <p class="lede">I build a fake version designed to fail, run yours against it, and tell you which one won.</p>
+      <p class="lede" style="margin-top:14px">Free for the first three. You keep every run.</p>
+      <div class="hero-action" style="margin-top:38px">
+        <a class="button" href="#submit">Send one feature <span>&rarr;</span></a>
+      </div>
+      <div class="slots"><i class="slot"></i><i class="slot"></i><i class="slot"></i><span>3 of 3 open</span></div>
+    </div>
+  </div>
+</header>
+
+<section style="background:var(--paper-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)">
+  <div class="wrap">
+    <div class="mid">
+      <span class="label">I ran it on myself first</span>
+      <h2 style="margin-top:26px">My own product lost to a profile I made up.</h2>
+
+      <div class="runs">
+        <div class="run win">
+          <span class="run-name">The fake<b>Never mentions rounded corners</b></span>
+          <span class="digits"><i>1</i><i>1</i><i>1</i><i>1</i><i>1</i></span>
+        </div>
+        <div class="run lose">
+          <span class="run-name">Mine<b>Bans them in as many words</b></span>
+          <span class="digits"><i>3</i><i>4</i><i>6</i><i>7</i><i>7</i></span>
+        </div>
+      </div>
+
+      <p class="runs-note">Rounded corners on the page each one produced, five runs each. The invented designer has never heard of border radius and still followed my own rule better than my real profile did.</p>
+      <p class="runs-note" style="margin-top:16px">60 runs. Every prediction and the pass rule written down before the first one. All three of my predictions failed, and I published it.</p>
+
+      <details class="more">
+        <summary>The full method and the rest of the results</summary>
+        <div class="inner">
+          <h4>The three conditions</h4>
+          <p><b>Cold.</b> Nothing at all, the baseline almost everyone stops at.</p>
+          <p><b>Mine.</b> My real mined profile, 10,511 bytes, built from 1,843 sessions and 1.74M tokens of my own work.</p>
+          <p><b>The fake.</b> An invented editorial designer, confident and opinionated, and deliberately silent on every single thing the run measured. Length matched at 10,545 bytes against 10,511, and the harness refuses to start if that gap goes past five per cent.</p>
+
+          <h4>The pass rule, fixed before the first run</h4>
+          <p>An effect counts only if the two groups of five do not overlap at all. For a prediction that names a direction, that happens by chance about once in 252 orderings. A prediction is supported only if it separates on at least two of three tasks, against cold <b>and</b> against the fake.</p>
+
+          <h4>What came back</h4>
+          <div class="tblwrap">
+            <table class="res">
+              <thead><tr><th>Prediction, stated in advance</th><th>Against cold</th><th>Against the fake</th><th>Verdict</th></tr></thead>
+              <tbody>
+                <tr><td>Fewer rounded corners</td><td class="n">overlapping</td><td class="n">overlapping</td><td class="v">Inconclusive</td></tr>
+                <tr><td>Lower colour saturation</td><td class="n">separated, 2 of 3</td><td class="n">overlapping</td><td class="v">Unsupported</td></tr>
+                <tr><td>Fewer card containers</td><td class="n">overlapping</td><td class="n">overlapping</td><td class="v">Inconclusive</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>All 60 runs completed, none failed, and all 45 generated pages loaded clean with no console errors.</p>
+
+          <h4>What survives, because leaving it out would be its own dishonesty</h4>
+          <p>The profile does change the output. The saturation prediction met its leg against cold, separated, in the direction stated in advance, on two of three tasks. What got no support is that the change comes from what is inside it rather than from its length.</p>
+
+          <h4>Why the run before this one did not count</h4>
+          <p>The metrics were chosen after seeing the outputs, so they got measured exactly where the gap already was. And there was no fake, so ten kilobytes of confident text could not be told apart from ten kilobytes of mine. Both are why this one was written down in advance.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="mid">
+      <span class="label">What happens</span>
+      <h2 style="margin-top:26px">Three steps, and you approve the second one.</h2>
+      <div class="steps">
+        <div class="step"><span class="num">01</span><div><h3>You send one feature</h3><p>What it is, and what it promises the user.</p></div></div>
+        <div class="step"><span class="num">02</span><div><h3>I build the fake</h3><p>Same size, same confidence, none of the substance you are claiming. You see it and can object before anything runs.</p></div></div>
+        <div class="step"><span class="num">03</span><div><h3>You get a verdict</h3><p>Beat the fake, tied, or lost, one line per prediction. Plus the raw runs and the harness, so you can do it again without me.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="submit" style="scroll-margin-top:20px;background:var(--paper-2);border-top:1px solid var(--rule)">
+  <div class="wrap">
+    <div class="mid">
+      <span class="label">If it loses</span>
+      <h2 style="margin-top:26px">You see it first, and you choose the name on it.</h2>
+      <p class="lede" style="margin-top:20px">The result gets published either way. That is what pays for the free ones. What you decide is whether it goes out as your company, or with you taken out of it. A loss found here is one your customers have not found yet.</p>
+
+      <span class="label" style="margin-top:64px;display:block">Send it</span>
+      <h2 style="margin-top:26px">Four answers.</h2>
+      <p class="lede" style="margin-top:16px">Nothing uploads. It opens a draft in your own mail client and you press send.</p>
+
+      <form class="sub" id="subform" novalidate>
+        <div class="f">
+          <label for="q1">The feature <span class="req">*</span></label>
+          <input type="text" id="q1" placeholder="Our agent reads your codebase before it answers">
+        </div>
+        <div class="f">
+          <label for="q2">What it promises the user <span class="req">*</span></label>
+          <textarea id="q2" placeholder="Answers cite real files instead of inventing paths"></textarea>
+        </div>
+        <div class="f">
+          <label for="q3">How I can run it <span class="req">*</span></label>
+          <textarea id="q3" placeholder="A staging URL and a test account, or a sandbox key"></textarea>
+        </div>
+        <div class="f">
+          <label for="q4">What evidence you have today</label>
+          <textarea id="q4" placeholder="Honest answers include none"></textarea>
+        </div>
+        <div class="f">
+          <label>If it loses <span class="req">*</span></label>
+          <div class="opts">
+            <label class="opt"><input type="radio" name="pub" value="Name us either way"><span>Name us either way</span></label>
+            <label class="opt"><input type="radio" name="pub" value="Name us only if it wins"><span>Only if it wins</span></label>
+            <label class="opt"><input type="radio" name="pub" value="Anonymise us either way"><span>Never name us</span></label>
+          </div>
+        </div>
+
+        <div class="subact">
+          <button class="button" type="submit" id="go" disabled>Open the draft <span>&rarr;</span></button>
+          <button class="sublink" type="button" id="copy">Copy it instead</button>
+        </div>
+        <p class="saymsg" id="say">Four starred answers and the button opens.</p>
+      </form>
+
+      <a id="mailtolink" hidden aria-hidden="true" tabindex="-1"></a>
+
+      <div class="fallback" id="fb" hidden>
+        <p>If no mail client opened, send this to founder@viberaven.dev</p>
+        <textarea id="fbtext" readonly></textarea>
+      </div>
+
+      <p class="micro" style="max-width:720px;margin-top:30px">Nobody has bought this. The only product it has ever run against is my own, and mine is the one that lost.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Emulo placebo test</span>
+    <span><a href="/">Open source project</a></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var f=document.getElementById('subform'); if(!f) return;
+  var say=document.getElementById('say'), go=document.getElementById('go'),
+      fb=document.getElementById('fb'), fbt=document.getElementById('fbtext'),
+      copy=document.getElementById('copy');
+  function val(id){var e=document.getElementById(id);return e&&e.value?e.value.trim():'';}
+  function pub(){var r=f.querySelector('input[name=pub]:checked');return r?r.value:'';}
+  function ready(){return val('q1')&&val('q2')&&val('q3')&&pub();}
+  function bodyText(){
+    return 'The feature:\n'+val('q1')
+      +'\n\nWhat it promises the user:\n'+val('q2')
+      +'\n\nHow you can run it:\n'+val('q3')
+      +'\n\nEvidence today:\n'+(val('q4')||'none stated')
+      +'\n\nIf it loses:\n'+pub()+'\n';
+  }
+  function draft(){return 'To: founder@viberaven.dev\nSubject: Placebo test, one feature\n\n'+bodyText();}
+  function sync(){
+    var ok=ready();
+    go.disabled=!ok;
+    say.className='saymsg'+(ok?' ready':'');
+    say.textContent = ok ? 'Ready. The draft opens in your own mail client.'
+                         : 'Four starred answers and the button opens.';
+    Array.prototype.forEach.call(f.querySelectorAll('.opt'),function(o){
+      var i=o.querySelector('input'); o.classList.toggle('on', !!(i&&i.checked));
+    });
+  }
+  f.addEventListener('input',sync); f.addEventListener('change',sync);
+  f.addEventListener('submit',function(e){
+    e.preventDefault(); if(!ready()) return;
+    var href='mailto:founder@viberaven.dev?subject='
+      +encodeURIComponent('Placebo test, one feature')
+      +'&body='+encodeURIComponent(bodyText());
+    fbt.value=draft(); fb.hidden=false;
+    say.className='saymsg ready';
+    say.textContent='Draft opened. If nothing happened, the text is below.';
+    // An anchor click is what actually hands a mailto to the OS handler. Assigning
+    // location.href is silently ignored by some browsers when no handler is registered.
+    var a=document.getElementById('mailtolink');
+    a.setAttribute('href',href);
+    a.click();
+  });
+  copy.addEventListener('click',function(){
+    fbt.value=draft(); fb.hidden=false; fbt.select();
+    try{
+      if(document.execCommand('copy')) say.textContent='Copied. Send it to founder@viberaven.dev';
+      else say.textContent='Select the text below and copy it.';
+    }catch(err){ say.textContent='Select the text below and copy it.'; }
+    say.className='saymsg ready';
+  });
+  sync();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070707;
+    --fg:#f2f2f0;
+    --mute:#8b8b87;
+    --soft:#c9c9c5;
+    --line:rgba(255,255,255,.10);
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --tight:"Inter Tight",Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:900px;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--sans);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  body{position:relative}
+
+  .glow{
+    position:absolute;left:820px;top:40px;width:820px;height:820px;
+    background:radial-gradient(closest-side,rgba(255,255,255,.075),rgba(255,255,255,0) 72%);
+    animation:breathe 10s ease-in-out infinite;pointer-events:none;
+  }
+  @keyframes breathe{
+    0%,100%{transform:translate(0,0) scale(1);opacity:.85}
+    50%{transform:translate(18px,-16px) scale(1.1);opacity:1}
+  }
+
+  #drum{
+    position:absolute;left:0;top:0;width:1600px;height:900px;display:block;
+    -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 0,#000 14%,#000 76%,rgba(0,0,0,0) 92%);
+    mask-image:linear-gradient(to bottom,rgba(0,0,0,0) 0,#000 14%,#000 76%,rgba(0,0,0,0) 92%);
+  }
+
+  header{
+    position:absolute;left:80px;right:80px;top:44px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .mark{display:flex;align-items:center;gap:11px;font-size:14px;font-weight:500;letter-spacing:.01em}
+  .mark svg{display:block;animation:spin 16s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--mute);text-transform:uppercase}
+
+  .hero{position:absolute;left:78px;top:236px;width:840px}
+  h1{
+    font-family:var(--tight);font-weight:500;font-size:96px;line-height:.93;letter-spacing:-.045em;
+    text-wrap:balance;
+  }
+  h1 span{display:block}
+  h1 em{font-style:normal;color:var(--mute)}
+  .actions{margin-top:46px;display:flex;align-items:center;gap:30px}
+  button{
+    appearance:none;border:0;cursor:pointer;background:var(--fg);color:#0a0a0a;
+    font:500 15px/1 var(--sans);padding:17px 26px;border-radius:4px;letter-spacing:-.005em;
+  }
+  a.sec{color:var(--fg);text-decoration:none;font-size:15px;padding-bottom:3px;border-bottom:1px solid var(--line)}
+  a.sec::after{content:" \2192";color:var(--mute)}
+  .use{margin-top:34px;font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--mute)}
+
+  .caps{
+    position:absolute;left:80px;right:80px;bottom:56px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:48px;
+    border-top:1px solid var(--line);padding-top:26px;
+  }
+  .cap{font-size:15px;line-height:1.45;color:var(--soft);max-width:280px;letter-spacing:-.005em}
+  .cap b{display:block;font-family:var(--mono);font-weight:400;font-size:11px;letter-spacing:.1em;color:var(--mute);margin-bottom:12px}
+
+  .r{opacity:0;transform:translateY(18px);animation:up 1.2s cubic-bezier(.2,.7,.2,1) forwards}
+  .d1{animation-delay:.05s}.d2{animation-delay:.2s}.d3{animation-delay:.38s}.d4{animation-delay:.52s}.d5{animation-delay:.7s}
+  .d6{animation-delay:.8s}.d7{animation-delay:.9s}.d8{animation-delay:1s}.d9{animation-delay:1.1s}
+  @keyframes up{to{opacity:1;transform:none}}
+  #drum.r{transform:none;animation-duration:2.2s}
+</style>
+</head>
+<body>
+
+<div class="glow"></div>
+<canvas id="drum" class="r d1" width="1600" height="900"></canvas>
+
+<header class="r d2">
+  <div class="mark">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <circle cx="9" cy="9" r="7" stroke="#f2f2f0" stroke-width="1.5" stroke-dasharray="30 14" stroke-linecap="round"/>
+      <circle cx="9" cy="9" r="2" fill="#f2f2f0"/>
+    </svg>
+    Ledger
+  </div>
+  <div class="tag">Every charge, on the record</div>
+</header>
+
+<section class="hero">
+  <h1 class="r d3"><span>Every subscription</span><span>your company</span><span><em>forgot about.</em></span></h1>
+  <div class="actions r d4">
+    <button type="button">Start free</button>
+    <a class="sec" href="#">See how it works</a>
+  </div>
+  <p class="use r d5">Used by 40 teams across 12 countries.</p>
+</section>
+
+<section class="caps">
+  <div class="cap r d6"><b>01 &nbsp;FIND</b>Finds the charges nobody recognises.</div>
+  <div class="cap r d7"><b>02 &nbsp;GROUP</b>Groups them by the person who signed up.</div>
+  <div class="cap r d8"><b>03 &nbsp;CANCEL</b>Cancels in one click and records who approved it.</div>
+  <div class="cap r d9"><b>04 &nbsp;WARN</b>Warns you before the annual renewal lands.</div>
+</section>
+
+<script>
+(function(){
+  var c=document.getElementById('drum');
+  var ctx=c.getContext('2d');
+  var W=1600,H=900;
+  var dpr=Math.min(2,window.devicePixelRatio||1);
+  c.width=W*dpr;c.height=H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  var seed=20260901;
+  function rnd(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
+
+  var N=42,rows=[];
+  for(var i=0;i<N;i++){
+    rows.push({w1:80+rnd()*150,w2:40+rnd()*80,w3:36+rnd()*34,flag:(i%5===2)||(i%11===7)});
+  }
+
+  var X0=960,X1=1530,CY=450,R=440,TICK=X0-36;
+  var INK='#f2f2f0';
+
+  function bar(x,y,w,h){
+    var r=h/2;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+    ctx.arc(x+w-r,y+r,r,-Math.PI/2,Math.PI/2);
+    ctx.lineTo(x+r,y+h);
+    ctx.arc(x+r,y+r,r,Math.PI/2,Math.PI*1.5);
+    ctx.closePath();ctx.fill();
+  }
+
+  var start=performance.now();
+  function frame(now){
+    var t=(now-start)/1000;
+    ctx.clearRect(0,0,W,H);
+    var rot=t*0.11;
+    var ph=(t*0.15)%1;
+    var beamY=CY-R+ph*2*R;
+    var beamA=Math.sin(ph*Math.PI);
+
+    var list=[];
+    for(var i=0;i<N;i++){
+      var th=i*Math.PI*2/N-rot;
+      list.push({i:i,z:Math.cos(th),y:CY+R*Math.sin(th)});
+    }
+    list.sort(function(a,b){return a.z-b.z;});
+
+    ctx.fillStyle=INK;ctx.strokeStyle=INK;ctx.lineWidth=1;
+    for(var k=0;k<list.length;k++){
+      var o=list[k];
+      if(o.z<-0.1)continue;
+      var row=rows[o.i];
+      var zz=Math.max(0,o.z);
+      var a=Math.pow((o.z+0.1)/1.1,1.8);
+      var s=0.5+0.5*zz;
+      var ins=(1-zz)*70;
+      var x0=X0+ins,x1=X1-ins,y=o.y;
+      var d=Math.abs(y-beamY);
+      var hit=Math.max(0,1-d/40)*beamA;
+      var bright=(row.flag?0.9:0.3)+hit*0.6;
+
+      ctx.globalAlpha=a*0.35;
+      ctx.fillRect(TICK-ins*0.3,y,10*s,1);
+
+      ctx.globalAlpha=a*0.10;
+      ctx.fillRect(x0,y+16*s,x1-x0,1);
+
+      ctx.globalAlpha=Math.min(1,a*bright);
+      var h=7*s;
+      if(row.flag){ctx.beginPath();ctx.arc(x0+h/2,y,h/2,0,Math.PI*2);ctx.fill();}
+      else{ctx.fillRect(x0,y-h/2,h,h);}
+      bar(x0+22*s,y-3*s,row.w1*s,6*s);
+
+      ctx.globalAlpha=Math.min(1,a*bright*0.45);
+      bar(x0+(22+row.w1+16)*s,y-3*s,row.w2*s,6*s);
+
+      ctx.globalAlpha=Math.min(1,a*bright);
+      bar(x1-row.w3*s,y-3*s,row.w3*s,6*s);
+
+      if(row.flag&&zz>0.45){
+        var la=a*(zz-0.45)/0.55;
+        ctx.globalAlpha=Math.min(1,la*(0.75+hit*0.25));
+        ctx.font=(11*s)+'px "JetBrains Mono",ui-monospace,Menlo,monospace';
+        ctx.textAlign='right';ctx.textBaseline='middle';
+        ctx.fillText('UNRECOGNISED',x1-(row.w3+16)*s,y+0.5);
+        ctx.textAlign='left';
+      }
+      if(row.flag&&hit>0.01){
+        ctx.globalAlpha=a*hit*0.6;
+        ctx.beginPath();ctx.arc(x0+h/2,y,h/2+4+(1-hit)*22,0,Math.PI*2);ctx.stroke();
+      }
+    }
+
+    var g=ctx.createLinearGradient(X0-90,0,X1+40,0);
+    g.addColorStop(0,'rgba(242,242,240,0)');
+    g.addColorStop(0.15,'rgba(242,242,240,0.9)');
+    g.addColorStop(0.85,'rgba(242,242,240,0.9)');
+    g.addColorStop(1,'rgba(242,242,240,0)');
+    ctx.globalAlpha=beamA;
+    ctx.fillStyle=g;
+    ctx.fillRect(X0-90,beamY,X1-X0+130,1);
+    var gv=ctx.createLinearGradient(0,beamY-70,0,beamY);
+    gv.addColorStop(0,'rgba(242,242,240,0)');
+    gv.addColorStop(1,'rgba(242,242,240,0.07)');
+    ctx.fillStyle=gv;
+    ctx.fillRect(X0-90,beamY-70,X1-X0+130,70);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Orbit</title>
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 1000px; height: 1400px; position: relative; overflow: hidden;
+    background-color: #0a0a0a;
+    background-image:
+      radial-gradient(circle at 560px 610px, rgba(255,180,84,0.13) 0, rgba(255,180,84,0.04) 240px, rgba(10,10,10,0) 420px),
+      radial-gradient(#171716 1px, transparent 1px);
+    background-size: auto, 28px 28px;
+    color: #f4f4f2;
+    font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .brand { position: absolute; top: 48px; left: 56px; display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; letter-spacing: .02em; }
+  .brand svg { display: block; }
+  h1 { position: absolute; top: 122px; left: 52px; margin: 0; font-size: 88px; line-height: .95; letter-spacing: -.04em; font-weight: 650; }
+  .tag { position: absolute; top: 402px; left: 56px; width: 360px; margin: 0; font-size: 21px; line-height: 1.35; color: #b6b6b1; }
+  .cta { position: absolute; top: 482px; left: 56px; display: flex; align-items: center; gap: 26px; }
+  .btn { background: #f4f4f2; color: #0a0a0a; border: 0; border-radius: 8px; padding: 13px 22px; font: 600 15px/1 inherit; font-family: inherit; cursor: pointer; }
+  .link { color: #f4f4f2; font-size: 15px; text-decoration: none; border-bottom: 1px solid #3a3a38; padding-bottom: 3px; }
+  .link span { color: #8a8a86; margin-left: 6px; }
+  .legend { position: absolute; top: 596px; left: 56px; width: 210px; }
+  .legend .head { font-size: 12px; color: #8a8a86; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px; }
+  .legend .row { display: flex; align-items: center; gap: 10px; height: 32px; border-top: 1px solid #1f1f1e; font-size: 14px; }
+  .legend .row:last-child { border-bottom: 1px solid #1f1f1e; }
+  .legend .city { flex: 1; color: #d9d9d5; }
+  .legend .time { color: #8a8a86; }
+  .legend .row.flag .time { color: #ffb454; }
+  .legend .flag-dot { width: 6px; height: 6px; border-radius: 50%; background: #ffb454; box-shadow: 0 0 10px rgba(255,180,84,.8); }
+  .orbit { position: absolute; left: 200px; top: 250px; width: 720px; height: 720px; }
+  .caps { position: absolute; top: 1032px; left: 56px; right: 56px; }
+  .caps h2 { margin: 0 0 18px; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: #8a8a86; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 56px; }
+  .item { border-top: 1px solid #232322; padding: 20px 0 24px; display: flex; gap: 18px; }
+  .item .n { font-size: 12px; color: #8a8a86; padding-top: 5px; width: 22px; flex: none; }
+  .item p { margin: 0; font-size: 19px; line-height: 1.4; color: #e6e6e2; max-width: 360px; }
+  .foot { position: absolute; left: 56px; right: 56px; bottom: 48px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #8a8a86; border-top: 1px solid #232322; padding-top: 18px; }
+</style>
+</head>
+<body>
+
+  <div class="brand">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#f4f4f2" stroke-width="1.4">
+      <circle cx="9" cy="9" r="7.5"/><circle cx="9" cy="9" r="1.6" fill="#f4f4f2" stroke="none"/><circle cx="14.5" cy="4.5" r="1.6" fill="#ffb454" stroke="none"/>
+    </svg>
+    Orbit
+  </div>
+
+  <h1>One clock<br>for every<br>office.</h1>
+  <p class="tag">Scheduling for teams across time zones.</p>
+
+  <div class="cta">
+    <button class="btn">Start free</button>
+    <a class="link" href="#">See how it works<span>→</span></a>
+  </div>
+
+  <div class="legend">
+    <div class="head mono">At 14:00 UTC</div>
+    <div class="row flag">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="1"><circle cx="7" cy="7" r="6.4" stroke="#f4f4f2"/><circle cx="7" cy="7" r="4.7" stroke="#3a3a38"/><circle cx="7" cy="7" r="3" stroke="#3a3a38"/><circle cx="7" cy="7" r="1.3" stroke="#3a3a38"/></svg>
+      <span class="city">San Francisco</span><span class="flag-dot"></span><span class="time mono">07:00</span>
+    </div>
+    <div class="row">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="1"><circle cx="7" cy="7" r="6.4" stroke="#3a3a38"/><circle cx="7" cy="7" r="4.7" stroke="#f4f4f2"/><circle cx="7" cy="7" r="3" stroke="#3a3a38"/><circle cx="7" cy="7" r="1.3" stroke="#3a3a38"/></svg>
+      <span class="city">London</span><span class="time mono">15:00</span>
+    </div>
+    <div class="row">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="1"><circle cx="7" cy="7" r="6.4" stroke="#3a3a38"/><circle cx="7" cy="7" r="4.7" stroke="#3a3a38"/><circle cx="7" cy="7" r="3" stroke="#f4f4f2"/><circle cx="7" cy="7" r="1.3" stroke="#3a3a38"/></svg>
+      <span class="city">Tel Aviv</span><span class="time mono">17:00</span>
+    </div>
+    <div class="row">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="1"><circle cx="7" cy="7" r="6.4" stroke="#3a3a38"/><circle cx="7" cy="7" r="4.7" stroke="#3a3a38"/><circle cx="7" cy="7" r="3" stroke="#3a3a38"/><circle cx="7" cy="7" r="1.3" stroke="#f4f4f2"/></svg>
+      <span class="city">Singapore</span><span class="time mono">22:00</span>
+    </div>
+  </div>
+
+  <svg class="orbit" viewBox="0 0 600 600" fill="none">
+    <defs>
+      <radialGradient id="wedge" cx="300" cy="300" r="240" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#ffb454" stop-opacity="0.04"/>
+        <stop offset="1" stop-color="#ffb454" stop-opacity="0.38"/>
+      </radialGradient>
+    </defs>
+
+    <!-- overlap wedge: 14:00–15:00 UTC -->
+    <path d="M300 300 L180 507.8 A240 240 0 0 1 130.3 469.7 Z" fill="url(#wedge)"/>
+
+    <!-- 24h dial -->
+    <circle cx="300" cy="300" r="240" stroke="#1f1f1e" stroke-width="1"/>
+    <g stroke="#3a3a38" stroke-width="1">
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(15 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(30 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(45 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(60 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(75 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(105 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(120 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(135 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(150 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(165 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(195 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(210 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(225 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(240 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(255 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(285 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(300 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(315 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(330 300 300)"/>
+      <line x1="300" y1="52" x2="300" y2="60" transform="rotate(345 300 300)"/>
+    </g>
+    <g stroke="#8a8a86" stroke-width="1.2">
+      <line x1="300" y1="46" x2="300" y2="60"/>
+      <line x1="300" y1="46" x2="300" y2="60" transform="rotate(90 300 300)"/>
+      <line x1="300" y1="46" x2="300" y2="60" transform="rotate(180 300 300)"/>
+      <line x1="300" y1="46" x2="300" y2="60" transform="rotate(270 300 300)"/>
+    </g>
+    <g fill="#8a8a86" font-family="ui-monospace, SF Mono, Menlo, Consolas, monospace" font-size="11">
+      <text x="300" y="36" text-anchor="middle">00</text>
+      <text x="566" y="304" text-anchor="start">06</text>
+      <text x="300" y="574" text-anchor="middle">12</text>
+      <text x="34" y="304" text-anchor="end">18</text>
+    </g>
+
+    <!-- awake arcs, outer to inner: San Francisco, London, Tel Aviv, Singapore -->
+    <circle cx="300" cy="300" r="210" stroke="#2a2a28" stroke-width="12" stroke-dasharray="879.65 1319.47" transform="rotate(120 300 300)"/>
+    <circle cx="300" cy="300" r="180" stroke="#2a2a28" stroke-width="12" stroke-dasharray="753.98 1130.97" transform="rotate(0 300 300)"/>
+    <circle cx="300" cy="300" r="150" stroke="#2a2a28" stroke-width="12" stroke-dasharray="628.32 942.48" transform="rotate(-30 300 300)"/>
+    <circle cx="300" cy="300" r="120" stroke="#2a2a28" stroke-width="12" stroke-dasharray="502.65 753.98" transform="rotate(255 300 300)"/>
+
+    <!-- the shared hour, lit on every ring -->
+    <g stroke="#ffb454" stroke-width="12">
+      <circle cx="300" cy="300" r="210" stroke-dasharray="54.98 1319.47" transform="rotate(120 300 300)"/>
+      <circle cx="300" cy="300" r="180" stroke-dasharray="47.12 1130.97" transform="rotate(120 300 300)"/>
+      <circle cx="300" cy="300" r="150" stroke-dasharray="39.27 942.48" transform="rotate(120 300 300)"/>
+      <circle cx="300" cy="300" r="120" stroke-dasharray="31.42 753.98" transform="rotate(120 300 300)"/>
+    </g>
+
+    <!-- callout -->
+    <line x1="116" y1="486" x2="132" y2="471" stroke="#ffb454" stroke-width="1"/>
+    <text x="110" y="496" text-anchor="end" fill="#f4f4f2" font-family="ui-monospace, SF Mono, Menlo, Consolas, monospace" font-size="12">14:00 UTC</text>
+    <text x="110" y="513" text-anchor="end" fill="#8a8a86" font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12">everyone awake</text>
+
+    <circle cx="300" cy="300" r="3" fill="#f4f4f2"/>
+  </svg>
+
+  <section class="caps">
+    <h2>What it does</h2>
+    <div class="grid">
+      <div class="item"><span class="n mono">01</span><p>Finds the hours every office is awake at the same time.</p></div>
+      <div class="item"><span class="n mono">02</span><p>Shows one shared clock instead of five converted ones.</p></div>
+      <div class="item"><span class="n mono">03</span><p>Books the meeting in everyone's local calendar.</p></div>
+      <div class="item"><span class="n mono">04</span><p>Flags the person who always gets the 6am call.</p></div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>Used by 40 teams across 12 countries.</span>
+    <span class="mono">Orbit</span>
+  </div>
+
+</body>
+</html>

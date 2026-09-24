@@ -1,0 +1,364 @@
+<title>Ledger Metrics</title>
+<style>
+  :root{
+    --bg:#0b0e13;
+    --stage:#0b0e13;
+    --card:#131922;
+    --card-2:#10151d;
+    --line:#212a36;
+    --ink:#e9edf3;
+    --ink-2:#a7b3c4;
+    --ink-3:#75828f;
+    --accent:#56d0c0;
+    --accent-dim:rgba(86,208,192,.22);
+    --null:#5a6675;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  html,body{height:100%;overflow:hidden;background:var(--bg);}
+  body{display:flex;align-items:center;justify-content:center;font-family:var(--sans);color:var(--ink);}
+
+  #stage{
+    position:relative;width:1600px;height:900px;flex:0 0 auto;
+    transform-origin:center center;background:var(--stage);overflow:hidden;
+  }
+  #bg{position:absolute;inset:0;width:1600px;height:900px;}
+  #sheen{
+    position:absolute;inset:-25%;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(86,208,192,.075),rgba(86,208,192,0) 70%);
+    width:1400px;height:1400px;
+  }
+  #frame{
+    position:absolute;inset:0;padding:34px 40px 30px;display:flex;flex-direction:column;
+  }
+
+  /* ---------- header ---------- */
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;height:76px;}
+  .brand{display:flex;align-items:baseline;gap:16px;}
+  .brand h1{font-size:40px;line-height:1;letter-spacing:-.02em;font-weight:650;margin:0;}
+  .brand .period{font-size:16px;color:var(--ink-2);letter-spacing:.01em;}
+  .brand .period b{color:var(--ink);font-weight:600;}
+  .tally{display:flex;align-items:center;gap:22px;font-size:13px;color:var(--ink-2);}
+  .tally .item{display:flex;align-items:center;gap:8px;letter-spacing:.02em;}
+  .swatch{width:10px;height:10px;border-radius:2px;background:var(--accent);}
+  .swatch.blank{background:transparent;border:1px solid var(--null);}
+
+  .rule{position:relative;height:1px;background:var(--line);margin:18px 0 20px;overflow:hidden;}
+  .rule i{position:absolute;top:0;left:0;height:1px;width:260px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.9;}
+
+  /* ---------- grid ---------- */
+  .grid{
+    flex:1 1 auto;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);
+    gap:20px;min-height:0;
+  }
+  .card{
+    position:relative;background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:20px 22px 18px;display:flex;flex-direction:column;overflow:hidden;
+  }
+  .card.blank{background:var(--card-2);border-color:#1b222c;}
+  .card-h{display:flex;flex-direction:column;gap:6px;}
+  .card-h h2{margin:0;font-size:17px;font-weight:600;letter-spacing:.005em;color:var(--ink);}
+  .card.blank .card-h h2{color:var(--ink-2);}
+  .card-h code{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);letter-spacing:.02em;}
+  .val{margin-top:14px;display:flex;align-items:baseline;gap:7px;}
+  .num{font-size:54px;line-height:1;font-weight:640;letter-spacing:-.025em;font-variant-numeric:tabular-nums;}
+  .unit{font-size:19px;color:var(--ink-2);font-weight:500;}
+  .nodata{font-size:30px;line-height:1;font-weight:520;color:var(--null);letter-spacing:-.01em;}
+  .sub{margin:10px 0 0;font-size:12.5px;color:var(--ink-3);letter-spacing:.015em;}
+  .vis{margin-top:auto;padding-top:12px;height:138px;display:flex;align-items:flex-end;}
+  canvas.dots{width:100%;height:132px;display:block;}
+
+  /* ---------- scales ---------- */
+  .scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:7px;}
+  svg{overflow:visible;}
+  .track{stroke:#2a3441;fill:none;}
+  .fill{stroke:var(--accent);fill:none;}
+  .shine{stroke:#d7fff7;fill:none;opacity:.85;}
+
+  /* ---------- blank cards ---------- */
+  .hatch{
+    position:relative;width:100%;height:112px;border:1px dashed #2b3542;border-radius:6px;
+    background-image:repeating-linear-gradient(135deg,rgba(122,137,157,.16) 0 1px,transparent 1px 11px);
+    background-size:15.56px 15.56px;
+    animation:drift 7s linear infinite;
+    display:flex;align-items:center;justify-content:center;
+  }
+  @keyframes drift{from{background-position:0 0;}to{background-position:15.56px 15.56px;}}
+  .hatch span{
+    font-family:var(--mono);font-size:13px;color:var(--null);letter-spacing:.06em;
+    background:var(--card-2);padding:4px 10px;border-radius:4px;
+    animation:breathe 3.4s ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{opacity:.45;}50%{opacity:1;}}
+
+  /* ---------- footer ---------- */
+  footer{height:40px;display:flex;align-items:center;justify-content:space-between;
+    margin-top:20px;font-size:12.5px;color:var(--ink-3);letter-spacing:.015em;}
+  footer .src{font-family:var(--mono);}
+</style>
+
+<div id="stage">
+  <canvas id="bg" width="3200" height="1800"></canvas>
+  <div id="sheen"></div>
+
+  <div id="frame">
+    <header class="top">
+      <div class="brand">
+        <h1>Ledger</h1>
+        <div class="period">Product metrics · <b>last 30 days</b></div>
+      </div>
+      <div class="tally">
+        <div class="item"><i class="swatch"></i>4 metrics with a value</div>
+        <div class="item"><i class="swatch blank"></i>4 blank in the source</div>
+      </div>
+    </header>
+
+    <div class="rule"><i id="rulesheen"></i></div>
+
+    <div class="grid">
+
+      <!-- 1 -->
+      <article class="card">
+        <div class="card-h"><h2>Active installs</h2><code>active_installs</code></div>
+        <div class="val"><span class="num" data-to="1284" data-dec="0">0</span></div>
+        <p class="sub">1 dot = 1 install</p>
+        <div class="vis"><canvas class="dots" id="c-installs"></canvas></div>
+      </article>
+
+      <!-- 2 -->
+      <article class="card blank">
+        <div class="card-h"><h2>Weekly active users</h2><code>weekly_active_users</code></div>
+        <div class="val"><span class="nodata">No data</span></div>
+        <p class="sub">no value in source data</p>
+        <div class="vis"><div class="hatch"><span>null</span></div></div>
+      </article>
+
+      <!-- 3 -->
+      <article class="card">
+        <div class="card-h"><h2>Median session minutes</h2><code>median_session_minutes</code></div>
+        <div class="val"><span class="num" data-to="12.4" data-dec="1">0.0</span><span class="unit">min</span></div>
+        <p class="sub">median session, plotted on a 0–30 min scale</p>
+        <div class="vis" style="display:block">
+          <svg viewBox="0 0 320 62" width="100%" height="86" aria-label="12.4 minutes on a 0 to 30 minute scale">
+            <line class="track" x1="6" y1="34" x2="314" y2="34" stroke-width="10" stroke-linecap="round"/>
+            <line class="fill" x1="6" y1="34" x2="133.4" y2="34" stroke-width="10" stroke-linecap="round"/>
+            <line id="bar-shine" class="shine" x1="6" y1="34" x2="133.4" y2="34" stroke-width="10" stroke-linecap="round"/>
+            <line x1="133.4" y1="16" x2="133.4" y2="52" stroke="#e9edf3" stroke-width="2"/>
+            <text x="133.4" y="10" fill="#a7b3c4" font-size="11" font-family="ui-monospace,monospace" text-anchor="middle">12.4</text>
+          </svg>
+          <div class="scale"><span>0 min</span><span>15</span><span>30 min</span></div>
+        </div>
+      </article>
+
+      <!-- 4 -->
+      <article class="card blank">
+        <div class="card-h"><h2>Retention, day 30</h2><code>retention_d30</code></div>
+        <div class="val"><span class="nodata">No data</span></div>
+        <p class="sub">no value in source data</p>
+        <div class="vis"><div class="hatch"><span>null</span></div></div>
+      </article>
+
+      <!-- 5 -->
+      <article class="card">
+        <div class="card-h"><h2>Crash-free rate</h2><code>crash_free_rate_pct</code></div>
+        <div class="val"><span class="num" data-to="99.2" data-dec="1">0.0</span><span class="unit">%</span></div>
+        <p class="sub">plotted on a 90–100% scale</p>
+        <div class="vis" style="display:block">
+          <svg viewBox="0 0 320 86" width="100%" height="100" aria-label="99.2 percent on a 90 to 100 percent scale">
+            <path id="arc-track" class="track" d="M 30 82 A 130 130 0 0 1 290 82" stroke-width="12" stroke-linecap="round"/>
+            <path id="arc-fill" class="fill" d="M 30 82 A 130 130 0 0 1 290 82" stroke-width="12" stroke-linecap="round"/>
+            <path id="arc-shine" class="shine" d="M 30 82 A 130 130 0 0 1 290 82" stroke-width="12" stroke-linecap="round"/>
+          </svg>
+          <div class="scale" style="margin-top:-2px"><span>90%</span><span>100%</span></div>
+        </div>
+      </article>
+
+      <!-- 6 -->
+      <article class="card blank">
+        <div class="card-h"><h2>Paid conversions</h2><code>paid_conversions</code></div>
+        <div class="val"><span class="nodata">No data</span></div>
+        <p class="sub">no value in source data</p>
+        <div class="vis"><div class="hatch"><span>null</span></div></div>
+      </article>
+
+      <!-- 7 -->
+      <article class="card">
+        <div class="card-h"><h2>Support tickets</h2><code>support_tickets</code></div>
+        <div class="val"><span class="num" data-to="37" data-dec="0">0</span></div>
+        <p class="sub">1 dot = 1 ticket</p>
+        <div class="vis"><canvas class="dots" id="c-tickets"></canvas></div>
+      </article>
+
+      <!-- 8 -->
+      <article class="card blank">
+        <div class="card-h"><h2>NPS</h2><code>nps</code></div>
+        <div class="val"><span class="nodata">No data</span></div>
+        <p class="sub">no value in source data</p>
+        <div class="vis"><div class="hatch"><span>null</span></div></div>
+      </article>
+
+    </div>
+
+    <footer>
+      <div>Four of the eight metrics are blank in the source. Nothing on this page is estimated, projected or filled in.</div>
+      <div class="src">Ledger · last 30 days</div>
+    </footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- fit the 1600x900 stage into any viewport, no scrolling ---------- */
+  var stage = document.getElementById("stage");
+  function fit() {
+    var s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+    stage.style.transform = "scale(" + s + ")";
+  }
+  fit();
+  window.addEventListener("resize", fit);
+
+  /* ---------- background field ---------- */
+  var bg = document.getElementById("bg"), bx = bg.getContext("2d");
+  var W = 1600, H = 900, DPR = 2;
+  bx.scale(DPR, DPR);
+  var motes = [];
+  for (var i = 0; i < 120; i++) {
+    motes.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: 0.5 + Math.random() * 1.5,
+      vx: -(4 + Math.random() * 12) / 60,
+      vy: (Math.random() - 0.5) * 0.08,
+      a: 0.05 + Math.random() * 0.22,
+      p: Math.random() * 6.28
+    });
+  }
+  var bands = [];
+  for (var b = 0; b < 5; b++) bands.push({ y: 120 + b * 165, sp: 0.10 + b * 0.035, ph: b * 1.4 });
+
+  function drawBG(t) {
+    bx.clearRect(0, 0, W, H);
+    bx.save();
+    for (var b = 0; b < bands.length; b++) {
+      var band = bands[b];
+      var x = ((t * band.sp * 40) % (W + 700)) - 350;
+      var g = bx.createLinearGradient(x - 260, 0, x + 260, 0);
+      g.addColorStop(0, "rgba(86,208,192,0)");
+      g.addColorStop(0.5, "rgba(86,208,192,0.045)");
+      g.addColorStop(1, "rgba(86,208,192,0)");
+      bx.fillStyle = g;
+      bx.fillRect(x - 260, band.y - 60, 520, 120);
+    }
+    for (var i = 0; i < motes.length; i++) {
+      var m = motes[i];
+      m.x += m.vx; m.y += m.vy;
+      if (m.x < -6) { m.x = W + 6; m.y = Math.random() * H; }
+      if (m.y < -6) m.y = H + 6;
+      if (m.y > H + 6) m.y = -6;
+      var tw = 0.65 + 0.35 * Math.sin(t * 1.6 + m.p);
+      bx.beginPath();
+      bx.arc(m.x, m.y, m.r, 0, 6.2832);
+      bx.fillStyle = "rgba(150,190,205," + (m.a * tw).toFixed(3) + ")";
+      bx.fill();
+    }
+    bx.restore();
+  }
+
+  /* ---------- dot fields: one dot per unit ---------- */
+  function DotField(canvas, count, cols, spx, spy, radius, speed) {
+    var ctx = canvas.getContext("2d");
+    var cssW = canvas.clientWidth, cssH = canvas.clientHeight;
+    canvas.width = cssW * DPR; canvas.height = cssH * DPR;
+    ctx.scale(DPR, DPR);
+    var rows = Math.ceil(count / cols);
+    var gw = (cols - 1) * spx, gh = (rows - 1) * spy;
+    var ox = (cssW - gw) / 2, oy = cssH - gh - 4;
+    this.draw = function (t) {
+      ctx.clearRect(0, 0, cssW, cssH);
+      for (var i = 0; i < count; i++) {
+        var c = i % cols, r = (i / cols) | 0;
+        var x = ox + c * spx, y = oy + r * spy;
+        var w = Math.sin((x * 0.016) + (y * 0.03) - t * speed);
+        var lift = 0.42 + 0.58 * (0.5 + 0.5 * w);
+        ctx.beginPath();
+        ctx.arc(x, y - w * 0.9, radius, 0, 6.2832);
+        ctx.fillStyle = "rgba(86,208,192," + lift.toFixed(3) + ")";
+        ctx.fill();
+      }
+    };
+  }
+
+  var installs = new DotField(document.getElementById("c-installs"), 1284, 44, 7, 4.2, 1.7, 2.1);
+  var tickets  = new DotField(document.getElementById("c-tickets"),    37, 10, 26, 26, 6.0, 1.4);
+
+  /* ---------- arc + bar: fill to value, then a highlight runs the fill forever ---------- */
+  var arcTrack = document.getElementById("arc-track");
+  var arcFill  = document.getElementById("arc-fill");
+  var arcShine = document.getElementById("arc-shine");
+  var arcLen = arcTrack.getTotalLength();
+  var frac = (99.2 - 90) / 10;              // 90–100 scale, stated on the card
+  var filled = arcLen * frac;
+  arcFill.style.strokeDasharray = filled + " " + arcLen;
+  arcShine.style.strokeDasharray = "20 " + arcLen;
+  arcShine.animate(
+    [{ strokeDashoffset: 0 }, { strokeDashoffset: -filled }],
+    { duration: 2800, iterations: Infinity, easing: "linear" }
+  );
+
+  var barShine = document.getElementById("bar-shine");
+  var barLen = barShine.getTotalLength();
+  barShine.style.strokeDasharray = "18 " + barLen;
+  barShine.animate(
+    [{ strokeDashoffset: 0 }, { strokeDashoffset: -barLen }],
+    { duration: 2400, iterations: Infinity, easing: "linear" }
+  );
+
+  document.getElementById("rulesheen").animate(
+    [{ transform: "translateX(-300px)" }, { transform: "translateX(1520px)" }],
+    { duration: 6200, iterations: Infinity, easing: "linear" }
+  );
+
+  document.getElementById("sheen").animate(
+    [
+      { transform: "translate(-140px,-260px)" },
+      { transform: "translate(760px,120px)" },
+      { transform: "translate(-140px,-260px)" }
+    ],
+    { duration: 26000, iterations: Infinity, easing: "ease-in-out" }
+  );
+
+  /* ---------- count the recorded values up from zero ---------- */
+  var nums = [].slice.call(document.querySelectorAll(".num"));
+  nums.forEach(function (el) {
+    var to = parseFloat(el.getAttribute("data-to"));
+    var dec = parseInt(el.getAttribute("data-dec"), 10);
+    var dur = 1500, start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var k = Math.min(1, (ts - start) / dur);
+      var e = 1 - Math.pow(1 - k, 3);
+      el.textContent = (to * e).toLocaleString("en-US", {
+        minimumFractionDigits: dec, maximumFractionDigits: dec
+      });
+      if (k < 1) requestAnimationFrame(step);
+      else el.textContent = to.toLocaleString("en-US", {
+        minimumFractionDigits: dec, maximumFractionDigits: dec
+      });
+    }
+    requestAnimationFrame(step);
+  });
+
+  /* ---------- one loop, running from load, forever ---------- */
+  function frame(ms) {
+    var t = ms / 1000;
+    drawBG(t);
+    installs.draw(t);
+    tickets.draw(t);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>

@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1000" />
+    <title>Orbit — Scheduling for teams across time zones</title>
+    <style>
+      :root {
+        --ink: #eef2f9;
+        --muted: #8a94a8;
+        --dim: #6b real;
+        --line: rgba(255, 255, 255, 0.08);
+        --amber: #f5a623;
+        --sf: #6bd5f5;
+        --chi: #74b6f7;
+        --nyc: #8aa0f8;
+        --lon: #a98cf5;
+        --ber: #c77fea;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        width: 1000px;
+        height: 1400px;
+        overflow: hidden;
+        padding: 0 56px;
+        display: flex;
+        flex-direction: column;
+        font-family: var(--sans);
+        color: var(--ink);
+        background:
+          radial-gradient(820px 460px at 82% -10%, rgba(245, 166, 35, 0.13), transparent 62%),
+          radial-gradient(760px 620px at 2% 26%, rgba(96, 132, 255, 0.14), transparent 62%),
+          #080b12;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ---------- nav ---------- */
+      .nav {
+        height: 84px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex: 0 0 auto;
+      }
+      .mark { display: flex; align-items: center; gap: 10px; }
+      .mark span {
+        font-size: 19px;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 13px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.025);
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      .chip i {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--amber);
+        box-shadow: 0 0 10px 1px rgba(245, 166, 35, 0.6);
+      }
+
+      /* ---------- hero ---------- */
+      .hero { flex: 0 0 auto; padding-top: 26px; }
+      h1 {
+        margin: 0;
+        font-size: 58px;
+        line-height: 1.06;
+        letter-spacing: -0.032em;
+        font-weight: 600;
+      }
+      h1 .grad {
+        background: linear-gradient(96deg, #ffd7a0 0%, #f0c3ff 46%, #a8c8ff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .sub {
+        margin: 20px 0 0;
+        max-width: 560px;
+        font-size: 16.5px;
+        line-height: 1.55;
+        color: var(--muted);
+      }
+      .actions {
+        margin-top: 30px;
+        display: flex;
+        align-items: center;
+        gap: 26px;
+      }
+      button {
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+        color: #16110a;
+        background: linear-gradient(180deg, #ffc45c, #f0991a);
+        border: 0;
+        border-radius: 11px;
+        padding: 14px 26px;
+        cursor: pointer;
+        box-shadow: 0 8px 26px -10px rgba(245, 166, 35, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      }
+      .actions a {
+        color: var(--ink);
+        font-size: 15px;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+        padding-bottom: 3px;
+      }
+      .actions a em { font-style: normal; color: var(--muted); }
+
+      /* ---------- panel ---------- */
+      .panel {
+        flex: 0 0 auto;
+        margin-top: 40px;
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        gap: 30px;
+        padding: 30px 34px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(19, 25, 37, 0.92), rgba(11, 15, 24, 0.92));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 30px 60px -40px #000;
+      }
+      .legend { display: flex; flex-direction: column; padding-top: 4px; }
+      .kicker {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .window {
+        margin-top: 10px;
+        font-family: var(--mono);
+        font-size: 27px;
+        letter-spacing: -0.01em;
+        color: #ffd9a3;
+      }
+      .window small { font-size: 14px; color: var(--muted); letter-spacing: 0.06em; }
+      .note {
+        margin: 10px 0 20px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--muted);
+        max-width: 320px;
+      }
+      .rows { border-top: 1px solid var(--line); }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 9.5px 2px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 14px;
+      }
+      .row i { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+      .row b { font-weight: 500; letter-spacing: -0.005em; }
+      .row time {
+        margin-left: auto;
+        font-family: var(--mono);
+        font-size: 13.5px;
+        color: #dbe3f2;
+      }
+      .foot-note {
+        margin-top: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+
+      /* ---------- capabilities ---------- */
+      .caps { flex: 0 0 auto; margin-top: 38px; }
+      .caps > .kicker { display: block; margin-bottom: 16px; }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .card {
+        padding: 20px 20px 22px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.022);
+      }
+      .card .ico {
+        width: 34px; height: 34px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: #ffc978;
+      }
+      .card h3 {
+        margin: 13px 0 6px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #e6ecf8;
+      }
+      .card p {
+        margin: 0;
+        font-size: 14.5px;
+        line-height: 1.5;
+        color: var(--muted);
+        letter-spacing: -0.003em;
+      }
+
+      /* ---------- footer ---------- */
+      footer {
+        margin-top: auto;
+        flex: 0 0 auto;
+        height: 86px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid var(--line);
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      footer b { color: #e6ecf8; font-weight: 600; }
+      .dots { display: flex; gap: 7px; }
+      .dots i { width: 7px; height: 7px; border-radius: 50%; opacity: 0.85; }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="mark">
+        <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+          <ellipse cx="13" cy="13" rx="11.2" ry="5.4" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.3" transform="rotate(-28 13 13)"/>
+          <circle cx="13" cy="13" r="4.1" fill="#f5a623"/>
+          <circle cx="22.1" cy="8.4" r="2.1" fill="#a8c8ff"/>
+        </svg>
+        <span>Orbit</span>
+      </div>
+      <div class="chip"><i></i> 15:00 UTC · 5 OFFICES</div>
+    </header>
+
+    <section class="hero">
+      <h1>Scheduling for teams<br /><span class="grad">across time zones.</span></h1>
+      <p class="sub">
+        Find the window everyone is actually awake, book it in local calendars, and see who keeps taking the 6am call.
+      </p>
+      <p class="actions">
+        <button>Start free</button>
+        <a href="#">See how it works <em>→</em></a>
+      </p>
+    </section>
+
+    <section class="panel">
+      <svg width="420" height="420" viewBox="-220 -220 440 440" role="img" aria-label="A 24-hour dial showing when five offices are awake, with the shared window highlighted">
+        <defs>
+          <radialGradient id="wedge" cx="0" cy="0" r="1">
+            <stop offset="0%" stop-color="rgba(245,166,35,0.05)"/>
+            <stop offset="45%" stop-color="rgba(245,166,35,0.28)"/>
+            <stop offset="100%" stop-color="rgba(245,166,35,0.10)"/>
+          </radialGradient>
+        </defs>
+
+        <!-- shared window wedge: 15:00 → 17:00 UTC -->
+        <path d="M0 0 L-118.79 118.79 A168 168 0 0 1 -162.28 43.48 Z" fill="url(#wedge)"/>
+        <line x1="-43.8" y1="43.8" x2="-118.8" y2="118.8" stroke="rgba(245,166,35,0.55)" stroke-width="1.2"/>
+        <line x1="-59.9" y1="16.0" x2="-162.3" y2="43.5" stroke="rgba(245,166,35,0.55)" stroke-width="1.2"/>
+
+        <!-- hour ticks -->
+        <circle r="176" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="8" stroke-dasharray="1.6 44.477"/>
+        <circle r="176" fill="none" stroke="rgba(255,255,255,0.34)" stroke-width="14" stroke-dasharray="2.2 274.26"/>
+
+        <!-- 24h tracks -->
+        <g fill="none" stroke="rgba(255,255,255,0.055)" stroke-width="9">
+          <circle r="150"/><circle r="132"/><circle r="114"/><circle r="96"/><circle r="78"/>
+        </g>
+
+        <!-- awake arcs (local 08:00–19:00, plotted in UTC) -->
+        <g fill="none" stroke-width="9" stroke-linecap="round" opacity="0.95">
+          <path d="M-106.07 106.07 A150 150 0 0 1 75.00 -129.90" stroke="#6bd5f5"/>
+          <path d="M-34.16 127.50 A132 132 0 0 1 0 -132" stroke="#74b6f7"/>
+          <path d="M0 114 A114 114 0 0 1 -29.50 -110.11" stroke="#8aa0f8"/>
+          <path d="M92.73 24.85 A96 96 0 0 1 -96 0" stroke="#a98cf5"/>
+          <path d="M78 0 A78 78 0 0 1 -75.34 20.19" stroke="#c77fea"/>
+        </g>
+
+        <!-- one shared clock -->
+        <circle r="62" fill="#0b111c" stroke="rgba(255,255,255,0.12)"/>
+        <circle r="62" fill="none" stroke="rgba(245,166,35,0.32)" stroke-width="1" stroke-dasharray="3 6"/>
+        <text x="0" y="-6" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="24" fill="#ffd9a3">15:00</text>
+        <text x="0" y="17" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="10" letter-spacing="2.2" fill="#8a94a8">UTC</text>
+
+        <!-- hour labels -->
+        <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" letter-spacing="1" fill="#6f7a8e" text-anchor="middle">
+          <text x="0" y="-198">00</text>
+          <text x="203" y="4">06</text>
+          <text x="0" y="209">12</text>
+          <text x="-203" y="4">18</text>
+        </g>
+      </svg>
+
+      <div class="legend">
+        <div class="kicker">The shared window</div>
+        <div class="window">15:00 – 17:00 <small>UTC</small></div>
+        <p class="note">The only stretch of the day when all five offices are awake at once — one clock, not five conversions.</p>
+
+        <div class="rows">
+          <div class="row"><i style="background:var(--sf)"></i><b>San Francisco</b><time>08:00</time></div>
+          <div class="row"><i style="background:var(--chi)"></i><b>Chicago</b><time>10:00</time></div>
+          <div class="row"><i style="background:var(--nyc)"></i><b>New York</b><time>11:00</time></div>
+          <div class="row"><i style="background:var(--lon)"></i><b>London</b><time>16:00</time></div>
+          <div class="row"><i style="background:var(--ber)"></i><b>Berlin</b><time>17:00</time></div>
+        </div>
+
+        <div class="foot-note">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="#ffc978" stroke-width="1.5" stroke-linecap="round">
+            <path d="M3 14h14M6.5 14a3.5 3.5 0 0 1 7 0M10 3.5v2M4.6 6.1l1.4 1.4M15.4 6.1 14 7.5"/>
+          </svg>
+          Nobody on this call is up before 08:00 local.
+        </div>
+      </div>
+    </section>
+
+    <section class="caps">
+      <div class="kicker">What it does</div>
+      <div class="grid">
+        <div class="card">
+          <div class="ico">
+            <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="7.6" cy="10" r="5.4"/><circle cx="12.4" cy="10" r="5.4"/>
+            </svg>
+          </div>
+          <h3>Overlap</h3>
+          <p>Finds the hours every office is awake at the same time.</p>
+        </div>
+        <div class="card">
+          <div class="ico">
+            <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <circle cx="10" cy="10" r="7.2"/><path d="M10 5.6V10l3 1.9"/>
+            </svg>
+          </div>
+          <h3>One clock</h3>
+          <p>Shows one shared clock instead of five converted ones.</p>
+        </div>
+        <div class="card">
+          <div class="ico">
+            <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4.4" width="14" height="12.2" rx="2.4"/><path d="M3 8.2h14M6.8 2.8v3M13.2 2.8v3M7.4 12.4l1.8 1.8 3.4-3.6"/>
+            </svg>
+          </div>
+          <h3>Local calendars</h3>
+          <p>Books the meeting in everyone's local calendar.</p>
+        </div>
+        <div class="card">
+          <div class="ico">
+            <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 17.2V3.2M5 3.8h9.4l-1.7 3.1 1.7 3.1H5"/>
+            </svg>
+          </div>
+          <h3>Fairness</h3>
+          <p>Flags the person who always gets the 6am call.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div>Used by <b>40</b> teams across <b>12</b> countries.</div>
+      <div class="dots">
+        <i style="background:var(--sf)"></i>
+        <i style="background:var(--chi)"></i>
+        <i style="background:var(--nyc)"></i>
+        <i style="background:var(--lon)"></i>
+        <i style="background:var(--ber)"></i>
+      </div>
+    </footer>
+  </body>
+</html>

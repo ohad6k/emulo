@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger — Product Metrics</title>
+<style>
+:root{
+  --bg:#0a0e1a;--panel:rgba(255,255,255,.035);--line:rgba(255,255,255,.09);
+  --text:#e9edf5;--muted:#8b95ad;--dim:#4c566c;
+  --accent:#5eead4;--accent2:#7aa2ff;--warn:#f6c453;--bad:#ff7b7b;--null:#2c3446;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1600px;height:900px;overflow:hidden;background:var(--bg);color:var(--text);
+  font-family:"Inter","Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+#bg{position:absolute;top:0;left:0;width:1600px;height:900px}
+.wrap{position:relative;z-index:1;width:1600px;height:900px;padding:40px 48px;display:flex;flex-direction:column}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;height:96px;margin-bottom:28px}
+.brand{display:flex;align-items:flex-end;gap:22px}
+.mark{width:64px;height:64px;flex:none}
+h1{font-size:46px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.sub{color:var(--muted);font-size:16px;margin-top:10px;letter-spacing:.01em}
+.sub b{color:var(--text);font-weight:600}
+.status{text-align:right;color:var(--muted);font-size:14px;line-height:1.7}
+.live{display:inline-flex;align-items:center;gap:8px;color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(94,234,212,.6);animation:ping 1.8s ease-out infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(94,234,212,.55)}100%{box-shadow:0 0 0 14px rgba(94,234,212,0)}}
+.coverage{display:flex;gap:4px;justify-content:flex-end;margin-top:4px}
+.coverage i{width:22px;height:5px;border-radius:3px;background:var(--null)}
+.coverage i.on{background:var(--accent)}
+
+.grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);gap:20px;flex:1;min-height:0}
+.tile{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 26px;display:flex;flex-direction:column;overflow:hidden}
+.tile::before{content:"";position:absolute;inset:0;border-radius:18px;background:radial-gradient(420px 220px at 20% -10%,rgba(122,162,255,.10),transparent 60%);pointer-events:none}
+.label{font-size:12.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.label .tag{font-size:10.5px;letter-spacing:.08em;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+.viz{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.value{display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums}
+.value .n{font-size:54px;font-weight:650;letter-spacing:-.03em;line-height:1}
+.value .u{font-size:18px;color:var(--muted);font-weight:500}
+.foot{font-size:13px;color:var(--muted);margin-top:8px;min-height:16px}
+
+.tile.null .value .n{color:var(--dim);font-weight:500}
+.tile.null .foot{color:var(--dim)}
+.tile.null::after{content:"";position:absolute;top:0;bottom:0;width:180px;left:-200px;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.035),transparent);animation:sweep 5.5s linear infinite}
+.tile.null:nth-child(2)::after{animation-delay:-1.2s}
+.tile.null:nth-child(4)::after{animation-delay:-2.7s}
+.tile.null:nth-child(6)::after{animation-delay:-0.6s}
+.tile.null:nth-child(8)::after{animation-delay:-3.9s}
+@keyframes sweep{to{left:1800px}}
+
+.cells{display:grid;grid-template-columns:repeat(8,22px);gap:6px}
+.cells i{width:22px;height:22px;border-radius:5px;background:var(--warn);opacity:.35;animation:cell 3.2s ease-in-out infinite}
+@keyframes cell{0%,100%{opacity:.28;transform:scale(.92)}50%{opacity:1;transform:scale(1)}}
+
+.orbit-ring{transform-origin:80px 80px}
+.spin-slow{transform-origin:80px 80px;animation:rot 30s linear infinite}
+.spin-slow-r{transform-origin:80px 80px;animation:rotr 42s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+@keyframes rotr{to{transform:rotate(-360deg)}}
+.dash-null{stroke-dasharray:3 9;animation:dashmove 6s linear infinite}
+@keyframes dashmove{to{stroke-dashoffset:-120}}
+.breathe{animation:breathe 4s ease-in-out infinite;transform-origin:80px 80px}
+@keyframes breathe{0%,100%{transform:scale(.97);opacity:.6}50%{transform:scale(1.03);opacity:1}}
+</style>
+</head>
+<body>
+<canvas id="bg" width="1600" height="900"></canvas>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+        <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#7aa2ff"/></linearGradient></defs>
+        <rect x="4" y="4" width="56" height="56" rx="14" fill="none" stroke="url(#g1)" stroke-width="2.5"/>
+        <g stroke="url(#g1)" stroke-width="3" stroke-linecap="round">
+          <line x1="18" y1="20" x2="18" y2="44"/>
+          <line x1="18" y1="44" x2="46" y2="44"/>
+          <line x1="28" y1="34" x2="28" y2="44" opacity=".6"><animate attributeName="y1" values="34;26;34" dur="2.4s" repeatCount="indefinite"/></line>
+          <line x1="36" y1="28" x2="36" y2="44" opacity=".8"><animate attributeName="y1" values="28;36;28" dur="3.1s" repeatCount="indefinite"/></line>
+        </g>
+      </svg>
+      <div>
+        <h1>Ledger</h1>
+        <div class="sub">Product metrics · <b>last 30 days</b></div>
+      </div>
+    </div>
+    <div class="status">
+      <div class="live"><span class="dot"></span><span id="clock">--:--:--</span></div>
+      <div>4 of 8 metrics reported · 4 not available this period</div>
+      <div class="coverage"><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i></div>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- 1. Active installs -->
+    <section class="tile">
+      <div class="label"><span>Active installs</span><span class="tag">REPORTED</span></div>
+      <div class="viz">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="66" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+          <circle cx="80" cy="80" r="48" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+          <circle cx="80" cy="80" r="30" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1"/>
+          <circle class="breathe" cx="80" cy="80" r="12" fill="#5eead4" opacity=".9"/>
+          <circle cx="80" cy="80" r="12" fill="none" stroke="#5eead4" stroke-width="1.5" opacity=".5">
+            <animate attributeName="r" values="12;30;12" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values=".5;0;0" dur="3s" repeatCount="indefinite"/>
+          </circle>
+          <g><animateTransform attributeName="transform" type="rotate" from="0 80 80" to="360 80 80" dur="9s" repeatCount="indefinite"/><circle cx="146" cy="80" r="4.5" fill="#7aa2ff"/></g>
+          <g><animateTransform attributeName="transform" type="rotate" from="120 80 80" to="-240 80 80" dur="14s" repeatCount="indefinite"/><circle cx="128" cy="80" r="3.5" fill="#5eead4"/></g>
+          <g><animateTransform attributeName="transform" type="rotate" from="240 80 80" to="600 80 80" dur="6s" repeatCount="indefinite"/><circle cx="110" cy="80" r="3" fill="#e9edf5"/></g>
+        </svg>
+      </div>
+      <div class="value"><span class="n" data-count="1284" data-dec="0">0</span></div>
+      <div class="foot">Devices with the app installed and active</div>
+    </section>
+
+    <!-- 2. Weekly active users (null) -->
+    <section class="tile null">
+      <div class="label"><span>Weekly active users</span><span class="tag">NO DATA</span></div>
+      <div class="viz">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle class="dash-null" cx="80" cy="80" r="62" fill="none" stroke="#3a4358" stroke-width="2"/>
+          <g class="spin-slow-r"><circle cx="80" cy="80" r="44" fill="none" stroke="#2c3446" stroke-width="1.5" stroke-dasharray="20 14"/></g>
+          <text x="80" y="86" text-anchor="middle" font-size="26" fill="#4c566c" font-weight="500">—</text>
+        </svg>
+      </div>
+      <div class="value"><span class="n">—</span></div>
+      <div class="foot">Not reported for this period</div>
+    </section>
+
+    <!-- 3. Median session -->
+    <section class="tile">
+      <div class="label"><span>Median session</span><span class="tag">REPORTED</span></div>
+      <div class="viz">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="62" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/>
+          <!-- 12.4 of 60 minutes = 74.4° -->
+          <circle cx="80" cy="80" r="62" fill="none" stroke="#7aa2ff" stroke-width="10" stroke-linecap="round"
+                  stroke-dasharray="80.5 389.6" transform="rotate(-90 80 80)"/>
+          <g id="ticks" stroke="rgba(255,255,255,.28)" stroke-width="1.5">
+            <line x1="80" y1="8" x2="80" y2="14"/><line x1="80" y1="8" x2="80" y2="14" transform="rotate(30 80 80)"/><line x1="80" y1="8" x2="80" y2="14" transform="rotate(60 80 80)"/>
+            <line x1="80" y1="8" x2="80" y2="14" transform="rotate(90 80 80)"/><line x1="80" y1="8" x2="80" y2="14" transform="rotate(120 80 80)"/><line x1="80" y1="8" x2="80" y2="14" transform="rotate(150 80 80)"/>
+            <line x1="80" y1="8" x2="80" y2="14" transform="rotate(180 80 80)"/><line x1="80" y1="8" x2="80" y2="14" transform="rotate(210 80 80)"/><line x1="80" y1="8" x2="80" y2="14" transform="rotate(240 80 80)"/>
+            <line x1="80" y1="8" x2="80" y2="14" transform="rotate(270 80 80)"/><line x1="80" y1="8" x2="80" y2="14" transform="rotate(300 80 80)"/><line x1="80" y1="8" x2="80" y2="14" transform="rotate(330 80 80)"/>
+          </g>
+          <g><animateTransform attributeName="transform" type="rotate" from="0 80 80" to="360 80 80" dur="8s" repeatCount="indefinite"/>
+            <line x1="80" y1="80" x2="80" y2="28" stroke="#e9edf5" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="80" cy="28" r="3" fill="#e9edf5"/>
+          </g>
+          <circle cx="80" cy="80" r="4" fill="#7aa2ff"/>
+          <text x="80" y="66" text-anchor="middle" font-size="10" fill="#8b95ad" letter-spacing="1">OF 60 MIN</text>
+        </svg>
+      </div>
+      <div class="value"><span class="n" data-count="12.4" data-dec="1">0.0</span><span class="u">min</span></div>
+      <div class="foot">Median time per session</div>
+    </section>
+
+    <!-- 4. Retention D30 (null) -->
+    <section class="tile null">
+      <div class="label"><span>Retention · day 30</span><span class="tag">NO DATA</span></div>
+      <div class="viz">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle class="dash-null" cx="80" cy="80" r="62" fill="none" stroke="#3a4358" stroke-width="2"/>
+          <g class="spin-slow"><circle cx="80" cy="80" r="44" fill="none" stroke="#2c3446" stroke-width="1.5" stroke-dasharray="20 14"/></g>
+          <text x="80" y="86" text-anchor="middle" font-size="26" fill="#4c566c" font-weight="500">—</text>
+        </svg>
+      </div>
+      <div class="value"><span class="n">—</span></div>
+      <div class="foot">Not reported for this period</div>
+    </section>
+
+    <!-- 5. Crash-free rate -->
+    <section class="tile">
+      <div class="label"><span>Crash-free rate</span><span class="tag">REPORTED</span></div>
+      <div class="viz">
+        <svg width="170" height="160" viewBox="0 0 160 160">
+          <defs>
+            <mask id="arcmask"><circle cx="80" cy="80" r="64" fill="none" stroke="#fff" stroke-width="12" stroke-dasharray="301.6 402.1" transform="rotate(135 80 80)"/></mask>
+          </defs>
+          <!-- track: 270° -->
+          <circle cx="80" cy="80" r="64" fill="none" stroke="rgba(255,123,123,.55)" stroke-width="12" stroke-linecap="round" stroke-dasharray="301.6 402.1" transform="rotate(135 80 80)"/>
+          <!-- 99.2% fill -->
+          <circle cx="80" cy="80" r="64" fill="none" stroke="#5eead4" stroke-width="12" stroke-linecap="round" stroke-dasharray="299.2 402.1" transform="rotate(135 80 80)"/>
+          <!-- travelling highlight -->
+          <g mask="url(#arcmask)">
+            <circle cx="80" cy="80" r="64" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-dasharray="18 384.1" transform="rotate(135 80 80)" opacity=".55">
+              <animate attributeName="stroke-dashoffset" from="18" to="-302" dur="3.2s" repeatCount="indefinite"/>
+            </circle>
+          </g>
+          <text x="80" y="76" text-anchor="middle" font-size="11" fill="#8b95ad" letter-spacing="1">CRASH-FREE</text>
+          <text x="80" y="98" text-anchor="middle" font-size="20" fill="#e9edf5" font-weight="600">99.2%</text>
+          <text x="80" y="140" text-anchor="middle" font-size="10" fill="#ff7b7b" opacity=".85">0.8% affected</text>
+        </svg>
+      </div>
+      <div class="value"><span class="n" data-count="99.2" data-dec="1">0.0</span><span class="u">%</span></div>
+      <div class="foot">Sessions that ended without a crash</div>
+    </section>
+
+    <!-- 6. Paid conversions (null) -->
+    <section class="tile null">
+      <div class="label"><span>Paid conversions</span><span class="tag">NO DATA</span></div>
+      <div class="viz">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle class="dash-null" cx="80" cy="80" r="62" fill="none" stroke="#3a4358" stroke-width="2"/>
+          <g class="spin-slow-r"><circle cx="80" cy="80" r="44" fill="none" stroke="#2c3446" stroke-width="1.5" stroke-dasharray="20 14"/></g>
+          <text x="80" y="86" text-anchor="middle" font-size="26" fill="#4c566c" font-weight="500">—</text>
+        </svg>
+      </div>
+      <div class="value"><span class="n">—</span></div>
+      <div class="foot">Not reported for this period</div>
+    </section>
+
+    <!-- 7. Support tickets -->
+    <section class="tile">
+      <div class="label"><span>Support tickets</span><span class="tag">REPORTED</span></div>
+      <div class="viz"><div class="cells" id="cells"></div></div>
+      <div class="value"><span class="n" data-count="37" data-dec="0">0</span></div>
+      <div class="foot">One square per ticket opened</div>
+    </section>
+
+    <!-- 8. NPS (null) -->
+    <section class="tile null">
+      <div class="label"><span>NPS</span><span class="tag">NO DATA</span></div>
+      <div class="viz">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle class="dash-null" cx="80" cy="80" r="62" fill="none" stroke="#3a4358" stroke-width="2"/>
+          <g class="spin-slow"><circle cx="80" cy="80" r="44" fill="none" stroke="#2c3446" stroke-width="1.5" stroke-dasharray="20 14"/></g>
+          <text x="80" y="86" text-anchor="middle" font-size="26" fill="#4c566c" font-weight="500">—</text>
+        </svg>
+      </div>
+      <div class="value"><span class="n">—</span></div>
+      <div class="foot">Not reported for this period</div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  // Ticket cells: 37, staggered pulse
+  var cells=document.getElementById('cells');
+  for(var i=0;i<37;i++){var s=document.createElement('i');s.style.animationDelay=(i*0.085)+'s';cells.appendChild(s);}
+
+  // Count-up on load
+  function fmt(v,d){return v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
+  var els=document.querySelectorAll('[data-count]');
+  var t0=null,dur=1700;
+  function step(t){
+    if(t0===null)t0=t;
+    var p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);
+    for(var i=0;i<els.length;i++){var el=els[i];el.textContent=fmt(parseFloat(el.getAttribute('data-count'))*e,parseInt(el.getAttribute('data-dec')||'0',10));}
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+
+  // Live clock
+  var clock=document.getElementById('clock');
+  function tick(){var d=new Date(),z=function(n){return (n<10?'0':'')+n};clock.textContent=z(d.getHours())+':'+z(d.getMinutes())+':'+z(d.getSeconds());}
+  tick();setInterval(tick,1000);
+
+  // Background canvas: drifting waves + rising motes
+  var c=document.getElementById('bg'),x=c.getContext('2d'),W=1600,H=900;
+  var motes=[];for(var m=0;m<70;m++)motes.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.4,v:Math.random()*.25+.08,a:Math.random()*Math.PI*2});
+  function draw(t){
+    x.clearRect(0,0,W,H);
+    // faint grid
+    x.strokeStyle='rgba(255,255,255,.025)';x.lineWidth=1;x.beginPath();
+    for(var gx=0;gx<=W;gx+=80){x.moveTo(gx,0);x.lineTo(gx,H);}for(var gy=0;gy<=H;gy+=80){x.moveTo(0,gy);x.lineTo(W,gy);}x.stroke();
+    // waves
+    for(var i=0;i<4;i++){
+      x.beginPath();
+      for(var px=0;px<=W;px+=6){
+        var y=H*0.62+i*62+Math.sin(px*0.0042+t*0.00045+i*1.3)*44+Math.sin(px*0.012-t*0.0008+i*2.1)*16;
+        px?x.lineTo(px,y):x.moveTo(px,y);
+      }
+      x.strokeStyle=i%2?'rgba(122,162,255,'+(0.05+0.025*i)+')':'rgba(94,234,212,'+(0.05+0.025*i)+')';
+      x.lineWidth=1.3;x.stroke();
+    }
+    // motes
+    for(var k=0;k<motes.length;k++){
+      var p=motes[k];p.y-=p.v;p.x+=Math.sin(t*0.0006+p.a)*.15;
+      if(p.y<-4){p.y=H+4;p.x=Math.random()*W;}
+      x.beginPath();x.arc(p.x,p.y,p.r,0,Math.PI*2);x.fillStyle='rgba(233,237,245,'+(0.08+0.25*Math.abs(Math.sin(t*0.001+p.a)))+')';x.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

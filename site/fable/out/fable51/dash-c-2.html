@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, height=900">
+<title>Ledger, last 30 days</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 1600px; height: 900px; overflow: hidden;
+    background: #0f141a; color: #e7ebf0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  #bg { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+  main {
+    position: relative; width: 1600px; height: 900px;
+    padding: 28px 36px; display: flex; flex-direction: column; gap: 18px;
+  }
+  header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    height: 96px; padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  h1 { font-size: 46px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+  .period { font-size: 17px; color: #9aa5b1; margin-top: 10px; }
+  .status { text-align: right; color: #9aa5b1; font-size: 15px; line-height: 1.5; max-width: 620px; }
+  .status .live { color: #e7ebf0; font-variant-numeric: tabular-nums; }
+  .grid {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 18px;
+  }
+  .tile {
+    background: rgba(22,28,36,.92);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px; padding: 22px;
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .tile h2 { font-size: 15px; font-weight: 500; color: #9aa5b1; }
+  .value {
+    font-size: 46px; font-weight: 600; line-height: 1.1; margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .value small { font-size: 20px; font-weight: 500; color: #9aa5b1; margin-left: 4px; }
+  .viz { flex: 1; min-height: 0; margin: 12px 0; display: flex; align-items: center; justify-content: center; }
+  .note { font-size: 13px; color: #9aa5b1; line-height: 1.4; }
+
+  .missing .value { font-size: 30px; color: #6f7a86; }
+  .missing .viz {
+    border: 1px dashed rgba(255,255,255,.14); border-radius: 8px;
+    background: repeating-linear-gradient(-45deg, rgba(255,255,255,.035) 0 8px, transparent 8px 20px);
+    background-size: 28.28px 28.28px;
+    animation: drift 3s linear infinite;
+    color: #6f7a86; font-size: 13px;
+  }
+  @keyframes drift { to { background-position: 28.28px 0; } }
+
+  canvas.dots { width: 324px; height: 144px; display: block; }
+
+  .spin { transform-origin: 80px 80px; animation: spin 12.4s linear infinite; }
+  .comet { transform-origin: 80px 80px; animation: spin 5s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ring-text { fill: #e7ebf0; font-size: 30px; font-weight: 600; text-anchor: middle; font-variant-numeric: tabular-nums; }
+  .ring-sub { fill: #9aa5b1; font-size: 12px; text-anchor: middle; }
+
+  .tickets { display: grid; grid-template-columns: repeat(10, 24px); gap: 8px; }
+  .tickets span {
+    width: 24px; height: 24px; border-radius: 5px;
+    background: rgba(79,209,197,.18);
+    animation: tick 5.55s linear infinite;
+  }
+  @keyframes tick {
+    0% { background: rgba(79,209,197,.18); }
+    3% { background: rgba(79,209,197,1); }
+    18% { background: rgba(79,209,197,.18); }
+    100% { background: rgba(79,209,197,.18); }
+  }
+</style>
+</head>
+<body>
+<canvas id="bg" width="1600" height="900" aria-hidden="true"></canvas>
+<main>
+  <header>
+    <div>
+      <h1>Ledger</h1>
+      <p class="period">Last 30 days</p>
+    </div>
+    <div class="status">
+      <p>4 of 8 metrics have a value in the source data. The other 4 are shown as missing, not estimated.</p>
+      <p>Dashboard open for <span class="live" id="elapsed">0:00</span></p>
+    </div>
+  </header>
+
+  <section class="grid">
+    <article class="tile">
+      <h2>Active installs</h2>
+      <p class="value">1,284</p>
+      <div class="viz"><canvas class="dots" id="installs" aria-hidden="true"></canvas></div>
+      <p class="note">1 dot for each install.</p>
+    </article>
+
+    <article class="tile missing">
+      <h2>Weekly active users</h2>
+      <p class="value">No value</p>
+      <div class="viz">Not reported</div>
+      <p class="note">The source data has no value for this metric in this period.</p>
+    </article>
+
+    <article class="tile">
+      <h2>Median session length</h2>
+      <p class="value">12.4<small>minutes</small></p>
+      <div class="viz">
+        <svg viewBox="0 0 160 160" width="170" height="170" aria-hidden="true">
+          <circle cx="80" cy="80" r="66" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/>
+          <g class="spin">
+            <circle cx="80" cy="80" r="66" fill="none" stroke="#4fd1c5" stroke-opacity=".45" stroke-width="8"
+                    stroke-dasharray="104 311" transform="rotate(-180 80 80)"/>
+            <path d="M80 80 L80 22" stroke="#4fd1c5" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="80" cy="14" r="6" fill="#4fd1c5"/>
+          </g>
+          <circle cx="80" cy="80" r="4" fill="#e7ebf0"/>
+          <text class="ring-text" x="80" y="78" dy="-4">12.4</text>
+          <text class="ring-sub" x="80" y="104">min</text>
+        </svg>
+      </div>
+      <p class="note">1 turn of the hand is 1 median session, at 1 second per minute.</p>
+    </article>
+
+    <article class="tile missing">
+      <h2>Retention at day 30</h2>
+      <p class="value">No value</p>
+      <div class="viz">Not reported</div>
+      <p class="note">The source data has no value for this metric in this period.</p>
+    </article>
+
+    <article class="tile">
+      <h2>Crash-free rate</h2>
+      <p class="value">99.2<small>%</small></p>
+      <div class="viz">
+        <svg viewBox="0 0 160 160" width="170" height="170" aria-hidden="true">
+          <circle cx="80" cy="80" r="66" fill="none" stroke="#e0685e" stroke-opacity=".8" stroke-width="10"/>
+          <circle cx="80" cy="80" r="66" fill="none" stroke="#4fd1c5" stroke-width="10"
+                  stroke-dasharray="411.4 414.7" transform="rotate(-90 80 80)"/>
+          <circle class="comet" cx="80" cy="80" r="66" fill="none" stroke="#ffffff" stroke-opacity=".75"
+                  stroke-width="10" stroke-linecap="round" stroke-dasharray="26 388.7"/>
+          <text class="ring-text" x="80" y="78" dy="-4">99.2%</text>
+          <text class="ring-sub" x="80" y="104">crash-free</text>
+        </svg>
+      </div>
+      <p class="note">The red gap is the 0.8% of sessions that were not crash-free.</p>
+    </article>
+
+    <article class="tile missing">
+      <h2>Paid conversions</h2>
+      <p class="value">No value</p>
+      <div class="viz">Not reported</div>
+      <p class="note">The source data has no value for this metric in this period.</p>
+    </article>
+
+    <article class="tile">
+      <h2>Support tickets</h2>
+      <p class="value">37</p>
+      <div class="viz"><div class="tickets" id="tickets" aria-hidden="true"></div></div>
+      <p class="note">1 mark for each ticket opened in the period.</p>
+    </article>
+
+    <article class="tile missing">
+      <h2>NPS</h2>
+      <p class="value">No value</p>
+      <div class="viz">Not reported</div>
+      <p class="note">The source data has no value for this metric in this period.</p>
+    </article>
+  </section>
+</main>
+
+<script>
+(function () {
+  var TAU = Math.PI * 2;
+  var DPR = window.devicePixelRatio || 1;
+
+  function prepare(canvas, w, h) {
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    canvas.width = Math.round(w * DPR);
+    canvas.height = Math.round(h * DPR);
+    var ctx = canvas.getContext('2d');
+    ctx.scale(DPR, DPR);
+    return ctx;
+  }
+
+  // Ticket marks: 37, lit one after another.
+  var tickets = document.getElementById('tickets');
+  for (var i = 0; i < 37; i++) {
+    var s = document.createElement('span');
+    s.style.animationDelay = (i * 0.15) + 's';
+    tickets.appendChild(s);
+  }
+
+  // Elapsed time since the page opened.
+  var elapsed = document.getElementById('elapsed');
+  var opened = Date.now();
+  setInterval(function () {
+    var sec = Math.floor((Date.now() - opened) / 1000);
+    var m = Math.floor(sec / 60), s = sec % 60;
+    elapsed.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  }, 1000);
+
+  // Background: ledger rules and slow drifting points.
+  var bg = document.getElementById('bg');
+  var bctx = prepare(bg, 1600, 900);
+  var points = [];
+  for (var p = 0; p < 70; p++) {
+    points.push({
+      x: Math.random() * 1600,
+      y: Math.random() * 900,
+      v: 6 + Math.random() * 18,
+      r: 1 + Math.random() * 1.8,
+      a: 0.08 + Math.random() * 0.25
+    });
+  }
+  function drawBackground(dt) {
+    bctx.clearRect(0, 0, 1600, 900);
+    bctx.strokeStyle = 'rgba(255,255,255,0.035)';
+    bctx.lineWidth = 1;
+    for (var y = 30.5; y < 900; y += 30) {
+      bctx.beginPath(); bctx.moveTo(0, y); bctx.lineTo(1600, y); bctx.stroke();
+    }
+    for (var i = 0; i < points.length; i++) {
+      var q = points[i];
+      q.x += q.v * dt;
+      if (q.x > 1610) { q.x = -10; q.y = Math.random() * 900; }
+      bctx.fillStyle = 'rgba(79,209,197,' + q.a + ')';
+      bctx.beginPath(); bctx.arc(q.x, q.y, q.r, 0, TAU); bctx.fill();
+    }
+  }
+
+  // Active installs: 1,284 dots, a wave of light crossing them.
+  var installs = document.getElementById('installs');
+  var ictx = prepare(installs, 324, 144);
+  var COLS = 54, COUNT = 1284, PITCH = 6;
+  function drawInstalls(t) {
+    ictx.clearRect(0, 0, 324, 144);
+    for (var i = 0; i < COUNT; i++) {
+      var col = i % COLS, row = (i / COLS) | 0;
+      var wave = Math.cos((col + row) * 0.11 - t * 1.6);
+      var b = 0.28 + 0.72 * Math.pow(Math.max(0, wave), 3);
+      ictx.fillStyle = 'rgba(79,209,197,' + b.toFixed(2) + ')';
+      ictx.beginPath();
+      ictx.arc(col * PITCH + 3, row * PITCH + 3, 2, 0, TAU);
+      ictx.fill();
+    }
+  }
+
+  var last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    drawBackground(dt);
+    drawInstalls(now / 1000);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

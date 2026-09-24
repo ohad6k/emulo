@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1000" />
+    <title>Orbit — Scheduling for teams across time zones</title>
+    <style>
+      :root{
+        --bg:#07090E;
+        --fg:#EDF1F7;
+        --muted:#8F99AD;
+        --dim:#6C7688;
+        --line:rgba(255,255,255,.085);
+        --panel:rgba(255,255,255,.028);
+        --amber:#FFB65C;
+        --amber-soft:rgba(255,182,92,.14);
+        --blue:#7FA8E8;
+      }
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0}
+      body{
+        width:1000px;height:1400px;overflow:hidden;
+        background:var(--bg);color:var(--fg);
+        font:400 15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+        -webkit-font-smoothing:antialiased;
+      }
+      .page{position:relative;width:1000px;height:1400px;padding:52px 64px 48px;display:flex;flex-direction:column}
+      .bg{
+        position:absolute;inset:0;z-index:0;
+        background:
+          radial-gradient(880px 520px at 50% -4%, rgba(255,178,92,.13), transparent 62%),
+          radial-gradient(720px 520px at 6% 58%, rgba(96,144,224,.12), transparent 66%),
+          radial-gradient(600px 400px at 100% 92%, rgba(96,144,224,.07), transparent 70%),
+          var(--bg);
+      }
+      .rings{position:absolute;left:50%;top:-330px;width:1240px;height:1240px;transform:translateX(-50%);z-index:0;opacity:.9}
+      .page > *:not(.bg):not(.rings){position:relative;z-index:1}
+
+      /* nav */
+      .nav{display:flex;align-items:center;justify-content:space-between}
+      .mark{display:flex;align-items:center;gap:11px}
+      .mark .name{font-size:19px;font-weight:640;letter-spacing:-.01em}
+      .nav .meta{font-size:12.5px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase}
+
+      /* hero */
+      .hero{margin-top:84px;text-align:center}
+      .eyebrow{font-size:11.5px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);opacity:.85;margin:0 0 22px}
+      h1{
+        margin:0;font-size:57px;line-height:1.06;letter-spacing:-.032em;font-weight:620;
+        max-width:740px;margin-inline:auto;
+      }
+      h1 .soft{color:#98A3B7}
+      .lede{margin:20px auto 0;font-size:18.5px;color:var(--muted);max-width:520px}
+      .cta{margin-top:36px;display:flex;align-items:center;justify-content:center;gap:26px}
+      .btn{
+        appearance:none;border:0;cursor:pointer;font:inherit;font-weight:640;font-size:15.5px;
+        color:#2A1600;padding:14px 28px;border-radius:11px;letter-spacing:-.005em;
+        background:linear-gradient(180deg,#FFCE86,#FFAC48);
+        box-shadow:0 10px 30px -8px rgba(255,178,92,.5),inset 0 1px 0 rgba(255,255,255,.45);
+        transition:transform .18s ease,box-shadow .18s ease;
+      }
+      .btn:hover{transform:translateY(-1px);box-shadow:0 14px 34px -8px rgba(255,178,92,.6),inset 0 1px 0 rgba(255,255,255,.45)}
+      .link{
+        display:inline-flex;align-items:center;gap:8px;color:#D3DAE6;text-decoration:none;
+        font-size:15.5px;padding-bottom:2px;border-bottom:1px solid rgba(255,255,255,.16);
+        transition:color .18s ease,border-color .18s ease;
+      }
+      .link:hover{color:#fff;border-color:rgba(255,255,255,.4)}
+      .link svg{transition:transform .18s ease}
+      .link:hover svg{transform:translateX(3px)}
+
+      /* panel */
+      .panel{
+        margin-top:62px;border:1px solid var(--line);border-radius:18px;padding:24px 26px 20px;
+        background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.014));
+        box-shadow:0 30px 70px -50px rgba(0,0,0,.9);
+      }
+      .panel-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+      .panel-head h2{margin:0;font-size:15px;font-weight:620;letter-spacing:-.01em}
+      .legend{display:flex;gap:18px;font-size:12px;color:var(--dim)}
+      .legend span{display:inline-flex;align-items:center;gap:7px}
+      .sw{width:9px;height:9px;border-radius:3px;display:inline-block}
+      .sw.a{background:rgba(127,168,232,.5)}
+      .sw.b{background:var(--amber)}
+      .chart{display:block;width:100%;height:auto}
+      .caption{display:flex;align-items:center;justify-content:space-between;margin-top:2px;font-size:12.5px;color:var(--dim)}
+      .caption b{color:var(--amber);font-weight:600}
+      .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;margin-right:8px;box-shadow:0 0 0 4px rgba(255,182,92,.14)}
+
+      /* capabilities */
+      .section-label{margin:46px 0 16px;font-size:11.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
+      ul.grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+      ul.grid li{
+        border:1px solid var(--line);border-radius:14px;padding:20px 20px 22px;
+        background:var(--panel);display:flex;gap:14px;align-items:flex-start;
+        transition:border-color .2s ease,background .2s ease,transform .2s ease;
+      }
+      ul.grid li:hover{border-color:rgba(255,182,92,.32);background:rgba(255,255,255,.05);transform:translateY(-2px)}
+      .ico{
+        flex:0 0 36px;height:36px;border-radius:10px;display:grid;place-items:center;
+        background:rgba(255,182,92,.1);border:1px solid rgba(255,182,92,.2);color:var(--amber);
+      }
+      .kicker{display:block;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+      .cap{font-size:15.5px;line-height:1.42;color:#DCE3EE;letter-spacing:-.006em}
+
+      /* footer */
+      footer{margin-top:auto;padding-top:20px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;color:var(--dim);font-size:13.5px}
+      footer .used{display:inline-flex;align-items:center;gap:10px;color:var(--muted)}
+
+      /* motion */
+      .bar{transform-box:fill-box;transform-origin:left center;animation:grow .85s cubic-bezier(.2,.75,.2,1) both}
+      .b1{animation-delay:.15s}.b2{animation-delay:.28s}.b3{animation-delay:.41s}.b4{animation-delay:.54s}
+      .ov{opacity:0;animation:fade .7s ease .95s forwards}
+      .hl{opacity:0;animation:fade .8s ease .85s forwards}
+      @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+      @keyframes fade{to{opacity:1}}
+      @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.ov,.hl{opacity:1}}
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="bg"></div>
+      <svg class="rings" viewBox="0 0 1240 1240" fill="none" aria-hidden="true">
+        <circle cx="620" cy="620" r="300" stroke="rgba(255,255,255,.055)"/>
+        <circle cx="620" cy="620" r="430" stroke="rgba(255,255,255,.04)"/>
+        <circle cx="620" cy="620" r="560" stroke="rgba(255,255,255,.028)" stroke-dasharray="2 9"/>
+        <circle cx="920" cy="620" r="4" fill="#FFB65C" opacity=".65"/>
+        <circle cx="620" cy="190" r="3" fill="#7FA8E8" opacity=".55"/>
+      </svg>
+
+      <header class="nav">
+        <div class="mark">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+            <circle cx="13" cy="13" r="5.5" stroke="#FFB65C" stroke-width="1.6"/>
+            <ellipse cx="13" cy="13" rx="11.5" ry="6" transform="rotate(-28 13 13)" stroke="rgba(255,255,255,.32)" stroke-width="1.3"/>
+            <circle cx="22" cy="8.6" r="2" fill="#FFB65C"/>
+          </svg>
+          <span class="name">Orbit</span>
+        </div>
+        <div class="meta">Time zones · solved</div>
+      </header>
+
+      <section class="hero">
+        <p class="eyebrow">Orbit</p>
+        <h1>Everyone's 9am <span class="soft">is someone else's midnight.</span></h1>
+        <p class="lede">Scheduling for teams across time zones.</p>
+        <p class="cta">
+          <button class="btn">Start free</button>
+          <a class="link" href="#">See how it works
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>One shared clock</h2>
+          <div class="legend">
+            <span><i class="sw a"></i> Awake locally</span>
+            <span><i class="sw b"></i> Everyone awake</span>
+          </div>
+        </div>
+
+        <svg class="chart" viewBox="0 0 840 250" role="img" aria-label="Four offices' waking hours plotted on one UTC day, overlapping between 13:00 and 16:00 UTC.">
+          <defs>
+            <linearGradient id="band" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#7FA8E8" stop-opacity=".16"/>
+              <stop offset="1" stop-color="#7FA8E8" stop-opacity=".30"/>
+            </linearGradient>
+            <linearGradient id="hot" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#FFCE86"/>
+              <stop offset="1" stop-color="#FFAC48"/>
+            </linearGradient>
+          </defs>
+
+          <!-- grid -->
+          <g stroke="rgba(255,255,255,.05)">
+            <path d="M90 14V196M180 14V196M270 14V196M360 14V196M450 14V196M540 14V196M630 14V196M720 14V196M810 14V196"/>
+          </g>
+          <g stroke="rgba(255,255,255,.1)">
+            <path d="M90 14V196M270 14V196M450 14V196M630 14V196M810 14V196"/>
+          </g>
+
+          <!-- shared window -->
+          <g class="hl">
+            <rect x="480" y="8" width="90" height="194" rx="9" fill="rgba(255,182,92,.09)" stroke="rgba(255,182,92,.42)" stroke-dasharray="4 4"/>
+          </g>
+
+          <!-- bars -->
+          <g>
+            <rect class="bar b1" x="480" y="36" width="330" height="22" rx="7" fill="url(#band)"/>
+            <rect class="bar b1" x="90" y="36" width="30" height="22" rx="7" fill="url(#band)"/>
+            <rect class="bar b2" x="330" y="80" width="360" height="22" rx="7" fill="url(#band)"/>
+            <rect class="bar b3" x="270" y="124" width="360" height="22" rx="7" fill="url(#band)"/>
+            <rect class="bar b4" x="210" y="168" width="360" height="22" rx="7" fill="url(#band)"/>
+          </g>
+
+          <!-- overlap segments -->
+          <g class="ov">
+            <rect x="480" y="36" width="90" height="22" rx="7" fill="url(#hot)"/>
+            <rect x="480" y="80" width="90" height="22" rx="7" fill="url(#hot)"/>
+            <rect x="480" y="124" width="90" height="22" rx="7" fill="url(#hot)"/>
+            <rect x="480" y="168" width="90" height="22" rx="7" fill="url(#hot)"/>
+          </g>
+
+          <!-- row labels -->
+          <g fill="#8F99AD" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" text-anchor="end">
+            <text x="74" y="51">UTC−5</text>
+            <text x="74" y="95">UTC+0</text>
+            <text x="74" y="139">UTC+2</text>
+            <text x="74" y="183">UTC+4</text>
+          </g>
+
+          <!-- hour axis -->
+          <g fill="#6C7688" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11.5" text-anchor="middle">
+            <text x="90" y="222">00:00</text>
+            <text x="270" y="222">06:00</text>
+            <text x="450" y="222">12:00</text>
+            <text x="630" y="222">18:00</text>
+            <text x="810" y="222">24:00</text>
+          </g>
+        </svg>
+
+        <div class="caption">
+          <span><i class="dot"></i>Shared window — <b>13:00 to 16:00 UTC</b></span>
+          <span>One day, one axis. No conversions.</span>
+        </div>
+      </section>
+
+      <h2 class="section-label">What Orbit does</h2>
+      <ul class="grid">
+        <li>
+          <span class="ico">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg>
+          </span>
+          <div><span class="kicker">Overlap</span><span class="cap">Finds the hours every office is awake at the same time.</span></div>
+        </li>
+        <li>
+          <span class="ico">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.2V12l3.2 2"/></svg>
+          </span>
+          <div><span class="kicker">One clock</span><span class="cap">Shows one shared clock instead of five converted ones.</span></div>
+        </li>
+        <li>
+          <span class="ico">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3M9 14.8l2 2 4-4"/></svg>
+          </span>
+          <div><span class="kicker">Local calendars</span><span class="cap">Books the meeting in everyone's local calendar.</span></div>
+        </li>
+        <li>
+          <span class="ico">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 17.5h18"/><circle cx="12" cy="14" r="4"/><path d="M12 4.5v2.2M5.6 7.1l1.6 1.6M18.4 7.1l-1.6 1.6"/></svg>
+          </span>
+          <div><span class="kicker">Fairness</span><span class="cap">Flags the person who always gets the 6am call.</span></div>
+        </li>
+      </ul>
+
+      <footer>
+        <span class="used">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="8" cy="8" r="6.4"/><path d="M1.6 8h12.8M8 1.6c3.4 3.6 3.4 9.2 0 12.8-3.4-3.6-3.4-9.2 0-12.8Z"/></svg>
+          Used by 40 teams across 12 countries.
+        </span>
+        <span>Orbit</span>
+      </footer>
+    </div>
+  </body>
+</html>

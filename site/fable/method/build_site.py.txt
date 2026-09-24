@@ -1,0 +1,225 @@
+# -*- coding: utf-8 -*-
+"""
+Assemble the public page's data from the run folder.
+
+  out/<model>/<task>-<cond>-<rep>.{html,py}   raw outputs (copied verbatim)
+  png/<model>/<task>-<cond>-<rep>.png          screenshots from shoot.mjs
+  png/console.json                             per-file console report
+  out/manifest.json                            every run's usage and timing
+  results.json                                 scores and verdicts from summarise.py
+
+Writes to SITE (the emulo repo):
+  site/fable/out/<model>/<name>.html           raw HTML outputs, verbatim
+  site/fable/out/<model>/<name>.py             raw Python outputs, verbatim
+  site/fable/out/<model>/<name>.term.html      the tui output rendered to HTML (ANSI -> spans)
+  site/fable/shots/<model>/<name>.jpg          screenshots, JPEG so 90 of them stay small
+  site/fable/data.json                         everything the page needs
+
+Usage: python build_site.py [site-dir]
+"""
+import html
+import io
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(HERE, "out")
+PNG = os.path.join(HERE, "png")
+SITE = sys.argv[1] if len(sys.argv) > 1 else r"D:\ditto\site"
+DEST = os.path.join(SITE, "fable")
+MODELS = {"opus5": "claude-opus-5", "fable51": "claude-fable-5-1"}
+COND_NAME = {"a": "cold", "b": "profile", "c": "placebo"}
+TASK_ORDER = ["dash", "page", "ledger", "tui"]
+
+ANSI = re.compile(r"\x1b\[([0-9;]*)m")
+ANSI_ANY = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+BASIC = ["#1d1a13", "#c0392b", "#2e8b57", "#b8860b", "#2f5fb3", "#8e44ad", "#1f8a8a", "#d8d3c1"]
+BRIGHT = ["#6f6a58", "#e74c3c", "#3cb371", "#e0b020", "#4a7be0", "#a569bd", "#2ab5b5", "#f2eee1"]
+
+
+def ansi_to_html(text):
+    """Enough of SGR to show what the script printed: bold, dim, 16 colours, 256 and truecolour."""
+    out, open_span = [], False
+    fg, bold, dim = None, False, False
+    pos = 0
+    for m in ANSI.finditer(text):
+        chunk = text[pos:m.start()]
+        if chunk:
+            style = []
+            if fg:
+                style.append("color:%s" % fg)
+            if bold:
+                style.append("font-weight:700")
+            if dim:
+                style.append("opacity:.6")
+            esc = html.escape(chunk)
+            out.append('<span style="%s">%s</span>' % (";".join(style), esc) if style else esc)
+        pos = m.end()
+        codes = [int(c) if c else 0 for c in m.group(1).split(";")] if m.group(1) else [0]
+        i = 0
+        while i < len(codes):
+            c = codes[i]
+            if c == 0:
+                fg, bold, dim = None, False, False
+            elif c == 1:
+                bold = True
+            elif c == 2:
+                dim = True
+            elif c == 22:
+                bold = dim = False
+            elif 30 <= c <= 37:
+                fg = BASIC[c - 30]
+            elif 90 <= c <= 97:
+                fg = BRIGHT[c - 90]
+            elif c == 39:
+                fg = None
+            elif c == 38 and i + 1 < len(codes):
+                if codes[i + 1] == 5 and i + 2 < len(codes):
+                    n = codes[i + 2]
+                    fg = (BASIC + BRIGHT)[n] if n < 16 else "#%02x%02x%02x" % xterm256(n)
+                    i += 2
+                elif codes[i + 1] == 2 and i + 4 < len(codes):
+                    fg = "#%02x%02x%02x" % (codes[i + 2], codes[i + 3], codes[i + 4])
+                    i += 4
+            i += 1
+    tail = text[pos:]
+    if tail:
+        out.append(html.escape(tail))
+    return "".join(out)
+
+
+def xterm256(n):
+    if 16 <= n <= 231:
+        n -= 16
+        r, g, b = n // 36, (n // 6) % 6, n % 6
+        return tuple(0 if v == 0 else 55 + 40 * v for v in (r, g, b))
+    if 232 <= n <= 255:
+        v = 8 + 10 * (n - 232)
+        return (v, v, v)
+    return (128, 128, 128)
+
+
+def run_tui(path):
+    env = dict(os.environ)
+    env.update({"PYTHONIOENCODING": "utf-8", "COLUMNS": "100", "TERM": "xterm-256color"})
+    try:
+        p = subprocess.run([sys.executable, path], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60, env=env)
+        return p.stdout or "", (None if p.returncode == 0 else "exit %s" % p.returncode)
+    except Exception as e:
+        return "", "exec failed: %s" % e
+
+
+def main():
+    manifest = json.load(io.open(os.path.join(OUT, "manifest.json"), encoding="utf-8"))
+    results = json.load(io.open(os.path.join(HERE, "results.json"), encoding="utf-8"))
+    console = {}
+    cpath = os.path.join(PNG, "console.json")
+    if os.path.exists(cpath):
+        console = json.load(io.open(cpath, encoding="utf-8"))
+
+    runs_by_key = {}
+    for r in manifest["runs"]:
+        if r.get("status") == "OK":
+            runs_by_key[(r["model"], r["task"], r["condition"], r["rep"])] = r
+
+    try:
+        from PIL import Image  # noqa
+        have_pil = True
+    except ImportError:
+        have_pil = False
+
+    items = []
+    for model in MODELS:
+        src = os.path.join(OUT, model)
+        if not os.path.isdir(src):
+            continue
+        os.makedirs(os.path.join(DEST, "out", model), exist_ok=True)
+        os.makedirs(os.path.join(DEST, "shots", model), exist_ok=True)
+        for fn in sorted(os.listdir(src)):
+            m = re.match(r"(\w+)-([abc])-(\d)\.(html|py)$", fn)
+            if not m:
+                continue
+            task, cond, rep, ext = m.group(1), m.group(2), int(m.group(3)), m.group(4)
+            shutil.copyfile(os.path.join(src, fn), os.path.join(DEST, "out", model, fn))
+            item = {
+                "id": "%s/%s" % (model, fn[:-len(ext) - 1]),
+                "model": model, "model_id": MODELS[model], "task": task,
+                "cond": cond, "cond_name": COND_NAME[cond], "rep": rep,
+                "file": "out/%s/%s" % (model, fn),
+            }
+            r = runs_by_key.get((model, task, cond, rep), {})
+            item.update({
+                "elapsed_s": r.get("elapsed_s"), "output_bytes": r.get("output_bytes"),
+                "output_tokens": r.get("output_tokens"), "thinking_tokens": r.get("thinking_tokens"),
+                "cost_usd_list": r.get("cost_usd_list"),
+            })
+            if ext == "html":
+                png = os.path.join(PNG, model, fn[:-5] + ".png")
+                if os.path.exists(png):
+                    if have_pil:
+                        from PIL import Image
+                        im = Image.open(png).convert("RGB")
+                        im.thumbnail((800, 450))
+                        jpg = os.path.join(DEST, "shots", model, fn[:-5] + ".jpg")
+                        im.save(jpg, "JPEG", quality=82, optimize=True)
+                        item["shot"] = "shots/%s/%s.jpg" % (model, fn[:-5])
+                    else:
+                        shutil.copyfile(png, os.path.join(DEST, "shots", model, fn[:-5] + ".png"))
+                        item["shot"] = "shots/%s/%s.png" % (model, fn[:-5])
+                item["console"] = console.get("%s/%s" % (model, fn), [])
+            else:
+                stdout, err = run_tui(os.path.join(src, fn))
+                body = ansi_to_html(ANSI_ANY.sub(lambda mm: mm.group(0) if mm.group(0).endswith("m") else "", stdout))
+                term = os.path.join(DEST, "out", model, fn[:-3] + ".term.html")
+                io.open(term, "w", encoding="utf-8").write(
+                    '<!doctype html><meta charset="utf-8"><body style="margin:0;background:#0e0d0a;color:#e8e2cf;'
+                    'font:13px/1.45 ui-monospace,Consolas,monospace;padding:18px 22px;white-space:pre;overflow:auto">'
+                    + body + "</body>")
+                item["term"] = "out/%s/%s.term.html" % (model, fn[:-3])
+                item["exec_error"] = err
+                item["console"] = []
+            items.append(item)
+
+    # The method files themselves, as plain text so a browser shows them instead of downloading.
+    os.makedirs(os.path.join(DEST, "method"), exist_ok=True)
+    for fn in ["PREREGISTRATION.md", "placebo.md", "run3.py", "summarise.py", "shoot.mjs", "build_site.py"]:
+        shutil.copyfile(os.path.join(HERE, fn), os.path.join(DEST, "method", fn + ".txt"))
+    shutil.copyfile(os.path.join(os.path.dirname(HERE), "score.py"), os.path.join(DEST, "method", "score.py.txt"))
+    shutil.copyfile(os.path.join(OUT, "manifest.json"), os.path.join(DEST, "method", "manifest.json"))
+    if os.path.exists(os.path.join(HERE, "h3_verdict.json")):
+        shutil.copyfile(os.path.join(HERE, "h3_verdict.json"), os.path.join(DEST, "method", "h3_verdict.json"))
+
+    data = {
+        "generated": manifest["date"],
+        "claude_code_version": manifest["claude_code_version"],
+        "profile_bytes": manifest["profile_bytes"],
+        "placebo_bytes": manifest["placebo_bytes"],
+        "base_system_prompt": manifest["base_system_prompt"],
+        # rep 99 is the two-run smoke test that proved the pipeline; it is not part of the study.
+        "counts": {"ok": sum(1 for r in manifest["runs"] if r.get("status") == "OK" and r.get("rep") != 99),
+                   "failed": sum(1 for r in manifest["runs"] if r.get("status") != "OK" and r.get("rep") != 99)},
+        "list_cost_usd": round(sum((r.get("cost_usd_list") or 0) for r in manifest["runs"] if r.get("rep") != 99), 2),
+        "task_order": TASK_ORDER,
+        "items": items,
+        "cells": results.get("cells", {}),
+        "H1": results.get("H1", {}),
+        "H2": results.get("H2", {}),
+        "H3_hits": {k: v for k, v in results.get("H3", {}).items() if v},
+        # Written by hand after reading every flagged place: {"read": n, "confirmed": n,
+        # "verdict": "PASS"|"FAIL", "note": "..."}. Absent until a person has done that.
+        "h3": (json.load(io.open(os.path.join(HERE, "h3_verdict.json"), encoding="utf-8"))
+               if os.path.exists(os.path.join(HERE, "h3_verdict.json")) else {}),
+        "cold_vs_cold": results.get("cold_vs_cold", {}),
+    }
+    with io.open(os.path.join(DEST, "data.json"), "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=0)
+    print("items:", len(items), "-> ", os.path.join(DEST, "data.json"))
+
+
+if __name__ == "__main__":
+    main()
