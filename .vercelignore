@@ -17,11 +17,7 @@ package-lock.json
 # already sitting unpublished in the working tree, and a deploy uploads the whole
 # site directory, so shipping one page would have shipped all of these with it.
 #
-# do-your-agent-rules-do-anything.html is not a judgement call: it ends on
-# "$750, fixed scope", and A1 excludes pricing surfaces. It needs Ohad, not an agent.
-#
 # The rest are held only because nobody asked for them. Delete a line to ship one.
-site/notes/do-your-agent-rules-do-anything.html
 site/notes/agent-failure-lab.html
 site/notes/agent-reliability-teardown-cloudflare.html
 site/notes/agent-that-disqualifies-itself.html
