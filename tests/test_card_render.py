@@ -94,14 +94,13 @@ class TokenAndDateFormattingTest(unittest.TestCase):
             with self.subTest(first=first, last=last):
                 self.assertEqual(0, emulo.months_between(first, last))
 
-    @unittest.expectedFailure
     def test_months_between_survives_null_dates(self):
-        # BUG: months_between catches (ValueError, IndexError) but a card.json
-        # with `"first_date": null` yields None, and None[:4] raises TypeError.
-        # That escapes both print_card and render_card_html, so `emulo --card`
-        # tracebacks on a reducer that emitted nulls instead of empty strings.
-        # Fix is one word: add TypeError to the except tuple. Not fixing here.
+        # a card.json with `"first_date": null` used to traceback `emulo --card`:
+        # None[:4] raised TypeError, which the except tuple did not catch
         self.assertEqual(0, emulo.months_between(None, None))
+        # and adding TypeError alone was not enough: slices are hashable from
+        # Python 3.12, so {}[:4] raises KeyError there instead
+        self.assertEqual(0, emulo.months_between({}, {}))
 
 
 class LawBarTest(unittest.TestCase):
@@ -188,11 +187,13 @@ class CardHtmlTest(unittest.TestCase):
         for slot in ("{archetype}", "{stats}", "{laws}", "{truth}", "{grade}", "{range}"):
             self.assertNotIn(slot, html)
 
-    @unittest.expectedFailure
     def test_html_renders_with_null_dates(self):
-        # same TypeError as test_months_between_survives_null_dates: a card.json
-        # carrying JSON nulls for the dates crashes the HTML writer too.
-        emulo.render_card_html(sample_card(stats={"sessions": 3, "first_date": None, "last_date": None}))
+        # a card.json carrying JSON nulls for the dates used to crash the HTML
+        # writer too; now the months cell and the date range are just omitted
+        html = emulo.render_card_html(sample_card(stats={"sessions": 3, "first_date": None, "last_date": None}))
+        self.assertIn("<span>sessions</span>", html)
+        self.assertNotIn("<span>months</span>", html)
+        self.assertNotIn("&rarr;", html)
 
 
 class LoadCardTest(unittest.TestCase):

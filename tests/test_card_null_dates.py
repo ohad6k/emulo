@@ -115,5 +115,73 @@ class CardCliWithNullDatesTest(unittest.TestCase):
             self.assertTrue((out / "card.html").exists())
 
 
+class CardSurvivesMalformedStatsTest(unittest.TestCase):
+    # #30 caught TypeError in months_between and stopped there. These are the
+    # other shapes a drifting reducer emits that still crashed the card.
+
+    def test_dict_dates_degrade_to_zero_on_every_python(self):
+        # {}[:4] is TypeError before 3.12 and KeyError from 3.12, when slices
+        # became hashable, so the 3.12 CI lane failed where 3.11 passed
+        self.assertEqual(emulo.months_between({}, {}), 0)
+        self.assertEqual(emulo.months_between({"y": 2025}, {"y": 2026}), 0)
+
+    def test_html_omits_the_range_for_non_string_dates(self):
+        for first, last in ((20251101, 20260701), ({"y": 2025}, {"y": 2026}), (["2025-11"], ["2026-07"])):
+            with self.subTest(first=first, last=last):
+                html = emulo.render_card_html(card_with({
+                    "sessions": 1656, "first_date": first, "last_date": last,
+                }))
+                self.assertIn("1,656", html)
+                self.assertNotIn("<span>months</span>", html)
+                self.assertNotIn("&rarr;", html)
+
+    def test_html_keeps_the_range_for_real_dates(self):
+        html = emulo.render_card_html(card_with({
+            "sessions": 1656, "first_date": "2025-11-03", "last_date": "2026-07-21",
+        }))
+        self.assertIn("2025-11 &rarr; 2026-07", html)
+
+    def test_missing_date_keys_omit_months(self):
+        html = emulo.render_card_html(card_with({"sessions": 1656}))
+        self.assertIn("1,656", html)
+        self.assertNotIn("<span>months</span>", html)
+
+    def test_null_or_missing_stats_render_without_stats(self):
+        for card in (card_with(None), card_with([]), {"archetype": "Proof-First Builder", "laws": []}):
+            with self.subTest(stats=card.get("stats", "missing")):
+                html = emulo.render_card_html(card)
+                self.assertIn("PROOF-FIRST BUILDER".lower(), html.lower())
+                self.assertNotIn("<span>sessions</span>", html)
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    emulo.print_card(card, still=True)
+                self.assertIn("PROOF-FIRST BUILDER", buf.getvalue())
+                self.assertNotIn("1,656", buf.getvalue())
+
+    def test_load_card_merges_stats_json_over_a_null_stats(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            (out / "card.json").write_text(json.dumps(card_with(None)), encoding="utf-8")
+            (out / "stats.json").write_text(json.dumps({"sessions": 1656}), encoding="utf-8")
+            card = emulo.load_card(str(out))
+            self.assertEqual(card["stats"], {"sessions": 1656})
+
+    def test_emulo_card_exits_clean_on_a_card_with_null_stats(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "emulo-out"
+            out.mkdir()
+            card_path = out / "card.json"
+            card_path.write_text(json.dumps(card_with(None)), encoding="utf-8")
+            env = dict(os.environ, EMULO_NO_ANIM="1", PYTHONIOENCODING="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(EMULO), "--card", str(card_path),
+                 "--out", str(out), "--no-open", "--still"],
+                capture_output=True, text=True, env=env,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            self.assertTrue((out / "card.html").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
