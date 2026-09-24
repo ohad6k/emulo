@@ -113,6 +113,7 @@ h2 { margin: 0 0 14px; font: 600 31px/1.12 var(--serif); letter-spacing: -.015em
 .summary-stat strong { display: block; font: 600 30px/1 var(--serif); font-variant-numeric: tabular-nums; }
 .summary-stat span { display: block; margin-top: 8px; color: var(--soft); font: 10px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
 .result-meta { margin: -18px 0 28px; color: var(--soft); font: 12px/1.5 var(--mono); }
+.match-note { margin: -14px 0 24px; color: var(--ink-2); font-size: 14px; line-height: 1.5; }
 .findings { display: grid; gap: 16px; }
 .finding { border-top: 1px solid var(--ink); padding-top: 20px; }
 .finding-index { color: var(--red); font: italic 16px/1 var(--serif); }
@@ -168,7 +169,7 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
       <header>
         <p class="eyebrow">Your own receipts</p>
         <h1>Where does your agent <em>lose you?</em></h1>
-        <p class="intro">Point Emulo at your agent logs. It finds the moments you sent the same ask again, re-explained context, rephrased the same request, or opened with a correction.</p>
+        <p class="intro">Point Emulo at your agent logs. It finds the messages where you sent the same ask again, wrote that you had already said it, rephrased the same request, or opened with a correction.</p>
         <p class="privacy-copy"><strong>The files stay on this machine.</strong> This page reads the folder in your browser, runs the checks here, and makes no network request. Closing the tab clears the result.</p>
       </header>
 
@@ -209,6 +210,7 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
           <h2 id="result-title">Your scan</h2>
           <div class="summary-grid" id="summary-grid"></div>
           <p class="result-meta" id="result-meta"></p>
+          <p class="match-note" id="match-note">These are text matches on your own messages. They cannot tell why you repeated something or whether the agent forgot anything; each finding shows its receipts so you can judge.</p>
           <div class="findings" id="findings"></div>
           <p class="fine-print">These checks only read messages you typed. They cannot see model quality, token cost, tool calls, or whether a correction was justified.</p>
           <div class="next-step">
@@ -440,12 +442,27 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
     return new Set((String(text || '').toLowerCase().match(/[a-z0-9']+/g) || []));
   }
 
+  // Text you quoted or pasted is not you restating anything. Mirrors COACH_QUOTED in emulo.py:
+  // a ``` fence (to its close, or the end if never closed), any line starting with ">", and any
+  // double-quoted span, straight or curly. Python's re.M "^" matches only after a newline, while
+  // JS "^" with the m flag also matches after a carriage return, so the line case consumes its
+  // newline instead. The newline is whitespace, so masking leaves it in place.
+  const COACH_QUOTED = /```[\s\S]*?(?:```|(?![\s\S]))|(?:^|\n)[ \t]*>[^\n]*|"[^"]*"|\u201c[^\u201d]*\u201d/g;
+  const COACH_MASK = '\u0000';
+
+  function coachMaskQuoted(text) {
+    // Blank out quoted text, keeping whitespace so positions still line up.
+    return String(text || '').replace(COACH_QUOTED, (match) => match.replace(/\S/g, COACH_MASK));
+  }
+
   function coachQuote(text, marker) {
     const oneLine = String(text || '').trim().replace(/\s+/g, ' ');
     if (oneLine.length <= COACH_QUOTE_CHARS) return oneLine;
     let start = 0;
     if (marker) {
-      const found = oneLine.toLowerCase().indexOf(marker);
+      // Window on the marker that was counted, not an earlier copy inside a quote.
+      const masked = coachMaskQuoted(text).trim().replace(/\s+/g, ' ');
+      const found = masked.toLowerCase().indexOf(marker);
       if (found > 0) start = Math.max(0, found - Math.floor(COACH_QUOTE_CHARS / 3));
     }
     const clipped = oneLine.slice(start, start + COACH_QUOTE_CHARS).trimEnd();
@@ -488,7 +505,8 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
         if (length >= COACH_REWORD_RUN_MIN) rewords.push(coachReceipt(record, message, length));
       }
       for (const message of record.messages || []) {
-        const normalized = coachNormalize(message.text);
+        // Only your own words: quoted and pasted text is masked out.
+        const normalized = coachNormalize(coachMaskQuoted(message.text)).replace(/^[\u0000 ]+/, '');
         if (!normalized) continue;
         const marker = RESTATED_CONTEXT_MARKERS.find((candidate) => normalized.includes(candidate));
         if (marker) restated.push(coachReceipt(record, message, 1, marker));
@@ -522,10 +540,10 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
     const correctionRate = total ? Math.floor(100 * corrections.length / total) : 0;
     const finding = (key, title, meaning, receipts, occurrences, flagged) => ({ key, title, meaning, occurrences, flagged: Boolean(flagged), receipts: coachDistinct(receipts, COACH_MAX_RECEIPTS) });
     const findings = [
-      finding('repeat_sends', 'You resend the same message instead of changing it.', 'When the same real ask goes out three times in a row, the model had already given everything that prompt could get. Rewording once beats sending it again.', repeats, repeats.reduce((sum, item) => sum + item.count, 0), repeats.length),
-      finding('restated_context', 'You re-explain things the agent was already told.', 'Every one of these is context you paid for twice. This is the gap a profile closes: state it once, install it, stop retyping it.', restated, restated.length, restated.length >= COACH_RESTATED_MIN),
-      finding('reword_loops', 'You rephrase the same ask several turns in a row.', 'Three near-identical asks back to back usually means the first one was missing a constraint, not that the wording was wrong.', rewords, rewords.reduce((sum, item) => sum + item.count, 0), rewords.length),
-      finding('corrections', 'You open turns by correcting the last answer.', `At ${correctionRate}% of your messages this is high enough to point at the opening prompt rather than the model: the constraint you correct toward is the one worth stating up front.`, corrections, corrections.length, correctionRate >= COACH_CORRECTION_RATE),
+      finding('repeat_sends', 'Messages you sent three or more times in a row, unchanged.', 'The same ask of four or more words, sent back to back. If the answers were not moving, changing the ask may get further than sending it again.', repeats, repeats.reduce((sum, item) => sum + item.count, 0), repeats.length),
+      finding('restated_context', 'Messages that say you already said it.', 'Each one contains a phrase like "as I said" or "I told you" in your own words, not in quoted text. If the agent had lost it, stating it once in a profile or rules file saves retyping it.', restated, restated.length, restated.length >= COACH_RESTATED_MIN),
+      finding('reword_loops', 'Runs of three or more near-identical asks in a row.', 'Consecutive asks sharing most of their words without being exact copies. If the first one was missing a constraint, adding it may beat rewording.', rewords, rewords.reduce((sum, item) => sum + item.count, 0), rewords.length),
+      finding('corrections', 'Messages that open like a correction.', `${correctionRate}% of your messages start with words like "no," or "that's wrong". If many correct toward the same thing, saying it in the first prompt may save the round trip.`, corrections, corrections.length, correctionRate >= COACH_CORRECTION_RATE),
     ];
     return {
       sessions: records.length,

@@ -186,23 +186,12 @@ test('pasted stack traces are excluded at the same strict threshold as Python', 
   assert.equal(core.isPastedLog(notLog), false);
 });
 
-test('browser extraction and coach output match the current Python implementation', async () => {
+async function coachParity(texts) {
   const { core } = loadCore();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'emulo-scan-parity-'));
   const logRoot = path.join(root, '.codex', 'sessions');
   fs.mkdirSync(logRoot, { recursive: true });
-  const repeated = 'Please run the exact full test suite now';
-  const rows = [
-    repeated, `${repeated}!`, `${repeated}.`,
-    'Make the release notes shorter and drop the roadmap section',
-    'Make the release notes shorter and drop the roadmap part',
-    'Make the release notes much shorter and drop the roadmap part',
-    'As I said, this stays entirely local',
-    'I already told you to leave that file alone',
-    'Like I said, do not deploy this',
-    'No, keep this as one self contained page',
-    'mail dev@example.com about token: fake-value-123',
-  ].map((text, index) => ({
+  const rows = texts.map((text, index) => ({
     type: 'response_item',
     timestamp: `2026-07-${String(index + 1).padStart(2, '0')}T10:00:00Z`,
     payload: { type: 'message', role: 'user', content: [{ text }] },
@@ -244,7 +233,45 @@ test('browser extraction and coach output match the current Python implementatio
       last_date: jsMined.last_date,
     }, py.mined);
     assert.deepEqual(jsReport, py.report);
+    return jsReport;
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+}
+
+test('browser extraction and coach output match the current Python implementation', async () => {
+  const repeated = 'Please run the exact full test suite now';
+  await coachParity([
+    repeated, `${repeated}!`, `${repeated}.`,
+    'Make the release notes shorter and drop the roadmap section',
+    'Make the release notes shorter and drop the roadmap part',
+    'Make the release notes much shorter and drop the roadmap part',
+    'As I said, this stays entirely local',
+    'I already told you to leave that file alone',
+    'Like I said, do not deploy this',
+    'No, keep this as one self contained page',
+    'mail dev@example.com about token: fake-value-123',
+  ]);
+});
+
+test('quoted and pasted text is masked the same way as Python before markers and openers match', async () => {
+  // A marker inside a fence, a "> " line, or a double-quoted span (straight or curly) is text
+  // you quoted, not you restating anything. Three genuine markers still flag the finding.
+  const report = await coachParity([
+    'proofread this: "As I said in the last update, the launch moves to Friday."',
+    '> like I said last week, the invoice is overdue\n\nhelp me answer this politely',
+    'tighten this reply\n```\nLike I said on the call, the budget is fixed.\n```',
+    'fix the grammar: \u201cas i said, we ship when its ready\u201d',
+    '"No, we cannot ship on Friday" is what my manager wrote, draft a reply',
+    `"${'like i said in the memo '.repeat(12)}" ${'z'.repeat(200)} i told you the header stays fixed`,
+    'as I said, use pnpm not npm',
+    '> I switched the config to yaml\n\nno, keep it as json',
+    'like i said, no new dependencies',
+  ]);
+  const restated = report.findings.find((item) => item.key === 'restated_context');
+  assert.ok(restated, 'three genuine markers must flag restated context');
+  assert.equal(restated.occurrences, 3);
+  assert.deepEqual(new Set(restated.receipts.map((receipt) => receipt.marker)), new Set(['i told you', 'as i said', 'like i said']));
+  assert.ok(restated.receipts.some((receipt) => receipt.text.includes('i told you the header stays fixed')));
+  assert.equal(report.correction_rate, 11);
 });
