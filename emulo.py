@@ -3151,7 +3151,9 @@ COACH_QUOTED = re.compile(
     r"```.*?(?:```|\Z)"
     r"|^[ \t]*>[^\n]*"
     r"|\"[^\"]*\""
-    "|\u201c[^\u201d]*\u201d",
+    # An opening curly quote with no close would otherwise scan to the end of
+    # the message once per quote, quadratic on long German-style pastes.
+    "|\u201c[^\u201c\u201d]*\u201d",
     re.S | re.M,
 )
 COACH_MASK = "\x00"

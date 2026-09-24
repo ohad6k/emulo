@@ -447,7 +447,7 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
   // double-quoted span, straight or curly. Python's re.M "^" matches only after a newline, while
   // JS "^" with the m flag also matches after a carriage return, so the line case consumes its
   // newline instead. The newline is whitespace, so masking leaves it in place.
-  const COACH_QUOTED = /```[\s\S]*?(?:```|(?![\s\S]))|(?:^|\n)[ \t]*>[^\n]*|"[^"]*"|\u201c[^\u201d]*\u201d/g;
+  const COACH_QUOTED = /```[\s\S]*?(?:```|(?![\s\S]))|(?:^|\n)[ \t]*>[^\n]*|"[^"]*"|\u201c[^\u201c\u201d]*\u201d/g;
   const COACH_MASK = '\u0000';
 
   function coachMaskQuoted(text) {

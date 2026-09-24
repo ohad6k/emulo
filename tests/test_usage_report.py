@@ -196,6 +196,20 @@ class QuotedTextTest(unittest.TestCase):
             "> like I said last week, the invoice is overdue\n\nhelp me answer this politely"
         ), [])
 
+    def test_marker_on_a_quoted_line_after_the_first_line_is_not_counted(self):
+        self.assertEqual(self._restated(
+            "help me answer this politely\n> like I said last week, the invoice is overdue"
+        ), [])
+
+    def test_unclosed_curly_quotes_stay_linear_on_a_long_paste(self):
+        # German quotes close with U+201C, so a long paste is full of openers
+        # with no U+201D after them. This took 12.7 s at 400k characters.
+        import time
+        text = "\u201eab\u201c " * 80000
+        start = time.perf_counter()
+        emulo.coach_mask_quoted(text)
+        self.assertLess(time.perf_counter() - start, 2.0)
+
     def test_genuine_as_i_said_still_counts(self):
         restated = self._restated("as I said, use pnpm not npm")
         self.assertEqual(len(restated), 1)

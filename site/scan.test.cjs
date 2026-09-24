@@ -260,6 +260,7 @@ test('quoted and pasted text is masked the same way as Python before markers and
   const report = await coachParity([
     'proofread this: "As I said in the last update, the launch moves to Friday."',
     '> like I said last week, the invoice is overdue\n\nhelp me answer this politely',
+    'help me answer this politely\n> like I said last week, the invoice is overdue',
     'tighten this reply\n```\nLike I said on the call, the budget is fixed.\n```',
     'fix the grammar: \u201cas i said, we ship when its ready\u201d',
     '"No, we cannot ship on Friday" is what my manager wrote, draft a reply',
@@ -276,5 +277,16 @@ test('quoted and pasted text is masked the same way as Python before markers and
   const windowed = restated.receipts.find((receipt) => receipt.text.includes('i told you the header stays fixed'));
   assert.ok(windowed, 'the receipt must window on the marker that was counted');
   assert.ok(!windowed.text.includes('in the memo'), 'not on the copy inside the quote');
-  assert.equal(report.correction_rate, 11);
+  assert.equal(report.correction_rate, 10);
+});
+
+test('unclosed curly quotes stay linear on a long paste, so the page never freezes', () => {
+  // German quotes close with U+201C, so a long paste is full of openers with no U+201D after
+  // them. Before the fix this took 11 s at 400k characters, on the main thread.
+  const { core } = loadCore();
+  const text = '„ab“ '.repeat(80000);
+  const record = { session_id: 's', source: 'codex', messages: [{ text, date: '2026-08-01', ordinal: 0 }] };
+  const start = performance.now();
+  core.usageReport([record]);
+  assert.ok(performance.now() - start < 2000, 'masking a long German-quoted paste must stay fast');
 });
