@@ -186,23 +186,12 @@ test('pasted stack traces are excluded at the same strict threshold as Python', 
   assert.equal(core.isPastedLog(notLog), false);
 });
 
-test('browser extraction and coach output match the current Python implementation', async () => {
+async function coachParity(texts) {
   const { core } = loadCore();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'emulo-scan-parity-'));
   const logRoot = path.join(root, '.codex', 'sessions');
   fs.mkdirSync(logRoot, { recursive: true });
-  const repeated = 'Please run the exact full test suite now';
-  const rows = [
-    repeated, `${repeated}!`, `${repeated}.`,
-    'Make the release notes shorter and drop the roadmap section',
-    'Make the release notes shorter and drop the roadmap part',
-    'Make the release notes much shorter and drop the roadmap part',
-    'As I said, this stays entirely local',
-    'I already told you to leave that file alone',
-    'Like I said, do not deploy this',
-    'No, keep this as one self contained page',
-    'mail dev@example.com about token: fake-value-123',
-  ].map((text, index) => ({
+  const rows = texts.map((text, index) => ({
     type: 'response_item',
     timestamp: `2026-07-${String(index + 1).padStart(2, '0')}T10:00:00Z`,
     payload: { type: 'message', role: 'user', content: [{ text }] },
@@ -244,7 +233,60 @@ test('browser extraction and coach output match the current Python implementatio
       last_date: jsMined.last_date,
     }, py.mined);
     assert.deepEqual(jsReport, py.report);
+    return jsReport;
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+}
+
+test('browser extraction and coach output match the current Python implementation', async () => {
+  const repeated = 'Please run the exact full test suite now';
+  await coachParity([
+    repeated, `${repeated}!`, `${repeated}.`,
+    'Make the release notes shorter and drop the roadmap section',
+    'Make the release notes shorter and drop the roadmap part',
+    'Make the release notes much shorter and drop the roadmap part',
+    'As I said, this stays entirely local',
+    'I already told you to leave that file alone',
+    'Like I said, do not deploy this',
+    'No, keep this as one self contained page',
+    'mail dev@example.com about token: fake-value-123',
+  ]);
+});
+
+test('quoted and pasted text is masked the same way as Python before markers and openers match', async () => {
+  // A marker inside a fence, a "> " line, or a double-quoted span (straight or curly) is text
+  // you quoted, not you restating anything. Three genuine markers still flag the finding.
+  const report = await coachParity([
+    'proofread this: "As I said in the last update, the launch moves to Friday."',
+    '> like I said last week, the invoice is overdue\n\nhelp me answer this politely',
+    'help me answer this politely\n> like I said last week, the invoice is overdue',
+    'tighten this reply\n```\nLike I said on the call, the budget is fixed.\n```',
+    'fix the grammar: \u201cas i said, we ship when its ready\u201d',
+    '"No, we cannot ship on Friday" is what my manager wrote, draft a reply',
+    // The same marker inside and outside the quote: only a masked search windows on the second.
+    `"i told you in the memo" ${'z'.repeat(200)} i told you the header stays fixed`,
+    'as I said, use pnpm not npm',
+    '> I switched the config to yaml\n\nno, keep it as json',
+    'like i said, no new dependencies',
+  ]);
+  const restated = report.findings.find((item) => item.key === 'restated_context');
+  assert.ok(restated, 'three genuine markers must flag restated context');
+  assert.equal(restated.occurrences, 3);
+  assert.deepEqual(new Set(restated.receipts.map((receipt) => receipt.marker)), new Set(['i told you', 'as i said', 'like i said']));
+  const windowed = restated.receipts.find((receipt) => receipt.text.includes('i told you the header stays fixed'));
+  assert.ok(windowed, 'the receipt must window on the marker that was counted');
+  assert.ok(!windowed.text.includes('in the memo'), 'not on the copy inside the quote');
+  assert.equal(report.correction_rate, 10);
+});
+
+test('unclosed curly quotes stay linear on a long paste, so the page never freezes', () => {
+  // German quotes close with U+201C, so a long paste is full of openers with no U+201D after
+  // them. Before the fix this took 11 s at 400k characters, on the main thread.
+  const { core } = loadCore();
+  const text = '„ab“ '.repeat(80000);
+  const record = { session_id: 's', source: 'codex', messages: [{ text, date: '2026-08-01', ordinal: 0 }] };
+  const start = performance.now();
+  core.usageReport([record]);
+  assert.ok(performance.now() - start < 2000, 'masking a long German-quoted paste must stay fast');
 });

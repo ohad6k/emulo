@@ -47,7 +47,7 @@ Inside Claude Code:
 Inside Codex:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.3 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.4 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -163,16 +163,18 @@ Nobody wrote those rules down. They came out of one person's own history, with r
 
 ## The usage report
 
-Mining answers "who is this person." The usage report answers a different question: where are you losing time with the model.
+Mining answers "who is this person." The usage report answers a different question: where might you be losing time with the model.
 
 ```bash
 python emulo.py --coach                   # every source it can find
 python emulo.py --coach --source claude   # Claude Code only
 ```
 
-It runs before any mining, makes no model call, and finishes in seconds. It counts what your own messages already show: asks you sent three times in a row without changing them, context you re-explained after the agent lost it, runs where you rephrased the same request instead of adding the missing constraint, and how often you open a turn by correcting the last answer.
+It runs before any mining and makes no model call. On a big history it takes about a minute: roughly 1,400 sessions took 54 to 71 s across three runs on one Windows machine.
 
-Every finding prints the dated messages behind it. Checks that come in under their bar are printed with their counts as well, so a clean result reads as a result rather than as silence.
+Every check is a text match on your own messages. It counts asks you sent three or more times in a row unchanged, messages with a phrase like "as I said" or "I told you", runs of near-identical asks in a row, and how often a message opens like a correction ("no,", "that's wrong"). A phrase inside quoted or pasted text (a fenced code block, a line starting with `>`, or a double-quoted span) is not counted, so an email you are answering does not read as you repeating yourself. A match cannot tell why you repeated something or whether the agent had forgotten anything, so the report offers fixes as possibilities, not diagnoses.
+
+Every finding prints the dated messages behind it, so you can judge each one yourself. Checks that come in under their bar are printed with their counts as well, so a clean result reads as a result rather than as silence.
 
 It reads only the messages you typed, which is all Emulo keeps. It cannot see cost, tokens, tool calls, or whether the agent was right, and it never scores those.
 
@@ -237,7 +239,7 @@ This checks what is mechanically checkable. Whether a rule is vague, generic, or
 The native plugin adds `emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, and `emulo:video`:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.3 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.4 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -350,7 +352,7 @@ See [SECURITY.md](SECURITY.md) for the exact boundary.
 The legacy extractor remains available and backward compatible:
 
 ```bash
-curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.3/emulo.py
+curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.4/emulo.py
 python emulo.py --dry-run
 python emulo.py --chunks 4 --out emulo-out
 ```
@@ -419,4 +421,4 @@ See [ROADMAP.md](ROADMAP.md) for what is intentionally deferred.
 
 ## License
 
-MIT. Made by [@ohad6k](https://github.com/ohad6k).
+MIT. Built and maintained by Ohad Krispin ([@ohad6k](https://github.com/ohad6k)).

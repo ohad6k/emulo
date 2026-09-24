@@ -3078,10 +3078,15 @@ def print_counts(result, no_redact=False):
 # ---------- usage report ----------
 #
 # A second reading of the same local logs, addressed to you instead of to the
-# agent. `you.md` answers "who is this person"; this answers "where is this
-# person losing time with the model". Deliberately deterministic: no model
-# call, no mining pass, no network, so it runs in seconds on a first install
-# and every number it prints traces back to dated messages you actually typed.
+# agent. `you.md` answers "who is this person"; this answers "where might this
+# person be losing time with the model". Deliberately deterministic: no model
+# call, no mining pass, no network, so it runs on a first install (about a
+# minute over roughly 1,400 sessions on one Windows machine, three runs: 54 to
+# 71 s) and every number it prints traces back to dated messages you typed.
+#
+# Every check is a text match. It sees that a message says "as i said", not
+# whether the agent had actually lost anything, so the wording reports what
+# was counted and offers the fix as a possibility, never as a diagnosis.
 #
 # It reads only your side of the conversation, which is all emulo ever keeps.
 # It cannot see cost, tokens, tool calls, or whether the agent was right, and
@@ -3125,14 +3130,39 @@ COACH_NOT_CORRECTIONS = (
     "no big deal", "no clue",
 )
 
-# Distinctive enough to match anywhere in a message. These are people
-# re-supplying context the agent was already given and lost, which is the exact
-# gap a profile closes, so it is the one finding that points back at emulo.
+# Distinctive enough to match anywhere in a message. A match means you wrote
+# that you had said it before. It cannot tell whether the agent had actually
+# lost it; when it had, a profile is one way to stop retyping it, which is why
+# this finding mentions one.
 RESTATED_CONTEXT_MARKERS = (
     "i already told you", "i already said", "i just told you", "as i said",
     "like i said", "i told you", "i said before", "i keep telling you",
     "as i mentioned", "i've told you", "ive told you", "i already asked",
 )
+
+# Text you quoted or pasted is not you restating anything: an email you are
+# answering can say "like i said last week", and a paragraph you want
+# proofread can open with "as i said". Before the markers and the correction
+# openers are matched, mask a ``` fence (to its close, or to the end if never
+# closed), any line starting with ">", and any double-quoted span, straight or
+# curly. A paste with no quote marks at all still counts: nothing in the text
+# tells it apart from your own words.
+COACH_QUOTED = re.compile(
+    r"```.*?(?:```|\Z)"
+    r"|^[ \t]*>[^\n]*"
+    r"|\"[^\"]*\""
+    # An opening curly quote with no close would otherwise scan to the end of
+    # the message once per quote, quadratic on long German-style pastes.
+    "|\u201c[^\u201c\u201d]*\u201d",
+    re.S | re.M,
+)
+COACH_MASK = "\x00"
+
+def coach_mask_quoted(text):
+    """Blank out quoted text, keeping whitespace so positions still line up."""
+    return COACH_QUOTED.sub(
+        lambda match: re.sub(r"\S", COACH_MASK, match.group(0)), text or ""
+    )
 
 def coach_normalize(text):
     """Collapse whitespace/case/trailing punctuation so a resend reads as a resend."""
@@ -3153,7 +3183,11 @@ def coach_quote(text, marker=None):
         return one_line
     start = 0
     if marker:
-        found = one_line.lower().find(marker)
+        # Search the masked text so the window lands on the marker that was
+        # counted, not on an earlier copy inside a quote. Masking keeps every
+        # whitespace character, so both strings collapse to the same offsets.
+        masked = re.sub(r"\s+", " ", coach_mask_quoted(text).strip())
+        found = masked.lower().find(marker)
         if found > 0:
             start = max(0, found - COACH_QUOTE_CHARS // 3)
     clipped = one_line[start:start + COACH_QUOTE_CHARS].rstrip()
@@ -3215,7 +3249,8 @@ def usage_findings(records):
             if length >= COACH_REWORD_RUN_MIN:
                 rewords.append(coach_receipt(record, message, length))
         for message in record.get("messages", []):
-            normalized = coach_normalize(message["text"])
+            # Only your own words: quoted and pasted text is masked out.
+            normalized = coach_normalize(coach_mask_quoted(message["text"])).lstrip(COACH_MASK + " ")
             if not normalized:
                 continue
             marker = next((m for m in RESTATED_CONTEXT_MARKERS if m in normalized), None)
@@ -3264,38 +3299,38 @@ def usage_report(records):
     findings = [
         finding(
             "repeat_sends",
-            "You resend the same message instead of changing it.",
-            "When the same real ask goes out three times in a row, the model had "
-            "already given everything that prompt could get. Rewording once beats "
-            "sending it again.",
+            "Messages you sent three or more times in a row, unchanged.",
+            "The same ask of four or more words, sent back to back. If the answers "
+            "were not moving, changing the ask may get further than sending it again.",
             repeats,
             sum(item["count"] for item in repeats),
             repeats,
         ),
         finding(
             "restated_context",
-            "You re-explain things the agent was already told.",
-            "Every one of these is context you paid for twice. This is the gap a "
-            "profile closes: state it once, install it, stop retyping it.",
+            "Messages that say you already said it.",
+            "Each one contains a phrase like \"as I said\" or \"I told you\" in your "
+            "own words, not in quoted text. If the agent had lost it, stating it once "
+            "in a profile or rules file saves retyping it.",
             restated,
             len(restated),
             len(restated) >= COACH_RESTATED_MIN,
         ),
         finding(
             "reword_loops",
-            "You rephrase the same ask several turns in a row.",
-            "Three near-identical asks back to back usually means the first one was "
-            "missing a constraint, not that the wording was wrong.",
+            "Runs of three or more near-identical asks in a row.",
+            "Consecutive asks sharing most of their words without being exact copies. "
+            "If the first one was missing a constraint, adding it may beat rewording.",
             rewords,
             sum(item["count"] for item in rewords),
             rewords,
         ),
         finding(
             "corrections",
-            "You open turns by correcting the last answer.",
-            f"At {correction_rate}% of your messages this is high enough to point at "
-            "the opening prompt rather than the model: the constraint you correct "
-            "toward is the one worth stating up front.",
+            "Messages that open like a correction.",
+            f"{correction_rate}% of your messages start with words like \"no,\" or "
+            "\"that's wrong\". If many correct toward the same thing, saying it in "
+            "the first prompt may save the round trip.",
             corrections,
             len(corrections),
             correction_rate >= COACH_CORRECTION_RATE,
@@ -3324,6 +3359,9 @@ def print_usage_report(report):
     print(f"read {report['sessions']} sessions, {report['messages']:,} of your messages, {span}")
     if sources:
         print(f"sources: {sources}")
+    print("These are text matches on your own messages. They cannot tell why you")
+    print("repeated something or whether the agent forgot anything; each finding")
+    print("shows its receipts so you can judge.")
     print()
 
     if not report["findings"]:
@@ -4306,7 +4344,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-EMULO_VERSION = "0.6.3"
+EMULO_VERSION = "0.6.4"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 AUTOPILOT_HEAD_SCHEMA = "emulo.autopilot-head/v1"
 AUTOPILOT_GENERATION_SCHEMA = "emulo.autopilot-generation/v1"
