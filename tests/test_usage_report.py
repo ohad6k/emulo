@@ -183,7 +183,7 @@ class QuotedTextTest(unittest.TestCase):
 
     def test_marker_inside_a_curly_quoted_paragraph_is_not_counted(self):
         self.assertEqual(self._restated(
-            "fix the grammar: “as i said, we ship when its ready”"
+            "fix the grammar: \u201cas i said, we ship when its ready\u201d"
         ), [])
 
     def test_marker_inside_a_fenced_block_is_not_counted(self):
@@ -338,8 +338,8 @@ class WordingTest(unittest.TestCase):
     def test_no_dashes_in_report_wording(self):
         for item in self._all_findings()["findings"]:
             for field in ("title", "meaning"):
-                self.assertNotIn("—", item[field], item["key"])
-                self.assertNotIn("–", item[field], item["key"])
+                self.assertNotIn("\u2014", item[field], item["key"])
+                self.assertNotIn("\u2013", item[field], item["key"])
 
     def test_keys_are_unchanged_for_json_consumers(self):
         self.assertEqual(

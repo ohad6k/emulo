@@ -3151,7 +3151,7 @@ COACH_QUOTED = re.compile(
     r"```.*?(?:```|\Z)"
     r"|^[ \t]*>[^\n]*"
     r"|\"[^\"]*\""
-    "|“[^”]*”",
+    "|\u201c[^\u201d]*\u201d",
     re.S | re.M,
 )
 COACH_MASK = "\x00"
@@ -4342,7 +4342,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-EMULO_VERSION = "0.6.3"
+EMULO_VERSION = "0.6.4"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 AUTOPILOT_HEAD_SCHEMA = "emulo.autopilot-head/v1"
 AUTOPILOT_GENERATION_SCHEMA = "emulo.autopilot-generation/v1"
