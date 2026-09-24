@@ -534,7 +534,7 @@ footer a:hover{color:var(--red)}
 <header class="hero">
   <div class="wrap">
       <h1 class="rise">Find where you keep <i>repeating yourself</i> to your coding agent.</h1>
-      <p class="hero-sub rise d1">One command reads the AI coding logs already on your machine and counts four things: the ask you resent unchanged, the context you explained again after the agent lost it, the request you rephrased turn after turn, and how often you open by correcting the last answer. <b>Every finding comes with the dated messages behind it.</b> It makes no model call, and nothing leaves your machine.</p>
+      <p class="hero-sub rise d1">One command reads the AI coding logs already on your machine and counts four patterns in what you typed: the same ask sent three times unchanged, messages where you say you already said it, the request you rephrased turn after turn, and how often you open by correcting the last answer. They are text matches, so it cannot tell you why. <b>Every finding comes with the dated messages behind it, so you can judge.</b> It makes no model call, and nothing leaves your machine.</p>
       <div class="hero-cmd rise d2">
         <button class="cmd" type="button" data-cmd="uvx emulo --coach" aria-label="Copy the command uvx emulo --coach">
           <span><span class="dollar">$</span>uvx emulo --coach</span>
@@ -555,19 +555,20 @@ footer a:hover{color:var(--red)}
         <div class="term-head" aria-hidden="true"><span>Terminal</span><span class="live">No model call</span></div>
         <span class="l"><span class="p">$ </span><span class="typed" data-text="uvx emulo --coach">uvx emulo --coach</span></span>
         <span class="l">emulo usage report</span>
-        <span class="l">read <span class="n">912</span> sessions, <span class="n">4,289</span> of your messages, 2026-07-07 to 2026-09-24</span>
-        <span class="l">sources: claude 912</span>
+        <span class="l">read <span class="n">1394</span> sessions, <span class="n">5,705</span> of your messages, 2026-05-06 to 2026-09-24</span>
+        <span class="l">sources: antigravity 14, claude 917, codex 459, copilot 2, opencode 2</span>
+        <span class="l m">These are text matches on your own messages. They cannot tell why you repeated something or whether the agent forgot anything; each finding shows its receipts so you can judge.</span>
         <span class="l"> </span>
-        <span class="l t">1. You resend the same message instead of changing it.</span>
-        <span class="l in m"><span class="n">11</span> message(s). When the same real ask goes out three times in a row, the model had already given everything that prompt could get. Rewording once beats sending it again.</span>
+        <span class="l t">1. Messages you sent three or more times in a row, unchanged.</span>
+        <span class="l in m"><span class="n">11</span> message(s). The same ask of four or more words, sent back to back. If the answers were not moving, changing the ask may get further than sending it again.</span>
         <span class="l in">2026-<span class="redact" style="width:1.2em" aria-label="redacted"></span>-<span class="redact" style="width:1.2em" aria-label="redacted"></span>  <span class="dim">"[your message, dated]"</span>  x<span class="redact" style="width:.7em" aria-label="redacted"></span></span>
         <span class="l in dim">[trimmed for this page]</span>
         <span class="l"> </span>
         <span class="l m">This reads only the messages you typed, which is all emulo keeps. It cannot see cost, tokens, tool calls, or whether the agent was right, so it never scores those. Every line above is countable from your own logs.<span class="caret" aria-hidden="true"></span></span>
       </div>
       <figcaption>
-        <strong>A real run, 24 September 2026</strong>
-        <span>912 Claude Code sessions, trimmed to the first finding. The receipt is blanked here. On your machine each one prints your own message and its date.</span>
+        <strong>A real run, 25 September 2026</strong>
+        <span>1,394 sessions across five tools, trimmed to the first finding. The receipt is blanked here. On your machine each one prints your own message and its date.</span>
       </figcaption>
     </figure>
   </div>
