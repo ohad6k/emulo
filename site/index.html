@@ -181,27 +181,28 @@ nav{
 }
 .nav-links a.nav-cta:hover{background:var(--red);border-color:var(--red);color:var(--paper)}
 
-/* ---------- hero: the report is the exhibit ---------- */
-.hero{position:relative;z-index:3;padding:34px 0 88px}
-.hero .wrap{
-  display:grid;grid-template-columns:minmax(0,.74fr) minmax(0,1.26fr);
-  grid-template-areas:"h h" "sub ex" "cmd ex" "act ex" ". ex";
-  grid-template-rows:auto auto auto auto 1fr;
-  column-gap:64px;align-items:start;
+/* ---------- hero: the engraving is the exhibit ---------- */
+.hero{position:relative;z-index:3;padding:40px 0 72px}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);align-items:center;column-gap:48px}
+.hero-art{position:relative;align-self:stretch;display:flex;align-items:center;justify-content:flex-end}
+.hero-art::before{
+  content:"";position:absolute;inset:4% -8% 0 4%;
+  background:radial-gradient(closest-side,rgba(22,19,9,.075),transparent 72%);
 }
-.hero h1{grid-area:h}
+.hero-art img{position:relative;width:100%;max-width:540px;height:auto;mix-blend-mode:multiply;filter:contrast(1.02)}
+h1{grid-area:h}
 .hero .hero-sub{grid-area:sub}
 .hero .hero-cmd{grid-area:cmd}
 .hero .hero-actions{grid-area:act}
 .hero .exhibit{grid-area:ex;margin-top:6px}
 h1{
   font-family:var(--serif);font-weight:600;
-  font-size:clamp(40px,5.6vw,80px);
+  font-size:clamp(40px,5vw,74px);
   line-height:1.02;letter-spacing:-.02em;
-  margin-bottom:52px;max-width:15.5em;text-wrap:balance;
+  margin-bottom:26px;text-wrap:balance;
 }
 h1 i{font-style:italic;color:var(--red)}
-.hero-sub{font-size:18px;max-width:40ch;color:var(--ink-soft);margin-bottom:34px}
+.hero-sub{font-size:19px;max-width:36ch;color:var(--ink-soft);margin-bottom:34px}
 .hero-sub b{font-weight:600;color:var(--ink)}
 
 /* commands */
@@ -257,6 +258,11 @@ h1 i{font-style:italic;color:var(--red)}
 .text-link:hover{color:var(--red);border-bottom-color:var(--red)}
 
 /* the terminal plate */
+/* the report, one scroll down */
+.run{padding:96px 0 104px}
+.run .wrap{max-width:900px}
+.run-head{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:24px;align-items:baseline;margin-bottom:28px}
+.run-head p{font-size:17px;color:var(--ink-soft);max-width:52ch}
 .exhibit{position:relative}
 .term{
   background:var(--ink);color:var(--cream);
@@ -323,9 +329,10 @@ section{padding:112px 0;position:relative;z-index:3}
   font-size:22px;line-height:1;
 }
 
-/* mine: portrait with its wall label, steps beside it */
+/* mine: the you.md excerpt as a wall label, steps beside it */
 .mine .wrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:80px;align-items:start}
-.portrait img{width:100%;max-width:470px;mix-blend-mode:multiply;filter:contrast(1.02);margin:-24px 0 0 -18px}
+.excerpt{max-width:450px}
+.excerpt .wall-label{border:1px solid var(--ink);background:var(--paper-2);padding:24px 26px 22px;margin-top:0}
 .wall-label{max-width:430px;border-top:1px solid var(--ink);padding-top:16px;margin-top:6px}
 .wall-label strong{display:block;font-family:var(--serif);font-style:italic;font-weight:500;font-size:19px;margin-bottom:12px}
 .wall-label ul{list-style:none;margin-bottom:14px}
@@ -457,9 +464,7 @@ footer a:hover{color:var(--red)}
 @keyframes rise{to{opacity:1;transform:none}}
 .js .reveal{opacity:0;transform:translateY(20px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
 .js .reveal.in{opacity:1;transform:none}
-/* the portrait arrives once and then stays still */
-.js .portrait.reveal img{opacity:0;transform:scale(1.035);transition:opacity 1.4s var(--ease),transform 1.6s var(--ease)}
-.js .portrait.reveal.in img{opacity:1;transform:none}
+/* reveal once on scroll, then stay still */
 
 #progress{
   position:fixed;top:0;left:0;right:0;height:2px;z-index:9;
@@ -467,21 +472,21 @@ footer a:hover{color:var(--red)}
 }
 
 @media (prefers-reduced-motion: reduce){
-  .js .rise,.js .reveal,.js .portrait.reveal img{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
+  .js .rise,.js .reveal{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
   .js .verdicts.reveal .stamp{opacity:1;animation:none !important}
   .js .term .caret{animation:none}
 }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1080px){
-  .hero .wrap{grid-template-columns:1fr;grid-template-areas:"h" "sub" "cmd" "ex" "act";grid-template-rows:auto;column-gap:0}
-  .hero .exhibit{margin-top:44px}
+  .hero .wrap{grid-template-columns:1fr}
+  .hero-art{order:-1;justify-content:center;margin-bottom:8px}
+  .hero-art img{max-width:400px}
+  .run-head{grid-template-columns:1fr;gap:8px}
   h1{margin-bottom:28px}
   .hero-sub{max-width:56ch}
   .exhibit figcaption{margin-right:0}
   .mine .wrap,.verify .wrap,.direction{grid-template-columns:1fr;gap:48px}
-  .portrait{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:end}
-  .portrait img{margin:0}
   .direction{gap:14px}
 }
 @media (max-width: 860px){
@@ -507,8 +512,7 @@ footer a:hover{color:var(--red)}
   .term{padding:18px 14px 22px;font-size:12px}
   .term-head{font-size:9.5px;letter-spacing:.14em}
   .exhibit figcaption{width:calc(100% - 20px);margin:-16px 0 0 20px;padding:14px 16px}
-  .portrait{grid-template-columns:1fr}
-  .portrait img{max-width:320px;margin:0 auto}
+  .hero-art img{max-width:300px}
   .verdict{grid-template-columns:1fr;gap:12px}
   .price-pane{padding:32px 22px 36px}
   .final{padding:88px 0 72px}
@@ -533,14 +537,15 @@ footer a:hover{color:var(--red)}
 
 <header class="hero">
   <div class="wrap">
+    <div class="hero-copy">
       <h1 class="rise">Find where you keep <i>repeating yourself</i> to your coding agent.</h1>
-      <p class="hero-sub rise d1">One command reads the AI coding logs already on your machine and counts four patterns in what you typed: the same ask sent three times unchanged, messages where you say you already said it, the request you rephrased turn after turn, and how often you open by correcting the last answer. They are text matches, so it cannot tell you why. <b>Every finding comes with the dated messages behind it, so you can judge.</b> It makes no model call, and nothing leaves your machine.</p>
+      <p class="hero-sub rise d1">One command reads the AI coding logs on your machine and shows where you repeat yourself, with the dated messages behind every finding.</p>
       <div class="hero-cmd rise d2">
         <button class="cmd" type="button" data-cmd="uvx emulo --coach" aria-label="Copy the command uvx emulo --coach">
           <span><span class="dollar">$</span>uvx emulo --coach</span>
           <span class="copy" aria-hidden="true">Copy</span>
         </button>
-        <p class="cmd-note">or <code>pip install emulo</code>, then <code>emulo --coach</code>. About 90 seconds on a large history.</p>
+        <p class="cmd-note">or <code>pip install emulo</code> &middot; no model call &middot; nothing leaves your machine</p>
       </div>
       <div class="hero-actions rise d3">
         <a class="btn-star" href="https://github.com/ohad6k/emulo">
@@ -549,8 +554,28 @@ footer a:hover{color:var(--red)}
         </a>
         <a class="text-link" href="#mine">Then mine a profile</a>
       </div>
+    </div>
+    <div class="hero-art rise d2">
+      <img src="assets/emulo.png" alt="Emulo engraving: a human and a machine head back to back" width="560" height="560">
+    </div>
+  </div>
+</header>
 
-    <figure class="exhibit rise d2">
+<div class="manifest">
+  <div class="wrap">
+    <div class="cell"><span class="mono-label">Reads</span><p>Claude Code, Codex, Copilot CLI, OpenCode and Google Antigravity logs</p></div>
+    <div class="cell"><span class="mono-label">Installs a profile into</span><p>Claude Code, Codex, Cursor, Gemini, OpenCode, or any AGENTS.md repo</p></div>
+    <div class="cell"><span class="mono-label">Also</span><p>An MCP server, MIT licensed</p></div>
+  </div>
+</div>
+
+<section class="run" id="run">
+  <div class="wrap">
+    <div class="run-head reveal">
+      <span class="mono-label">What it prints</span>
+      <p>Four text-match checks on what you typed, each with its dated receipts. It cannot tell why you repeated something, and it says so.</p>
+    </div>
+    <figure class="exhibit reveal">
       <div class="term" id="term" aria-label="An Emulo coach report, trimmed">
         <div class="term-head" aria-hidden="true"><span>Terminal</span><span class="live">No model call</span></div>
         <span class="l"><span class="p">$ </span><span class="typed" data-text="uvx emulo --coach">uvx emulo --coach</span></span>
@@ -572,20 +597,11 @@ footer a:hover{color:var(--red)}
       </figcaption>
     </figure>
   </div>
-</header>
-
-<div class="manifest">
-  <div class="wrap">
-    <div class="cell"><span class="mono-label">Reads</span><p>Claude Code, Codex, Copilot CLI, OpenCode and Google Antigravity logs</p></div>
-    <div class="cell"><span class="mono-label">Installs a profile into</span><p>Claude Code, Codex, Cursor, Gemini, OpenCode, or any AGENTS.md repo</p></div>
-    <div class="cell"><span class="mono-label">Also</span><p>An MCP server, MIT licensed</p></div>
-  </div>
-</div>
+</section>
 
 <section class="mine" id="mine">
   <div class="wrap">
-    <figure class="portrait reveal">
-      <img src="assets/emulo.png" alt="Emulo engraving: a human and a machine head back to back" loading="lazy">
+    <figure class="excerpt reveal">
       <figcaption class="wall-label">
         <strong>you.md, an excerpt</strong>
         <ul>
@@ -816,8 +832,8 @@ document.querySelectorAll(".reveal").forEach(el => io.observe(el));
     typed.textContent = full;
     lines.forEach(l => l.classList.add("on"));
   };
-  setTimeout(finish, 6000); // never leave the exhibit half printed
   const start = () => {
+    setTimeout(finish, 6000); // never leave the exhibit half printed
     lines[0].classList.add("on");
     let i = 0;
     (function type(){
@@ -832,8 +848,12 @@ document.querySelectorAll(".reveal").forEach(el => io.observe(el));
       }, 380);
     })();
   };
-  if (document.readyState === "complete") setTimeout(start, 500);
-  else window.addEventListener("load", () => setTimeout(start, 500));
+  // It sits one scroll down, so it prints when you reach it, not while you read the hero.
+  if (!("IntersectionObserver" in window)) return finish();
+  const seen = new IntersectionObserver(entries => {
+    if (entries.some(en => en.isIntersecting)) { seen.disconnect(); setTimeout(start, 250); }
+  }, { threshold: .35 });
+  seen.observe(term);
 })();
 
 // scroll progress hairline
