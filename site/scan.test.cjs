@@ -263,7 +263,8 @@ test('quoted and pasted text is masked the same way as Python before markers and
     'tighten this reply\n```\nLike I said on the call, the budget is fixed.\n```',
     'fix the grammar: \u201cas i said, we ship when its ready\u201d',
     '"No, we cannot ship on Friday" is what my manager wrote, draft a reply',
-    `"${'like i said in the memo '.repeat(12)}" ${'z'.repeat(200)} i told you the header stays fixed`,
+    // The same marker inside and outside the quote: only a masked search windows on the second.
+    `"i told you in the memo" ${'z'.repeat(200)} i told you the header stays fixed`,
     'as I said, use pnpm not npm',
     '> I switched the config to yaml\n\nno, keep it as json',
     'like i said, no new dependencies',
@@ -272,6 +273,8 @@ test('quoted and pasted text is masked the same way as Python before markers and
   assert.ok(restated, 'three genuine markers must flag restated context');
   assert.equal(restated.occurrences, 3);
   assert.deepEqual(new Set(restated.receipts.map((receipt) => receipt.marker)), new Set(['i told you', 'as i said', 'like i said']));
-  assert.ok(restated.receipts.some((receipt) => receipt.text.includes('i told you the header stays fixed')));
+  const windowed = restated.receipts.find((receipt) => receipt.text.includes('i told you the header stays fixed'));
+  assert.ok(windowed, 'the receipt must window on the marker that was counted');
+  assert.ok(!windowed.text.includes('in the memo'), 'not on the copy inside the quote');
   assert.equal(report.correction_rate, 11);
 });

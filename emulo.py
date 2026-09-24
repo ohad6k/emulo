@@ -3080,9 +3080,9 @@ def print_counts(result, no_redact=False):
 # A second reading of the same local logs, addressed to you instead of to the
 # agent. `you.md` answers "who is this person"; this answers "where might this
 # person be losing time with the model". Deliberately deterministic: no model
-# call, no mining pass, no network, so it runs on a first install (57 s over
-# 1,391 sessions on the maintainer's machine) and every number it prints traces
-# back to dated messages you actually typed.
+# call, no mining pass, no network, so it runs on a first install (about a
+# minute over roughly 1,400 sessions on one Windows machine, three runs: 54 to
+# 71 s) and every number it prints traces back to dated messages you typed.
 #
 # Every check is a text match. It sees that a message says "as i said", not
 # whether the agent had actually lost anything, so the wording reports what

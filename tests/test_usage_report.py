@@ -209,13 +209,24 @@ class QuotedTextTest(unittest.TestCase):
         self.assertEqual(restated[0]["marker"], "as i said")
 
     def test_receipt_windows_on_the_counted_marker_not_the_quoted_one(self):
-        quoted = '"' + ("like i said in the memo " * 12) + '"'
-        restated = self._restated(quoted + " " + ("z" * 200) + " i told you the header stays fixed")
+        # The same marker sits inside the quote and outside it. An unmasked search finds
+        # the quoted copy first and windows the receipt onto the memo, so this only passes
+        # when the window is placed on the occurrence that was actually counted.
+        message = '"i told you in the memo" ' + ("z" * 200) + " i told you the header stays fixed"
+        restated = self._restated(message)
         self.assertEqual(len(restated), 1)
         self.assertEqual(restated[0]["marker"], "i told you")
         self.assertIn("i told you the header stays fixed", restated[0]["text"])
+        self.assertNotIn("in the memo", restated[0]["text"])
 
     def test_correction_opener_inside_a_quote_is_not_a_correction(self):
+        """Guard only: this passed before masking existed and cannot fail on its own.
+
+        Correction openers match only at the very start of a message, and each of
+        these starts with a quote mark, ">" or a fence, so no opener could ever match
+        them. It pins that masking, which strips leading masked text, does not start
+        counting an opener that sits inside the quote.
+        """
         self.assertEqual(self._corrections(
             '"No, we cannot ship on Friday" is what my manager wrote, draft a reply',
             "> wrong address, please resend\n\nwhat does this customer want",
