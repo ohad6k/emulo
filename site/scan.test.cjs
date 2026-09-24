@@ -348,6 +348,10 @@ test('only a whole line in Emulo\'s exact chunk format marks a message as inject
     '===== session notes =====\nkeep the header fixed',
     '===== session:abc =====\nno source on this line, so it is not Emulo\'s',
     '===== session:abc source:claude =====\rjunk after a bare carriage return',
+    '====== session:abc source:claude =====\nsix on the left is a heading, not a chunk',
+    '===== session:abc source:claude ======\nsix on the right is a heading, not a chunk',
+    '==== session:abc source:claude ====\nfour on each side is a heading, not a chunk',
+    'see: ===== session:abc source:claude =====\nwhy does emulo print this line?',
   ]) {
     assert.equal(core.isInjectedContext(text), false, text);
   }
