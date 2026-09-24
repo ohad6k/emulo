@@ -2479,12 +2479,24 @@ def write_stats(result, out_dir):
     return stats
 
 def months_between(first_date, last_date):
+    # A reducer can emit JSON null, a number, a list or an object for a date.
+    # Only strings are dates here; anything else is "unknown" and returns 0,
+    # which both card renderers already treat as a missing stat. Checking the
+    # type instead of catching exceptions matters: {}[:4] is TypeError before
+    # Python 3.12 but KeyError from 3.12, when slices became hashable.
+    if not isinstance(first_date, str) or not isinstance(last_date, str):
+        return 0
     try:
         y1, m1 = int(first_date[:4]), int(first_date[5:7])
         y2, m2 = int(last_date[:4]), int(last_date[5:7])
         return max(1, (y2 - y1) * 12 + (m2 - m1) + 1)
-    except (ValueError, IndexError):
+    except ValueError:
         return 0
+
+def card_stats(card):
+    # "stats": null (or any non-object) in card.json means no stats, not a crash
+    stats = card.get("stats")
+    return stats if isinstance(stats, dict) else {}
 
 def fmt_tokens(n):
     if n >= 1_000_000:
@@ -2505,7 +2517,7 @@ def load_card(out_dir, card_path=None):
     stats_path = os.path.join(out_dir, "stats.json")
     if os.path.exists(stats_path):
         with open(stats_path, "r", encoding="utf-8", errors="replace") as fh:
-            card.setdefault("stats", {}).update(json.load(fh))
+            card["stats"] = dict(card_stats(card), **json.load(fh))
     return card
 
 def _enable_vt():
@@ -2710,7 +2722,7 @@ def _animate_card(build, final_lines, c, stats, card, truth_total):
 
 def print_card(card, still=False):
     import textwrap, shutil
-    stats = card.get("stats", {})
+    stats = card_stats(card)
     months = months_between(stats.get("first_date", ""), stats.get("last_date", ""))
     c = _card_colors()
     term_cols = shutil.get_terminal_size((80, 24)).columns
@@ -2990,10 +3002,11 @@ def esc(s):
     return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 def render_card_html(card):
-    stats = card.get("stats", {})
+    stats = card_stats(card)
     months = months_between(stats.get("first_date", ""), stats.get("last_date", ""))
     rng = ""
-    if stats.get("first_date") and stats.get("last_date"):
+    first, last = stats.get("first_date"), stats.get("last_date")
+    if isinstance(first, str) and isinstance(last, str) and first and last:
         rng = f"{esc(stats['first_date'][:7])} &rarr; {esc(stats['last_date'][:7])}"
     stat_cells = []
     if stats.get("sessions"):
@@ -4293,7 +4306,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-EMULO_VERSION = "0.6.2"
+EMULO_VERSION = "0.6.3"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 AUTOPILOT_HEAD_SCHEMA = "emulo.autopilot-head/v1"
 AUTOPILOT_GENERATION_SCHEMA = "emulo.autopilot-generation/v1"
@@ -4552,6 +4565,7 @@ def mcp_main(argv):
 
 def legacy_main():
     ap = argparse.ArgumentParser(description="mine your AI sessions into a model of you")
+    ap.add_argument("--version", action="version", version=f"emulo {EMULO_VERSION}")
     ap.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode", "antigravity"], default="auto")
     ap.add_argument("--path", help="a folder of .jsonl session logs to read instead")
     ap.add_argument("--out", default=None,

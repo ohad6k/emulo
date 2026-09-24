@@ -1,23 +1,35 @@
 # Changelog
 
-## Unreleased
+## 0.6.3 - 2026-09-24
 
 ### Added
 
 - **`emulo.py --coach` reports how you use the model, without mining anything.** The first substantive reply to the outreach round asked for exactly this: a mode focused on improving Claude Code usage rather than extracting conventions. The data was already there. Failure modes are mined today, but they are written to the agent under "protect this person from these" and never addressed to the person. `--coach` reads the same local logs and answers the other question: asks sent three times in a row unchanged, context re-explained after the agent lost it, runs of rephrasing the same request, and the rate of turns that open by correcting the last answer. It makes no model call and writes no corpus, so it runs in seconds on a first install, before anyone has decided whether mining is worth it. `--source claude` narrows it to Claude Code, and `--json` emits the same report for other tools to consume.
 - Every finding carries the dated messages behind it, and a quote whose evidence sits 400 characters into a long message is windowed onto the match rather than clipped from the start, because a receipt you cannot read is not a receipt. Checks that come in under their bar are printed with their counts, so a clean result reads as a measured result and not as a check that did not run.
+- `emulo --version` prints `emulo 0.6.3` and exits 0. It used to fail with `unrecognized arguments: --version` and exit 2, so a bug report had no one-line way to say which build it was about.
+- A contributor guide, issue templates that spell out what not to paste from your own logs, and a PR checklist (#24). `docs/SOURCES.md` lists every session source Emulo reads today and the ones planned, each traced to the code and tests behind it (#27).
+- Tests for the Copilot CLI source, which had none of its own (#32), and for the card display layer (#28).
 
 ### Fixed
 
 - **Two harness preambles were being mined as things the user wrote.** `# Context from my IDE setup:` (an editor stapling the open file and tab list onto the turn) and `# Files mentioned by the user` (Codex listing attachments) both reached the corpus as ordinary prose. On one real corpus that is 2,543 messages, and because they repeat near-verbatim for as long as the same file stays open, mining reads them as deeply held rules. Both are now in `INJECTED_CONTEXT_PREFIXES`, which fixes the mined profile as well as the report. Found by running `--coach` against real logs and reading the receipts it printed: the loudest finding in the first run was an IDE preamble counted as the same ask sent twelve times.
+- **`emulo --card` crashed on a card.json with `"first_date": null`.** A reducer that writes null instead of an empty string sent `None[:4]` into `months_between`, and the TypeError escaped both the terminal card and the HTML card. The card tests in #28 found it and pinned it as an expected failure. The first fix (#30) caught TypeError and was still incomplete: slices are hashable from Python 3.12, so a date that arrives as a JSON object raises KeyError there instead, and #30's own test failed on 3.12 while passing on 3.11. Checking the rest of the card path turned up three more shapes that crashed it: a number for a date broke the HTML date range, a list printed its Python repr on the card, and `"stats": null` crashed both renderers and `load_card`. Dates are now read only when they are strings, a `stats` that is not an object reads as empty, and a missing value drops its row like every other missing stat.
+- **Parts of `emulo.py` raised on Python 3.8, the declared floor.** Three `dict |` merges in the adaptive run path are 3.9+. @Spagles found them by reading the code (#44). CI only ran 3.12, so the `requires-python >=3.8` promise was never checked. CI now runs 3.8 and 3.12, and `tests/test_python_floor.py` walks the AST for anything above 3.8, because the three fixed call sites sit in functions no test executes (#46).
+- The README said the MCP server returns a work, design or writing profile. `load_emulo_profile` has served the video profile since 0.4.0. It also said the Codex plugin was proven with four skills; it ships five (#31).
+- A working planning document under `docs/superpowers/` had been committed past the ignore rule. It is removed from the tree.
 
 ### Verified
 
 - Thresholds were set by measurement against a real 2,271-session corpus rather than by guess, and the measurement changed the feature three times. Repeat runs with no word floor were almost entirely `ok`, `yes`, and `ok do it` sent three times, which is approval and not a loop; with a four-word floor the same corpus yields one genuine run. Widening the rule from consecutive sends to sends within three turns added only filler repeated 84 turns apart, so the rule stayed strict.
 - Sampling the matches caught two more defects before release. `no need for the repo` counted as a correction, and a 1.4% correction rate was being reported as a problem, so corrections now need to clear a rate bar and the rate prints either way for anyone who wants to disagree with the bar.
 - **The reword-loop check is unproven and is shipping anyway, which is worth stating plainly.** Across every corpus available to test it, it fired exactly once, on a pasted pygame banner sent three times, and a line-count guard now excludes that shape. It has no confirmed true positive. It ships because the behaviour it looks for is real and cheap to check, and because a check that finds nothing prints its zero rather than staying silent. Treat a hit from it with more suspicion than a hit from the other three.
-- Full suite passes: 444 tests, 4 skipped, 0 failures. 29 of those tests are new and cover the loop detectors, the exclusions, receipt quality, the injected preambles, redaction of receipts, and the promise that `--coach` leaves no files behind.
+- 29 tests cover the loop detectors, the exclusions, receipt quality, the injected preambles, redaction of receipts, and the promise that `--coach` leaves no files behind.
 - Known limits, stated in the report itself: it reads only the messages you typed, which is all Emulo keeps, so it cannot see cost, tokens, tool calls, or whether the agent was right, and it does not score them.
+- Full suite passes on Python 3.10 and 3.11 with the `[pro]` extra installed: 525 tests, 5 skipped, 0 failures. Under pytest on 3.11: 520 passed, 5 skipped. On Python 3.13 without `cryptography`, which matches CI's dependency-free 3.8 lane: 503 tests, 13 skipped, 0 failures, the extra skips being the continuity tests that need the extra. On Windows three symlink tests skip, and the two release pin tests skip until the `v0.6.3` tag exists.
+- Not verified locally: Python 3.8 itself, because no 3.8 interpreter is installed on the release machine. CI's 3.8 lane is that check.
+- `emulo --card` against a card.json with null dates: on the previous `main` it exits 1 with `TypeError: 'NoneType' object is not subscriptable`; on 0.6.3 it exits 0, prints the card with sessions and tokens, and writes card.html without the months cell or the date range.
+- The `v0.6.3` bootstrap runtime pins `emulo.py` to SHA-256 `dad6aa010382016f` (prefix); `MINING_PROMPT.md` is unchanged at `ee22077c2cda3c1c` (prefix). Full digests in `.agents/skills/emulo/runtime.json`.
+- Not verified: `pip install emulo==0.6.3` from PyPI, because the version is not published at the time of writing. Run that against a clean virtualenv after the tag.
 
 ## 0.6.2 - 2026-07-27
 

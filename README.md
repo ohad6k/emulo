@@ -47,7 +47,7 @@ Inside Claude Code:
 Inside Codex:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.2 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.3 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -237,7 +237,7 @@ This checks what is mechanically checkable. Whether a rule is vague, generic, or
 The native plugin adds `emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, and `emulo:video`:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.2 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.3 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -254,7 +254,7 @@ The Claude Code plugin exposes the same five skills. Install it from inside Clau
 
 ## MCP server
 
-Emulo also ships a Model Context Protocol (MCP) server, so any MCP client — Claude Desktop, Cursor, and other agents — can load your profile before a task. The server implements MCP over stdio and exposes one tool, `load_emulo_profile`, which returns your mined work, design, or writing profile over the Model Context Protocol.
+Emulo also ships a Model Context Protocol (MCP) server, so any MCP client — Claude Desktop, Cursor, and other agents — can load your profile before a task. The server implements MCP over stdio and exposes one tool, `load_emulo_profile`, which returns your mined work, design, writing, or video profile over the Model Context Protocol.
 
 Run it from the published package with `uvx emulo mcp`, or from a checkout with `python emulo.py mcp`, and point an MCP client at it:
 
@@ -350,7 +350,7 @@ See [SECURITY.md](SECURITY.md) for the exact boundary.
 The legacy extractor remains available and backward compatible:
 
 ```bash
-curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.2/emulo.py
+curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.3/emulo.py
 python emulo.py --dry-run
 python emulo.py --chunks 4 --out emulo-out
 ```
@@ -370,7 +370,7 @@ python emulo.py --install you.md --target opencode
 
 | Surface | Status in this release |
 |---|---|
-| Codex native plugin | Proven locally with four namespaced skills |
+| Codex native plugin | Proven locally with five namespaced skills (`emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, `emulo:video`) |
 | Codex skills.sh bootstrap | Supported |
 | Claude Code skills.sh/direct adapter | Supported |
 | Claude native plugin | Not claimed; host unavailable during validation |

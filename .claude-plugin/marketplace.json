@@ -8,7 +8,7 @@
       "source": "./",
       "displayName": "Emulo",
       "description": "Mine real AI coding sessions into a bounded, evidence-backed personal layer.",
-      "version": "0.6.2",
+      "version": "0.6.3",
       "author": {"name": "Ohad"},
       "homepage": "https://github.com/ohad6k/emulo",
       "repository": "https://github.com/ohad6k/emulo",
