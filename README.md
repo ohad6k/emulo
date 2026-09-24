@@ -163,16 +163,18 @@ Nobody wrote those rules down. They came out of one person's own history, with r
 
 ## The usage report
 
-Mining answers "who is this person." The usage report answers a different question: where are you losing time with the model.
+Mining answers "who is this person." The usage report answers a different question: where might you be losing time with the model.
 
 ```bash
 python emulo.py --coach                   # every source it can find
 python emulo.py --coach --source claude   # Claude Code only
 ```
 
-It runs before any mining, makes no model call, and finishes in seconds. It counts what your own messages already show: asks you sent three times in a row without changing them, context you re-explained after the agent lost it, runs where you rephrased the same request instead of adding the missing constraint, and how often you open a turn by correcting the last answer.
+It runs before any mining and makes no model call. On a big history it usually takes under a couple of minutes: a full run over 1,391 sessions took 57 s on the maintainer's machine.
 
-Every finding prints the dated messages behind it. Checks that come in under their bar are printed with their counts as well, so a clean result reads as a result rather than as silence.
+Every check is a text match on your own messages. It counts asks you sent three or more times in a row unchanged, messages with a phrase like "as I said" or "I told you", runs of near-identical asks in a row, and how often a message opens like a correction ("no,", "that's wrong"). A phrase inside quoted or pasted text (a fenced code block, a line starting with `>`, or a double-quoted span) is not counted, so an email you are answering does not read as you repeating yourself. A match cannot tell why you repeated something or whether the agent had forgotten anything, so the report offers fixes as possibilities, not diagnoses.
+
+Every finding prints the dated messages behind it, so you can judge each one yourself. Checks that come in under their bar are printed with their counts as well, so a clean result reads as a result rather than as silence.
 
 It reads only the messages you typed, which is all Emulo keeps. It cannot see cost, tokens, tool calls, or whether the agent was right, and it never scores those.
 

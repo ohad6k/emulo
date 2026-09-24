@@ -114,7 +114,7 @@ class CorrectionTest(unittest.TestCase):
         report = emulo.usage_report([record(*messages)])
         self.assertEqual(report["correction_rate"], 1)
         self.assertIsNone(by_key(report, "corrections"))
-        self.assertIn("You open turns by correcting the last answer.", clean_keys(report))
+        self.assertIn("Messages that open like a correction.", clean_keys(report))
 
     def test_correction_above_the_rate_bar_is_flagged(self):
         messages = ["no this is wrong"] * 10 + ["ordinary work message here"] * 40
@@ -157,6 +157,75 @@ class RestatedContextTest(unittest.TestCase):
         # A receipt whose quote does not contain the evidence cannot be checked.
         for receipt in finding["receipts"]:
             self.assertIn("i already told you", receipt["text"])
+
+
+class QuotedTextTest(unittest.TestCase):
+    """A marker inside quoted or pasted text is not you restating anything.
+
+    The rule: text inside a ``` fence, on a line starting with ">", or inside a
+    double-quoted span is masked before the restated-context markers and the
+    correction openers are matched. What is left is what you wrote yourself.
+    """
+
+    def _restated(self, *texts):
+        _, _, restated, _ = emulo.usage_findings([record(*texts)])
+        return restated
+
+    def _corrections(self, *texts):
+        _, _, _, corrections = emulo.usage_findings([record(*texts)])
+        return corrections
+
+    def test_marker_inside_a_pasted_paragraph_to_proofread_is_not_counted(self):
+        self.assertEqual(self._restated(
+            'proofread this for me:\n\n"As I said in the last update, the launch '
+            'moves to Friday and nobody needs to change anything."'
+        ), [])
+
+    def test_marker_inside_a_curly_quoted_paragraph_is_not_counted(self):
+        self.assertEqual(self._restated(
+            "fix the grammar: “as i said, we ship when its ready”"
+        ), [])
+
+    def test_marker_inside_a_fenced_block_is_not_counted(self):
+        self.assertEqual(self._restated(
+            "tighten this reply\n```\nLike I said on the call, the budget is fixed.\n```"
+        ), [])
+
+    def test_marker_inside_a_quoted_email_line_is_not_counted(self):
+        self.assertEqual(self._restated(
+            "> like I said last week, the invoice is overdue\n\nhelp me answer this politely"
+        ), [])
+
+    def test_genuine_as_i_said_still_counts(self):
+        restated = self._restated("as I said, use pnpm not npm")
+        self.assertEqual(len(restated), 1)
+        self.assertEqual(restated[0]["marker"], "as i said")
+
+    def test_genuine_marker_next_to_a_quote_still_counts(self):
+        restated = self._restated(
+            '> like I said last week\n\nas i said, reply "no" to that email'
+        )
+        self.assertEqual(len(restated), 1)
+        self.assertEqual(restated[0]["marker"], "as i said")
+
+    def test_receipt_windows_on_the_counted_marker_not_the_quoted_one(self):
+        quoted = '"' + ("like i said in the memo " * 12) + '"'
+        restated = self._restated(quoted + " " + ("z" * 200) + " i told you the header stays fixed")
+        self.assertEqual(len(restated), 1)
+        self.assertEqual(restated[0]["marker"], "i told you")
+        self.assertIn("i told you the header stays fixed", restated[0]["text"])
+
+    def test_correction_opener_inside_a_quote_is_not_a_correction(self):
+        self.assertEqual(self._corrections(
+            '"No, we cannot ship on Friday" is what my manager wrote, draft a reply',
+            "> wrong address, please resend\n\nwhat does this customer want",
+            "```\nno such file or directory\n```\nwhy does the build say this",
+        ), [])
+
+    def test_correction_after_a_quoted_line_still_counts(self):
+        self.assertEqual(len(self._corrections(
+            "> I switched the config to yaml\n\nno, keep it as json",
+        )), 1)
 
 
 class RewordLoopTest(unittest.TestCase):
@@ -216,6 +285,56 @@ class ReportShapeTest(unittest.TestCase):
         self.assertEqual(report["messages"], 2)
         self.assertEqual(report["short_prompts"], 1)
         self.assertEqual(report["sources"], {"codex": 1})
+
+
+class WordingTest(unittest.TestCase):
+    """The checks match text. They cannot know why you repeated something.
+
+    0.6.3 printed causes as facts ("the agent was already told", "the model had
+    already given everything that prompt could get"). A text match cannot see
+    either, so the wording describes what was counted and offers the fix as a
+    possibility.
+    """
+
+    CAUSE_CLAIMS = (
+        "already given everything", "was already told", "already given and lost",
+        "paid for twice", "usually means", "rather than the model", "the gap a profile closes",
+    )
+
+    def _all_findings(self):
+        report = emulo.usage_report([record(
+            *["what MCP tools do you have from the gateway"] * 3,
+            "i told you to keep the dark theme",
+            "as i said, the header stays fixed",
+            "like i said, no new dependencies",
+            "make the release notes shorter and drop the roadmap section",
+            "make the release notes shorter and drop the roadmap part",
+            "make the release notes much shorter and drop the roadmap part",
+            "no, keep it as json",
+        )])
+        return report
+
+    def test_every_check_fires_on_this_fixture(self):
+        keys = {item["key"] for item in self._all_findings()["findings"]}
+        self.assertEqual(keys, {"repeat_sends", "restated_context", "reword_loops", "corrections"})
+
+    def test_no_finding_states_a_cause_as_fact(self):
+        for item in self._all_findings()["findings"]:
+            text = (item["title"] + " " + item["meaning"]).lower()
+            for claim in self.CAUSE_CLAIMS:
+                self.assertNotIn(claim, text, item["key"])
+
+    def test_no_dashes_in_report_wording(self):
+        for item in self._all_findings()["findings"]:
+            for field in ("title", "meaning"):
+                self.assertNotIn("—", item[field], item["key"])
+                self.assertNotIn("–", item[field], item["key"])
+
+    def test_keys_are_unchanged_for_json_consumers(self):
+        self.assertEqual(
+            {item["key"] for item in self._all_findings()["findings"]},
+            {"repeat_sends", "restated_context", "reword_loops", "corrections"},
+        )
 
 
 class InjectedContextTest(unittest.TestCase):
@@ -283,7 +402,7 @@ class CoachCliTest(unittest.TestCase):
     def test_coach_reports_the_loop_and_writes_nothing(self):
         stdout, tmp = self._run()
         self.assertIn("emulo usage report", stdout)
-        self.assertIn("You resend the same message instead of changing it.", stdout)
+        self.assertIn("Messages you sent three or more times in a row, unchanged.", stdout)
         self.assertIn("what MCP tools do you have from the gateway", stdout)
         # The report is a read: it must never leave a corpus behind.
         self.assertFalse((tmp / "emulo-out").exists())
@@ -297,6 +416,25 @@ class CoachCliTest(unittest.TestCase):
         report = json.loads(stdout)
         self.assertEqual(report["sessions"], 1)
         self.assertTrue(any(item["key"] == "repeat_sends" for item in report["findings"]))
+
+    def test_coach_says_once_that_these_are_text_matches(self):
+        stdout, _ = self._run()
+        self.assertEqual(stdout.count("text matches"), 1)
+        self.assertIn("cannot tell why", stdout)
+
+    def test_coach_json_keeps_its_keys(self):
+        stdout, _ = self._run("--json")
+        report = json.loads(stdout)
+        self.assertEqual(set(report), {
+            "sessions", "messages", "first_date", "last_date", "sources",
+            "median_words", "short_prompts", "correction_rate", "findings", "clean",
+        })
+        for item in report["findings"]:
+            self.assertEqual(set(item), {"key", "title", "meaning", "occurrences", "flagged", "receipts"})
+            for receipt in item["receipts"]:
+                self.assertEqual(set(receipt), {"session_id", "source", "date", "ordinal", "text", "marker", "count"})
+        for item in report["clean"]:
+            self.assertEqual(set(item), {"title", "occurrences"})
 
     def test_coach_redacts_receipts_by_default(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -313,6 +451,79 @@ class CoachCliTest(unittest.TestCase):
             )
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertNotIn(fake_key, proc.stdout)
+
+
+def isolated_env(home):
+    """Point every place emulo looks for logs at one directory."""
+    env = dict(os.environ)
+    for name in ("HOME", "USERPROFILE", "CODEX_HOME", "XDG_DATA_HOME"):
+        env[name] = str(home)
+    env.pop("HOMEDRIVE", None)
+    env.pop("HOMEPATH", None)
+    return env
+
+
+class CoachHistoryEdgeTest(unittest.TestCase):
+    def test_coach_with_no_history_at_all_explains_and_exits_1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "home"
+            work = Path(tmp) / "work"
+            home.mkdir()
+            work.mkdir()
+            for extra in ((), ("--json",)):
+                proc = subprocess.run(
+                    [sys.executable, str(EMULO), "--coach", *extra],
+                    capture_output=True, text=True, cwd=work, env=isolated_env(home),
+                )
+                self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+                self.assertIn("no session logs found", proc.stdout)
+                self.assertIn("--path", proc.stdout)
+                self.assertNotIn("Traceback", proc.stderr)
+            self.assertEqual(list(work.iterdir()), [])
+            self.assertEqual(list(home.iterdir()), [])
+
+    def test_coach_reads_a_tiny_claude_code_history(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "home"
+            work = Path(tmp) / "work"
+            work.mkdir()
+            rows = [
+                {
+                    "type": "user",
+                    "timestamp": f"2026-09-20T10:0{index}:00Z",
+                    "message": {"role": "user", "content": text},
+                }
+                for index, text in enumerate([
+                    "add a dark theme toggle to the settings page",
+                    "as i said, keep the header fixed when it scrolls",
+                    "ship it when the tests pass",
+                ])
+            ]
+            write_jsonl(home / ".claude" / "projects" / "demo" / "session.jsonl", rows)
+            env = isolated_env(home)
+            proc = subprocess.run(
+                [sys.executable, str(EMULO), "--coach", "--source", "claude"],
+                capture_output=True, text=True, cwd=work, env=env,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn("emulo usage report", proc.stdout)
+            self.assertIn("read 1 sessions, 3 of your messages, 2026-09-20 to 2026-09-20", proc.stdout)
+            self.assertIn("Nothing to flag.", proc.stdout)
+            self.assertIn("Under the bar:", proc.stdout)
+            self.assertIn("(1 seen)", proc.stdout)
+            self.assertNotIn("Traceback", proc.stderr)
+            self.assertEqual(list(work.iterdir()), [])
+
+            as_json = subprocess.run(
+                [sys.executable, str(EMULO), "--coach", "--source", "claude", "--json"],
+                capture_output=True, text=True, cwd=work, env=env,
+            )
+            self.assertEqual(as_json.returncode, 0, as_json.stderr)
+            report = json.loads(as_json.stdout)
+            self.assertEqual(report["sessions"], 1)
+            self.assertEqual(report["messages"], 3)
+            self.assertEqual(report["findings"], [])
+            self.assertEqual(len(report["clean"]), 4)
 
 
 if __name__ == "__main__":
