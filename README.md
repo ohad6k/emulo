@@ -47,7 +47,7 @@ Inside Claude Code:
 Inside Codex:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.2 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.3 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -237,7 +237,7 @@ This checks what is mechanically checkable. Whether a rule is vague, generic, or
 The native plugin adds `emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, and `emulo:video`:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.2 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.3 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -350,7 +350,7 @@ See [SECURITY.md](SECURITY.md) for the exact boundary.
 The legacy extractor remains available and backward compatible:
 
 ```bash
-curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.2/emulo.py
+curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.3/emulo.py
 python emulo.py --dry-run
 python emulo.py --chunks 4 --out emulo-out
 ```
