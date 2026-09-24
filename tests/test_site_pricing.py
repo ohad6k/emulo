@@ -54,7 +54,7 @@ class SitePricingTests(unittest.TestCase):
         self.assertIn("Profile Build", pricing)
         self.assertIn("$300", pricing)
         self.assertIn("ohadkrispin@gmail.com", pricing)
-        self.assertIn("emulo.py --coach --json", pricing)
+        self.assertIn("emulo verify you.md --json", pricing)
         for closed in ("Choose monthly", "Choose annual", ACCOUNT_URL,
                        f"${MONTHLY} ", f"${YEARLY} "):
             with self.subTest(closed=closed):
