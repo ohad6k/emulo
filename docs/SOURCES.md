@@ -67,9 +67,7 @@ Root is `~/.copilot/session-state`, recursive `*.jsonl`. Records look like `{"ty
 Logs are all named `events.jsonl` under a per-session directory, so `session_label()` prefixes the
 parent directory (the session id) to keep session blocks distinguishable in the corpus.
 
-Evidence: no dedicated test file. The record shape and the `session-state` layout are documented in
-`emulo.py` comments and exercised only through the shared `user_messages()` path. Treat this one as
-the least covered adapter.
+Evidence: `tests/test_copilot_source.py`.
 
 ### OpenCode
 

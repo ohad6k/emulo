@@ -12,9 +12,9 @@ cd emulo
 python -m unittest discover -s tests
 ```
 
-`pyproject.toml` declares `requires-python = ">=3.8"`. CI runs 3.12 (`.github/workflows/tests.yml`). This guide was written against a local run on Python 3.11.4: 396 tests, OK, 3 skipped (Windows symlink tests that need a privilege Windows does not grant by default). Those three run on Linux and macOS.
+`pyproject.toml` declares `requires-python = ">=3.8"`. CI runs the floor and the ceiling, 3.8 and 3.12 (`.github/workflows/tests.yml`). On Windows, three symlink tests skip because creating a symlink needs a privilege Windows does not grant by default; they run on Linux and macOS.
 
-CI installs the one optional pin before the suite, so do the same if you touch encrypted continuity:
+The 3.12 lane installs the one optional pin before the suite, so do the same if you touch encrypted continuity. The 3.8 lane installs nothing, because the core is dependency-free and the suite has to pass for someone who installed exactly that:
 
 ```bash
 python -m pip install -r requirements.lock
