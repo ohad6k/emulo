@@ -1,0 +1,7 @@
+{
+  "read": 2,
+  "confirmed": 0,
+  "verdict": "PASS",
+  "note": "Both flags were the same thing: an Opus 5 placebo dashboard numbering its rows, so the label 'Retention, day 30' was followed by the row index '05' next to 'No entry' or 'null'. Not a value. Across all 60 dashboards on both models, the four null metrics were drawn as missing every time.",
+  "read_by": "Ohad's session, 2026-09-01, by opening the two files in context"
+}

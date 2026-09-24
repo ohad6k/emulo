@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Orbit</title>
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 1000px; height: 1400px; overflow: hidden; position: relative;
+    background: #0b0b0c; color: #f4f4f4;
+    font-family: -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(900px 700px at 76% 38%, rgba(255,255,255,.05), rgba(0,0,0,0) 65%);
+  }
+  .brand {
+    position: absolute; left: 64px; top: 56px; display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 600; letter-spacing: .01em;
+  }
+  .brand svg { display: block; }
+  .hero { position: absolute; left: 64px; top: 168px; width: 600px; }
+  .hero h1 {
+    margin: 0; font-size: 84px; line-height: .98; font-weight: 600; letter-spacing: -.035em;
+  }
+  .hero h1 span { color: #7c7c80; }
+  .actions { position: absolute; left: 64px; top: 478px; display: flex; align-items: center; gap: 28px; }
+  .btn {
+    appearance: none; border: 0; cursor: pointer;
+    background: #f4f4f4; color: #0b0b0c; font: inherit; font-size: 15px; font-weight: 600;
+    padding: 14px 22px; border-radius: 4px; letter-spacing: -.005em;
+  }
+  .link {
+    color: #f4f4f4; text-decoration: none; font-size: 15px; font-weight: 500;
+    border-bottom: 1px solid rgba(255,255,255,.28); padding-bottom: 2px;
+  }
+  .link::after { content: " \2192"; color: #7c7c80; }
+  .orbit { position: absolute; left: 0; top: 0; }
+  .features {
+    position: absolute; left: 64px; right: 64px; top: 1010px;
+    display: grid; grid-template-columns: 1fr 1fr; column-gap: 56px; row-gap: 44px;
+  }
+  .f { border-top: 1px solid rgba(255,255,255,.12); padding-top: 18px; }
+  .f h2 {
+    margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: #7c7c80;
+  }
+  .f p { margin: 0; font-size: 20px; line-height: 1.35; letter-spacing: -.012em; color: #e8e8e8; max-width: 380px; }
+  .foot {
+    position: absolute; left: 64px; right: 64px; bottom: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 14px; color: #8a8a8e;
+  }
+  .foot .dots { display: flex; gap: 6px; }
+  .foot .dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.22); display: block; }
+  .foot .dots i:nth-child(3) { background: #f4f4f4; }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+  @keyframes breathe { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+  .hand { transform-origin: 740px 540px; animation: sweep 90s linear infinite; }
+  .wedge { animation: breathe 5s ease-in-out infinite; }
+</style>
+</head>
+<body>
+  <div class="vignette"></div>
+
+  <div class="brand">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <circle cx="9" cy="9" r="7.5" stroke="#f4f4f4" stroke-width="1.5"/>
+      <circle cx="9" cy="9" r="2" fill="#f4f4f4"/>
+      <circle cx="15.2" cy="4.6" r="1.6" fill="#f4f4f4"/>
+    </svg>
+    Orbit
+  </div>
+
+  <svg class="orbit" width="1000" height="1400" viewBox="0 0 1000 1400" aria-hidden="true">
+    <defs>
+      <linearGradient id="wg" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#ffffff" stop-opacity=".02"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity=".18"/>
+      </linearGradient>
+    </defs>
+    <g transform="translate(740 540)">
+      <path class="wedge" d="M -28.5 -106.3 L -80.2 -299.4 A 310 310 0 0 1 80.2 -299.4 L 28.5 -106.3 A 110 110 0 0 0 -28.5 -106.3 Z" fill="url(#wg)"/>
+
+      <circle r="130" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="1"/>
+      <circle r="170" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="1"/>
+      <circle r="210" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="1"/>
+      <circle r="250" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="1"/>
+      <circle r="290" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="1"/>
+
+      <circle r="130" fill="none" stroke="rgba(255,255,255,.62)" stroke-width="2" pathLength="24" stroke-dasharray="9 15" transform="rotate(-105)"/>
+      <circle r="170" fill="none" stroke="rgba(255,255,255,.56)" stroke-width="2" pathLength="24" stroke-dasharray="9 15" transform="rotate(-125)"/>
+      <circle r="210" fill="none" stroke="rgba(255,255,255,.50)" stroke-width="2" pathLength="24" stroke-dasharray="9 15" transform="rotate(-150)"/>
+      <circle r="250" fill="none" stroke="rgba(255,255,255,.44)" stroke-width="2" pathLength="24" stroke-dasharray="9 15" transform="rotate(-175)"/>
+      <circle r="290" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="2" pathLength="24" stroke-dasharray="9 15" transform="rotate(-200)"/>
+
+      <circle cx="-33.6" cy="-125.6" r="4" fill="#f4f4f4"/>
+      <circle cx="-97.5" cy="-139.3" r="4" fill="#f4f4f4"/>
+      <circle cx="-181.9" cy="-105" r="4" fill="#f4f4f4"/>
+      <circle cx="-249" cy="-21.8" r="4" fill="#f4f4f4"/>
+      <circle cx="-272.5" cy="99.2" r="5" fill="#f5b942"/>
+      <line x1="-266" y1="99.2" x2="-236" y2="99.2" stroke="#f5b942" stroke-width="1"/>
+      <text x="-230" y="103.5" font-size="12" fill="#f5b942" font-family="inherit" letter-spacing=".04em">6:00 call, third week in a row</text>
+
+      <circle r="112" fill="#0b0b0c" stroke="rgba(255,255,255,.14)" stroke-width="1"/>
+      <circle r="100" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="8" stroke-dasharray="1.5 29.39"/>
+      <circle r="100" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="12" stroke-dasharray="2 183.35" transform="rotate(-90)"/>
+      <text x="0" y="8" text-anchor="middle" font-size="40" font-weight="500" fill="#f4f4f4" letter-spacing="-.03em" font-family="inherit">14:00</text>
+      <text x="0" y="34" text-anchor="middle" font-size="11" fill="#7c7c80" letter-spacing=".14em" font-family="inherit">SHARED CLOCK</text>
+    </g>
+    <g class="hand">
+      <line x1="740" y1="540" x2="740" y2="446" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="740" cy="540" r="3" fill="#f4f4f4"/>
+    </g>
+    <text x="661" y="222" font-size="11" fill="#7c7c80" letter-spacing=".14em" font-family="inherit">EVERY OFFICE AWAKE</text>
+  </svg>
+
+  <div class="hero">
+    <h1>Scheduling for teams across <span>time zones.</span></h1>
+  </div>
+
+  <div class="actions">
+    <button class="btn">Start free</button>
+    <a class="link" href="#">See how it works</a>
+  </div>
+
+  <section class="features">
+    <div class="f">
+      <h2>Overlap</h2>
+      <p>Finds the hours every office is awake at the same time.</p>
+    </div>
+    <div class="f">
+      <h2>One clock</h2>
+      <p>Shows one shared clock instead of five converted ones.</p>
+    </div>
+    <div class="f">
+      <h2>Local calendars</h2>
+      <p>Books the meeting in everyone's local calendar.</p>
+    </div>
+    <div class="f">
+      <h2>Fair rotation</h2>
+      <p>Flags the person who always gets the 6am call.</p>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>Used by 40 teams across 12 countries.</span>
+    <span class="dots"><i></i><i></i><i></i><i></i><i></i></span>
+  </div>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<title>Ledger Metrics</title>
+<style>
+  :root{
+    --bg:#0f1115;--panel:#171a21;--panel2:#1d2129;--line:#2a2f3a;
+    --text:#e8eaf0;--muted:#8b91a1;--accent:#5cc8ff;--accent2:#8de0b0;--warn:#f0b35c;--empty:#5a6070;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;width:1600px;height:900px;overflow:hidden;background:var(--bg);color:var(--text);
+    font-family:"Inter",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px}
+  #bg{position:absolute;inset:0;width:1600px;height:900px;display:block}
+  .wrap{position:relative;width:1600px;height:900px;padding:44px 56px 40px;display:flex;flex-direction:column}
+  header{display:flex;align-items:flex-end;justify-content:space-between;height:96px}
+  h1{margin:0;font-size:44px;font-weight:600;letter-spacing:-0.02em;line-height:1}
+  .sub{margin-top:10px;color:var(--muted);font-size:18px;display:flex;align-items:center;gap:14px}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--accent2);position:relative}
+  .dot::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--accent2);animation:ping 2.2s ease-out infinite}
+  @keyframes ping{0%{transform:scale(.4);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+  .legend{color:var(--muted);font-size:15px;text-align:right;line-height:1.5}
+  .legend b{color:var(--text);font-weight:600}
+  .grid{flex:1;margin-top:28px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);gap:22px}
+  .tile{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:space-between}
+  .tile::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:50% 100%;background-repeat:no-repeat;
+    animation:sweep 6s linear infinite;animation-delay:var(--d,0s);opacity:.9}
+  @keyframes sweep{0%{background-position:-60% 0}100%{background-position:160% 0}}
+  .label{font-size:17px;color:var(--muted);font-weight:500}
+  .value{font-size:64px;font-weight:600;letter-spacing:-0.03em;line-height:1;margin:14px 0 6px;font-variant-numeric:tabular-nums}
+  .unit{font-size:22px;color:var(--muted);font-weight:500;margin-left:8px;letter-spacing:0}
+  .note{font-size:15px;color:var(--muted);line-height:1.45}
+  .empty{background:var(--panel2);border-style:dashed;border-color:#343a47}
+  .empty::before{display:none}
+  .empty .value{font-size:30px;color:var(--empty);font-weight:500;letter-spacing:0;margin-top:18px}
+  .empty svg.frame{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .empty svg.frame rect{fill:none;stroke:#3d4452;stroke-width:1.5;stroke-dasharray:8 10;animation:march 3s linear infinite}
+  @keyframes march{to{stroke-dashoffset:-36}}
+  .bar{position:relative;height:6px;border-radius:3px;background:#262b36;overflow:hidden;margin-top:10px}
+  .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--accent);width:0;transition:width 1.4s cubic-bezier(.2,.8,.2,1)}
+  .bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+    background-size:40% 100%;background-repeat:no-repeat;animation:shine 2.4s linear infinite}
+  @keyframes shine{0%{background-position:-50% 0}100%{background-position:150% 0}}
+  .ring{position:absolute;right:26px;top:24px;width:88px;height:88px}
+  .ring circle{fill:none;stroke-width:8;stroke-linecap:round}
+  .ring .track{stroke:#262b36}
+  .ring .arc{stroke:var(--accent2);stroke-dasharray:238;stroke-dashoffset:238;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1.6s ease}
+  .ring .spin{stroke:var(--accent2);stroke-dasharray:12 226;stroke-width:3;opacity:.6;transform-origin:50% 50%;animation:spin 5s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .ticks{position:absolute;right:28px;bottom:26px;display:flex;gap:5px;align-items:flex-end;height:40px}
+  .ticks i{width:6px;border-radius:2px;background:var(--warn);opacity:.7;height:30%;animation:tick 1.8s ease-in-out infinite}
+  .ticks i:nth-child(2){animation-delay:.15s}.ticks i:nth-child(3){animation-delay:.3s}.ticks i:nth-child(4){animation-delay:.45s}
+  .ticks i:nth-child(5){animation-delay:.6s}.ticks i:nth-child(6){animation-delay:.75s}
+  @keyframes tick{0%,100%{height:30%}50%{height:100%}}
+  .clock{position:absolute;right:26px;top:24px;width:88px;height:88px}
+  .clock circle{fill:none;stroke:#262b36;stroke-width:8}
+  .clock .hand{stroke:var(--accent);stroke-width:4;stroke-linecap:round;transform-origin:50% 50%;animation:spin 12.4s linear infinite}
+  footer{margin-top:22px;color:var(--muted);font-size:15px;display:flex;justify-content:space-between}
+</style>
+
+<canvas id="bg" width="1600" height="900"></canvas>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Ledger</h1>
+      <div class="sub"><span class="dot"></span>Product metrics, last 30 days</div>
+    </div>
+    <div class="legend"><b>4 of 8</b> metrics reported for this period.<br>Metrics with no value are shown as not reported, not estimated.</div>
+  </header>
+
+  <div class="grid">
+    <div class="tile" style="--d:0s">
+      <div class="label">Active installs</div>
+      <div><div class="value" data-count="1284" data-format="int">0</div>
+      <div class="bar"><i id="bar-installs"></i></div></div>
+      <div class="note">Installs that ran at least once in the period.</div>
+    </div>
+
+    <div class="tile empty">
+      <svg class="frame"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="13"/></svg>
+      <div class="label">Weekly active users</div>
+      <div class="value">Not reported</div>
+      <div class="note">No value for this period.</div>
+    </div>
+
+    <div class="tile" style="--d:1.5s">
+      <svg class="clock" viewBox="0 0 100 100"><circle cx="50" cy="50" r="38"/><line class="hand" x1="50" y1="50" x2="50" y2="20"/></svg>
+      <div class="label">Median session length</div>
+      <div><div class="value"><span data-count="12.4" data-format="dec">0.0</span><span class="unit">min</span></div></div>
+      <div class="note">Median across all sessions in the period.</div>
+    </div>
+
+    <div class="tile empty">
+      <svg class="frame"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="13"/></svg>
+      <div class="label">Day-30 retention</div>
+      <div class="value">Not reported</div>
+      <div class="note">No value for this period.</div>
+    </div>
+
+    <div class="tile" style="--d:3s">
+      <svg class="ring" viewBox="0 0 100 100">
+        <circle class="track" cx="50" cy="50" r="38"/>
+        <circle class="arc" id="arc" cx="50" cy="50" r="38"/>
+        <circle class="spin" cx="50" cy="50" r="38"/>
+      </svg>
+      <div class="label">Crash-free rate</div>
+      <div><div class="value"><span data-count="99.2" data-format="dec">0.0</span><span class="unit">%</span></div></div>
+      <div class="note">Sessions that ended without a crash.</div>
+    </div>
+
+    <div class="tile empty">
+      <svg class="frame"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="13"/></svg>
+      <div class="label">Paid conversions</div>
+      <div class="value">Not reported</div>
+      <div class="note">No value for this period.</div>
+    </div>
+
+    <div class="tile" style="--d:4.5s">
+      <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="label">Support tickets</div>
+      <div><div class="value" data-count="37" data-format="int">0</div></div>
+      <div class="note">Tickets opened against Ledger in the period.</div>
+    </div>
+
+    <div class="tile empty">
+      <svg class="frame"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="13"/></svg>
+      <div class="label">NPS</div>
+      <div class="value">Not reported</div>
+      <div class="note">No value for this period.</div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Ledger, last 30 days. Values are shown as reported; nothing on this page is extrapolated.</span>
+    <span id="stamp"></span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  // Background: slow drifting wave field on Canvas 2D.
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),W=1600,H=900,t=0;
+  function frame(){
+    t+=0.006;
+    ctx.clearRect(0,0,W,H);
+    for(var k=0;k<7;k++){
+      ctx.beginPath();
+      var amp=28+k*6,base=140+k*105,phase=t*(1+k*0.15)+k;
+      for(var x=0;x<=W;x+=8){
+        var y=base+Math.sin(x*0.0045+phase)*amp+Math.sin(x*0.011-phase*0.7)*amp*0.4;
+        if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle='rgba(92,200,255,'+(0.05+k*0.012)+')';
+      ctx.lineWidth=1.2;ctx.stroke();
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+
+  // Count-up on load for reported values only.
+  var els=document.querySelectorAll('[data-count]'),start=null;
+  function fmt(v,f){return f==='dec'?v.toFixed(1):Math.round(v).toLocaleString('en-US');}
+  function step(ts){
+    if(!start)start=ts;
+    var p=Math.min(1,(ts-start)/1500),e=1-Math.pow(1-p,3);
+    for(var i=0;i<els.length;i++){
+      var el=els[i],target=parseFloat(el.getAttribute('data-count'));
+      el.textContent=fmt(target*e,el.getAttribute('data-format'));
+    }
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+
+  // Ring for crash-free rate, bar for installs.
+  setTimeout(function(){
+    document.getElementById('arc').style.strokeDashoffset=(238*(1-0.992)).toFixed(2);
+    document.getElementById('bar-installs').style.width='100%';
+  },80);
+
+  // Rendered-at stamp keeps ticking.
+  var s=document.getElementById('stamp');
+  function tick(){s.textContent='Rendered '+new Date().toLocaleTimeString('en-US',{hour12:false});}
+  tick();setInterval(tick,1000);
+})();
+</script>

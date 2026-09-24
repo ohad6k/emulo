@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Orbit</title>
+    <style>
+      :root {
+        --bg: #0b1120;
+        --bg-2: #101a30;
+        --ink: #eef2ff;
+        --muted: #9aa6c6;
+        --line: rgba(154, 166, 198, 0.18);
+        --sun: #f6bd4a;
+        --sun-ink: #1a1200;
+        --sky: #6fa9ff;
+        --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        width: 1000px;
+        height: 1400px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        position: relative;
+      }
+      .glow {
+        position: absolute;
+        top: -260px;
+        left: 50%;
+        width: 900px;
+        height: 600px;
+        transform: translateX(-50%);
+        background: radial-gradient(ellipse at center, rgba(111, 169, 255, 0.22), rgba(11, 17, 32, 0) 65%);
+        pointer-events: none;
+      }
+      .page {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        padding: 40px 56px 44px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Nav */
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 40px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .brand h1 {
+        margin: 0;
+        font-family: var(--sans);
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+      .nav-note {
+        font-size: 13px;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      /* Hero */
+      .hero { margin-top: 48px; }
+      .hero p.lede {
+        margin: 0;
+        font-family: var(--serif);
+        font-size: 66px;
+        line-height: 1.04;
+        letter-spacing: -0.015em;
+        max-width: 800px;
+        font-weight: 400;
+      }
+      .hero p.lede em {
+        font-style: italic;
+        color: var(--sun);
+      }
+      .actions {
+        margin-top: 34px;
+        display: flex;
+        align-items: center;
+        gap: 26px;
+      }
+      .btn {
+        appearance: none;
+        border: 0;
+        background: var(--sun);
+        color: var(--sun-ink);
+        font: 600 16px var(--sans);
+        padding: 15px 26px;
+        border-radius: 999px;
+        cursor: pointer;
+        box-shadow: 0 8px 28px rgba(246, 189, 74, 0.28);
+      }
+      .link {
+        color: var(--ink);
+        text-decoration: none;
+        font-size: 16px;
+        border-bottom: 1px solid rgba(238, 242, 255, 0.35);
+        padding-bottom: 2px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .link svg { width: 14px; height: 14px; }
+
+      /* Visual */
+      .visual {
+        margin-top: 46px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: linear-gradient(180deg, var(--bg-2), rgba(16, 26, 48, 0.4));
+        padding: 22px 26px 18px;
+      }
+      .visual-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 8px;
+      }
+      .visual-head .t {
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .visual-head .k {
+        font-size: 13px;
+        color: var(--muted);
+        display: flex;
+        gap: 18px;
+      }
+      .k i {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        margin-right: 6px;
+        vertical-align: -1px;
+      }
+      .visual svg { display: block; width: 100%; height: auto; }
+
+      /* Capabilities */
+      .caps { margin-top: 44px; }
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 0 0 20px;
+      }
+      .eyebrow h2 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .eyebrow::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--line);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .grid li {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 22px 22px 22px;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        background: rgba(255, 255, 255, 0.015);
+      }
+      .grid .ico {
+        flex: 0 0 40px;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: rgba(111, 169, 255, 0.1);
+        display: grid;
+        place-items: center;
+      }
+      .grid .ico svg { width: 22px; height: 22px; }
+      .grid p {
+        margin: 0;
+        font-family: var(--serif);
+        font-size: 21px;
+        line-height: 1.3;
+        letter-spacing: -0.005em;
+      }
+
+      /* Footer */
+      .foot {
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .foot .dots { display: flex; gap: 5px; }
+      .foot .dots i {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--sky); opacity: 0.7; display: block;
+      }
+      .foot .dots i:nth-child(odd) { background: var(--sun); }
+    </style>
+  </head>
+  <body>
+    <div class="glow"></div>
+    <div class="page">
+
+      <header class="nav">
+        <div class="brand">
+          <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+            <circle cx="14" cy="14" r="12" fill="none" stroke="#6fa9ff" stroke-width="1.4" opacity="0.7"/>
+            <ellipse cx="14" cy="14" rx="12" ry="4.5" fill="none" stroke="#9aa6c6" stroke-width="1" transform="rotate(-25 14 14)" opacity="0.8"/>
+            <circle cx="14" cy="14" r="3.2" fill="#f6bd4a"/>
+            <circle cx="24.2" cy="8.4" r="1.7" fill="#eef2ff"/>
+          </svg>
+          <h1>Orbit</h1>
+        </div>
+        <div class="nav-note">Meetings that fit every clock</div>
+      </header>
+
+      <section class="hero">
+        <p class="lede">Scheduling for teams <em>across time zones.</em></p>
+        <div class="actions">
+          <button class="btn">Start free</button>
+          <a class="link" href="#">See how it works
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+          </a>
+        </div>
+      </section>
+
+      <section class="visual" aria-label="Five offices on one shared clock">
+        <div class="visual-head">
+          <span class="t">One shared clock · five offices</span>
+          <span class="k">
+            <span><i style="background:#3d5f9e"></i>Office awake</span>
+            <span><i style="background:#f6bd4a"></i>Everyone awake</span>
+          </span>
+        </div>
+        <svg viewBox="0 0 888 300" role="img" aria-label="Timeline showing the overlapping awake hours of five offices, with the shared window highlighted">
+          <defs>
+            <linearGradient id="sunband" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#f6bd4a" stop-opacity="0.32"/>
+              <stop offset="1" stop-color="#f6bd4a" stop-opacity="0.08"/>
+            </linearGradient>
+          </defs>
+          <!-- hour grid: 24h across x=120..868 (31.17px/h) -->
+          <g stroke="#9aa6c6" stroke-opacity="0.16" stroke-width="1">
+            <line x1="120" y1="28" x2="120" y2="252"/>
+            <line x1="307" y1="28" x2="307" y2="252"/>
+            <line x1="494" y1="28" x2="494" y2="252"/>
+            <line x1="681" y1="28" x2="681" y2="252"/>
+            <line x1="868" y1="28" x2="868" y2="252"/>
+          </g>
+          <!-- shared overlap 13:00–15:00 -->
+          <rect x="525.2" y="24" width="62.3" height="232" rx="6" fill="url(#sunband)" stroke="#f6bd4a" stroke-opacity="0.6" stroke-width="1"/>
+          <!-- axis labels (shared clock) -->
+          <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#9aa6c6">
+            <text x="120" y="14" text-anchor="middle">00</text>
+            <text x="307" y="14" text-anchor="middle">06</text>
+            <text x="494" y="14" text-anchor="middle">12</text>
+            <text x="681" y="14" text-anchor="middle">18</text>
+            <text x="868" y="14" text-anchor="middle">24</text>
+          </g>
+          <!-- rows -->
+          <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="14" fill="#eef2ff">
+            <!-- Berlin 07–16 -->
+            <text x="0" y="52">Berlin</text>
+            <rect x="338.2" y="38" width="280.5" height="20" rx="5" fill="#3d5f9e"/>
+            <!-- Tel Aviv 06–15 -->
+            <text x="0" y="98">Tel Aviv</text>
+            <rect x="307" y="84" width="280.5" height="20" rx="5" fill="#3d5f9e"/>
+            <!-- London 08–17 -->
+            <text x="0" y="144">London</text>
+            <rect x="369.3" y="130" width="280.5" height="20" rx="5" fill="#3d5f9e"/>
+            <!-- Lagos 08–17 -->
+            <text x="0" y="190">Lagos</text>
+            <rect x="369.3" y="176" width="280.5" height="20" rx="5" fill="#3d5f9e"/>
+            <!-- New York 13–22 -->
+            <text x="0" y="236">New York</text>
+            <rect x="525.2" y="222" width="280.5" height="20" rx="5" fill="#3d5f9e"/>
+          </g>
+          <!-- overlap highlights -->
+          <g fill="#f6bd4a">
+            <rect x="525.2" y="38" width="62.3" height="20" rx="5"/>
+            <rect x="525.2" y="84" width="62.3" height="20" rx="5"/>
+            <rect x="525.2" y="130" width="62.3" height="20" rx="5"/>
+            <rect x="525.2" y="176" width="62.3" height="20" rx="5"/>
+            <rect x="525.2" y="222" width="62.3" height="20" rx="5"/>
+          </g>
+          <!-- early-call flag on the row that always gets the edge -->
+          <g transform="translate(507 224)">
+            <line x1="0" y1="0" x2="0" y2="18" stroke="#f6bd4a" stroke-width="1.5"/>
+            <path d="M0 0 L12 4 L0 8 Z" fill="#f6bd4a"/>
+          </g>
+          <text x="0" y="288" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#9aa6c6">Awake hours, shown on the shared clock</text>
+          <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#f6bd4a">
+            <text x="556.3" y="288" text-anchor="middle">13:00 – 15:00 · everyone awake</text>
+          </g>
+        </svg>
+      </section>
+
+      <section class="caps">
+        <div class="eyebrow"><h2>What it does</h2></div>
+        <ul class="grid">
+          <li>
+            <span class="ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#6fa9ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+            </span>
+            <p>Finds the hours every office is awake at the same time.</p>
+          </li>
+          <li>
+            <span class="ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#6fa9ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+            </span>
+            <p>Shows one shared clock instead of five converted ones.</p>
+          </li>
+          <li>
+            <span class="ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#6fa9ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15.5l2 2 4-4"/></svg>
+            </span>
+            <p>Books the meeting in everyone's local calendar.</p>
+          </li>
+          <li>
+            <span class="ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#f6bd4a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/></svg>
+            </span>
+            <p>Flags the person who always gets the 6am call.</p>
+          </li>
+        </ul>
+      </section>
+
+      <footer class="foot">
+        <span class="dots"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <p style="margin:0">Used by 40 teams across 12 countries.</p>
+      </footer>
+
+    </div>
+  </body>
+</html>

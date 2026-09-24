@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emulo | Nothing is enforcing your agent rules</title>
+<meta name="description" content="We scanned 2,783 public repositories for agent instructions that forbid something, then checked whether anything in CI would stop it. Thirty two rules, nothing enforcing them. Then we built the fix and watched our own fix report success while it was broken.">
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f2eee1; --paper-2:#f7f4ea;
+  --ink:#161309; --ink-soft:#3d3a2f; --ink-faint:#6f6a58; --ink-dim:#8f8a76;
+  --rule:#c9c3ad; --red:#a83b23; --green:#4a6b3a;
+  --serif:"Playfair Display",Georgia,serif;
+  --text:"Source Serif 4",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{max-width:100%;overflow-x:hidden}
+body{background:var(--paper);color:var(--ink);font-family:var(--text);font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+a{color:inherit}
+.wrap{position:relative;z-index:3;width:100%;max-width:780px;margin:0 auto;padding:0 32px}
+.label{display:block;color:var(--ink-faint);font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.28em;text-transform:uppercase}
+.label .red{color:var(--red)}
+h1,h2,h3{font-family:var(--serif);font-weight:600}
+
+header{padding:96px 0 0}
+h1{font-size:clamp(32px,5.6vw,54px);line-height:1.08;letter-spacing:-.015em;margin:22px 0 26px}
+h1 em{font-style:italic;color:var(--red)}
+.standfirst{font-size:20px;color:var(--ink-soft);max-width:62ch}
+.byline{margin-top:34px;padding-top:18px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:12px;color:var(--ink-dim);letter-spacing:.04em}
+
+section{padding:54px 0 0}
+h2{font-size:clamp(21px,3.2vw,28px);line-height:1.2;margin:0 0 18px}
+h2 .n{font-family:var(--mono);font-size:12px;color:var(--red);letter-spacing:.2em;
+  display:block;font-weight:500;margin-bottom:10px}
+h3{font-size:19px;margin:28px 0 10px}
+p{margin:0 0 17px;max-width:68ch}
+p.lead{font-size:19px;color:var(--ink-soft)}
+strong{font-weight:600}
+ul{margin:0 0 17px 20px;max-width:66ch}
+li{margin-bottom:7px}
+
+table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14.5px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);font-weight:500}
+td.v{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:2px 7px;border:1px solid var(--rule);white-space:nowrap}
+.keep{color:var(--green);border-color:var(--green)}
+.change{color:var(--red);border-color:var(--red)}
+.untested{color:var(--ink-dim)}
+
+.eb{background:var(--paper-2);border:1px solid var(--rule);border-left:2px solid var(--red);
+  padding:18px 20px;margin:22px 0;font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  color:var(--ink-soft);overflow-x:auto;white-space:pre-wrap}
+blockquote{margin:24px 0;padding-left:22px;border-left:2px solid var(--rule);
+  font-family:var(--serif);font-style:italic;font-size:20px;line-height:1.4;color:var(--ink-soft);max-width:58ch}
+
+footer{margin-top:70px;padding:26px 0 90px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:12px;color:var(--ink-dim);line-height:1.9}
+footer a{color:var(--red);text-decoration:none;border-bottom:1px solid var(--rule)}
+@media(max-width:620px){.wrap{padding:0 20px}header{padding-top:60px}section{padding-top:40px}
+  table{font-size:13px}th,td{padding:8px 6px}}
+
+.big{font-family:var(--serif);font-size:clamp(40px,7vw,64px);line-height:1;color:var(--red);
+  display:block;margin:0 0 4px}
+.stat{border-top:1px solid var(--rule);padding:22px 0 4px;margin:26px 0 0;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.stat div{max-width:none}
+.stat .cap{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-faint);display:block;line-height:1.5}
+.pass{color:var(--green)}
+.no{color:var(--red)}
+.cta{background:var(--paper-2);border:1px solid var(--rule);border-left:2px solid var(--red);
+  padding:26px 26px 22px;margin:34px 0 0}
+.cta p{max-width:60ch}
+.cta a{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:13px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--red);text-decoration:none;
+  border-bottom:1px solid var(--red);padding-bottom:3px}
+@media(max-width:620px){.stat{grid-template-columns:1fr;gap:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="label">Field scan<span class="red">&nbsp;&middot;&nbsp;</span>Agent rules</span>
+  <h1>A rule nobody enforces <em>is not a rule</em></h1>
+  <p class="standfirst">We scanned 2,783 public repositories for agent instructions that forbid
+  something specific, then checked whether anything in their CI would actually stop it. Then we
+  built the fix, and watched our own fix report success while it was broken.</p>
+  <p class="byline">Ohad Krispin &nbsp;&middot;&nbsp; 25 August 2026 &nbsp;&middot;&nbsp; The
+  broken guard described below is ours</p>
+</header>
+
+<section>
+  <h2><span class="n">01</span>What we looked for</h2>
+  <p class="lead">Not whether a rules file exists. Whether anything would stop the rule being
+  broken.</p>
+  <p>An <span class="v">AGENTS.md</span> or <span class="v">CLAUDE.md</span> that says "never edit
+  this generated file by hand" is making a claim about the future. The interesting question is what
+  happens on the day somebody does it anyway. If the answer is that lint, typecheck and the test
+  suite all pass and the pull request merges, then it was never a rule. It was a preference,
+  written down, hoping to be read.</p>
+  <p>So the scan had two halves. Find repositories whose agent instructions forbid touching a
+  specific path, then read their published workflow files and ask whether any job mentions that
+  path.</p>
+
+  <div class="stat">
+    <div><span class="big">2,783</span><span class="cap">Repositories read</span></div>
+    <div><span class="big">32</span><span class="cap">Rules with nothing enforcing them</span></div>
+    <div><span class="big">0</span><span class="cap">With a CI job naming the protected path</span></div>
+  </div>
+
+  <p style="margin-top:26px">The rules themselves are ordinary and sensible. Do not edit the
+  generated client. Do not hand edit the vendored icon set. Never commit the build artefact. Do
+  not run the corpus script while another harness holds the binary. Every one of them was written
+  by somebody who knew exactly what they were talking about, and not one of them was connected to
+  anything that could say no.</p>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Most fresh rules are not fresh</h2>
+  <p>Our first instinct was that a recently added prohibition matters more than an old one. Nobody
+  writes "never touch this file" on a calm afternoon. They write it because something touched the
+  file.</p>
+  <p>Six of the thirty two had been added in the previous sixty days. That looked like a signal
+  until we read the commits that introduced them. <strong>Two of the six arrived in the same commit
+  that created the instructions file</strong>, one of them called simply
+  <span class="v">"add agent guidance"</span>. Those were not recent decisions. That was an entire
+  ruleset adopted at once, and every line in a new file is new.</p>
+  <blockquote>Rule age measures document age, not incident age.</blockquote>
+  <p>The distinction that actually holds is whether the line arrived <strong>with</strong> the file
+  or was added <strong>to</strong> a file that already existed. The second is somebody going back to
+  a document they had already written in order to add a prohibition to it, which is more suggestive
+  of learned experience, though a commit is not proof of an incident. <strong>Four of the six were
+  added to a file that already existed.</strong> Of those four, two read like documentation work
+  (<span class="v">"update agents.md to reduce LLM context"</span>) and two read like something
+  happened. One named a specific trap and recorded that it had recurred twice.</p>
+  <p>Thirty two candidates, two worth acting on, and one of those belonged to a team we had already
+  written to. We are reporting that number because a scan that only reports its hits is not a
+  measurement.</p>
+</section>
+
+<section>
+  <h2><span class="n">03</span>The fix is small, and it is a file rather than advice</h2>
+  <p>The cheap version of enforcement is a CI job that fails a pull request which changes the
+  protected path, unless a commit message says the change was deliberate.</p>
+  <div class="eb">- name: refuse an unapproved change to the protected path
+  run: |
+    set -euo pipefail
+    base="origin/${{ github.base_ref }}"
+    git fetch --quiet origin "${{ github.base_ref }}"
+    git rev-parse --verify --quiet "$base" &gt;/dev/null || {
+      echo "REFUSED: cannot resolve $base, so this guard cannot tell what changed." &gt;&amp;2
+      exit 1
+    }
+    changed=$(git diff --name-only "$base"...HEAD -- "$PROTECTED")
+    [ -z "$changed" ] &amp;&amp; exit 0
+    git log "$base"..HEAD --format=%B | grep -qi '^Allow-Protected-Change:' &amp;&amp; exit 0
+    echo "REFUSED: $PROTECTED changed without an 'Allow-Protected-Change:' trailer." &gt;&amp;2
+    exit 1</div>
+  <p>The escape hatch is the part people leave out, and it decides whether the guard survives
+  contact with a real team. A check with no legitimate way past it gets deleted the first time
+  somebody genuinely needs to change the file, and a deleted guard protects nothing. This one does
+  not forbid the change. It makes the change deliberate, and leaves the reason in the history.</p>
+  <p>It ships with a test that fails <em>before</em> the workflow exists and passes after, because
+  a check that has only ever been seen passing has not been shown to work.</p>
+</section>
+
+<section>
+  <h2><span class="n">04</span>Then our own guard failed, quietly</h2>
+  <p class="lead">This is the part worth your time.</p>
+  <p>The generator had tests. The tests passed. The guard it produced was about to go out. Running
+  the real thing against a scratch repository, by accident, with a base branch that did not
+  resolve, produced this:</p>
+  <div class="eb">$ bash guard.sh
+fatal: bad revision 'main...HEAD'
+ok: unchanged
+$ echo $?
+0</div>
+  <p><span class="v">git diff</span> had failed. Its output was empty. Empty was read as "nothing
+  changed", so the guard reported success and exited zero. Any repository where the fetch hiccups,
+  or the base reference resolves oddly, would have had every protected file silently unguarded, and
+  the build would have stayed green the whole time.</p>
+  <blockquote>A check that passes when its own measurement fails is not a check.</blockquote>
+  <p>Two claims were being confused, and they are not the same claim. <strong>The generator was
+  tested. The artefact it generates was not.</strong> Everything was green, and the thing actually
+  being shipped had a silent failure mode nobody would have noticed until the day it mattered.</p>
+  <p>The repair is the two lines at the top of the fragment above. The reason this note exists
+  rather than a clean success story is what the failure looked like from the outside, which was
+  exactly like working.</p>
+  <table>
+    <tr><th>Case</th><th>Before</th><th>After</th></tr>
+    <tr><td>Pull request that does not touch the file</td><td class="v pass">passes</td><td class="v pass">passes</td></tr>
+    <tr><td>Hand edit of the protected file</td><td class="v pass">passes</td><td class="v no">refused</td></tr>
+    <tr><td>The same edit, with the trailer</td><td class="v pass">passes</td><td class="v pass">passes</td></tr>
+    <tr><td>Base branch cannot be resolved</td><td class="v pass">passes</td><td class="v no">refused</td></tr>
+  </table>
+  <p>Three of those four rows were already correct before the fix, which is precisely why it
+  survived review. A guard is only interesting in the row where it says no.</p>
+</section>
+
+<section>
+  <h2><span class="n">05</span>And one we got wrong in public</h2>
+  <p>Earlier this month we wrote to a company about a rule in their own instructions file, and
+  suggested a CI step that fails when the protected thing differs from the base branch. The
+  protected thing was a field inside a JSON document, not a file. You cannot ask
+  <span class="v">git diff</span> for a key.</p>
+  <p>The fix we described would not have worked. We found out because the generator refused to
+  build it and said why, which is the only reason this paragraph exists rather than a quiet
+  correction. A tool that will not produce an artefact for a case it cannot handle is worth more
+  than one that always produces something.</p>
+</section>
+
+<section>
+  <h2><span class="n">06</span>What this does not show</h2>
+  <p>The scan reads public repositories and public workflow files. A team may enforce a rule in a
+  pre commit hook, a private pipeline, or a review habit that no public file reveals, and none of
+  that would be visible here. "No CI job names this path" is an observation about what is
+  published, not a verdict on anybody's discipline.</p>
+  <p>Two repositories could not be read at all, and are recorded as unreadable rather than as
+  findings. Thirty two candidates out of 2,783 repositories is a hit rate near one percent. The
+  honest summary is that this technique finds real problems and finds very few of them, which is
+  worth saying plainly before anyone reads it as a product.</p>
+  <p>Companies are not named here. The examples above are real and the quotes are verbatim, and
+  none of them is anybody's failure to publish. Ours is.</p>
+</section>
+
+<section>
+  <h2><span class="n">07</span>If you want this run against your repository</h2>
+  <div class="cta">
+    <p>The same method. Your instructions files, your workflow files, and a written answer for
+    each rule: whether anything currently stops it being broken, which ones are worth enforcing,
+    and which ones cannot be enforced by a diff check at all.</p>
+    <p>Where a guard makes sense you get the workflow and the failing test, not a description of
+    them. Where it does not, you get told that, with the reason.</p>
+    <p>A call first, so the scope is one real thing rather than a survey.</p>
+    <a href="https://cal.com/ohad-krispin/agent-rules-review?utm_source=clinic" rel="noopener">Book a call</a>
+  </div>
+</section>
+
+<footer>
+  Ohad Krispin &nbsp;&middot;&nbsp; Haifa, Israel &nbsp;&middot;&nbsp;
+  <a href="mailto:founder@viberaven.dev">founder@viberaven.dev</a><br>
+  Every figure here comes from the runs described. The broken guard is ours, and it is the reason
+  this note exists.
+</footer>
+
+</div>
+<!-- Page views only. Free on the Vercel account that already hosts this site: no package,
+     no account, no cost. The click between view and booking is deliberately unmeasured, because
+     custom events are a paid tier and analytics is not the project. -->
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

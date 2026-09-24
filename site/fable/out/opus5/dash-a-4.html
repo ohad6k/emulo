@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger Metrics Sheet</title>
+<style>
+  :root{
+    color-scheme: light;
+    --paper:#E9EEE3;
+    --band:#E0E9D9;
+    --ink:#16211C;
+    --ink-2:#4A5A50;
+    --ink-3:#7E8D82;
+    --rule:#B7C6B1;
+    --red:#8E3120;
+    --red-soft:rgba(142,49,32,.20);
+    --green:#2E6B4C;
+    --green-soft:rgba(46,107,76,.22);
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden;background:#CBD5C4}
+  body{font-family:var(--mono);color:var(--ink);-webkit-font-smoothing:antialiased}
+
+  /* ---------- fixed 1600x900 stage, scaled to fit any window ---------- */
+  #stage{
+    position:absolute;top:50%;left:50%;
+    width:1600px;height:900px;
+    transform-origin:50% 50%;
+    background:var(--paper);
+    background-image:repeating-linear-gradient(
+      to bottom,
+      var(--band) 0 34px,
+      var(--paper) 34px 68px);
+    box-shadow:0 18px 60px rgba(20,32,26,.35);
+    overflow:hidden;
+  }
+
+  /* platen light — a slow continuous sweep across the sheet */
+  #stage::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(105deg,
+      rgba(255,255,255,0) 34%,
+      rgba(255,255,255,.55) 47%,
+      rgba(255,255,255,0) 60%);
+    transform:translateX(-70%);
+    animation:platen 17s linear infinite;
+  }
+  @keyframes platen{to{transform:translateX(70%)}}
+
+  /* ---------- continuous-feed sprocket margins ---------- */
+  .feed{position:absolute;top:0;bottom:0;width:44px;overflow:hidden;
+        background:linear-gradient(to right,rgba(20,32,26,.05),rgba(20,32,26,0));}
+  .feed.r{right:0;transform:scaleX(-1)}
+  .feed.l{left:0}
+  .feed .perf{position:absolute;top:0;bottom:0;right:0;width:1px;
+      background:repeating-linear-gradient(to bottom,var(--rule) 0 4px,transparent 4px 9px)}
+  .feed .track{position:absolute;left:0;right:0;top:0;height:200%;
+      background:repeating-radial-gradient(circle at 22px 14px,
+        rgba(20,32,26,.34) 0 4.6px, rgba(20,32,26,.10) 4.6px 5.6px, transparent 5.8px);
+      background-size:44px 28px;
+      animation:feed 9s linear infinite;}
+  @keyframes feed{to{transform:translateY(-50%)}}
+
+  /* ---------- sheet ---------- */
+  .sheet{position:absolute;inset:0 44px;padding:26px 34px 22px;
+         display:flex;flex-direction:column;gap:14px}
+
+  header{height:96px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;
+         border-bottom:1.5px solid var(--ink);padding-bottom:10px}
+  .mark{display:flex;align-items:baseline;gap:14px}
+  .mark h1{margin:0;font-family:var(--serif);font-size:46px;line-height:1;
+           font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+  .mark .em{width:9px;height:9px;background:var(--red);transform:rotate(45deg);flex:none}
+  .mark .sub{font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3)}
+  .stamps{display:flex;gap:26px;text-align:right}
+  .stamp{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);line-height:1.9}
+  .stamp b{display:block;font-size:14.5px;letter-spacing:.1em;color:var(--ink);font-weight:600}
+  .stamp.alert b{color:var(--red)}
+
+  .sec{height:26px;flex:none;display:flex;align-items:center;gap:14px}
+  .sec .tag{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--red);font-weight:700}
+  .sec .hair{flex:1;height:1px;background:var(--rule)}
+  .sec .meta{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+
+  .row{display:grid;grid-template-columns:repeat(4,1fr)}
+  .row-a{flex:1;min-height:0}
+  .row-b{height:176px;flex:none}
+
+  .tile{padding:6px 22px 0;display:flex;flex-direction:column;min-width:0}
+  .tile + .tile{border-left:1px solid var(--rule)}
+  .name{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2)}
+  .fig{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+  .fig .n{font-size:44px;line-height:1;font-weight:600;letter-spacing:-.02em;
+          font-variant-numeric:tabular-nums}
+  .fig .u{font-size:13px;color:var(--ink-2);letter-spacing:.08em}
+  .plot{flex:1;min-height:0;margin-top:10px;position:relative}
+  .plot canvas{position:absolute;inset:0;width:100%;height:100%}
+  .cap{font-size:10.5px;line-height:1.5;color:var(--ink-3);padding:8px 0 10px;letter-spacing:.02em}
+
+  /* ---------- unreported entries ---------- */
+  .tile.void .fig .n{color:var(--ink-3);font-weight:400}
+  .box{flex:1;min-height:0;margin-top:8px;position:relative;overflow:hidden;
+       border:1px solid var(--red-soft);
+       display:flex;align-items:center;justify-content:center}
+  .box::before{content:"";position:absolute;inset:-30% -70% -30% -30%;
+    background:repeating-linear-gradient(135deg,
+      var(--red-soft) 0 1px, transparent 1px 9px);
+    animation:hatch 4.4s linear infinite}
+  @keyframes hatch{to{transform:translateX(28.284px)}}
+  .box .no{position:relative;font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;
+           color:var(--red);font-weight:700;background:var(--paper);
+           padding:4px 10px;border:1px solid var(--red-soft)}
+  .why{font-size:10px;line-height:1.5;color:var(--ink-3);padding:7px 0 0;letter-spacing:.02em}
+
+  footer{height:34px;flex:none;border-top:1px solid var(--rule);
+         display:flex;align-items:center;justify-content:space-between;gap:24px;
+         font-size:10.5px;letter-spacing:.03em;color:var(--ink-3)}
+  footer .sig{letter-spacing:.2em;text-transform:uppercase}
+
+  @media (prefers-reduced-motion: reduce){
+    #stage::after,.feed .track,.box::before{animation:none}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="feed l"><div class="track"></div><div class="perf"></div></div>
+  <div class="feed r"><div class="track"></div><div class="perf"></div></div>
+
+  <div class="sheet">
+    <header>
+      <div class="mark">
+        <h1>Ledger</h1>
+        <span class="em"></span>
+        <span class="sub">Product metrics sheet</span>
+      </div>
+      <div class="stamps">
+        <div class="stamp">Period<b>Last 30 days</b></div>
+        <div class="stamp">Entries posted<b>4 of 8</b></div>
+        <div class="stamp alert">Entries blank<b>4 of 8</b></div>
+      </div>
+    </header>
+
+    <div class="sec">
+      <span class="tag">Posted</span><span class="hair"></span>
+      <span class="meta">figures exactly as supplied · no series, no estimates</span>
+    </div>
+
+    <div class="row row-a">
+      <div class="tile">
+        <div class="name">Active installs</div>
+        <div class="fig"><span class="n">1,284</span><span class="u">installs</span></div>
+        <div class="plot"><canvas id="c-installs"></canvas></div>
+        <div class="cap">One printed mark per install, 36 × 36 grid — the last 12 cells stay empty because the count stops at 1,284. A press wave crosses the block continuously.</div>
+      </div>
+
+      <div class="tile">
+        <div class="name">Median session</div>
+        <div class="fig"><span class="n">12.4</span><span class="u">minutes</span></div>
+        <div class="plot"><canvas id="c-dial"></canvas></div>
+        <div class="cap">Needle re-sweeps the reported median on a 0–20 minute face. A median is one point: no distribution, spread or percentile was supplied.</div>
+      </div>
+
+      <div class="tile">
+        <div class="name">Crash-free rate</div>
+        <div class="fig"><span class="n">99.2</span><span class="u">% of sessions</span></div>
+        <div class="plot"><canvas id="c-stream"></canvas></div>
+        <div class="cap">Sessions tick past at the reported rate — one mark in every 125 is struck in red. That ratio is 0.8%, the exact complement of the figure above.</div>
+      </div>
+
+      <div class="tile">
+        <div class="name">Support tickets</div>
+        <div class="fig"><span class="n">37</span><span class="u">tickets</span></div>
+        <div class="plot"><canvas id="c-tally"></canvas></div>
+        <div class="cap">Tallied in fives, ruled and re-ruled without pause: seven full gates and two. Volume only — no severity, queue age or resolution was recorded.</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <span class="tag">Blank</span><span class="hair"></span>
+      <span class="meta">returned null for this period · ruled through, never inferred</span>
+    </div>
+
+    <div class="row row-b">
+      <div class="tile void">
+        <div class="name">Weekly active users</div>
+        <div class="fig"><span class="n">—</span></div>
+        <div class="box"><span class="no">No entry</span></div>
+        <div class="why">Not instrumented. Cannot be derived from installs.</div>
+      </div>
+      <div class="tile void">
+        <div class="name">Retention · D30</div>
+        <div class="fig"><span class="n">—</span></div>
+        <div class="box"><span class="no">No entry</span></div>
+        <div class="why">Needs a cohort clock; none was kept this period.</div>
+      </div>
+      <div class="tile void">
+        <div class="name">Paid conversions</div>
+        <div class="fig"><span class="n">—</span></div>
+        <div class="box"><span class="no">No entry</span></div>
+        <div class="why">No billing events reached the sheet. Zero is not implied.</div>
+      </div>
+      <div class="tile void">
+        <div class="name">NPS</div>
+        <div class="fig"><span class="n">—</span></div>
+        <div class="box"><span class="no">No entry</span></div>
+        <div class="why">No survey ran in the window. Score is unknown, not low.</div>
+      </div>
+    </div>
+
+    <footer>
+      <span>Four of eight measures returned null and are ruled through as blank entries — nothing has been estimated, back-filled or trended. The four posted figures are single values for the period; this sheet holds no time series because none was supplied.</span>
+      <span class="sig">Ledger · last 30 days</span>
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var INK="#16211C", INK2="#4A5A50", INK3="#7E8D82", RULE="#B7C6B1",
+      RED="#8E3120", GREEN="#2E6B4C", PAPER="#E9EEE3";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var stage = document.getElementById("stage");
+  var scale = 1;
+  function fit(){
+    scale = Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform = "translate(-50%,-50%) scale(" + scale + ")";
+  }
+
+  var panes = [];
+  function pane(id, draw){
+    var cv = document.getElementById(id);
+    panes.push({cv:cv, ctx:cv.getContext("2d"), draw:draw, w:0, h:0});
+  }
+  function sizeAll(){
+    var dpr = Math.max(1, Math.min(2.5, (window.devicePixelRatio||1) * Math.max(scale,1)));
+    for (var i=0;i<panes.length;i++){
+      var p = panes[i];
+      var w = p.cv.offsetWidth, h = p.cv.offsetHeight;
+      if (!w || !h) continue;
+      p.w = w; p.h = h;
+      p.cv.width = Math.round(w*dpr); p.cv.height = Math.round(h*dpr);
+      p.ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+  }
+
+  /* ---- 1,284 active installs: one printed mark each ---- */
+  var COLS=36, ROWS=36, TOTAL=1284;
+  pane("c-installs", function(ctx,w,h,t){
+    var gap = Math.min(w/COLS, h/ROWS);
+    var ox = (w - gap*COLS)/2 + gap/2, oy = (h - gap*ROWS)/2 + gap/2;
+    ctx.fillStyle = GREEN;
+    for (var i=0;i<TOTAL;i++){
+      var cx = i % COLS, cy = (i / COLS) | 0;
+      var x = ox + cx*gap, y = oy + cy*gap;
+      var k = 0.5 + 0.5*Math.sin(cx*0.30 + cy*0.22 - t*1.5);
+      var a = 0.26 + 0.68*k*k*k;
+      var s = gap*0.34 + gap*0.20*k*k*k*k;
+      ctx.globalAlpha = a;
+      ctx.fillRect(x - s/2, y - s/2, s, s);
+    }
+    ctx.globalAlpha = 1;
+    /* the 12 cells the count does not reach */
+    ctx.strokeStyle = RULE; ctx.lineWidth = 1;
+    for (var j=TOTAL;j<COLS*ROWS;j++){
+      var jx = ox + (j % COLS)*gap, jy = oy + ((j/COLS)|0)*gap, q = gap*0.30;
+      ctx.strokeRect(jx-q, jy-q, q*2, q*2);
+    }
+  });
+
+  /* ---- median session: needle re-sweeps 12.4 of 20 minutes ---- */
+  var MED=12.4, MAXM=20;
+  function ease(p){ return 1 - Math.pow(1-p, 3); }
+  pane("c-dial", function(ctx,w,h,t){
+    var cx=w/2, cy=h*0.78, r=Math.min(w*0.44, h*0.60);
+    var cyc = reduce ? 3.4 : t % 5.2, sweep;
+    if (cyc < 2.6) sweep = ease(cyc/2.6);
+    else if (cyc < 4.0) sweep = 1;
+    else sweep = 1 - ease((cyc-4.0)/1.2);
+    var frac = MED/MAXM, ang = Math.PI + Math.PI*frac*sweep;
+
+    ctx.lineCap="butt";
+    ctx.strokeStyle=RULE; ctx.lineWidth=11;
+    ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,2*Math.PI); ctx.stroke();
+    ctx.strokeStyle=GREEN; ctx.lineWidth=11;
+    if (sweep>0.001){ ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI,ang); ctx.stroke(); }
+
+    for (var m=0;m<=MAXM;m++){
+      var a2 = Math.PI + Math.PI*(m/MAXM), major = (m%5===0);
+      var r1 = r+9, r2 = r + (major?20:14);
+      ctx.strokeStyle = major?INK2:RULE; ctx.lineWidth = major?1.6:1;
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(a2)*r1, cy+Math.sin(a2)*r1);
+      ctx.lineTo(cx+Math.cos(a2)*r2, cy+Math.sin(a2)*r2);
+      ctx.stroke();
+      if (major){
+        ctx.fillStyle=INK3; ctx.font="10px ui-monospace, monospace";
+        ctx.textAlign="center"; ctx.textBaseline="middle";
+        ctx.fillText(String(m), cx+Math.cos(a2)*(r+31), cy+Math.sin(a2)*(r+31));
+      }
+    }
+    /* the reported median, fixed on the face */
+    var am = Math.PI + Math.PI*frac;
+    ctx.strokeStyle=INK; ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(am)*(r-11), cy+Math.sin(am)*(r-11));
+    ctx.lineTo(cx+Math.cos(am)*(r+11), cy+Math.sin(am)*(r+11));
+    ctx.stroke();
+
+    ctx.strokeStyle=INK; ctx.lineWidth=2; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(ang)*(r-20), cy+Math.sin(ang)*(r-20)); ctx.stroke();
+    ctx.fillStyle=INK; ctx.beginPath(); ctx.arc(cx,cy,4.5,0,6.2832); ctx.fill();
+    ctx.fillStyle=PAPER; ctx.beginPath(); ctx.arc(cx,cy,1.8,0,6.2832); ctx.fill();
+
+    ctx.fillStyle=INK3; ctx.font="10px ui-monospace, monospace";
+    ctx.textAlign="center"; ctx.textBaseline="top";
+    ctx.fillText("MINUTES PER SESSION", cx, cy+14);
+  });
+
+  /* ---- crash-free 99.2%: one struck mark in every 125 sessions ---- */
+  var STEP=7, SPEED=26, ONE_IN=125;
+  pane("c-stream", function(ctx,w,h,t){
+    var lanes=[h*0.20, h*0.44, h*0.68];
+    var off = t*SPEED;
+    for (var l=0;l<lanes.length;l++){
+      var y=lanes[l], base=l*4177;
+      var start = Math.floor(off/STEP);
+      for (var k=-1;k<=w/STEP+1;k++){
+        var idx = start + k;
+        var x = idx*STEP - off;
+        if (x < -4 || x > w+4) continue;
+        if ((idx + base) % ONE_IN === 0){
+          ctx.fillStyle=RED;
+          ctx.fillRect(x-1, y-19, 2.4, 30);
+          ctx.beginPath(); ctx.arc(x, y-24, 2.6, 0, 6.2832); ctx.fill();
+        } else {
+          ctx.fillStyle=GREEN; ctx.globalAlpha=0.62;
+          ctx.fillRect(x, y-6, 1.2, 13);
+          ctx.globalAlpha=1;
+        }
+      }
+      ctx.strokeStyle=RULE; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(0,y+11.5); ctx.lineTo(w,y+11.5); ctx.stroke();
+    }
+    /* proportion bar: 99.2 / 0.8 at true width */
+    var by=h-26, bh=12, cut=w*0.992;
+    ctx.fillStyle=GREEN; ctx.fillRect(0,by,cut,bh);
+    ctx.fillStyle=PAPER; ctx.fillRect(cut-2,by,2,bh);
+    ctx.fillStyle=RED;   ctx.fillRect(cut,by,w-cut,bh);
+    ctx.fillStyle=INK3; ctx.font="10px ui-monospace, monospace";
+    ctx.textAlign="left"; ctx.textBaseline="top";
+    ctx.fillText("99.2% CLEAN", 0, by+bh+5);
+    ctx.textAlign="right";
+    ctx.fillStyle=RED; ctx.fillText("0.8% CRASHED", w, by+bh+5);
+  });
+
+  /* ---- 37 support tickets, tallied in fives ---- */
+  var TICKETS=37;
+  function jitter(i){ var s=Math.sin(i*127.1)*43758.5453; return (s-Math.floor(s))-0.5; }
+  pane("c-tally", function(ctx,w,h,t){
+    var groups=Math.ceil(TICKETS/5), gcols=2, grows=Math.ceil(groups/gcols);
+    var gw=Math.min(96, w/gcols-18), gh=Math.min(42, (h-14)/grows-16);
+    var padX=(w-gw*gcols-24)/2, padY=(h-(gh+18)*grows+18)/2;
+    var drawn = reduce ? TICKETS : Math.min(TICKETS, Math.floor(((t%7)/7)*TICKETS*1.22));
+    ctx.lineCap="round";
+    for (var i=0;i<TICKETS;i++){
+      var g=(i/5)|0, inG=i%5;
+      var gx=padX+(g%gcols)*(gw+24), gy=padY+((g/gcols)|0)*(gh+18);
+      var on = i < drawn;
+      ctx.globalAlpha = on ? (i === drawn-1 ? 0.55 : 1) : 0.10;
+      ctx.strokeStyle = on ? INK : RULE;
+      ctx.lineWidth = 2.1;
+      ctx.beginPath();
+      if (inG < 4){
+        var x=gx+inG*(gw/5.6)+jitter(i)*1.6;
+        ctx.moveTo(x, gy+jitter(i+9)*1.5);
+        ctx.lineTo(x+jitter(i+3)*3, gy+gh);
+      } else {
+        ctx.moveTo(gx-4, gy+gh-3);
+        ctx.lineTo(gx+gw/5.6*3.6+4, gy+2);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    ctx.fillStyle=INK3; ctx.font="10px ui-monospace, monospace";
+    ctx.textAlign="right"; ctx.textBaseline="bottom";
+    ctx.fillText("7 GATES + 2", w, h-1);
+  });
+
+  function frame(ms){
+    var t = ms/1000;
+    for (var i=0;i<panes.length;i++){
+      var p=panes[i];
+      if (!p.w) continue;
+      p.ctx.clearRect(0,0,p.w,p.h);
+      p.draw(p.ctx,p.w,p.h,t);
+    }
+    if (!reduce) requestAnimationFrame(frame);
+  }
+
+  function boot(){ fit(); sizeAll(); requestAnimationFrame(frame); }
+  window.addEventListener("resize", function(){ fit(); sizeAll(); if (reduce) requestAnimationFrame(frame); });
+  boot();
+})();
+</script>
+</body>
+</html>

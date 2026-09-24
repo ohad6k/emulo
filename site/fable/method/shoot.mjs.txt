@@ -1,0 +1,116 @@
+/**
+ * Screenshot every generated HTML output with one headless Chrome, and record console
+ * errors, page errors and failed requests per file. One Chrome for the whole batch,
+ * navigating file by file, so 90 pages take minutes rather than a Chrome start each.
+ *
+ * Usage: node shoot.mjs <outdir> <pngdir> [seconds-before-capture] [width] [height]
+ * Writes <pngdir>/<model>/<name>.png and <pngdir>/console.json
+ */
+import { spawn } from "node:child_process";
+import { mkdtempSync, rmSync, readdirSync, mkdirSync, writeFileSync, statSync, existsSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const PORT = 9346;
+const [, , OUTDIR, PNGDIR, SECS = "5", W = "1600", H = "900"] = process.argv;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const files = [];
+for (const model of readdirSync(OUTDIR)) {
+  const d = path.join(OUTDIR, model);
+  if (!statSync(d).isDirectory()) continue;
+  for (const fn of readdirSync(d)) {
+    if (!fn.endsWith(".html")) continue;
+    if (process.env.SKIP_EXISTING && existsSync(path.join(PNGDIR, model, fn.replace(/\.html$/, ".png")))) continue;
+    files.push([model, fn]);
+  }
+}
+files.sort();
+
+const profileDir = mkdtempSync(path.join(tmpdir(), "shoot-"));
+const chrome = spawn(CHROME, [
+  "--headless=new", `--remote-debugging-port=${PORT}`, `--user-data-dir=${profileDir}`,
+  `--window-size=${W},${H}`, "--hide-scrollbars", "--no-first-run",
+  "--enable-webgl", "--ignore-gpu-blocklist", "--enable-unsafe-swiftshader",
+  "--use-angle=default", "about:blank",
+], { stdio: ["ignore", "ignore", "ignore"] });
+
+let target = null;
+for (let i = 0; i < 60 && !target; i++) {
+  try {
+    const list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json();
+    target = list.find((t) => t.type === "page" && t.webSocketDebuggerUrl);
+  } catch {}
+  if (!target) await sleep(400);
+}
+if (!target) { console.error("no devtools target"); process.exit(1); }
+
+const ws = new WebSocket(target.webSocketDebuggerUrl);
+await new Promise((r) => ws.addEventListener("open", r, { once: true }));
+let id = 0;
+const pending = new Map();
+const call = (method, params = {}) => new Promise((resolve, reject) => {
+  const n = ++id;
+  pending.set(n, { resolve, reject });
+  ws.send(JSON.stringify({ id: n, method, params }));
+});
+
+let log = [];
+ws.addEventListener("message", (ev) => {
+  const m = JSON.parse(ev.data);
+  if (m.id && pending.has(m.id)) {
+    const p = pending.get(m.id); pending.delete(m.id);
+    m.error ? p.reject(new Error(m.error.message)) : p.resolve(m.result);
+    return;
+  }
+  if (m.method === "Runtime.consoleAPICalled" && ["error", "warning"].includes(m.params.type)) {
+    log.push("console." + m.params.type + ": " +
+      m.params.args.map((a) => a.value ?? a.description ?? a.type).join(" ").slice(0, 200));
+  }
+  if (m.method === "Runtime.exceptionThrown") {
+    const d = m.params.exceptionDetails;
+    log.push("PAGE ERROR: " + (d.exception?.description || d.text).slice(0, 200));
+  }
+  if (m.method === "Network.loadingFailed") {
+    log.push("NET FAILED: " + m.params.errorText + " (" + m.params.type + ")");
+  }
+  if (m.method === "Network.responseReceived" && m.params.response.status >= 400) {
+    log.push("HTTP " + m.params.response.status + ": " + m.params.response.url.slice(0, 120));
+  }
+});
+
+await call("Runtime.enable");
+await call("Network.enable");
+await call("Page.enable");
+await call("Emulation.setDeviceMetricsOverride", {
+  width: Number(W), height: Number(H), deviceScaleFactor: 1, mobile: false,
+});
+
+const report = {};
+for (const [model, fn] of files) {
+  const abs = path.resolve(OUTDIR, model, fn);
+  const url = "file:///" + abs.replace(/\\/g, "/");
+  log = [];
+  // Reset to blank first so a hung page from the previous file cannot leak in.
+  await call("Page.navigate", { url: "about:blank" });
+  await sleep(200);
+  await call("Page.navigate", { url });
+  await sleep(Number(SECS) * 1000);
+  const shot = await call("Page.captureScreenshot", { format: "png" });
+  mkdirSync(path.join(PNGDIR, model), { recursive: true });
+  writeFileSync(path.join(PNGDIR, model, fn.replace(/\.html$/, ".png")), Buffer.from(shot.data, "base64"));
+  const uniq = [...new Set(log)].slice(0, 10);
+  report[`${model}/${fn}`] = uniq;
+  console.log(`${model}/${fn} ${uniq.length ? uniq.length + " issue(s): " + uniq[0] : "clean"}`);
+}
+mkdirSync(PNGDIR, { recursive: true });
+let prev = {};
+try { prev = JSON.parse(readFileSync(path.join(PNGDIR, "console.json"), "utf8")); } catch {}
+writeFileSync(path.join(PNGDIR, "console.json"), JSON.stringify({ ...prev, ...report }, null, 1));
+
+ws.close();
+chrome.kill();
+await sleep(600);
+try { rmSync(profileDir, { recursive: true, force: true }); } catch {}
+console.log(`done: ${files.length} files`);

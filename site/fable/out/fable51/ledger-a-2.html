@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1600, initial-scale=1" />
+<title>Ledger</title>
+<style>
+  :root{
+    --bg:#0a0b0f;
+    --bg2:#101219;
+    --ink:#f3efe6;
+    --ink-2:#a9aab2;
+    --ink-3:#5f6270;
+    --line:rgba(243,239,230,.10);
+    --amber:#ffb347;
+    --amber-2:#ff7a3d;
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,"Times New Roman",serif;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:900px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{position:relative}
+
+  /* ---------- backdrop ---------- */
+  #scene{position:absolute;inset:0;width:1600px;height:900px;display:block}
+  .vignette{position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(900px 620px at 1180px 420px, rgba(255,179,71,.10), transparent 70%),
+      linear-gradient(90deg, rgba(10,11,15,.98) 0%, rgba(10,11,15,.92) 34%, rgba(10,11,15,.35) 58%, rgba(10,11,15,0) 75%),
+      linear-gradient(180deg, rgba(10,11,15,.4), transparent 20%, transparent 70%, rgba(10,11,15,.9));
+  }
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* ---------- frame ---------- */
+  .frame{position:absolute;inset:0;padding:40px 56px;display:grid;grid-template-rows:auto 1fr auto;z-index:2}
+
+  header{display:flex;align-items:center;justify-content:space-between}
+  .wordmark{display:flex;align-items:center;gap:12px;font-family:var(--serif);font-size:22px;letter-spacing:.01em}
+  .wordmark svg{width:28px;height:28px}
+  .wordmark .ring{transform-origin:50% 50%;animation:spin 14s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .status{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+  .status .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 0 rgba(255,179,71,.7);animation:pulse 2.2s ease-out infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,179,71,.65)}100%{box-shadow:0 0 0 14px rgba(255,179,71,0)}}
+  .status .sweep{display:inline-block;width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--ink-3),transparent);position:relative;overflow:visible}
+  .status .sweep::after{content:"";position:absolute;top:-2px;left:0;width:22px;height:5px;border-radius:3px;background:var(--amber);filter:blur(1px);animation:scan 3.4s cubic-bezier(.45,0,.2,1) infinite}
+  @keyframes scan{0%{left:-22px;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:120px;opacity:0}}
+
+  /* ---------- hero ---------- */
+  .hero{align-self:center;max-width:820px;padding-top:6px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;gap:14px;margin-bottom:26px}
+  .eyebrow::before{content:"";width:34px;height:1px;background:var(--amber);opacity:.8}
+  h1{font-family:var(--serif);font-weight:400;font-size:98px;line-height:.98;letter-spacing:-.025em;text-wrap:balance}
+  h1 em{font-style:italic;position:relative;display:inline-block;
+    background:linear-gradient(100deg,var(--ink) 0%,var(--ink) 40%,var(--amber) 50%,var(--amber-2) 56%,var(--ink) 66%,var(--ink) 100%);
+    background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shimmer 7s ease-in-out infinite}
+  @keyframes shimmer{0%,25%{background-position:100% 0}60%,100%{background-position:0% 0}}
+  h1 .strike{position:relative;display:inline-block}
+  h1 .strike::after{content:"";position:absolute;left:-2%;right:-2%;top:54%;height:3px;background:var(--amber);transform-origin:left;transform:scaleX(0);animation:strike 7s ease-in-out infinite}
+  @keyframes strike{0%,30%{transform:scaleX(0);opacity:1}42%,80%{transform:scaleX(1);opacity:1}92%,100%{transform:scaleX(1);opacity:0}}
+
+  .sub{margin-top:28px;font-size:19px;line-height:1.5;color:var(--ink-2);max-width:560px}
+  .sub b{color:var(--ink);font-weight:500}
+
+  .actions{margin-top:40px;display:flex;align-items:center;gap:30px}
+  .btn{position:relative;appearance:none;border:0;cursor:pointer;font:inherit;font-weight:600;font-size:15px;letter-spacing:.01em;color:#141008;
+    background:var(--amber);padding:17px 30px;border-radius:999px;overflow:hidden;isolation:isolate;
+    box-shadow:0 0 0 1px rgba(255,179,71,.3),0 18px 50px -14px rgba(255,150,60,.55)}
+  .btn::before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%);animation:glint 4.5s ease-in-out infinite;z-index:-1}
+  @keyframes glint{0%,60%{transform:translateX(-120%)}85%,100%{transform:translateX(120%)}}
+  .btn span{display:inline-flex;align-items:center;gap:10px}
+  .btn svg{width:14px;height:14px}
+  .link{color:var(--ink);text-decoration:none;font-size:15px;display:inline-flex;align-items:center;gap:10px;position:relative;padding-bottom:2px}
+  .link::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;background:var(--ink-3)}
+  .link svg{width:16px;height:16px;animation:nudge 2.6s ease-in-out infinite}
+  @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+
+  /* ---------- capabilities ---------- */
+  .foot{display:grid;grid-template-columns:1fr auto;align-items:end;gap:48px}
+  .caps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--line);max-width:1120px;position:relative}
+  .caps::before{content:"";position:absolute;top:-1px;left:0;width:25%;height:1px;background:var(--amber);animation:track 12s cubic-bezier(.65,0,.35,1) infinite}
+  @keyframes track{0%,18%{left:0}25%,43%{left:25%}50%,68%{left:50%}75%,93%{left:75%}100%{left:100%}}
+  .cap{padding:22px 24px 0 0;position:relative}
+  .cap + .cap{padding-left:24px;border-left:1px solid var(--line)}
+  .cap .n{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--ink-3);display:flex;align-items:center;gap:8px}
+  .cap .n i{width:5px;height:5px;border-radius:50%;background:var(--ink-3);animation:blink 12s steps(1) infinite}
+  .cap:nth-child(1) .n i{animation-delay:0s}
+  .cap:nth-child(2) .n i{animation-delay:3s}
+  .cap:nth-child(3) .n i{animation-delay:6s}
+  .cap:nth-child(4) .n i{animation-delay:9s}
+  @keyframes blink{0%{background:var(--amber);box-shadow:0 0 10px var(--amber)}25%{background:var(--ink-3);box-shadow:none}100%{background:var(--ink-3);box-shadow:none}}
+  .cap h3{margin-top:12px;font-family:var(--serif);font-weight:400;font-size:21px;letter-spacing:-.01em}
+  .cap p{margin-top:6px;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+
+  .proof{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);text-align:right;line-height:1.9;white-space:nowrap}
+  .proof strong{color:var(--ink);font-weight:500}
+  .proof .bar{display:block;height:1px;width:100%;margin-top:8px;background:linear-gradient(90deg,transparent,var(--line))}
+</style>
+</head>
+<body>
+
+<canvas id="scene" width="1600" height="900"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<div class="frame">
+  <header>
+    <div class="wordmark">
+      <svg viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <circle cx="14" cy="14" r="12.5" stroke="#f3efe6" stroke-opacity=".35"/>
+        <g class="ring"><circle cx="14" cy="14" r="12.5" stroke="#ffb347" stroke-width="1.5" stroke-dasharray="14 65" stroke-linecap="round"/></g>
+        <rect x="9" y="8" width="10" height="12" rx="1.5" stroke="#f3efe6"/>
+        <path d="M11.5 12h5M11.5 15h5" stroke="#f3efe6" stroke-opacity=".7"/>
+      </svg>
+      Ledger
+    </div>
+    <div class="status"><span class="dot"></span>Scanning<span class="sweep"></span>Live</div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Subscription recovery for finance teams</div>
+    <h1>Every subscription your company <em>forgot</em> about.</h1>
+    <p class="sub">Ledger finds the charges nobody recognises, <b>hands them back to the person who signed up</b>, and cancels them before the next renewal quietly lands.</p>
+    <div class="actions">
+      <button class="btn"><span>Start free
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></span></button>
+      <a class="link" href="#">See how it works
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h12M10 4l4 4-4 4"/></svg></a>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div class="caps">
+      <div class="cap"><div class="n"><i></i>01 · Find</div><h3>Nothing slips past.</h3><p>Finds the charges nobody recognises.</p></div>
+      <div class="cap"><div class="n"><i></i>02 · Attribute</div><h3>Every charge has an owner.</h3><p>Groups them by the person who signed up.</p></div>
+      <div class="cap"><div class="n"><i></i>03 · Cancel</div><h3>Done, and on the record.</h3><p>Cancels in one click and records who approved it.</p></div>
+      <div class="cap"><div class="n"><i></i>04 · Warn</div><h3>Renewals never surprise you.</h3><p>Warns you before the annual renewal lands.</p></div>
+    </div>
+    <div class="proof">Used by <strong>40 teams</strong><br/>across <strong>12 countries</strong><span class="bar"></span></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('scene');
+  const ctx = cv.getContext('2d');
+  const W = 1600, H = 900;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr; ctx.scale(dpr, dpr);
+
+  const AMBER = [255,179,71], INK = [243,239,230];
+  const rgba = (c,a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+  // Region where forgotten charges drift
+  const X0 = 720, X1 = 1600;
+  const CX = 1180, CY = 410;            // focus of the field
+
+  // Owners: the people charges get grouped to
+  const owners = [
+    { x: 1035, y: 250, r: 26, ph: 0.0 },
+    { x: 1385, y: 300, r: 26, ph: 2.1 },
+    { x: 1215, y: 590, r: 26, ph: 4.2 },
+  ];
+
+  // Cards: forgotten charges drifting through the dark
+  const N = 46;
+  const cards = [];
+  const rnd = (a,b) => a + Math.random()*(b-a);
+  function spawn(c, fresh) {
+    c.z = rnd(0.35, 1);                 // depth
+    c.x = fresh ? rnd(X0-100, X1+100) : (Math.random()<.5 ? X0-80 : X1+80);
+    c.y = rnd(40, H-40);
+    const s = 0.08 + 0.22*c.z;
+    const ang = rnd(0, Math.PI*2);
+    c.vx = Math.cos(ang)*s*0.5; c.vy = Math.sin(ang)*s*0.5;
+    c.rot = rnd(-0.35, 0.35); c.vr = rnd(-0.0015, 0.0015);
+    c.w = 46 + 36*c.z; c.h = c.w*0.62;
+    c.found = 0; c.owner = (Math.random()*3)|0; c.lastScan = -1;
+    c.lines = 2 + ((Math.random()*2)|0);
+    c.seed = Math.random();
+    return c;
+  }
+  for (let i=0;i<N;i++) cards.push(spawn({}, true));
+
+  // Sweep: a radial scan that reveals charges
+  const SWEEP_PERIOD = 7000;
+
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+
+  let t0 = performance.now();
+  function frame(now){
+    const t = now - t0;
+    const dt = Math.min(40, now - (frame.last||now)); frame.last = now;
+
+    ctx.clearRect(0,0,W,H);
+
+    // --- background: faint isometric grid that slowly slides
+    ctx.save();
+    ctx.strokeStyle = rgba(INK, .035);
+    ctx.lineWidth = 1;
+    const g = 56, off = (t*0.012) % g;
+    ctx.beginPath();
+    for (let x = X0 - 200 + off; x < W+g; x += g){ ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (let y = -g + off; y < H+g; y += g){ ctx.moveTo(X0-200, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+    ctx.restore();
+
+    // --- sweep geometry
+    const sweepPhase = (t % SWEEP_PERIOD) / SWEEP_PERIOD;
+    const sweepAng = sweepPhase * Math.PI*2 - Math.PI/2;
+    const R = 760;
+
+    // sweep glow wedge
+    ctx.save();
+    const grad = ctx.createConicGradient ? ctx.createConicGradient(sweepAng, CX, CY) : null;
+    if (grad){
+      grad.addColorStop(0, rgba(AMBER, .16));
+      grad.addColorStop(0.09, rgba(AMBER, .0));
+      grad.addColorStop(0.985, rgba(AMBER, .0));
+      grad.addColorStop(1, rgba(AMBER, .16));
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2); ctx.fill();
+    }
+    // sweep edge
+    ctx.strokeStyle = rgba(AMBER, .7); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(CX+Math.cos(sweepAng)*R, CY+Math.sin(sweepAng)*R); ctx.stroke();
+    ctx.restore();
+
+    // concentric rings
+    ctx.save();
+    ctx.strokeStyle = rgba(INK, .06); ctx.lineWidth = 1;
+    for (let r = 120; r < R; r += 160){
+      ctx.beginPath(); ctx.arc(CX,CY,r,0,Math.PI*2); ctx.stroke();
+    }
+    ctx.setLineDash([2,10]);
+    ctx.strokeStyle = rgba(AMBER, .18);
+    const pr = 120 + ((t*0.05) % 640);
+    ctx.beginPath(); ctx.arc(CX,CY,pr,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+
+    // --- update cards
+    for (const c of cards){
+      c.x += c.vx*dt; c.y += c.vy*dt; c.rot += c.vr*dt;
+      // gentle orbit toward center of field
+      const dx = CX - c.x, dy = CY - c.y;
+      c.vx += dx*0.0000004*dt; c.vy += dy*0.0000004*dt;
+      if (c.x < X0-160 || c.x > X1+160 || c.y < -80 || c.y > H+80) spawn(c, false);
+
+      // detect sweep crossing
+      const a = Math.atan2(c.y-CY, c.x-CX);
+      let d = sweepAng - a; d = ((d + Math.PI) % (Math.PI*2) + Math.PI*2) % (Math.PI*2) - Math.PI;
+      const dist = Math.hypot(dx,dy);
+      if (Math.abs(d) < 0.03 && dist < R && c.lastScan !== Math.floor(t/SWEEP_PERIOD)){
+        c.lastScan = Math.floor(t/SWEEP_PERIOD);
+        c.found = 1;
+      }
+      c.found = Math.max(0, c.found - dt/4200);
+    }
+
+    // sort by depth
+    cards.sort((a,b)=>a.z-b.z);
+
+    // --- attribution lines (found cards -> owner)
+    ctx.save();
+    for (const c of cards){
+      if (c.found <= 0) continue;
+      const o = owners[c.owner];
+      const k = Math.min(1, (1-c.found)*3);        // line grows in
+      const ease = 1 - Math.pow(1-k,3);
+      const ex = c.x + (o.x-c.x)*ease, ey = c.y + (o.y-c.y)*ease;
+      ctx.strokeStyle = rgba(AMBER, .55*c.found);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(c.x,c.y); ctx.lineTo(ex,ey); ctx.stroke();
+      // travelling packet
+      const p = ((t*0.0009 + c.seed) % 1);
+      if (ease>0.98){
+        const px = c.x + (o.x-c.x)*p, py = c.y + (o.y-c.y)*p;
+        ctx.fillStyle = rgba(AMBER, .9*c.found);
+        ctx.beginPath(); ctx.arc(px,py,2,0,Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    // --- cards
+    for (const c of cards){
+      const base = 0.10 + 0.35*c.z;
+      const f = c.found;
+      ctx.save();
+      ctx.translate(c.x,c.y); ctx.rotate(c.rot);
+      const w=c.w, h=c.h;
+
+      if (f>0){
+        ctx.shadowColor = rgba(AMBER, .8*f); ctx.shadowBlur = 24*f;
+      }
+      // body
+      ctx.fillStyle = f>0 ? rgba([26,22,16], 0.9) : rgba([16,18,26], .85);
+      roundRect(-w/2,-h/2,w,h,4); ctx.fill();
+      ctx.shadowBlur = 0;
+      // border
+      ctx.lineWidth = f>0 ? 1.4 : 1;
+      ctx.strokeStyle = f>0 ? rgba(AMBER, .35 + .65*f) : rgba(INK, base*.9);
+      roundRect(-w/2,-h/2,w,h,4); ctx.stroke();
+
+      // redacted content bars (no invented data — just texture)
+      const pad = w*0.12;
+      ctx.fillStyle = f>0 ? rgba(AMBER, .25+.5*f) : rgba(INK, base*.55);
+      ctx.fillRect(-w/2+pad, -h/2+pad, w*0.36, h*0.12);
+      ctx.fillStyle = f>0 ? rgba(INK, .3+.3*f) : rgba(INK, base*.35);
+      for (let i=0;i<c.lines;i++){
+        const y = -h/2+pad + h*0.30 + i*h*0.18;
+        if (y+h*0.08 > h/2-pad) break;
+        ctx.fillRect(-w/2+pad, y, w*(0.5 + 0.3*((c.seed*7+i)%1)), h*0.08);
+      }
+      // tiny marker top-right
+      ctx.beginPath(); ctx.arc(w/2-pad*0.9, -h/2+pad*0.9, 1.8+0.6*c.z, 0, Math.PI*2);
+      ctx.fillStyle = f>0 ? rgba(AMBER, 1) : rgba(INK, base*.6); ctx.fill();
+
+      // "?" when unknown fades as it's found
+      if (f<0.2 && c.z>0.6){
+        ctx.fillStyle = rgba(INK, base*.9*(1-f*5));
+        ctx.font = `${Math.round(10+8*c.z)}px ${'"Iowan Old Style",Palatino,Georgia,serif'}`;
+        ctx.textAlign='right'; ctx.textBaseline='bottom';
+        ctx.fillText('?', w/2-pad*0.8, h/2-pad*0.5);
+      }
+      ctx.restore();
+
+      // found flash: expanding ring
+      if (f>0.5){
+        const q = (1-f)*2;
+        ctx.save();
+        ctx.strokeStyle = rgba(AMBER, (1-q)*.9); ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(c.x,c.y, 8 + q*60, 0, Math.PI*2); ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // --- owners (people who signed up)
+    for (let i=0;i<owners.length;i++){
+      const o = owners[i];
+      const breathe = 1 + 0.06*Math.sin(t*0.0016 + o.ph);
+      const load = cards.reduce((s,c)=> s + (c.owner===i ? c.found : 0), 0);
+      ctx.save();
+      ctx.translate(o.x,o.y);
+      // halo
+      ctx.fillStyle = rgba(AMBER, .05 + Math.min(.18, load*.03));
+      ctx.beginPath(); ctx.arc(0,0,o.r*2.2*breathe,0,Math.PI*2); ctx.fill();
+      // orbit dash
+      ctx.rotate(t*0.0004*(i%2?-1:1) + o.ph);
+      ctx.setLineDash([3,7]); ctx.strokeStyle = rgba(AMBER, .45); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(0,0,o.r*1.55,0,Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.rotate(-(t*0.0004*(i%2?-1:1) + o.ph));
+      // disk
+      ctx.fillStyle = '#0f1017';
+      ctx.beginPath(); ctx.arc(0,0,o.r,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = rgba(INK,.55); ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(0,0,o.r,0,Math.PI*2); ctx.stroke();
+      // person glyph
+      ctx.strokeStyle = rgba(INK,.9); ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(0,-5,5,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,13,11,Math.PI*1.12,Math.PI*1.88); ctx.stroke();
+      // count ticks arc = how much has been attributed
+      const arc = Math.min(1, load/6);
+      ctx.strokeStyle = rgba(AMBER, .95); ctx.lineWidth = 2; ctx.lineCap='round';
+      ctx.beginPath(); ctx.arc(0,0,o.r+5,-Math.PI/2,-Math.PI/2 + arc*Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+
+    // --- renewal warning: a countdown ring that fills toward the edge, then is caught
+    {
+      const per = 9000, p = (t % per)/per;
+      const x = 1490, y = 720;
+      const fill = Math.min(1, p*1.15);
+      const caught = p > 0.87;
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.strokeStyle = rgba(INK,.15); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2); ctx.stroke();
+      ctx.strokeStyle = caught ? rgba(AMBER,1) : rgba(AMBER,.55); ctx.lineWidth = caught?3:2; ctx.lineCap='round';
+      ctx.beginPath(); ctx.arc(0,0,22,-Math.PI/2,-Math.PI/2 + fill*Math.PI*2); ctx.stroke();
+      if (caught){
+        const q = (p-0.87)/0.13;
+        ctx.strokeStyle = rgba(AMBER, 1-q); ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(0,0,22+q*38,0,Math.PI*2); ctx.stroke();
+        ctx.strokeStyle = rgba(INK,1); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-7,0); ctx.lineTo(-2,5); ctx.lineTo(8,-6); ctx.stroke();
+      } else {
+        ctx.fillStyle = rgba(INK,.85);
+        ctx.font = '11px "SF Mono",Menlo,Consolas,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('!', 0, 1);
+      }
+      ctx.fillStyle = rgba(INK,.5);
+      ctx.font = '10.5px "SF Mono",Menlo,Consolas,monospace'; ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(caught ? 'RENEWAL CAUGHT' : 'RENEWAL AHEAD', 0, 34);
+      ctx.restore();
+    }
+
+    // --- center pip
+    ctx.save();
+    ctx.fillStyle = rgba(AMBER,.9);
+    ctx.beginPath(); ctx.arc(CX,CY,3,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = rgba(AMBER,.35); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(CX,CY,9+3*Math.sin(t*0.004),0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

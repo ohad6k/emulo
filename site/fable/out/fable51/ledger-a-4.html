@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600">
+<title>Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0b0e;
+    --ink:#ece7dd;
+    --mute:#8b909b;
+    --dim:#4a4e58;
+    --amber:#f2b544;
+    --line:rgba(236,231,221,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:900px;overflow:hidden;background:var(--bg);color:var(--ink);
+    font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;-webkit-font-smoothing:antialiased}
+  .page{position:relative;width:1600px;height:900px;display:grid;grid-template-columns:760px 840px;overflow:hidden}
+
+  /* ambient */
+  .orb{position:absolute;width:900px;height:900px;border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle at center,rgba(242,181,68,.16),rgba(242,181,68,0) 62%);
+    filter:blur(30px);left:-320px;top:-260px;animation:drift 16s ease-in-out infinite alternate}
+  .orb.b{left:auto;right:-420px;top:380px;width:800px;height:800px;
+    background:radial-gradient(circle at center,rgba(127,209,185,.10),rgba(127,209,185,0) 62%);
+    animation-duration:21s;animation-delay:-7s}
+  @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(120px,80px) scale(1.12)}}
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:radial-gradient(rgba(236,231,221,.07) .6px,transparent .6px);background-size:22px 22px;
+    animation:gridslide 9s linear infinite}
+  @keyframes gridslide{from{background-position:0 0}to{background-position:0 22px}}
+
+  /* left column */
+  .left{position:relative;z-index:2;display:flex;flex-direction:column;padding:56px 24px 52px 80px}
+  .mark{display:flex;align-items:center;gap:14px;font-size:13px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink)}
+  .mark .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:pulse 2.6s ease-out infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(242,181,68,.65)}70%{box-shadow:0 0 0 14px rgba(242,181,68,0)}100%{box-shadow:0 0 0 0 rgba(242,181,68,0)}}
+  .mark small{margin-left:auto;margin-right:56px;letter-spacing:.18em;color:var(--dim);font-size:11px}
+
+  .hero{margin-top:auto}
+  h1{font-family:"Fraunces",Georgia,"Times New Roman",serif;font-weight:300;font-size:78px;line-height:1;letter-spacing:-.025em;max-width:660px;color:var(--ink)}
+  h1 .l{display:block;overflow:hidden}
+  h1 .l span{display:inline-block;transform:translateY(110%);animation:rise 1.1s cubic-bezier(.2,.75,.2,1) forwards}
+  h1 .l:nth-child(2) span{animation-delay:.1s}
+  h1 .l:nth-child(3) span{animation-delay:.2s}
+  @keyframes rise{to{transform:translateY(0)}}
+  h1 em{font-style:italic;color:var(--amber);
+    background:linear-gradient(90deg,transparent 0 33%,rgba(242,181,68,.55) 50%,transparent 67% 100%) no-repeat;
+    background-size:300% 2px;background-position:100% 96%;animation:sweep 3.6s ease-in-out infinite}
+  @keyframes sweep{0%{background-position:100% 96%}100%{background-position:0% 96%}}
+
+  .actions{display:flex;align-items:center;gap:34px;margin-top:44px;opacity:0;animation:fade 1s .55s ease forwards}
+  @keyframes fade{to{opacity:1}}
+  button{position:relative;appearance:none;border:0;cursor:pointer;font:inherit;font-weight:500;font-size:14px;letter-spacing:.12em;text-transform:uppercase;
+    color:#111216;background:var(--amber);padding:18px 30px;border-radius:999px}
+  button::after{content:"";position:absolute;inset:-1px;border-radius:inherit;border:1px solid rgba(242,181,68,.9);animation:ring 2.6s ease-out infinite}
+  @keyframes ring{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.32);opacity:0}}
+  .actions a{color:var(--ink);text-decoration:none;font-size:14px;letter-spacing:.06em;display:inline-flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:3px}
+  .actions a i{display:inline-block;width:18px;height:1px;background:var(--ink);position:relative;animation:nudge 1.8s ease-in-out infinite}
+  .actions a i::after{content:"";position:absolute;right:0;top:-3px;width:6px;height:6px;border-top:1px solid var(--ink);border-right:1px solid var(--ink);transform:rotate(45deg)}
+  @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+
+  .caps{margin-top:auto;padding-top:30px;border-top:1px solid var(--line);opacity:0;animation:fade 1s .8s ease forwards}
+  h2{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);font-weight:400;margin-bottom:22px}
+  ol{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:20px 36px;max-width:620px}
+  li{display:flex;gap:14px;font-size:13.5px;line-height:1.55;color:var(--mute)}
+  li b{font-weight:500;color:var(--amber);flex:none;letter-spacing:.08em}
+  .usage{margin-top:30px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:14px}
+  .usage::before{content:"";width:28px;height:1px;background:var(--dim)}
+
+  /* right column */
+  .viz{position:relative;z-index:1}
+  canvas{position:absolute;inset:0;width:100%;height:100%;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 12%,#000 86%,transparent 100%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 12%,#000 86%,transparent 100%)}
+  .viz::before{content:"";position:absolute;left:0;top:0;bottom:0;width:180px;z-index:2;pointer-events:none;
+    background:linear-gradient(to right,var(--bg),rgba(10,11,14,0))}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="orb"></div>
+  <div class="orb b"></div>
+  <div class="grain"></div>
+
+  <div class="left">
+    <div class="mark"><span class="dot"></span>Ledger<small>Subscription audit</small></div>
+
+    <section class="hero">
+      <h1>
+        <span class="l"><span>Every subscription</span></span>
+        <span class="l"><span>your company</span></span>
+        <span class="l"><span><em>forgot</em> about.</span></span>
+      </h1>
+      <div class="actions">
+        <button>Start free</button>
+        <a href="#">See how it works <i></i></a>
+      </div>
+    </section>
+
+    <section class="caps">
+      <h2>What it does</h2>
+      <ol>
+        <li><b>01</b><span>Finds the charges nobody recognises.</span></li>
+        <li><b>02</b><span>Groups them by the person who signed up.</span></li>
+        <li><b>03</b><span>Cancels in one click and records who approved it.</span></li>
+        <li><b>04</b><span>Warns you before the annual renewal lands.</span></li>
+      </ol>
+      <p class="usage">Used by 40 teams across 12 countries.</p>
+    </section>
+  </div>
+
+  <div class="viz"><canvas id="c"></canvas></div>
+</div>
+
+<script>
+(function(){
+  const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+  let W=840,H=900,dpr=1;
+  function resize(){
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    const r=cv.getBoundingClientRect();W=r.width||840;H=r.height||900;
+    cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();addEventListener('resize',resize);
+
+  const INK=[236,231,221],AMB=[242,181,68],DIM=[90,95,108],MINT=[127,209,185];
+  const owners=['#f2b544','#7fd1b9','#c9a7ff','#ff8f6b'];
+  const rgba=(c,a)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
+  const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+
+  const ROW=46,SPEED=26,BEAM=0.47;
+  const x0=70,xb=136;
+  let seq=1207,rows=[],flashes=[],now=0;
+
+  function mk(y){
+    return {y,id:seq++,w1:rnd(110,230),w2:rnd(48,120),wa:rnd(34,66),
+      state:0,t0:0,flag:Math.random()<.36,cancel:Math.random()<.72,owner:Math.random()*4|0};
+  }
+  for(let y=-ROW;y<H+ROW*2;y+=ROW)rows.push(mk(y));
+
+  const dust=[];
+  for(let i=0;i<46;i++)dust.push({x:Math.random()*W,y:Math.random()*H,s:rnd(6,18),ph:Math.random()*6.28,r:rnd(.6,1.6)});
+
+  function rrect(x,y,w,h,r){
+    ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fill();
+  }
+
+  function drawRow(r,xr){
+    const yc=r.y+ROW*.5;
+    const t=r.state?clamp((now-r.t0)/.5,0,1):0;
+    let c1=INK,a1=.22,a2=.12,aA=.3,idA=.26;
+    if(r.state===1){c1=mix(INK,AMB,t);a1=.22+.66*t;a2=.12+.18*t;aA=.3+.55*t;idA=.26+.3*t}
+    else if(r.state===2){a1=.22-.1*t;a2=.12-.05*t;aA=.3-.15*t;idA=.26-.1*t}
+    else if(r.state===3){c1=mix(AMB,DIM,t);a1=.88-.5*t;a2=.3-.18*t;aA=.85-.55*t;idA=.56-.3*t}
+
+    ctx.strokeStyle=rgba(INK,.06);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x0-24,r.y+ROW+.5);ctx.lineTo(xr,r.y+ROW+.5);ctx.stroke();
+
+    ctx.font='11px "IBM Plex Mono",ui-monospace,Menlo,monospace';ctx.textAlign='left';
+    ctx.fillStyle=rgba(INK,idA);ctx.fillText(String(r.id).padStart(4,'0'),x0,yc+4);
+
+    ctx.fillStyle=rgba(c1,a1);rrect(xb,yc-5,r.w1,10,5);
+    ctx.fillStyle=rgba(INK,a2);rrect(xb+r.w1+16,yc-4,r.w2,8,4);
+    ctx.fillStyle=rgba(c1,aA);rrect(xr-r.wa,yc-5,r.wa,10,5);
+
+    ctx.strokeStyle=rgba(INK,.1);ctx.setLineDash([1,6]);
+    ctx.beginPath();ctx.moveTo(xb+r.w1+r.w2+30,yc+.5);ctx.lineTo(xr-r.wa-48,yc+.5);ctx.stroke();ctx.setLineDash([]);
+
+    if(r.state===2){
+      ctx.strokeStyle=rgba(MINT,.55*t);ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.moveTo(x0+40,yc);ctx.lineTo(x0+43,yc+3);ctx.lineTo(x0+49,yc-3);ctx.stroke();
+    }
+    if(r.state===1||r.state===3){
+      const oa=clamp(t*2,0,1)*(r.state===3?.65:1);
+      ctx.globalAlpha=oa;ctx.fillStyle=owners[r.owner];
+      ctx.beginPath();ctx.arc(xr-r.wa-28,yc,4.5,0,6.2832);ctx.fill();ctx.globalAlpha=1;
+      ctx.font='9.5px "IBM Plex Mono",ui-monospace,Menlo,monospace';
+      if(r.state===1){ctx.fillStyle=rgba(AMB,.95*t);ctx.fillText('UNRECOGNISED',xb+1,yc-11)}
+      else{ctx.fillStyle=rgba(INK,.55);ctx.fillText('CANCELLED · APPROVED',xb+1,yc-11)}
+    }
+    if(r.state===3){
+      const q=clamp((now-r.t0)/.45,0,1);
+      ctx.strokeStyle=rgba(AMB,.9);ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(xb-8,yc+.5);ctx.lineTo(xb-8+(xr-xb+8)*q,yc+.5);ctx.stroke();ctx.lineWidth=1;
+    }
+  }
+
+  let last=performance.now();
+  function frame(ts){
+    const dt=Math.min(.05,(ts-last)/1000);last=ts;now=ts/1000;
+    const xr=W-64,beamY=H*BEAM;
+    ctx.clearRect(0,0,W,H);
+
+    for(const d of dust){
+      d.y-=d.s*dt;d.x+=Math.sin(now*.6+d.ph)*.15;
+      if(d.y<-10){d.y=H+10;d.x=Math.random()*W}
+      ctx.fillStyle=rgba(INK,.12+.1*Math.sin(now*2+d.ph));
+      ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,6.2832);ctx.fill();
+    }
+
+    for(const r of rows)r.y-=SPEED*dt;
+    while(rows.length&&rows[0].y<-ROW*1.5)rows.shift();
+    while(rows[rows.length-1].y<H+ROW)rows.push(mk(rows[rows.length-1].y+ROW));
+
+    for(const r of rows){
+      if(r.state===0&&r.y+ROW*.5<=beamY){
+        r.state=r.flag?1:2;r.t0=now;flashes.push({t:now,strong:r.flag});
+      }else if(r.state===1&&r.cancel&&now-r.t0>1.5){
+        r.state=3;r.t0=now;
+      }
+    }
+
+    ctx.strokeStyle=rgba(INK,.12);
+    ctx.beginPath();ctx.moveTo(x0-24.5,0);ctx.lineTo(x0-24.5,H);ctx.stroke();
+
+    for(const r of rows)drawRow(r,xr);
+
+    const g=ctx.createLinearGradient(0,beamY-70,0,beamY+70);
+    g.addColorStop(0,'rgba(242,181,68,0)');g.addColorStop(.5,'rgba(242,181,68,.09)');g.addColorStop(1,'rgba(242,181,68,0)');
+    ctx.fillStyle=g;ctx.fillRect(x0-24,beamY-70,xr-x0+24,140);
+
+    const gx=((now*160)%(W+500))-250;
+    const lg=ctx.createLinearGradient(gx-220,0,gx+220,0);
+    lg.addColorStop(0,'rgba(242,181,68,.25)');lg.addColorStop(.5,'rgba(255,225,160,1)');lg.addColorStop(1,'rgba(242,181,68,.25)');
+    ctx.strokeStyle=lg;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x0-24,beamY+.5);ctx.lineTo(xr,beamY+.5);ctx.stroke();
+
+    for(let i=flashes.length-1;i>=0;i--){
+      const f=flashes[i],age=now-f.t;
+      if(age>.7){flashes.splice(i,1);continue}
+      const a=(1-age/.7)*(f.strong?.7:.3);
+      ctx.strokeStyle=rgba(AMB,a);ctx.lineWidth=2+age*10;
+      ctx.beginPath();ctx.moveTo(x0-24,beamY+.5);ctx.lineTo(xr,beamY+.5);ctx.stroke();
+    }
+    ctx.lineWidth=1;
+
+    ctx.font='9.5px "IBM Plex Mono",ui-monospace,Menlo,monospace';ctx.textAlign='right';
+    ctx.fillStyle=rgba(AMB,.85);ctx.fillText('SCANNING',xr-14,beamY-9);
+    ctx.globalAlpha=.4+.6*((Math.sin(now*5)+1)/2);
+    ctx.beginPath();ctx.arc(xr-4,beamY-12,2.6,0,6.2832);ctx.fill();ctx.globalAlpha=1;
+
+    ctx.textAlign='left';ctx.fillStyle=rgba(INK,.35);
+    ctx.fillText('LEDGER · LIVE',x0-24,H*.09);
+    ctx.fillStyle=rgba(AMB,.9);ctx.beginPath();ctx.arc(x0+66,H*.09-3.5,2.4,0,6.2832);ctx.fill();
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

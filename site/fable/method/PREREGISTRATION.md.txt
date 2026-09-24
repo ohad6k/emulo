@@ -1,0 +1,81 @@
+# Pre-registration: does the profile effect survive a model generation?
+
+**Written 2026-09-01, before any run.** The run harness in this folder refuses to start if this
+file's hash does not match the one recorded in `manifest.json`, so this text cannot be edited after
+outputs exist without that edit being visible.
+
+Claude Fable 5.1 (`claude-fable-5-1`) became callable from Claude Code today (2.1.257, after the
+update from 2.1.241 which refused the model). This is the three-condition placebo design from
+August run on two models on the same night, so the model is the only thing that differs between
+the two halves.
+
+## Design
+
+| | |
+|---|---|
+| Models | `claude-opus-5` and `claude-fable-5-1`, same night, interleaved order |
+| Conditions | **A** cold: minimal system prompt only. **B** profile: A plus the mined profile appended. **C** placebo: A plus a length-matched profile of a person who does not exist, silent on every measured dimension |
+| Tasks | `dash`, `page`, `ledger`, `tui`, prompts verbatim from the July harness, inputs unmodified |
+| Repetitions | 5 per cell |
+| Runs | 2 models x 3 conditions x 4 tasks x 5 reps = **120** |
+| Scorer | `../score.py`, unchanged, metrics frozen 2026-08 |
+| Decision rule | Two groups of five separate only if they do not overlap at all (p = 2/252). A prediction passes only if it separates on at least 2 of the 3 HTML tasks |
+
+**Every run is via `claude -p` with `--system-prompt` replacing the default system prompt,
+`--setting-sources ""`, `--strict-mcp-config` and every tool denied, in an empty directory.** Only
+`--append-system-prompt` differs between conditions. The exact command line of every run is in the
+manifest.
+
+## What is different from August, disclosed up front
+
+1. **The placebo text is new.** August's placebo ("R. Vance") was lost with the working directory.
+   `placebo.md` here is a different invented person, a documentation lead, length-matched to the
+   profile within 1 percent and silent on corners, colour, containers, terminal width, escape codes
+   and output length. One placebo document, one profile document: the one-document confound from
+   August is still here and still unfixed. Nothing below claims to identify "minedness".
+2. **The profile is the July document** (`~/.claude/skills/emulo/SKILL.md`, 9,551 bytes, dated
+   2026-07-30), not the August re-mine, which was also lost. It is the document the product
+   actually ships, so this is the fairer test of the product anyway.
+3. **Opus 5 is re-run fresh** rather than compared against August's recovered numbers, because the
+   placebo changed. August's Opus 5 values are reported alongside as a replication check, not as
+   the comparator.
+4. **Working files live in the cabinet, not a session scratchpad.** That is how August's were lost.
+
+## Predictions, fixed now
+
+**H1. The profile-versus-cold effect shrinks on the stronger model.**
+On Opus 5 in August, B separated from A in the predicted direction on 4 of 9 (task, metric) pairs
+across the three HTML tasks (all three metrics on `dash`, saturation on `page`). Prediction: on
+Fable 5.1 tonight, B separates from A on **at most 2 of 9**, and on fewer pairs than Opus 5 does
+tonight. Rationale: the profile's design rules are close to what a strong model already does, so
+the headroom the profile fills should close as the model improves. **Falsified if Fable 5.1 shows 4
+or more of 9, or more than Opus 5 tonight.**
+
+**H2. Specificity still gets no support.**
+B separates from C in the predicted direction on **fewer than 2 of 9** pairs on Fable 5.1.
+August's Opus 5 count was 0 of 9. **Falsified if 2 or more.** Reversed separations (C beating B on
+B's own law) are reported but do not count for H2.
+
+**H3. The fabrication null holds on the new model.**
+Across all 30 Fable 5.1 `dash` outputs, **zero** invented numbers for the four `null` metrics
+(`weekly_active_users`, `retention_d30`, `paid_conversions`, `nps`). Counted by reading every
+file. **Falsified by a single invented number in any condition.** If cold Fable fabricates and B
+does not, that is reported as a B-versus-A result on a behavioural law, which nothing here has yet
+shown.
+
+## Reported in full whatever happens
+
+- All 120 raw outputs, the manifest, every measured value, the console check on every HTML file.
+- Cold Fable 5.1 against cold Opus 5 on every metric. Exploratory, not a prediction. It is the
+  "what did the new model change on its own" table and it is the one people will want.
+- Cost and wall time per run, from Claude Code's own usage report.
+- Any run that failed, and why, without dropping it silently. A cell with fewer than 5 clean
+  outputs is reported as short, not padded.
+
+## What this cannot say, written before the numbers
+
+- It cannot say the mined content specifically does anything. See disclosure 1.
+- It cannot say any output is good. Nothing here measures quality.
+- "Not detected at n=5" is the ceiling. There is no equivalence test and no smallest effect size
+  of interest. Never write "the same".
+- Two models on one night is one comparison, not a trend across generations.

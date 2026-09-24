@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1600, initial-scale=1" />
+<title>Ledger</title>
+<style>
+  :root{
+    --bg:#0b0d10;
+    --bg2:#12151a;
+    --ink:#f2efe8;
+    --ink-2:#a9a59b;
+    --ink-3:#6b685f;
+    --line:rgba(242,239,232,.10);
+    --amber:#ffb454;
+    --amber-2:#ff8a3d;
+    --mint:#8fe3c0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:900px;overflow:hidden;background:var(--bg);color:var(--ink);
+    font-family:"Inter","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  a{color:inherit}
+
+  /* ambient background */
+  .glow{
+    position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(900px 600px at 78% 45%, rgba(255,180,84,.12), transparent 60%),
+      radial-gradient(700px 500px at 15% 90%, rgba(143,227,192,.07), transparent 60%),
+      var(--bg);
+    animation:breathe 14s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{filter:hue-rotate(0deg) brightness(1)}
+    50%{filter:hue-rotate(-8deg) brightness(1.08)}
+  }
+  .grid{
+    position:absolute;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:80px 80px;
+    mask-image:radial-gradient(1200px 800px at 70% 50%, #000 30%, transparent 80%);
+    -webkit-mask-image:radial-gradient(1200px 800px at 70% 50%, #000 30%, transparent 80%);
+    animation:gridDrift 24s linear infinite;
+    opacity:.6;
+  }
+  @keyframes gridDrift{from{background-position:0 0,0 0}to{background-position:0 80px,80px 0}}
+
+  canvas#field{position:absolute;inset:0;z-index:1;display:block}
+
+  /* layout */
+  .page{position:relative;z-index:2;width:1600px;height:900px;display:grid;
+    grid-template-rows:88px 1fr 84px;}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:0 72px;}
+  .mark{display:flex;align-items:center;gap:14px;font-weight:600;letter-spacing:.02em;font-size:18px}
+  .mark svg{width:28px;height:28px}
+  .mark .bar{transform-origin:left center;animation:bar 3.2s ease-in-out infinite}
+  .mark .bar:nth-child(2){animation-delay:.4s}
+  .mark .bar:nth-child(3){animation-delay:.8s}
+  @keyframes bar{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.55)}}
+  header nav{display:flex;gap:36px;font-size:14px;color:var(--ink-2)}
+  header nav a{text-decoration:none;position:relative}
+  header nav a::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:1px;background:var(--ink);transform:scaleX(0);transform-origin:left;transition:transform .3s}
+  header nav a:hover::after{transform:scaleX(1)}
+
+  main{display:grid;grid-template-columns:720px 1fr;padding:0 72px;align-items:center}
+  .copy{padding-bottom:20px}
+  .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:28px}
+  .eyebrow i{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 0 rgba(255,180,84,.6);animation:ping 2s cubic-bezier(.2,.8,.2,1) infinite}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,180,84,.7)}100%{box-shadow:0 0 0 14px rgba(255,180,84,0)}}
+
+  h1{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    font-weight:400;font-size:84px;line-height:.98;letter-spacing:-.025em;max-width:680px;
+    text-wrap:balance;}
+  h1 .w{display:inline-block;opacity:0;transform:translateY(24px);animation:rise .9s cubic-bezier(.2,.8,.2,1) forwards}
+  h1 em{font-style:italic;color:var(--amber);position:relative}
+  @keyframes rise{to{opacity:1;transform:none}}
+
+  .lede{margin-top:26px;font-size:19px;line-height:1.5;color:var(--ink-2);max-width:560px;
+    opacity:0;animation:rise .9s .5s cubic-bezier(.2,.8,.2,1) forwards}
+
+  .actions{display:flex;align-items:center;gap:28px;margin-top:38px;opacity:0;animation:rise .9s .7s cubic-bezier(.2,.8,.2,1) forwards}
+  button.primary{
+    appearance:none;border:0;cursor:pointer;position:relative;overflow:hidden;
+    background:var(--ink);color:#0b0d10;font:600 16px/1 inherit;font-family:inherit;
+    padding:20px 30px;border-radius:999px;letter-spacing:.01em;
+    box-shadow:0 0 0 0 rgba(242,239,232,.0);transition:transform .25s,box-shadow .25s}
+  button.primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(255,180,84,.25)}
+  button.primary::after{content:"";position:absolute;top:0;bottom:0;width:60px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);
+    left:-80px;animation:sheen 3.6s ease-in-out infinite}
+  @keyframes sheen{0%,60%{left:-80px}100%{left:120%}}
+  a.secondary{font-size:16px;color:var(--ink-2);text-decoration:none;display:inline-flex;align-items:center;gap:10px}
+  a.secondary svg{width:18px;height:18px;animation:nudge 2.4s ease-in-out infinite}
+  @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+  a.secondary:hover{color:var(--ink)}
+
+  .caps{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:22px 40px;max-width:640px;
+    opacity:0;animation:rise .9s .9s cubic-bezier(.2,.8,.2,1) forwards}
+  .caps h2{grid-column:1/-1;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600;
+    display:flex;align-items:center;gap:14px}
+  .caps h2::after{content:"";flex:1;height:1px;background:var(--line)}
+  .cap{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;font-size:15.5px;line-height:1.45;color:var(--ink)}
+  .cap b{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-weight:400;font-size:13px;color:var(--ink-3);padding-top:3px;
+    border-top:1px solid var(--line);}
+  .cap span{position:relative}
+  .cap::before{content:"";grid-column:1/-1;height:0}
+
+  /* right side: the live visualisation lives in the canvas; this column only holds legends */
+  .stage{position:relative;height:100%;}
+  .legend{position:absolute;right:0;bottom:36px;display:flex;gap:26px;font-size:12px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase}
+  .legend span{display:inline-flex;align-items:center;gap:8px}
+  .legend i{width:10px;height:10px;border-radius:2px;background:var(--ink-3);opacity:.7}
+  .legend i.amber{background:var(--amber);opacity:1;animation:blink 1.6s steps(2,end) infinite}
+  .legend i.mint{background:var(--mint);opacity:1}
+  @keyframes blink{50%{opacity:.35}}
+
+  footer{display:flex;align-items:center;justify-content:space-between;padding:0 72px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-2)}
+  footer .use{display:flex;align-items:center;gap:14px}
+  footer .use .dots{display:flex;gap:4px}
+  footer .use .dots i{width:5px;height:5px;border-radius:50%;background:var(--mint);animation:blink 2.2s infinite}
+  footer .use .dots i:nth-child(2){animation-delay:.4s}
+  footer .use .dots i:nth-child(3){animation-delay:.8s}
+  footer .ticker{overflow:hidden;width:560px;position:relative;mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  footer .ticker div{display:inline-block;white-space:nowrap;padding-left:100%;animation:scroll 28s linear infinite;color:var(--ink-3);font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;letter-spacing:.02em}
+  @keyframes scroll{to{transform:translateX(-100%)}}
+  footer .ticker div s{text-decoration:line-through;color:var(--amber)}
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="grid"></div>
+  <canvas id="field" width="1600" height="900"></canvas>
+
+  <div class="page">
+    <header>
+      <div class="mark" aria-label="Ledger">
+        <svg viewBox="0 0 28 28" fill="none" aria-hidden="true">
+          <rect class="bar" x="4" y="6" width="20" height="3" fill="#f2efe8"/>
+          <rect class="bar" x="4" y="12.5" width="20" height="3" fill="#f2efe8"/>
+          <rect class="bar" x="4" y="19" width="20" height="3" fill="#ffb454"/>
+        </svg>
+        Ledger
+      </div>
+      <nav>
+        <a href="#">Product</a>
+        <a href="#">Pricing</a>
+        <a href="#">Docs</a>
+        <a href="#">Sign in</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="copy">
+        <div class="eyebrow"><i></i> Scanning your card statements</div>
+        <h1>
+          <span class="w" style="animation-delay:.05s">Every</span>
+          <span class="w" style="animation-delay:.13s">subscription</span>
+          <span class="w" style="animation-delay:.21s">your</span>
+          <span class="w" style="animation-delay:.29s">company</span>
+          <span class="w" style="animation-delay:.37s"><em>forgot</em></span>
+          <span class="w" style="animation-delay:.45s">about.</span>
+        </h1>
+        <p class="lede">Ledger reads the charges, finds the ones nobody claims, and puts a name next to each of them before the next renewal lands.</p>
+
+        <div class="actions">
+          <button class="primary">Start free</button>
+          <a class="secondary" href="#">See how it works
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 9h11M10 4.5 14.5 9 10 13.5"/></svg>
+          </a>
+        </div>
+
+        <div class="caps">
+          <h2>What it does</h2>
+          <div class="cap"><b>01</b><span>Finds the charges nobody recognises.</span></div>
+          <div class="cap"><b>02</b><span>Groups them by the person who signed up.</span></div>
+          <div class="cap"><b>03</b><span>Cancels in one click and records who approved it.</span></div>
+          <div class="cap"><b>04</b><span>Warns you before the annual renewal lands.</span></div>
+        </div>
+      </section>
+
+      <section class="stage" aria-hidden="true">
+        <div class="legend">
+          <span><i></i> Charge</span>
+          <span><i class="amber"></i> Unrecognised</span>
+          <span><i class="mint"></i> Assigned to an owner</span>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="use"><span class="dots"><i></i><i></i><i></i></span> Used by 40 teams across 12 countries.</div>
+      <div class="ticker"><div>found &nbsp;·&nbsp; grouped by owner &nbsp;·&nbsp; <s>renewal</s> cancelled, approval recorded &nbsp;·&nbsp; renewal in 14 days, owner warned &nbsp;·&nbsp; found &nbsp;·&nbsp; grouped by owner &nbsp;·&nbsp; <s>renewal</s> cancelled, approval recorded &nbsp;·&nbsp; renewal in 14 days, owner warned &nbsp;·&nbsp;</div></div>
+    </footer>
+  </div>
+
+<script>
+(function(){
+  const W = 1600, H = 900;
+  const cv = document.getElementById('field');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // Region on the right where the ledger lives.
+  const R = { x: 860, y: 120, w: 660, h: 640 };
+  const AMBER = '255,180,84', MINT = '143,227,192', INK = '242,239,232';
+
+  // Owner nodes: where unrecognised charges get grouped.
+  const owners = [
+    { x: R.x + R.w - 40, y: R.y + 120, r: 14, count: 0, pulse: 0 },
+    { x: R.x + R.w - 40, y: R.y + R.h / 2, r: 14, count: 0, pulse: 0 },
+    { x: R.x + R.w - 40, y: R.y + R.h - 120, r: 14, count: 0, pulse: 0 },
+  ];
+
+  const seeded = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(1337);
+
+  // Charges: small receipt cards drifting upward through the ledger.
+  const cards = [];
+  const N = 46;
+  for (let i = 0; i < N; i++) cards.push(makeCard(true));
+
+  function makeCard(anywhere){
+    const forgotten = seeded() < 0.34;
+    return {
+      x: R.x + 30 + seeded() * (R.w - 200),
+      y: anywhere ? R.y + seeded() * R.h : R.y + R.h + 20 + seeded() * 80,
+      w: 96 + seeded() * 60,
+      h: 18,
+      vy: 10 + seeded() * 14,          // px per second
+      sway: seeded() * Math.PI * 2,
+      forgotten,
+      state: 'drift',                   // drift | hit | fly | done
+      t: 0,
+      owner: Math.floor(seeded() * 3),
+      lines: 2 + Math.floor(seeded() * 2),
+      fx: 0, fy: 0,
+    };
+  }
+
+  // Sweep line: the scanner that finds the charges nobody recognises.
+  const sweep = { period: 7.5, width: 120 };
+
+  let last = performance.now();
+  let clock = 0;
+
+  function rr(x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function frame(now){
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now; clock += dt;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Ledger frame
+    ctx.save();
+    ctx.strokeStyle = 'rgba(' + INK + ',.10)';
+    ctx.lineWidth = 1;
+    rr(R.x, R.y, R.w, R.h, 18); ctx.stroke();
+    // Ruled lines like a paper ledger
+    ctx.strokeStyle = 'rgba(' + INK + ',.05)';
+    for (let y = R.y + 40; y < R.y + R.h; y += 40){
+      ctx.beginPath(); ctx.moveTo(R.x + 20, y); ctx.lineTo(R.x + R.w - 20, y); ctx.stroke();
+    }
+    // Column rule between the drifting charges and the owner column
+    ctx.strokeStyle = 'rgba(' + INK + ',.10)';
+    ctx.setLineDash([3, 6]);
+    ctx.beginPath(); ctx.moveTo(R.x + R.w - 90, R.y + 24); ctx.lineTo(R.x + R.w - 90, R.y + R.h - 24); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Sweep position (moves left to right, then resets with a quick fade)
+    const p = (clock % sweep.period) / sweep.period;
+    const eased = p < 0.85 ? p / 0.85 : 1;
+    const sx = R.x + 20 + eased * (R.w - 130);
+    const sweepAlpha = p < 0.85 ? 1 : 1 - (p - 0.85) / 0.15;
+
+    // Clip charges to the ledger
+    ctx.save();
+    rr(R.x + 1, R.y + 1, R.w - 2, R.h - 2, 18); ctx.clip();
+
+    // Sweep glow
+    const g = ctx.createLinearGradient(sx - sweep.width, 0, sx, 0);
+    g.addColorStop(0, 'rgba(' + AMBER + ',0)');
+    g.addColorStop(1, 'rgba(' + AMBER + ',' + (0.16 * sweepAlpha) + ')');
+    ctx.fillStyle = g;
+    ctx.fillRect(sx - sweep.width, R.y, sweep.width, R.h);
+    ctx.strokeStyle = 'rgba(' + AMBER + ',' + (0.9 * sweepAlpha) + ')';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(sx, R.y); ctx.lineTo(sx, R.y + R.h); ctx.stroke();
+
+    // Update + draw cards
+    for (let i = 0; i < cards.length; i++){
+      const c = cards[i];
+      c.t += dt;
+
+      if (c.state === 'drift' || c.state === 'hit'){
+        c.y -= c.vy * dt;
+        c.x += Math.sin(clock * 0.6 + c.sway) * 6 * dt;
+        if (c.y + c.h < R.y - 10){ cards[i] = makeCard(false); continue; }
+      }
+
+      // The sweep reaches a forgotten charge: flag it.
+      if (c.state === 'drift' && c.forgotten && sweepAlpha === 1 && sx >= c.x && sx <= c.x + c.w){
+        c.state = 'hit'; c.t = 0;
+      }
+      // After a beat, fly it to its owner.
+      if (c.state === 'hit' && c.t > 1.1){
+        c.state = 'fly'; c.t = 0; c.fx = c.x; c.fy = c.y;
+      }
+      if (c.state === 'fly'){
+        const o = owners[c.owner];
+        const k = Math.min(1, c.t / 0.9);
+        const e = 1 - Math.pow(1 - k, 3);
+        const cx = c.fx + (o.x - c.w / 2 - c.fx) * e;
+        const cy = c.fy + (o.y - c.h / 2 - c.fy) * e;
+        c.x = cx; c.y = cy;
+        c.w = c.w * (1 - dt * 0.9);
+        if (k >= 1){ o.count++; o.pulse = 1; cards[i] = makeCard(false); continue; }
+      }
+
+      // Draw card
+      const hot = c.state === 'hit' || c.state === 'fly';
+      const flash = c.state === 'hit' ? Math.max(0, 1 - c.t / 1.1) : 0;
+      const alpha = c.state === 'fly' ? Math.max(0.15, 1 - c.t / 0.9) : 1;
+
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = hot ? 'rgba(' + AMBER + ',' + (0.14 + 0.18 * flash) + ')' : 'rgba(' + INK + ',.05)';
+      ctx.strokeStyle = hot ? 'rgba(' + AMBER + ',' + (0.55 + 0.45 * flash) + ')' : 'rgba(' + INK + ',.16)';
+      ctx.lineWidth = 1;
+      rr(c.x, c.y, c.w, c.h, 4); ctx.fill(); ctx.stroke();
+
+      // inner "ink" lines: a vendor mark and an amount stub
+      ctx.fillStyle = hot ? 'rgba(' + AMBER + ',.9)' : 'rgba(' + INK + ',.32)';
+      ctx.fillRect(c.x + 8, c.y + 7, 6, 4);
+      ctx.fillRect(c.x + 20, c.y + 8, c.w * 0.32, 2);
+      ctx.fillRect(c.x + c.w - 26, c.y + 8, 18, 2);
+
+      // Flag ring on hit
+      if (c.state === 'hit'){
+        const rp = c.t / 1.1;
+        ctx.strokeStyle = 'rgba(' + AMBER + ',' + (1 - rp) + ')';
+        ctx.lineWidth = 1.5;
+        rr(c.x - 6 - rp * 10, c.y - 6 - rp * 10, c.w + 12 + rp * 20, c.h + 12 + rp * 20, 8); ctx.stroke();
+        // small "unrecognised" tag
+        ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.fillStyle = 'rgba(' + AMBER + ',' + Math.min(1, c.t * 4) + ')';
+        ctx.fillText('UNRECOGNISED', c.x, c.y - 10);
+      }
+      // Trail line while flying
+      if (c.state === 'fly'){
+        const o = owners[c.owner];
+        ctx.strokeStyle = 'rgba(' + MINT + ',' + (0.5 * (1 - c.t / 0.9)) + ')';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(c.x + c.w, c.y + c.h / 2); ctx.lineTo(o.x, o.y); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+
+    // Owner nodes
+    for (let i = 0; i < owners.length; i++){
+      const o = owners[i];
+      o.pulse = Math.max(0, o.pulse - dt * 1.4);
+      const breathe = 1 + Math.sin(clock * 1.6 + i) * 0.04;
+      // ring
+      ctx.beginPath(); ctx.arc(o.x, o.y, (o.r + 10 + o.pulse * 18) * breathe, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(' + MINT + ',' + (0.12 + o.pulse * 0.6) + ')'; ctx.lineWidth = 1; ctx.stroke();
+      // body
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * breathe, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + MINT + ',' + (0.18 + o.pulse * 0.5) + ')'; ctx.fill();
+      ctx.strokeStyle = 'rgba(' + MINT + ',.85)'; ctx.stroke();
+      // avatar glyph
+      ctx.fillStyle = 'rgba(' + MINT + ',.95)';
+      ctx.beginPath(); ctx.arc(o.x, o.y - 3, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(o.x, o.y + 8, 6, Math.PI, 0); ctx.fill();
+      // count of grouped charges (starts at 0, counts what the animation has actually grouped)
+      ctx.font = '500 11px ui-monospace, SFMono-Regular, Menlo, monospace';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(' + INK + ',.55)';
+      ctx.fillText(String(o.count).padStart(2, '0'), o.x - o.r - 12, o.y + 4);
+      ctx.textAlign = 'left';
+      // renewal arc: a countdown that keeps turning
+      const a0 = -Math.PI / 2, a1 = a0 + ((clock * 0.35 + i * 2.1) % (Math.PI * 2));
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 5, a0, a1);
+      ctx.strokeStyle = 'rgba(' + AMBER + ',.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    // Header line inside the ledger
+    ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.fillStyle = 'rgba(' + INK + ',.45)';
+    ctx.fillText('CHARGES', R.x + 24, R.y - 12);
+    ctx.textAlign = 'right';
+    ctx.fillText('OWNERS', R.x + R.w - 24, R.y - 12);
+    ctx.textAlign = 'left';
+    // scan progress readout
+    ctx.fillStyle = 'rgba(' + AMBER + ',' + (0.55 + 0.45 * sweepAlpha) + ')';
+    ctx.fillText('SCAN ' + String(Math.floor(eased * 100)).padStart(3, '0') + '%', R.x + 24, R.y + R.h + 22);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

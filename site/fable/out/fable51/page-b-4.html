@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Orbit</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1000px;height:1400px;overflow:hidden}
+  body{
+    position:relative;
+    background:#0b0b0c;
+    color:#f4f4f4;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .bg{position:absolute;inset:0;width:1000px;height:1400px;pointer-events:none}
+
+  .wordmark{position:absolute;top:52px;left:56px;display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;letter-spacing:-0.01em}
+  .wordmark svg{display:block}
+  .tz{position:absolute;top:54px;right:56px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#6d6d70}
+
+  h1{
+    position:absolute;top:146px;left:52px;width:860px;
+    font-size:80px;line-height:1.0;font-weight:600;letter-spacing:-0.04em;color:#fff;
+  }
+  h1 span{color:#7a7a7e}
+
+  .cta{position:absolute;top:352px;left:56px;display:flex;align-items:center;gap:26px}
+  .cta button{
+    height:50px;padding:0 24px;border:0;border-radius:9px;
+    background:#fff;color:#0b0b0c;font:600 15px/1 inherit;font-family:inherit;
+    cursor:pointer;letter-spacing:-0.01em;
+  }
+  .cta a{display:inline-flex;align-items:center;gap:8px;color:#b4b4b8;text-decoration:none;font-size:15px;font-weight:500}
+  .cta a svg{display:block}
+
+  .clock{position:absolute;top:462px;left:26px;width:600px;height:600px}
+
+  .legend{position:absolute;top:1086px;left:56px;display:flex;gap:28px;font-size:12.5px;color:#8a8a8e}
+  .legend div{display:flex;align-items:center;gap:8px}
+  .legend i{display:block;width:18px;height:4px;border-radius:2px}
+  .legend b{color:#d6d6d8;font-weight:500}
+
+  .what{position:absolute;top:492px;left:662px;width:282px}
+  .what h2{font-size:12px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:#6d6d70;margin-bottom:20px}
+  .what ol{list-style:none}
+  .what li{border-top:1px solid #222225;padding:18px 0 22px;display:grid;grid-template-columns:34px 1fr;gap:0 4px}
+  .what li:last-child{border-bottom:1px solid #222225}
+  .what li em{font-style:normal;font-size:12px;color:#5c5c60;padding-top:4px;font-variant-numeric:tabular-nums}
+  .what li p{font-size:19px;line-height:1.35;letter-spacing:-0.015em;color:#e9e9eb}
+
+  .foot{position:absolute;left:56px;right:56px;top:1296px;border-top:1px solid #222225;padding-top:22px;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:#8a8a8e}
+  .foot .used{display:flex;align-items:center;gap:12px}
+  .foot .used svg{display:block}
+  .foot .right{font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5c5c60}
+</style>
+</head>
+<body>
+
+<svg class="bg" viewBox="0 0 1000 1400" aria-hidden="true">
+  <defs>
+    <radialGradient id="glow" cx="326" cy="770" r="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.09"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.025"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1000" height="1400" fill="url(#glow)"/>
+  <circle cx="326" cy="770" r="470" fill="none" stroke="#ffffff" stroke-opacity="0.05"/>
+  <circle cx="326" cy="770" r="640" fill="none" stroke="#ffffff" stroke-opacity="0.04"/>
+  <circle cx="326" cy="770" r="820" fill="none" stroke="#ffffff" stroke-opacity="0.03"/>
+</svg>
+
+<div class="wordmark">
+  <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+    <circle cx="11" cy="11" r="9" fill="none" stroke="#fff" stroke-width="1.6"/>
+    <circle cx="11" cy="11" r="2.4" fill="#fff"/>
+    <circle cx="18.2" cy="6.2" r="2" fill="#fff"/>
+  </svg>
+  Orbit
+</div>
+<div class="tz">One shared clock</div>
+
+<h1>Scheduling for teams<br><span>across time zones.</span></h1>
+
+<div class="cta">
+  <button type="button">Start free</button>
+  <a href="#">See how it works
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7h9M7.5 3.5 11 7l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+</div>
+
+<svg class="clock" viewBox="-30 -30 600 600" aria-label="A 24 hour clock showing when four offices are awake and the three hours where all of them overlap">
+  <defs>
+    <radialGradient id="wedge" cx="270" cy="270" r="250" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.03"/>
+    </radialGradient>
+  </defs>
+
+  <!-- outer ring -->
+  <circle cx="270" cy="270" r="250" fill="none" stroke="#2a2a2e" stroke-width="1.5"/>
+
+  <!-- 24 hour ticks -->
+  <g stroke="#3a3a3f" stroke-width="1.5">
+    <line x1="270" y1="8" x2="270" y2="16" stroke="#8a8a8e"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(15 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(30 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(45 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(60 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(75 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(90 270 270)" stroke="#8a8a8e"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(105 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(120 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(135 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(150 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(165 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(180 270 270)" stroke="#8a8a8e"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(195 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(210 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(225 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(240 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(255 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(270 270 270)" stroke="#8a8a8e"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(285 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(300 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(315 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(330 270 270)"/>
+    <line x1="270" y1="8" x2="270" y2="16" transform="rotate(345 270 270)"/>
+  </g>
+  <g font-size="11" fill="#6d6d70" text-anchor="middle" font-family="inherit" letter-spacing="0.06em">
+    <text x="270" y="-8">00</text>
+    <text x="552" y="274">06</text>
+    <text x="270" y="560">12</text>
+    <text x="-12" y="274">18</text>
+  </g>
+
+  <!-- overlap wedge: 13:00 to 16:00 UTC -->
+  <path d="M270 270 L205.3 511.5 A250 250 0 0 1 53.5 395 Z" fill="url(#wedge)"/>
+  <path d="M205.3 511.5 A250 250 0 0 1 53.5 395" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- office awake bands (local 09:00 to 18:00, drawn in UTC) -->
+  <g fill="none" stroke-width="13" stroke-linecap="round">
+    <!-- London  08 to 17 -->
+    <path d="M474.4 388 A236 236 0 0 1 42 331.1" stroke="#ffffff"/>
+    <!-- Berlin  07 to 16 -->
+    <path d="M469 323.3 A206 206 0 0 1 91.6 373" stroke="#bdbdc1"/>
+    <!-- New York  13 to 22 -->
+    <path d="M224.4 440 A176 176 0 0 1 182 117.6" stroke="#8a8a8e"/>
+    <!-- Sao Paulo  12 to 21 -->
+    <path d="M270 416 A146 146 0 0 1 166.8 166.8" stroke="#5c5c60"/>
+  </g>
+
+  <!-- center -->
+  <circle cx="270" cy="270" r="3" fill="#fff"/>
+  <g text-anchor="middle" font-family="inherit">
+    <text x="270" y="236" font-size="11" fill="#6d6d70" letter-spacing="0.1em">EVERYONE AWAKE</text>
+    <text x="270" y="290" font-size="38" fill="#ffffff" font-weight="600" letter-spacing="-0.03em">13:00 to 16:00</text>
+    <text x="270" y="316" font-size="12" fill="#8a8a8e" letter-spacing="0.08em">UTC, ALL FOUR OFFICES</text>
+  </g>
+</svg>
+
+<div class="legend">
+  <div><i style="background:#ffffff"></i><b>London</b> 09:00 to 18:00</div>
+  <div><i style="background:#bdbdc1"></i><b>Berlin</b> 09:00 to 18:00</div>
+  <div><i style="background:#8a8a8e"></i><b>New York</b> 09:00 to 18:00</div>
+  <div><i style="background:#5c5c60"></i><b>São Paulo</b> 09:00 to 18:00</div>
+</div>
+
+<section class="what">
+  <h2>What it does</h2>
+  <ol>
+    <li><em>01</em><p>Finds the hours every office is awake at the same time.</p></li>
+    <li><em>02</em><p>Shows one shared clock instead of five converted ones.</p></li>
+    <li><em>03</em><p>Books the meeting in everyone's local calendar.</p></li>
+    <li><em>04</em><p>Flags the person who always gets the 6am call.</p></li>
+  </ol>
+</section>
+
+<footer class="foot">
+  <div class="used">
+    <svg width="44" height="14" viewBox="0 0 44 14" aria-hidden="true">
+      <circle cx="7" cy="7" r="6" fill="#0b0b0c" stroke="#8a8a8e" stroke-width="1.2"/>
+      <circle cx="17" cy="7" r="6" fill="#0b0b0c" stroke="#8a8a8e" stroke-width="1.2"/>
+      <circle cx="27" cy="7" r="6" fill="#0b0b0c" stroke="#8a8a8e" stroke-width="1.2"/>
+      <circle cx="37" cy="7" r="6" fill="#0b0b0c" stroke="#8a8a8e" stroke-width="1.2"/>
+    </svg>
+    Used by 40 teams across 12 countries.
+  </div>
+  <div class="right">Orbit</div>
+</footer>
+
+</body>
+</html>

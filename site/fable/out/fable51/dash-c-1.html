@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger, last 30 days</title>
+<style>
+html,body{margin:0;width:1600px;height:900px;overflow:hidden;background:#0e1219;color:#e6ebf2;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+#bg{position:absolute;left:0;top:0;width:1600px;height:900px}
+.wrap{position:relative;width:1600px;height:900px;box-sizing:border-box;padding:48px 56px;display:flex;flex-direction:column}
+header{display:flex;align-items:baseline;justify-content:space-between;height:80px}
+h1{font-size:44px;margin:0;font-weight:600;letter-spacing:-.5px;display:flex;align-items:center}
+.live{display:inline-block;width:12px;height:12px;border-radius:50%;background:#4fd1c5;margin-right:16px;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(79,209,197,.7)}60%{box-shadow:0 0 0 14px rgba(79,209,197,0)}}
+.period{font-size:22px;color:#9aa6b8}
+.grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);gap:24px;margin-top:28px}
+.tile{position:relative;background:rgba(22,28,40,.84);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between}
+.label{font-size:19px;color:#9aa6b8}
+.value{font-size:66px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;display:flex;align-items:baseline}
+.unit{font-size:26px;color:#9aa6b8;margin-left:8px;font-weight:400}
+.note{font-size:15px;color:#7d8a9c;line-height:1.4}
+.accent{height:4px;border-radius:2px;background:linear-gradient(90deg,rgba(79,209,197,.15) 0%,rgba(79,209,197,.15) 40%,#4fd1c5 50%,rgba(79,209,197,.15) 60%,rgba(79,209,197,.15) 100%);background-size:250% 100%;animation:sweep 3.2s linear infinite}
+@keyframes sweep{from{background-position:100% 0}to{background-position:-50% 0}}
+.none .value{font-size:34px;color:#7d8a9c;font-weight:500}
+.none .label{color:#7d8a9c}
+.none{border-style:dashed;border-color:rgba(255,255,255,.14)}
+.ring{position:absolute;right:26px;top:24px;width:110px;height:110px}
+.ring .track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:8}
+.ring .arc{fill:none;stroke:#4fd1c5;stroke-width:8;stroke-linecap:round;stroke-dasharray:276.5;stroke-dashoffset:276.5;transform:rotate(-90deg);transform-origin:55px 55px;animation:fill 1.8s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes fill{to{stroke-dashoffset:2.2}}
+.ring .orbit{transform-origin:55px 55px;animation:spin 6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ring .dot{fill:#fff;filter:drop-shadow(0 0 4px #4fd1c5)}
+.ph{position:absolute;right:26px;top:24px;width:110px;height:110px}
+.ph circle{fill:none;stroke:rgba(255,255,255,.18);stroke-width:3;stroke-dasharray:6 10;animation:march 2.6s linear infinite}
+@keyframes march{to{stroke-dashoffset:-64}}
+.ph line{stroke:rgba(255,255,255,.18);stroke-width:3;stroke-linecap:round}
+.foot{display:flex;justify-content:space-between;font-size:15px;color:#7d8a9c;margin-top:22px;height:20px}
+</style>
+</head>
+<body>
+<canvas id="bg" width="1600" height="900"></canvas>
+<div class="wrap">
+  <header>
+    <h1><span class="live"></span>Ledger</h1>
+    <div class="period">Last 30 days</div>
+  </header>
+
+  <div class="grid">
+    <div class="tile">
+      <div class="label">Active installs</div>
+      <div class="value"><span data-target="1284" data-decimals="0">0</span></div>
+      <div class="accent"></div>
+    </div>
+
+    <div class="tile none">
+      <div class="label">Weekly active users</div>
+      <svg class="ph" viewBox="0 0 110 110"><circle cx="55" cy="55" r="44"/><line x1="41" y1="55" x2="69" y2="55"/></svg>
+      <div class="value">No data</div>
+      <div class="note">Not reported for this period.</div>
+    </div>
+
+    <div class="tile">
+      <div class="label">Median session length</div>
+      <div class="value"><span data-target="12.4" data-decimals="1">0.0</span><span class="unit">minutes</span></div>
+      <div class="accent"></div>
+    </div>
+
+    <div class="tile none">
+      <div class="label">30-day retention</div>
+      <svg class="ph" viewBox="0 0 110 110"><circle cx="55" cy="55" r="44"/><line x1="41" y1="55" x2="69" y2="55"/></svg>
+      <div class="value">No data</div>
+      <div class="note">Not reported for this period.</div>
+    </div>
+
+    <div class="tile">
+      <div class="label">Crash-free rate</div>
+      <svg class="ring" viewBox="0 0 110 110">
+        <circle class="track" cx="55" cy="55" r="44"/>
+        <circle class="arc" cx="55" cy="55" r="44"/>
+        <g class="orbit"><circle class="dot" cx="55" cy="11" r="4"/></g>
+      </svg>
+      <div class="value"><span data-target="99.2" data-decimals="1">0.0</span><span class="unit">%</span></div>
+      <div class="accent"></div>
+    </div>
+
+    <div class="tile none">
+      <div class="label">Paid conversions</div>
+      <svg class="ph" viewBox="0 0 110 110"><circle cx="55" cy="55" r="44"/><line x1="41" y1="55" x2="69" y2="55"/></svg>
+      <div class="value">No data</div>
+      <div class="note">Not reported for this period.</div>
+    </div>
+
+    <div class="tile">
+      <div class="label">Support tickets</div>
+      <div class="value"><span data-target="37" data-decimals="0">0</span></div>
+      <div class="accent"></div>
+    </div>
+
+    <div class="tile none">
+      <div class="label">NPS</div>
+      <svg class="ph" viewBox="0 0 110 110"><circle cx="55" cy="55" r="44"/><line x1="41" y1="55" x2="69" y2="55"/></svg>
+      <div class="value">No data</div>
+      <div class="note">Not reported for this period.</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>8 metrics. 4 reported, 4 with no data for this period.</span>
+    <span>Values are shown exactly as supplied.</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('bg'),x=c.getContext('2d'),t=0;
+  var dots=[];
+  for(var i=0;i<60;i++){dots.push({x:Math.random()*1600,y:Math.random()*900,r:1+Math.random()*1.6,s:.15+Math.random()*.35});}
+  function draw(){
+    x.clearRect(0,0,1600,900);
+    for(var i=0;i<7;i++){
+      x.beginPath();
+      for(var px=0;px<=1600;px+=8){
+        var y=460+(i-3)*80+Math.sin(px*.0038+t*.7+i*1.1)*110+Math.sin(px*.011-t*.4+i)*38;
+        if(px===0)x.moveTo(px,y);else x.lineTo(px,y);
+      }
+      x.strokeStyle='rgba(79,209,197,'+(0.05+i*0.014)+')';
+      x.lineWidth=1.4;x.stroke();
+    }
+    for(var j=0;j<dots.length;j++){
+      var d=dots[j];d.y-=d.s;if(d.y<-4){d.y=904;d.x=Math.random()*1600;}
+      x.beginPath();x.arc(d.x,d.y,d.r,0,6.283);
+      x.fillStyle='rgba(230,235,242,'+(0.08+0.5*Math.abs(Math.sin(t*2+j)))+')';x.fill();
+    }
+    t+=0.008;requestAnimationFrame(draw);
+  }
+  draw();
+
+  var els=document.querySelectorAll('[data-target]');
+  Array.prototype.forEach.call(els,function(el){
+    var target=parseFloat(el.getAttribute('data-target')),dec=parseInt(el.getAttribute('data-decimals'),10)||0,start=null,dur=1800;
+    function step(now){
+      if(start===null)start=now;
+      var p=Math.min(1,(now-start)/dur),e=1-Math.pow(1-p,3),v=target*e;
+      el.textContent=v.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+      if(p<1)requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+})();
+</script>
+</body>
+</html>

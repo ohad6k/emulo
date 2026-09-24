@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Orbit</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1000px; height: 1400px; overflow: hidden; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #0a0f1f;
+    color: #e9edf6;
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+  }
+  .bg {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(600px 420px at 78% 26%, rgba(96,140,255,.22), transparent 70%),
+      radial-gradient(500px 400px at 12% 92%, rgba(255,171,94,.14), transparent 70%),
+      #0a0f1f;
+  }
+  .grid {
+    position: absolute; inset: 0; z-index: 0;
+    background-image: radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), rgba(0,0,0,.25) 60%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), rgba(0,0,0,.25) 60%, transparent);
+  }
+  .page { position: relative; z-index: 1; width: 1000px; height: 1400px; padding: 0 64px; display: flex; flex-direction: column; }
+
+  /* Nav */
+  nav { height: 96px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: -.01em; }
+  .logo svg { display: block; }
+  nav a { color: #aab4cc; text-decoration: none; font-size: 15px; }
+
+  /* Hero */
+  .hero { height: 610px; display: grid; grid-template-columns: 480px 1fr; align-items: center; gap: 24px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #8fb0ff; font-weight: 600; margin-bottom: 22px; }
+  .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #8fb0ff; box-shadow: 0 0 12px #8fb0ff; }
+  h1 { font-size: 60px; line-height: 1.04; letter-spacing: -.03em; font-weight: 750; }
+  h1 em { font-style: normal; color: #ffb86b; }
+  .lede { margin-top: 22px; font-size: 19px; line-height: 1.5; color: #b8c1d8; max-width: 440px; }
+  .actions { margin-top: 36px; display: flex; align-items: center; gap: 22px; }
+  button.primary {
+    font: inherit; font-size: 17px; font-weight: 650; color: #0a0f1f;
+    background: linear-gradient(180deg, #ffd08a, #ffab52);
+    border: 0; border-radius: 12px; padding: 16px 28px; cursor: pointer;
+    box-shadow: 0 10px 30px rgba(255,171,82,.35), inset 0 1px 0 rgba(255,255,255,.5);
+  }
+  .actions a { color: #e9edf6; text-decoration: none; font-size: 16px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(233,237,246,.3); padding-bottom: 2px; }
+  .art { display: flex; justify-content: center; align-items: center; }
+
+  /* Features */
+  .features { height: 546px; padding-top: 8px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 26px; }
+  h2 { font-size: 30px; letter-spacing: -.02em; font-weight: 700; }
+  .section-head span { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: #7f8aa6; font-weight: 600; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .card {
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 18px; padding: 26px 26px 24px;
+    height: 176px; display: flex; flex-direction: column; justify-content: space-between;
+    position: relative; overflow: hidden;
+  }
+  .card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.04), transparent 50%); pointer-events: none; }
+  .card .icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(143,176,255,.12); border: 1px solid rgba(143,176,255,.25); display: flex; align-items: center; justify-content: center; }
+  .card:nth-child(4) .icon { background: rgba(255,171,82,.12); border-color: rgba(255,171,82,.3); }
+  .card p { font-size: 20px; line-height: 1.35; font-weight: 550; letter-spacing: -.01em; color: #eef1f8; }
+  .card .num { position: absolute; top: 24px; right: 26px; font-size: 13px; color: #58627e; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  /* Footer */
+  footer { height: 148px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,.08); }
+  .proof { display: flex; align-items: center; gap: 16px; }
+  .proof .dots { display: grid; grid-template-columns: repeat(6, 8px); gap: 5px; }
+  .proof .dots i { width: 8px; height: 8px; border-radius: 50%; background: #8fb0ff; opacity: .85; display: block; }
+  .proof .dots i:nth-child(odd) { background: #ffb86b; }
+  .proof p { font-size: 16px; color: #c5cde0; }
+  .proof p b { color: #fff; font-weight: 650; }
+  footer small { color: #58627e; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="grid"></div>
+
+<div class="page">
+  <nav>
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="11" stroke="#8fb0ff" stroke-width="1.6"/>
+        <circle cx="14" cy="14" r="4" fill="#ffb86b"/>
+        <circle cx="24.5" cy="10" r="2.6" fill="#8fb0ff"/>
+      </svg>
+      Orbit
+    </div>
+    <a href="#">See how it works</a>
+  </nav>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Orbit</div>
+      <h1>Scheduling for teams across <em>time zones.</em></h1>
+      <p class="lede">One shared clock for every office, so the meeting lands when everyone is actually awake.</p>
+      <div class="actions">
+        <button class="primary">Start free</button>
+        <a href="#">See how it works
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="art">
+      <svg width="420" height="420" viewBox="0 0 420 420" fill="none">
+        <defs>
+          <radialGradient id="sun" cx="40%" cy="35%" r="70%">
+            <stop offset="0" stop-color="#ffe2b3"/>
+            <stop offset="1" stop-color="#ff9f3c"/>
+          </radialGradient>
+          <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0" stop-color="#ffab52" stop-opacity=".45"/>
+            <stop offset="1" stop-color="#ffab52" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="band" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#8fb0ff" stop-opacity=".35"/>
+            <stop offset="1" stop-color="#8fb0ff" stop-opacity=".05"/>
+          </linearGradient>
+        </defs>
+
+        <!-- overlap wedge: the hours everyone is awake -->
+        <path d="M210 210 L210 12 A198 198 0 0 1 381 111 Z" fill="url(#band)"/>
+        <path d="M210 12 A198 198 0 0 1 381 111" stroke="#8fb0ff" stroke-width="2" stroke-linecap="round"/>
+
+        <!-- orbit rings -->
+        <circle cx="210" cy="210" r="198" stroke="rgba(255,255,255,.10)" stroke-width="1"/>
+        <circle cx="210" cy="210" r="156" stroke="rgba(255,255,255,.14)" stroke-width="1"/>
+        <circle cx="210" cy="210" r="112" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+        <circle cx="210" cy="210" r="68" stroke="rgba(255,255,255,.22)" stroke-width="1"/>
+
+        <!-- hour ticks -->
+        <g stroke="rgba(255,255,255,.18)" stroke-width="1.5" stroke-linecap="round">
+          <path d="M210 8v8"/><path d="M412 210h-8"/><path d="M210 412v-8"/><path d="M8 210h8"/>
+        </g>
+
+        <!-- sun glow + center clock -->
+        <circle cx="210" cy="210" r="70" fill="url(#glow)"/>
+        <circle cx="210" cy="210" r="30" fill="url(#sun)"/>
+        <path d="M210 210 L210 192" stroke="#0a0f1f" stroke-width="3" stroke-linecap="round"/>
+        <path d="M210 210 L222 216" stroke="#0a0f1f" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- offices on their orbits -->
+        <g>
+          <circle cx="278" cy="210" r="7" fill="#8fb0ff"/>
+          <circle cx="278" cy="210" r="12" stroke="#8fb0ff" stroke-opacity=".35"/>
+        </g>
+        <g>
+          <circle cx="131" cy="130" r="7" fill="#8fb0ff"/>
+          <circle cx="131" cy="130" r="12" stroke="#8fb0ff" stroke-opacity=".35"/>
+        </g>
+        <g>
+          <circle cx="320" cy="98" r="8" fill="#e9edf6"/>
+          <circle cx="320" cy="98" r="14" stroke="#e9edf6" stroke-opacity=".3"/>
+        </g>
+        <g>
+          <circle cx="70" cy="330" r="7" fill="#8fb0ff"/>
+          <circle cx="70" cy="330" r="12" stroke="#8fb0ff" stroke-opacity=".35"/>
+        </g>
+        <!-- the one who always gets the 6am call -->
+        <g>
+          <circle cx="210" cy="408" r="8" fill="#ffb86b"/>
+          <circle cx="210" cy="408" r="15" stroke="#ffb86b" stroke-opacity=".45"/>
+          <circle cx="210" cy="408" r="22" stroke="#ffb86b" stroke-opacity=".15"/>
+        </g>
+
+        <!-- label on the overlap band -->
+        <text x="286" y="42" fill="#c9d8ff" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="1.5">EVERYONE AWAKE</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="section-head">
+      <h2>Four things Orbit does</h2>
+      <span>What it does</span>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#8fb0ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="M11 6v5l3 2"/><path d="M3 3l3 2M19 3l-3 2"/>
+          </svg>
+        </div>
+        <span class="num">01</span>
+        <p>Finds the hours every office is awake at the same time.</p>
+      </div>
+      <div class="card">
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#8fb0ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8.5"/><path d="M2.5 11h17M11 2.5c3 3 3 14 0 17M11 2.5c-3 3-3 14 0 17"/>
+          </svg>
+        </div>
+        <span class="num">02</span>
+        <p>Shows one shared clock instead of five converted ones.</p>
+      </div>
+      <div class="card">
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#8fb0ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4.5" width="16" height="14.5" rx="2.5"/><path d="M3 9h16M7 2.5v4M15 2.5v4"/><path d="M8 14l2 2 4-4"/>
+          </svg>
+        </div>
+        <span class="num">03</span>
+        <p>Books the meeting in everyone's local calendar.</p>
+      </div>
+      <div class="card">
+        <div class="icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#ffb86b" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 19V4"/><path d="M5 4h11l-2.5 4L16 12H5"/>
+          </svg>
+        </div>
+        <span class="num">04</span>
+        <p>Flags the person who always gets the 6am call.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="proof">
+      <div class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <p>Used by <b>40 teams</b> across <b>12 countries</b>.</p>
+    </div>
+    <small>Orbit</small>
+  </footer>
+</div>
+</body>
+</html>

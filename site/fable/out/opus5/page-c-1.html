@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1000" />
+    <title>Orbit</title>
+    <style>
+      :root {
+        --bg: #0a0e14;
+        --panel: #0f151e;
+        --panel-2: #111925;
+        --line: #1d2836;
+        --text: #e9eef5;
+        --muted: #93a2b5;
+        --dim: #6f7d90;
+        --accent: #f2c16b;
+        --bar: #2c405a;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #05080c;
+      }
+
+      body {
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        color: var(--text);
+      }
+
+      .page {
+        position: relative;
+        width: 1000px;
+        height: 1400px;
+        margin: 0 auto;
+        padding: 64px 72px;
+        overflow: hidden;
+        background:
+          radial-gradient(900px 520px at 88% -8%, rgba(242, 193, 107, 0.10), transparent 62%),
+          radial-gradient(700px 500px at 6% 22%, rgba(96, 140, 190, 0.10), transparent 60%),
+          var(--bg);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .rings {
+        position: absolute;
+        top: -170px;
+        right: -180px;
+        width: 620px;
+        height: 620px;
+        pointer-events: none;
+      }
+
+      .content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+      }
+
+      /* ---------- brand ---------- */
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 21px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      /* ---------- hero ---------- */
+
+      .hero {
+        margin-top: 92px;
+        max-width: 740px;
+      }
+
+      .lede {
+        margin: 0;
+        font-size: 54px;
+        line-height: 1.08;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+      }
+
+      .lede span { color: var(--accent); }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        margin-top: 36px;
+      }
+
+      button.primary {
+        font: inherit;
+        font-size: 16px;
+        font-weight: 600;
+        color: #14100a;
+        background: var(--accent);
+        border: 0;
+        border-radius: 10px;
+        padding: 15px 28px;
+        cursor: pointer;
+        box-shadow: 0 8px 26px rgba(242, 193, 107, 0.18);
+      }
+
+      button.primary:hover { background: #f7cd83; }
+
+      a.secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 16px;
+        color: var(--text);
+        text-decoration: none;
+        padding-bottom: 3px;
+        border-bottom: 1px solid rgba(233, 238, 245, 0.28);
+      }
+
+      a.secondary:hover { border-bottom-color: var(--accent); color: var(--accent); }
+
+      /* ---------- chart panel ---------- */
+
+      .panel {
+        margin-top: 58px;
+        background: linear-gradient(180deg, var(--panel-2), var(--panel));
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 28px;
+      }
+
+      .panel svg { display: block; width: 800px; height: 272px; }
+
+      /* ---------- capabilities ---------- */
+
+      h2 {
+        margin: 56px 0 0;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+
+      ul.cards {
+        list-style: none;
+        margin: 24px 0 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+
+      ul.cards li {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 22px 24px 24px;
+      }
+
+      .tile {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent);
+        background: rgba(242, 193, 107, 0.10);
+        border: 1px solid rgba(242, 193, 107, 0.22);
+        margin-bottom: 16px;
+      }
+
+      ul.cards p {
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.5;
+        color: #d5dde8;
+      }
+
+      /* ---------- footer ---------- */
+
+      footer {
+        margin-top: auto;
+        padding-top: 22px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      footer p {
+        margin: 0;
+        font-size: 14px;
+        letter-spacing: 0.01em;
+        color: var(--muted);
+      }
+
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 4px rgba(242, 193, 107, 0.14);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <svg class="rings" viewBox="0 0 620 620" aria-hidden="true">
+        <g fill="none" stroke="#ffffff" stroke-opacity="0.055">
+          <ellipse cx="310" cy="310" rx="300" ry="150" transform="rotate(-28 310 310)" />
+          <ellipse cx="310" cy="310" rx="228" ry="114" transform="rotate(-28 310 310)" />
+          <ellipse cx="310" cy="310" rx="156" ry="78" transform="rotate(-28 310 310)" />
+        </g>
+        <circle cx="310" cy="310" r="58" fill="#ffffff" fill-opacity="0.02" />
+      </svg>
+
+      <div class="content">
+        <div class="brand">
+          <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+            <ellipse cx="14" cy="14" rx="11.5" ry="5.6" transform="rotate(-28 14 14)"
+              fill="none" stroke="#5a6c84" stroke-width="1.4" />
+            <circle cx="14" cy="14" r="4.4" fill="#f2c16b" />
+            <circle cx="24.1" cy="8.6" r="2" fill="#e9eef5" />
+          </svg>
+          <h1>Orbit</h1>
+        </div>
+
+        <div class="hero">
+          <p class="lede">Scheduling for teams <span>across time zones.</span></p>
+          <p class="actions">
+            <button class="primary" type="button">Start free</button>
+            <a class="secondary" href="#">
+              See how it works
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"
+                stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 7.5h8.5" />
+                <path d="M8 4l3.5 3.5L8 11" />
+              </svg>
+            </a>
+          </p>
+        </div>
+
+        <div class="panel">
+          <svg viewBox="0 0 800 272" role="img"
+            aria-label="Four offices from UTC minus 3 to UTC plus 5, with working hours overlapping between 11:00 and 14:00 UTC.">
+            <defs>
+              <clipPath id="band">
+                <rect x="402" y="44" width="90" height="190" />
+              </clipPath>
+            </defs>
+
+            <!-- overlap band -->
+            <rect x="402" y="44" width="90" height="190" rx="8" fill="#f2c16b" fill-opacity="0.09" />
+            <line x1="447" y1="36" x2="447" y2="44" stroke="#f2c16b" stroke-opacity="0.5" stroke-width="1.4" />
+            <rect x="366" y="10" width="162" height="26" rx="13"
+              fill="#1a1d1c" stroke="#f2c16b" stroke-opacity="0.35" />
+            <text x="447" y="27" text-anchor="middle" font-family="inherit" font-size="12"
+              letter-spacing="0.08em" fill="#f2c16b">EVERYONE AWAKE</text>
+
+            <!-- tracks -->
+            <g fill="#151d28">
+              <rect x="72" y="56" width="720" height="28" rx="7" />
+              <rect x="72" y="102" width="720" height="28" rx="7" />
+              <rect x="72" y="148" width="720" height="28" rx="7" />
+              <rect x="72" y="194" width="720" height="28" rx="7" />
+            </g>
+
+            <!-- awake hours -->
+            <g id="awake" fill="#2c405a">
+              <rect x="402" y="56" width="330" height="28" rx="7" />
+              <rect x="312" y="102" width="330" height="28" rx="7" />
+              <rect x="252" y="148" width="330" height="28" rx="7" />
+              <rect x="162" y="194" width="330" height="28" rx="7" />
+            </g>
+            <g fill="#f2c16b" clip-path="url(#band)">
+              <rect x="402" y="56" width="330" height="28" rx="7" />
+              <rect x="312" y="102" width="330" height="28" rx="7" />
+              <rect x="252" y="148" width="330" height="28" rx="7" />
+              <rect x="162" y="194" width="330" height="28" rx="7" />
+            </g>
+
+            <rect x="402" y="44" width="90" height="190" rx="8"
+              fill="none" stroke="#f2c16b" stroke-opacity="0.42" />
+
+            <!-- zone labels -->
+            <g font-family="inherit" font-size="13" fill="#93a2b5" text-anchor="end">
+              <text x="60" y="75">UTC−3</text>
+              <text x="60" y="121">UTC±0</text>
+              <text x="60" y="167">UTC+2</text>
+              <text x="60" y="213">UTC+5</text>
+            </g>
+
+            <!-- hour axis -->
+            <g stroke="#1d2836">
+              <line x1="72" y1="238" x2="792" y2="238" />
+            </g>
+            <g font-family="inherit" font-size="11" fill="#6f7d90" text-anchor="middle">
+              <text x="72" y="256">00</text>
+              <text x="162" y="256">03</text>
+              <text x="252" y="256">06</text>
+              <text x="342" y="256">09</text>
+              <text x="432" y="256">12</text>
+              <text x="522" y="256">15</text>
+              <text x="612" y="256">18</text>
+              <text x="702" y="256">21</text>
+              <text x="792" y="256">24</text>
+            </g>
+            <text x="60" y="256" text-anchor="end" font-family="inherit" font-size="10"
+              letter-spacing="0.06em" fill="#5c6a7c">HOURS, UTC</text>
+          </svg>
+        </div>
+
+        <h2>What Orbit does</h2>
+        <ul class="cards">
+          <li>
+            <div class="tile">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.6" aria-hidden="true">
+                <circle cx="9" cy="12" r="6" />
+                <circle cx="15" cy="12" r="6" />
+                <ellipse cx="12" cy="12" rx="3" ry="5.2" fill="currentColor" stroke="none" />
+              </svg>
+            </div>
+            <p>Finds the hours every office is awake at the same time.</p>
+          </li>
+          <li>
+            <div class="tile">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="8.5" />
+                <path d="M12 12V7" />
+                <path d="M12 12l4 2.5" />
+              </svg>
+            </div>
+            <p>Shows one shared clock instead of five converted ones.</p>
+          </li>
+          <li>
+            <div class="tile">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+                <path d="M3.5 10h17" />
+                <path d="M8 3.2v3.6M16 3.2v3.6" />
+                <path d="M9 14.6l2.4 2.4L16 12.6" />
+              </svg>
+            </div>
+            <p>Books the meeting in everyone's local calendar.</p>
+          </li>
+          <li>
+            <div class="tile">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6.5 3.5v17" />
+                <path d="M6.5 5h10.5l-2.5 3.5L17 12H6.5z" />
+              </svg>
+            </div>
+            <p>Flags the person who always gets the 6am call.</p>
+          </li>
+        </ul>
+
+        <footer>
+          <span class="dot"></span>
+          <p>Used by 40 teams across 12 countries.</p>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

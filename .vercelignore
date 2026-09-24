@@ -1,0 +1,30 @@
+# Static site only. Everything else in this repo is source, tooling, or internal
+# working files and must never be uploaded to a deploy.
+/*
+!site
+!vercel.json
+
+# A1 excludes pricing and payment surfaces, so offer.html stays unpublished until Ohad
+# decides otherwise. scan.html was here for the same reason until he authorised it on
+# 2026-08-24. A test file is not a page.
+site/offer.html
+site/offer-claims.md
+site/*.test.cjs
+package.json
+package-lock.json
+
+# Held on 2026-08-25 while publishing the agent rules clinic. Every file below was
+# already sitting unpublished in the working tree, and a deploy uploads the whole
+# site directory, so shipping one page would have shipped all of these with it.
+#
+# do-your-agent-rules-do-anything.html is not a judgement call: it ends on
+# "$750, fixed scope", and A1 excludes pricing surfaces. It needs Ohad, not an agent.
+#
+# The rest are held only because nobody asked for them. Delete a line to ship one.
+site/notes/do-your-agent-rules-do-anything.html
+site/notes/agent-failure-lab.html
+site/notes/agent-reliability-teardown-cloudflare.html
+site/notes/agent-that-disqualifies-itself.html
+site/notes/shutter-angle-is-not-sample-count.html
+site/reel.html
+site/assets/reel

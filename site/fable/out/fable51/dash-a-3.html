@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger — Product Metrics</title>
+<style>
+  :root{
+    --bg:#0b0f17;--panel:#121826;--panel2:#161d2e;--line:#243049;
+    --text:#e8edf6;--muted:#8a96ad;--dim:#56617a;
+    --accent:#5ec8ff;--accent2:#8b7dff;--good:#4ade9a;--warn:#f7b955;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:900px;overflow:hidden;background:var(--bg);color:var(--text);
+    font-family:"Inter","Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  #bg{position:absolute;inset:0;width:1600px;height:900px;display:block}
+  .wrap{position:relative;width:1600px;height:900px;padding:36px 44px 40px;display:flex;flex-direction:column;gap:22px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;height:78px;flex:0 0 78px}
+  .brand{display:flex;align-items:center;gap:18px}
+  .logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .logo::after{content:"";position:absolute;inset:-60%;background:linear-gradient(120deg,transparent 40%,rgba(255,255,255,.45) 50%,transparent 60%);animation:sheen 3.6s linear infinite}
+  @keyframes sheen{from{transform:translateX(-60%)}to{transform:translateX(60%)}}
+  .logo svg{position:relative;z-index:1}
+  h1{font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .sub{margin-top:8px;font-size:15px;color:var(--muted);letter-spacing:.02em}
+  .period{display:flex;align-items:center;gap:12px;font-size:16px;color:var(--muted);padding:12px 18px;border:1px solid var(--line);border-radius:999px;background:rgba(18,24,38,.7)}
+  .live{width:10px;height:10px;border-radius:50%;background:var(--good);position:relative}
+  .live::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--good);animation:ping 1.8s ease-out infinite}
+  @keyframes ping{0%{transform:scale(.4);opacity:1}100%{transform:scale(1.6);opacity:0}}
+  .period strong{color:var(--text);font-weight:600}
+
+  .grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);gap:22px}
+  .card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:20px;
+    padding:26px 28px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:200% 100%;animation:scan 4s linear infinite;opacity:.55}
+  @keyframes scan{from{background-position:200% 0}to{background-position:-200% 0}}
+  .card.null::before{background:linear-gradient(90deg,transparent,var(--dim),transparent);background-size:200% 100%}
+  .label{font-size:14px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .value{margin-top:10px;font-size:58px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:8px}
+  .value small{font-size:22px;color:var(--muted);font-weight:500;letter-spacing:0}
+  .null .value{color:var(--dim);font-size:52px}
+  .note{margin-top:8px;font-size:13px;color:var(--dim)}
+  .viz{flex:1;margin-top:14px;display:flex;align-items:center;justify-content:center;min-height:0}
+  .viz svg{width:100%;height:100%;max-height:190px;overflow:visible}
+
+  /* radar rings (installs) */
+  .ring{fill:none;stroke:var(--accent);stroke-width:1.5;transform-origin:center;transform-box:fill-box;animation:radar 3.2s ease-out infinite}
+  .ring:nth-child(2){animation-delay:1.05s}.ring:nth-child(3){animation-delay:2.1s}
+  @keyframes radar{0%{transform:scale(.15);opacity:.9}100%{transform:scale(1.05);opacity:0}}
+  .core{fill:var(--accent);animation:breathe 2s ease-in-out infinite}
+  @keyframes breathe{0%,100%{r:9}50%{r:12}}
+  .orbit{transform-origin:150px 90px;transform-box:view-box;animation:spin 9s linear infinite}
+  .orbit.rev{animation:spin 14s linear infinite reverse}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* session timer arc */
+  .timer{stroke:var(--accent2);stroke-width:12;fill:none;stroke-linecap:round;stroke-dasharray:502;
+    animation:fill 12.4s linear infinite}
+  @keyframes fill{0%{stroke-dashoffset:502}92%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+  .hand{stroke:var(--text);stroke-width:2.5;stroke-linecap:round;transform-origin:90px 90px;transform-box:view-box;animation:spin 12.4s linear infinite}
+  .tick{stroke:var(--line);stroke-width:2}
+
+  /* gauge */
+  .gtrack{stroke:var(--line);stroke-width:14;fill:none}
+  .gfill{stroke:var(--good);stroke-width:14;fill:none;stroke-linecap:round}
+  .gsweep{stroke:#fff;stroke-width:14;fill:none;stroke-linecap:round;stroke-dasharray:24 700;animation:sweep 2.6s ease-in-out infinite;opacity:.55}
+  @keyframes sweep{from{stroke-dashoffset:0}to{stroke-dashoffset:-720}}
+  .glow{animation:glowp 2.4s ease-in-out infinite}
+  @keyframes glowp{0%,100%{opacity:.25}50%{opacity:.6}}
+
+  /* ticket dots */
+  .dot{fill:var(--warn);animation:blink 3.7s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:.35}50%{opacity:1}}
+
+  /* null viz */
+  .dash{fill:none;stroke:var(--dim);stroke-width:2;stroke-dasharray:6 8;transform-origin:center;transform-box:fill-box;animation:spin 22s linear infinite}
+  .dash.inner{stroke-dasharray:3 9;animation:spin 14s linear infinite reverse;opacity:.7}
+  .qmark{fill:var(--dim);font-size:34px;font-weight:600;animation:fade 2.6s ease-in-out infinite}
+  @keyframes fade{0%,100%{opacity:.35}50%{opacity:.9}}
+  .nullbar{margin-top:auto;height:6px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+  .nullbar::after{content:"";position:absolute;top:0;bottom:0;width:30%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--dim),transparent);animation:slide 2.8s ease-in-out infinite}
+  @keyframes slide{0%{left:-30%}100%{left:100%}}
+  .badge{position:absolute;top:22px;right:24px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:5px 10px}
+  .badge.ok{color:var(--good);border-color:rgba(74,222,154,.35)}
+</style>
+</head>
+<body>
+<canvas id="bg" width="1600" height="900"></canvas>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0b0f17" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 4h11l3 3v13H5z"/><path d="M8 11h8M8 15h5"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Ledger</h1>
+        <div class="sub">Product metrics overview · 4 of 8 metrics reported</div>
+      </div>
+    </div>
+    <div class="period"><span class="live"></span>Period: <strong>last 30 days</strong></div>
+  </header>
+
+  <div class="grid">
+    <!-- Active installs -->
+    <section class="card">
+      <span class="badge ok">Reported</span>
+      <div class="label">Active installs</div>
+      <div class="value" id="installs">0</div>
+      <div class="note">Devices with the app currently installed</div>
+      <div class="viz">
+        <svg viewBox="0 0 300 180">
+          <circle class="ring" cx="150" cy="90" r="80"/>
+          <circle class="ring" cx="150" cy="90" r="80"/>
+          <circle class="ring" cx="150" cy="90" r="80"/>
+          <g class="orbit"><circle cx="150" cy="30" r="4" fill="#5ec8ff"/></g>
+          <g class="orbit rev"><circle cx="150" cy="130" r="3" fill="#8b7dff"/></g>
+          <circle class="core" cx="150" cy="90" r="10"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Weekly active users: null -->
+    <section class="card null">
+      <span class="badge">No data</span>
+      <div class="label">Weekly active users</div>
+      <div class="value">—</div>
+      <div class="note">Not reported for this period</div>
+      <div class="viz">
+        <svg viewBox="0 0 300 180">
+          <circle class="dash" cx="150" cy="90" r="70"/>
+          <circle class="dash inner" cx="150" cy="90" r="46"/>
+          <text class="qmark" x="150" y="102" text-anchor="middle">?</text>
+        </svg>
+      </div>
+      <div class="nullbar"></div>
+    </section>
+
+    <!-- Median session -->
+    <section class="card">
+      <span class="badge ok">Reported</span>
+      <div class="label">Median session length</div>
+      <div class="value"><span id="session">0.0</span><small>min</small></div>
+      <div class="note">Arc completes once every 12.4 seconds</div>
+      <div class="viz">
+        <svg viewBox="0 0 180 180" style="max-width:180px">
+          <g class="tickgroup">
+            <line class="tick" x1="90" y1="4" x2="90" y2="12"/><line class="tick" x1="176" y1="90" x2="168" y2="90"/>
+            <line class="tick" x1="90" y1="176" x2="90" y2="168"/><line class="tick" x1="4" y1="90" x2="12" y2="90"/>
+          </g>
+          <circle cx="90" cy="90" r="80" fill="none" stroke="#243049" stroke-width="12"/>
+          <circle class="timer" cx="90" cy="90" r="80" transform="rotate(-90 90 90)"/>
+          <line class="hand" x1="90" y1="90" x2="90" y2="26"/>
+          <circle cx="90" cy="90" r="5" fill="#e8edf6"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Retention D30: null -->
+    <section class="card null">
+      <span class="badge">No data</span>
+      <div class="label">Retention · day 30</div>
+      <div class="value">—</div>
+      <div class="note">Not reported for this period</div>
+      <div class="viz">
+        <svg viewBox="0 0 300 180">
+          <circle class="dash" cx="150" cy="90" r="70"/>
+          <circle class="dash inner" cx="150" cy="90" r="46"/>
+          <text class="qmark" x="150" y="102" text-anchor="middle">?</text>
+        </svg>
+      </div>
+      <div class="nullbar"></div>
+    </section>
+
+    <!-- Crash-free rate -->
+    <section class="card">
+      <span class="badge ok">Reported</span>
+      <div class="label">Crash-free rate</div>
+      <div class="value"><span id="crash">0.0</span><small>%</small></div>
+      <div class="note">Sessions that ended without a crash</div>
+      <div class="viz">
+        <svg viewBox="0 0 300 180">
+          <defs>
+            <filter id="blur"><feGaussianBlur stdDeviation="6"/></filter>
+          </defs>
+          <path class="glow" d="M40 150 A110 110 0 0 1 260 150" fill="none" stroke="#4ade9a" stroke-width="18" filter="url(#blur)"/>
+          <path class="gtrack" d="M40 150 A110 110 0 0 1 260 150"/>
+          <path class="gfill" id="gfill" d="M40 150 A110 110 0 0 1 260 150" stroke-dasharray="345.6" stroke-dashoffset="345.6"/>
+          <path class="gsweep" d="M40 150 A110 110 0 0 1 260 150"/>
+          <text x="150" y="150" text-anchor="middle" fill="#8a96ad" font-size="13" letter-spacing="1">TARGET 99%</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Paid conversions: null -->
+    <section class="card null">
+      <span class="badge">No data</span>
+      <div class="label">Paid conversions</div>
+      <div class="value">—</div>
+      <div class="note">Not reported for this period</div>
+      <div class="viz">
+        <svg viewBox="0 0 300 180">
+          <circle class="dash" cx="150" cy="90" r="70"/>
+          <circle class="dash inner" cx="150" cy="90" r="46"/>
+          <text class="qmark" x="150" y="102" text-anchor="middle">?</text>
+        </svg>
+      </div>
+      <div class="nullbar"></div>
+    </section>
+
+    <!-- Support tickets -->
+    <section class="card">
+      <span class="badge ok">Reported</span>
+      <div class="label">Support tickets</div>
+      <div class="value" id="tickets">0</div>
+      <div class="note">One dot per ticket opened</div>
+      <div class="viz"><svg id="dots" viewBox="0 0 300 180"></svg></div>
+    </section>
+
+    <!-- NPS: null -->
+    <section class="card null">
+      <span class="badge">No data</span>
+      <div class="label">Net promoter score</div>
+      <div class="value">—</div>
+      <div class="note">Not reported for this period</div>
+      <div class="viz">
+        <svg viewBox="0 0 300 180">
+          <circle class="dash" cx="150" cy="90" r="70"/>
+          <circle class="dash inner" cx="150" cy="90" r="46"/>
+          <text class="qmark" x="150" y="102" text-anchor="middle">?</text>
+        </svg>
+      </div>
+      <div class="nullbar"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---- background canvas: drifting waves + particles
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),W=1600,H=900,t0=performance.now();
+  var parts=[];for(var i=0;i<70;i++)parts.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.4,vx:(Math.random()-.5)*.25,vy:-(Math.random()*.25+.08),a:Math.random()*Math.PI*2});
+  function bg(now){
+    var t=(now-t0)/1000;
+    ctx.clearRect(0,0,W,H);
+    var g=ctx.createRadialGradient(300+Math.sin(t*.2)*200,200,50,800,450,1100);
+    g.addColorStop(0,'rgba(94,200,255,0.10)');g.addColorStop(.5,'rgba(139,125,255,0.05)');g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    for(var k=0;k<4;k++){
+      ctx.beginPath();
+      for(var x=0;x<=W;x+=8){
+        var y=H*0.55+k*70+Math.sin(x*0.004+t*0.6+k)*40+Math.sin(x*0.011-t*0.35+k*2)*18;
+        x?ctx.lineTo(x,y):ctx.moveTo(x,y);
+      }
+      ctx.strokeStyle='rgba(94,200,255,'+(0.10-k*0.02)+')';ctx.lineWidth=1.5;ctx.stroke();
+    }
+    for(var i=0;i<parts.length;i++){var p=parts[i];p.x+=p.vx;p.y+=p.vy;p.a+=.02;
+      if(p.y<-5){p.y=H+5;p.x=Math.random()*W}if(p.x<-5)p.x=W+5;if(p.x>W+5)p.x=-5;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fillStyle='rgba(232,237,246,'+(0.25+0.25*Math.sin(p.a))+')';ctx.fill();}
+    requestAnimationFrame(bg);
+  }
+  requestAnimationFrame(bg);
+
+  // ---- count-up animations
+  function countUp(el,target,dec,dur,fmt){
+    var s=performance.now();
+    function step(n){var p=Math.min(1,(n-s)/dur);p=1-Math.pow(1-p,3);var v=target*p;
+      el.textContent=fmt?fmt(v):v.toFixed(dec);if(p<1)requestAnimationFrame(step);}
+    requestAnimationFrame(step);
+  }
+  countUp(document.getElementById('installs'),1284,0,1800,function(v){return Math.round(v).toLocaleString('en-US')});
+  countUp(document.getElementById('session'),12.4,1,1600);
+  countUp(document.getElementById('crash'),99.2,1,2000);
+  countUp(document.getElementById('tickets'),37,0,1500,function(v){return Math.round(v)});
+
+  // ---- gauge fill to 99.2%
+  var gf=document.getElementById('gfill'),L=345.6,gs=performance.now();
+  (function gfill(n){var p=Math.min(1,(n-gs)/2000);p=1-Math.pow(1-p,3);
+    gf.setAttribute('stroke-dashoffset',L-L*0.992*p);if(p<1)requestAnimationFrame(gfill);})(gs);
+
+  // ---- 37 ticket dots, staggered pulse
+  var svg=document.getElementById('dots'),ns='http://www.w3.org/2000/svg',cols=10,cell=26,ox=(300-cols*cell)/2+cell/2,oy=40;
+  for(var i=0;i<37;i++){var d=document.createElementNS(ns,'circle');
+    d.setAttribute('cx',ox+(i%cols)*cell);d.setAttribute('cy',oy+Math.floor(i/cols)*cell);d.setAttribute('r',6);
+    d.setAttribute('class','dot');d.style.animationDelay=(i*0.1)+'s';svg.appendChild(d);}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, initial-scale=1">
+<title>Ledger Metrics Board</title>
+<style>
+  :root{
+    --ground:#0B0F14;
+    --panel:#111820;
+    --panel-blank:#0E141A;
+    --rule:#1D2833;
+    --rule-2:#2B3B49;
+    --ink:#E9EFF3;
+    --ink-2:#93A6B4;
+    --ink-3:#5C6F7D;
+    --teal:#3FC79A;
+    --teal-deep:#1D6B55;
+    --amber:#D9A441;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--ground)}
+  body{color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+
+  #stage{
+    position:absolute;left:50%;top:50%;
+    width:1600px;height:900px;
+    transform:translate(-50%,-50%);
+    transform-origin:50% 50%;
+    background:var(--ground);
+    overflow:hidden;
+  }
+  #bg{position:absolute;inset:0;width:1600px;height:900px;display:block}
+  #board{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    padding:26px 40px 22px;
+  }
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:flex-end;justify-content:space-between;height:104px;flex:none}
+  .eyebrow{
+    font-size:10px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--ink-3);font-weight:600;
+  }
+  .wordmark{
+    font-family:var(--serif);font-size:56px;line-height:1.02;letter-spacing:-.015em;
+    color:var(--ink);margin-top:8px;
+  }
+  .wordmark .dot{color:var(--teal)}
+  .id-line{display:flex;align-items:baseline;gap:14px;margin-top:9px}
+  .period{
+    font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    color:var(--ink-2);border:1px solid var(--rule-2);border-radius:2px;
+    padding:3px 9px;
+  }
+  .id-note{font-size:12px;color:var(--ink-3);letter-spacing:.02em}
+
+  .coverage{text-align:right;padding-bottom:6px}
+  .cov-label{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .cov-cells{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
+  .cell{width:34px;height:10px;border-radius:1px}
+  .cell.on{background:var(--teal);box-shadow:0 0 10px rgba(63,199,154,.30)}
+  .cell.off{
+    border:1px dashed var(--rule-2);background:transparent;
+    animation:blankPulse 3.4s ease-in-out infinite;
+  }
+  .cell.off:nth-of-type(6){animation-delay:.35s}
+  .cell.off:nth-of-type(7){animation-delay:.7s}
+  .cell.off:nth-of-type(8){animation-delay:1.05s}
+  .cov-read{
+    margin-top:12px;font-family:var(--mono);font-size:12.5px;color:var(--ink-2);
+    letter-spacing:.04em;
+  }
+  .cov-read b{color:var(--ink);font-weight:600}
+
+  .hair{
+    position:relative;height:1px;background:var(--rule);flex:none;margin-top:18px;overflow:hidden;
+  }
+  .hair::after{
+    content:"";position:absolute;top:0;left:0;height:1px;width:220px;
+    background:linear-gradient(90deg,transparent,var(--teal),transparent);
+    opacity:.65;animation:run 9s linear infinite;
+  }
+
+  /* ---------- rows ---------- */
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;flex:none}
+  .row.posted{margin-top:20px;height:368px}
+  .row.blank{margin-top:14px;height:164px}
+
+  .tile{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:3px;
+    padding:20px 22px 18px;
+    display:flex;flex-direction:column;
+    position:relative;overflow:hidden;
+  }
+  .tile.posted{border-top:2px solid var(--teal-deep)}
+  .tile.empty{
+    background:var(--panel-blank);
+    border:1px dashed var(--rule-2);
+  }
+  .t-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex:none}
+  .t-name{
+    font-family:var(--serif);font-size:17.5px;letter-spacing:.005em;color:var(--ink);font-weight:400;
+  }
+  .chip{
+    font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;
+    padding:3px 7px;border-radius:2px;white-space:nowrap;
+  }
+  .chip.rec{color:var(--teal);background:rgba(63,199,154,.10);border:1px solid rgba(63,199,154,.28)}
+  .chip.non{color:var(--ink-3);border:1px solid var(--rule-2)}
+
+  .figure{display:flex;align-items:baseline;gap:9px;margin-top:16px;flex:none}
+  .num{
+    font-family:var(--mono);font-size:52px;font-weight:600;line-height:1;
+    letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink);
+  }
+  .unit{font-size:13px;color:var(--ink-2);letter-spacing:.03em}
+  .viz{flex:1 1 auto;display:flex;align-items:center;margin-top:10px}
+  .note{
+    font-size:11.5px;color:var(--ink-3);letter-spacing:.02em;flex:none;
+    border-top:1px solid var(--rule);padding-top:9px;margin-top:8px;
+  }
+
+  /* installs dot field */
+  #installs{display:block;width:318px;height:148px}
+
+  /* tally */
+  .tally line{stroke-linecap:round;animation:inkwave 3.4s ease-in-out infinite}
+
+  /* gauge */
+  .spin{transform-box:view-box;transform-origin:88px 88px;animation:spin 7s linear infinite}
+
+  /* session marker */
+  .marker-halo{animation:halo 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+  .scale-txt{font-family:var(--mono);font-size:9.5px;fill:var(--ink-3);letter-spacing:.04em}
+
+  /* ---------- blank tiles ---------- */
+  .divider{display:flex;align-items:center;gap:14px;margin-top:26px;flex:none;height:16px}
+  .divider .lbl{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-3);font-weight:600;white-space:nowrap}
+  .divider .lbl em{font-style:normal;color:var(--ink-2)}
+  .divider .ln{flex:1;height:1px;background:var(--rule)}
+
+  .tile.empty .scan{
+    position:absolute;top:0;bottom:0;width:170px;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(147,166,180,.075),transparent);
+    animation:sweep 7.5s linear infinite;
+  }
+  .empty-line{
+    display:flex;align-items:flex-end;gap:10px;margin-top:20px;
+    border-bottom:1px solid var(--rule-2);padding-bottom:7px;
+  }
+  .dash{font-family:var(--mono);font-size:34px;color:var(--ink-3);line-height:1}
+  .caret{
+    display:inline-block;width:9px;height:26px;background:var(--ink-3);opacity:.55;
+    animation:blink 1.25s steps(1,end) infinite;
+  }
+  .empty-note{font-size:11.5px;color:var(--ink-3);margin-top:12px;letter-spacing:.02em}
+
+  /* ---------- footer ---------- */
+  footer{
+    margin-top:auto;display:flex;align-items:center;justify-content:space-between;
+    border-top:1px solid var(--rule);padding-top:12px;flex:none;height:42px;
+  }
+  .foot-l{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--ink-3);text-transform:uppercase}
+  .foot-r{font-size:12px;color:var(--ink-2);letter-spacing:.01em}
+  .foot-r b{color:var(--ink);font-weight:600}
+
+  /* ---------- motion ---------- */
+  @keyframes run{0%{transform:translateX(-240px)}100%{transform:translateX(1560px)}}
+  @keyframes blankPulse{0%,100%{opacity:.30;border-color:var(--rule-2)}50%{opacity:.85;border-color:#41586A}}
+  @keyframes inkwave{0%,100%{opacity:.42}50%{opacity:1}}
+  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes halo{0%,100%{opacity:.20;transform:scale(1)}50%{opacity:.65;transform:scale(1.9)}}
+  @keyframes sweep{0%{transform:translateX(-180px)}100%{transform:translateX(380px)}}
+  @keyframes blink{0%,49%{opacity:.60}50%,100%{opacity:.06}}
+
+  @media (prefers-reduced-motion:reduce){
+    .hair::after{animation-duration:26s}
+    .tile.empty .scan{animation-duration:22s}
+    .spin{animation-duration:24s}
+    .tally line{animation-duration:9s}
+    .caret{animation-duration:3s}
+    .cell.off{animation-duration:9s}
+    .marker-halo{animation-duration:8s}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" width="1600" height="900"></canvas>
+
+  <div id="board">
+    <header>
+      <div>
+        <div class="eyebrow">Product metrics board</div>
+        <div class="wordmark">Ledger<span class="dot">.</span></div>
+        <div class="id-line">
+          <span class="period">last 30 days</span>
+          <span class="id-note">Eight tracked metrics &middot; four carry a value</span>
+        </div>
+      </div>
+      <div class="coverage">
+        <div class="cov-label">Reporting coverage</div>
+        <div class="cov-cells">
+          <span class="cell on"></span><span class="cell on"></span>
+          <span class="cell on"></span><span class="cell on"></span>
+          <span class="cell off"></span><span class="cell off"></span>
+          <span class="cell off"></span><span class="cell off"></span>
+        </div>
+        <div class="cov-read"><b>4</b> of 8 posted &nbsp;·&nbsp; <b>4</b> blank</div>
+      </div>
+    </header>
+
+    <div class="hair"></div>
+
+    <!-- ===== posted ===== -->
+    <section class="row posted">
+
+      <article class="tile posted">
+        <div class="t-head"><h2 class="t-name">Active installs</h2><span class="chip rec">posted</span></div>
+        <div class="figure"><span class="num">1,284</span><span class="unit">devices</span></div>
+        <div class="viz"><canvas id="installs" width="318" height="148"></canvas></div>
+        <p class="note">One mark per install &middot; 1,284 marks drawn</p>
+      </article>
+
+      <article class="tile posted">
+        <div class="t-head"><h2 class="t-name">Median session</h2><span class="chip rec">posted</span></div>
+        <div class="figure"><span class="num">12.4</span><span class="unit">minutes</span></div>
+        <div class="viz">
+          <svg width="318" height="148" viewBox="0 0 318 148" role="img" aria-label="Median session 12.4 minutes on a 0 to 20 minute scale">
+            <line x1="8" y1="86" x2="310" y2="86" stroke="#1D2833" stroke-width="8" stroke-linecap="round"></line>
+            <line x1="8" y1="86" x2="195.2" y2="86" stroke="#3FC79A" stroke-width="8" stroke-linecap="round"></line>
+            <g stroke="#2B3B49" stroke-width="1">
+              <line x1="8"     y1="98" x2="8"     y2="106"></line>
+              <line x1="83.5"  y1="98" x2="83.5"  y2="106"></line>
+              <line x1="159"   y1="98" x2="159"   y2="106"></line>
+              <line x1="234.5" y1="98" x2="234.5" y2="106"></line>
+              <line x1="310"   y1="98" x2="310"   y2="106"></line>
+            </g>
+            <g class="scale-txt">
+              <text x="8"   y="120" text-anchor="start">0</text>
+              <text x="83.5" y="120" text-anchor="middle">5</text>
+              <text x="159" y="120" text-anchor="middle">10</text>
+              <text x="234.5" y="120" text-anchor="middle">15</text>
+              <text x="310" y="120" text-anchor="end">20 min</text>
+            </g>
+            <circle class="marker-halo" cx="195.2" cy="86" r="9" fill="#3FC79A"></circle>
+            <circle cx="195.2" cy="86" r="5.5" fill="#0B0F14" stroke="#3FC79A" stroke-width="2.5"></circle>
+            <line x1="195.2" y1="58" x2="195.2" y2="72" stroke="#3FC79A" stroke-width="1.5"></line>
+            <text x="195.2" y="50" text-anchor="middle" class="scale-txt" fill="#93A6B4">12.4</text>
+          </svg>
+        </div>
+        <p class="note">Half of sessions run shorter than this</p>
+      </article>
+
+      <article class="tile posted">
+        <div class="t-head"><h2 class="t-name">Crash&#8209;free rate</h2><span class="chip rec">posted</span></div>
+        <div class="figure"><span class="num">99.2</span><span class="unit">% of sessions</span></div>
+        <div class="viz" style="justify-content:center">
+          <svg width="176" height="148" viewBox="0 0 176 176" role="img" aria-label="99.2 percent of sessions crash free, 0.8 percent not">
+            <defs>
+              <mask id="arcmask">
+                <rect width="176" height="176" fill="black"></rect>
+                <g transform="rotate(-90 88 88)">
+                  <circle cx="88" cy="88" r="66" fill="none" stroke="white" stroke-width="15"
+                          stroke-dasharray="411.4 3.3"></circle>
+                </g>
+              </mask>
+            </defs>
+            <g transform="rotate(-90 88 88)">
+              <circle cx="88" cy="88" r="66" fill="none" stroke="#16202A" stroke-width="15"></circle>
+              <circle cx="88" cy="88" r="66" fill="none" stroke="#3FC79A" stroke-width="15"
+                      stroke-dasharray="411.4 3.3"></circle>
+              <circle cx="88" cy="88" r="66" fill="none" stroke="#D9A441" stroke-width="15"
+                      stroke-dasharray="3.3 411.4" stroke-dashoffset="-411.4"></circle>
+            </g>
+            <g mask="url(#arcmask)">
+              <g class="spin">
+                <circle cx="88" cy="88" r="66" fill="none" stroke="#CFF6E6" stroke-width="15"
+                        stroke-dasharray="46 369" opacity=".28"></circle>
+              </g>
+            </g>
+            <text x="88" y="84" text-anchor="middle" fill="#93A6B4"
+                  style="font-family:ui-monospace,Consolas,monospace;font-size:13px;letter-spacing:.06em">0.8%</text>
+            <text x="88" y="102" text-anchor="middle" fill="#5C6F7D"
+                  style="font-family:ui-sans-serif,system-ui,sans-serif;font-size:10.5px;letter-spacing:.14em">CRASHED</text>
+          </svg>
+        </div>
+        <p class="note">Amber arc is the 0.8% that was not crash-free</p>
+      </article>
+
+      <article class="tile posted">
+        <div class="t-head"><h2 class="t-name">Support tickets</h2><span class="chip rec">posted</span></div>
+        <div class="figure"><span class="num">37</span><span class="unit">tickets</span></div>
+        <div class="viz"><svg id="tally" class="tally" width="318" height="148" viewBox="0 0 318 148" role="img" aria-label="37 support tickets shown as tally marks"></svg></div>
+        <p class="note">Tallied in fives &middot; seven gates and two marks</p>
+      </article>
+
+    </section>
+
+    <div class="divider">
+      <span class="lbl">Blank entries &middot; <em>no value reported for this period</em></span>
+      <span class="ln"></span>
+    </div>
+
+    <!-- ===== blank ===== -->
+    <section class="row blank">
+
+      <article class="tile empty">
+        <span class="scan" style="animation-delay:0s"></span>
+        <div class="t-head"><h2 class="t-name">Weekly active users</h2><span class="chip non">no entry</span></div>
+        <div class="empty-line"><span class="dash">—</span><span class="caret"></span></div>
+        <p class="empty-note">Not measured &middot; left blank, not estimated</p>
+      </article>
+
+      <article class="tile empty">
+        <span class="scan" style="animation-delay:1.9s"></span>
+        <div class="t-head"><h2 class="t-name">D30 retention</h2><span class="chip non">no entry</span></div>
+        <div class="empty-line"><span class="dash">—</span><span class="caret" style="animation-delay:.3s"></span></div>
+        <p class="empty-note">Not measured &middot; left blank, not estimated</p>
+      </article>
+
+      <article class="tile empty">
+        <span class="scan" style="animation-delay:3.8s"></span>
+        <div class="t-head"><h2 class="t-name">Paid conversions</h2><span class="chip non">no entry</span></div>
+        <div class="empty-line"><span class="dash">—</span><span class="caret" style="animation-delay:.6s"></span></div>
+        <p class="empty-note">Not measured &middot; left blank, not estimated</p>
+      </article>
+
+      <article class="tile empty">
+        <span class="scan" style="animation-delay:5.7s"></span>
+        <div class="t-head"><h2 class="t-name">NPS</h2><span class="chip non">no entry</span></div>
+        <div class="empty-line"><span class="dash">—</span><span class="caret" style="animation-delay:.9s"></span></div>
+        <p class="empty-note">Not measured &middot; left blank, not estimated</p>
+      </article>
+
+    </section>
+
+    <footer>
+      <div class="foot-l">Ledger &nbsp;·&nbsp; last 30 days &nbsp;·&nbsp; 8 tracked metrics</div>
+      <div class="foot-r">Four metrics carry a value. The other four are <b>blank</b> — nothing here is modelled, interpolated or filled in.</div>
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var slow = reduce ? 0.18 : 1;
+
+  /* ---- fit the 1600x900 stage into whatever viewport it lands in ---- */
+  var stage = document.getElementById("stage");
+  function fit(){
+    var s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+    stage.style.transform = "translate(-50%,-50%) scale(" + s + ")";
+  }
+  fit();
+  window.addEventListener("resize", fit);
+
+  /* ---- background: engraved guilloché plate + drifting ledger ruling ---- */
+  var bg = document.getElementById("bg");
+  var b = bg.getContext("2d");
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  bg.width = 1600 * dpr; bg.height = 900 * dpr;
+  b.scale(dpr, dpr);
+
+  var rosettes = [
+    { cx: 1268, cy: 452, R: 300, r: 96,  k: 7,  spin: 0.055, hue: "rgba(63,199,154,0.16)", steps: 1500, w: 0.6 },
+    { cx: 1268, cy: 452, R: 232, r: 62,  k: 11, spin: -0.04, hue: "rgba(63,199,154,0.10)", steps: 1300, w: 0.6 },
+    { cx: 176,  cy: 742, R: 178, r: 58,  k: 5,  spin: 0.032, hue: "rgba(217,164,65,0.10)", steps: 1100, w: 0.6 }
+  ];
+
+  function rosette(o, t){
+    b.beginPath();
+    var ph = t * o.spin;
+    for (var i = 0; i <= o.steps; i++){
+      var a = (i / o.steps) * Math.PI * 2;
+      var x = o.cx + o.R * Math.cos(a) + o.r * Math.cos(o.k * a + ph);
+      var y = o.cy + o.R * Math.sin(a) + o.r * Math.sin(o.k * a + ph);
+      if (i === 0) b.moveTo(x, y); else b.lineTo(x, y);
+    }
+    b.closePath();
+    b.strokeStyle = o.hue;
+    b.lineWidth = o.w;
+    b.stroke();
+  }
+
+  function drawBg(t){
+    b.clearRect(0, 0, 1600, 900);
+
+    /* plate wash */
+    var g = b.createLinearGradient(0, 0, 1600, 900);
+    g.addColorStop(0, "#0B0F14");
+    g.addColorStop(0.55, "#0C121A");
+    g.addColorStop(1, "#0A0E13");
+    b.fillStyle = g;
+    b.fillRect(0, 0, 1600, 900);
+
+    /* ledger ruling, drifting upward */
+    var pitch = 34;
+    var off = (t * 4.5 * slow) % pitch;
+    b.strokeStyle = "rgba(147,166,180,0.045)";
+    b.lineWidth = 1;
+    b.beginPath();
+    for (var y = -pitch; y < 900 + pitch; y += pitch){
+      var yy = Math.round(y - off) + 0.5;
+      b.moveTo(0, yy); b.lineTo(1600, yy);
+    }
+    b.stroke();
+
+    /* engraved rosettes */
+    for (var i = 0; i < rosettes.length; i++) rosette(rosettes[i], t * slow);
+
+    /* vignette so the plate sits behind the panels */
+    var v = b.createRadialGradient(800, 430, 240, 800, 430, 960);
+    v.addColorStop(0, "rgba(11,15,20,0)");
+    v.addColorStop(1, "rgba(6,9,12,0.85)");
+    b.fillStyle = v;
+    b.fillRect(0, 0, 1600, 900);
+  }
+
+  /* ---- active installs: exactly 1,284 marks, one per install ---- */
+  var inst = document.getElementById("installs");
+  var c = inst.getContext("2d");
+  inst.width = 318 * dpr; inst.height = 148 * dpr;
+  c.scale(dpr, dpr);
+
+  var TOTAL = 1284, COLS = 48, ROWS = Math.ceil(TOTAL / COLS);
+  var cw = 318 / COLS, ch = 148 / ROWS;
+  var marks = [];
+  for (var n = 0; n < TOTAL; n++){
+    var col = n % COLS, row = (n / COLS) | 0;
+    marks.push({
+      x: col * cw + cw / 2 - 1.4,
+      y: row * ch + ch / 2 - 1.4,
+      p: (col * 0.16) + (row * 0.28) + Math.random() * 1.4
+    });
+  }
+
+  function drawInstalls(t){
+    c.clearRect(0, 0, 318, 148);
+    for (var i = 0; i < marks.length; i++){
+      var m = marks[i];
+      var a = 0.34 + 0.34 * Math.sin(t * 1.15 * slow + m.p);
+      c.fillStyle = "rgba(63,199,154," + a.toFixed(3) + ")";
+      c.fillRect(m.x, m.y, 2.8, 2.8);
+    }
+  }
+
+  /* ---- support tickets: 37 tally marks, gates of five ---- */
+  (function tally(){
+    var svg = document.getElementById("tally");
+    var NS = "http://www.w3.org/2000/svg";
+    var GATE_W = 34, GATE_H = 42, PITCH = 56, ROW_Y = [26, 88], PER_ROW = 5;
+    var idx = 0;
+
+    function stroke(x1, y1, x2, y2){
+      var l = document.createElementNS(NS, "line");
+      l.setAttribute("x1", x1); l.setAttribute("y1", y1);
+      l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+      l.setAttribute("stroke", "#D9A441");
+      l.setAttribute("stroke-width", "3");
+      l.style.animationDelay = (idx * 0.055).toFixed(2) + "s";
+      idx++;
+      svg.appendChild(l);
+    }
+
+    var gates = 7, singles = 2;
+    for (var gi = 0; gi < gates; gi++){
+      var r = (gi / PER_ROW) | 0, cIdx = gi % PER_ROW;
+      var x0 = 6 + cIdx * PITCH, y0 = ROW_Y[r];
+      for (var s = 0; s < 4; s++) stroke(x0 + s * 10, y0, x0 + s * 10, y0 + GATE_H);
+      stroke(x0 - 5, y0 + GATE_H - 4, x0 + GATE_W + 1, y0 + 4);
+    }
+    var sx = 6 + (gates % PER_ROW) * PITCH, sy = ROW_Y[(gates / PER_ROW) | 0];
+    for (var k = 0; k < singles; k++) stroke(sx + k * 12, sy, sx + k * 12, sy + GATE_H);
+  })();
+
+  /* ---- one clock for every canvas layer ---- */
+  var t0 = performance.now();
+  function frame(now){
+    var t = (now - t0) / 1000;
+    drawBg(t);
+    drawInstalls(t);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

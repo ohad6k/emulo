@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1600px;height:900px;overflow:hidden;background:#070707;color:#f4f4f2;font-family:Inter,"SF Pro Display",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+.mono{font-family:"SF Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+a{color:inherit}
+
+/* atmosphere */
+.glow{position:absolute;width:1100px;height:1100px;left:820px;top:-420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.11) 0%,rgba(255,255,255,.04) 30%,transparent 62%);animation:drift 16s ease-in-out infinite alternate;pointer-events:none}
+@keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(-90px,70px) scale(1.08)}}
+.vignette{position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 55%,rgba(0,0,0,.7) 100%);pointer-events:none;z-index:6}
+.grain{position:absolute;inset:-100px;width:1800px;height:1100px;opacity:.28;mix-blend-mode:overlay;pointer-events:none;z-index:7;animation:grain .6s steps(3) infinite}
+@keyframes grain{0%{transform:translate(0,0)}33%{transform:translate(-30px,20px)}66%{transform:translate(20px,-40px)}100%{transform:translate(-10px,30px)}}
+
+/* ledger plane */
+.stage{position:absolute;left:690px;top:-230px;width:1100px;height:1350px;perspective:1500px;perspective-origin:35% 45%;z-index:1;
+  -webkit-mask-image:radial-gradient(ellipse 58% 56% at 52% 50%,#000 30%,rgba(0,0,0,0) 80%);
+  mask-image:radial-gradient(ellipse 58% 56% at 52% 50%,#000 30%,rgba(0,0,0,0) 80%);
+  opacity:0;animation:fadein 1.6s .2s ease forwards}
+@keyframes fadein{to{opacity:1}}
+.plane{position:absolute;left:110px;top:20px;width:900px;height:1300px;overflow:hidden;transform:rotateX(55deg) rotateZ(-22deg);transform-origin:50% 50%;background:rgba(255,255,255,.012);border-left:1px solid rgba(255,255,255,.06);border-right:1px solid rgba(255,255,255,.06)}
+.track{animation:scroll 44s linear infinite;will-change:transform}
+@keyframes scroll{to{transform:translateY(-50%)}}
+.row,.head{display:grid;grid-template-columns:1.55fr 1.35fr .8fr .7fr 1.5fr;align-items:center;height:52px;padding:0 24px;border-bottom:1px solid rgba(255,255,255,.075);font-size:15px;color:#8f8f8b;white-space:nowrap;transition:background .35s ease,color .35s ease}
+.head{height:44px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5a5a57;border-bottom:1px solid rgba(255,255,255,.14)}
+.row .v{color:#d6d6d2;font-weight:500}
+.row .a{color:#c7c7c3;letter-spacing:-.01em}
+.chip{display:inline-block;padding:4px 10px;border:1px solid rgba(255,255,255,.12);border-radius:4px;font-size:12px;color:#7a7a76;transition:all .35s ease}
+.row.flag{background:#f4f4f2;color:#141414}
+.row.flag .v,.row.flag .a{color:#0a0a0a}
+.row.flag .chip{background:#0a0a0a;border-color:#0a0a0a;color:#f4f4f2}
+.row.cut{color:#4c4c49}
+.row.cut .v{text-decoration:line-through;color:#5c5c58}
+.row.cut .a{color:#4c4c49;text-decoration:line-through}
+.row.cut .chip{border-color:rgba(255,255,255,.28);color:#e2e2de}
+.row.warn .chip{border-color:#f4f4f2;color:#f4f4f2}
+.scan{position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.95) 45%,rgba(255,255,255,.95) 55%,transparent 100%);box-shadow:0 0 28px 6px rgba(255,255,255,.22);animation:scan 9s linear infinite;pointer-events:none}
+@keyframes scan{from{top:-2px}to{top:100%}}
+
+/* type */
+.brand{position:absolute;left:72px;top:56px;display:flex;align-items:center;gap:12px;font-weight:600;font-size:16px;letter-spacing:-.01em;z-index:5;animation:up .9s .1s cubic-bezier(.2,.7,.2,1) both}
+.mark{width:14px;height:14px;border:1.5px solid #f4f4f2;position:relative}
+.mark::after{content:"";position:absolute;inset:3px;background:#f4f4f2;animation:tick 2.4s ease-in-out infinite}
+@keyframes tick{0%,100%{transform:scale(1)}50%{transform:scale(.35)}}
+.hero{position:absolute;left:72px;top:236px;z-index:5;width:740px}
+h1{font-size:82px;line-height:.96;letter-spacing:-.045em;font-weight:600;color:#f4f4f2}
+h1 span{display:block;animation:up 1s cubic-bezier(.2,.7,.2,1) both}
+h1 span:nth-child(1){animation-delay:.15s}
+h1 span:nth-child(2){animation-delay:.27s}
+h1 span:nth-child(3){animation-delay:.39s;color:#6d6d69}
+.actions{margin-top:44px;display:flex;align-items:center;gap:28px;animation:up 1s .55s cubic-bezier(.2,.7,.2,1) both}
+.btn{height:50px;padding:0 24px;background:#f4f4f2;color:#0a0a0a;border:0;border-radius:6px;font:600 15px/1 inherit;font-family:inherit;letter-spacing:-.01em;cursor:pointer;position:relative;overflow:hidden}
+.btn::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(0,0,0,.08),transparent);animation:sheen 3.6s ease-in-out infinite}
+@keyframes sheen{0%,60%{left:-60%}100%{left:130%}}
+.link{font-size:15px;text-decoration:none;color:#f4f4f2;display:inline-flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.22);padding-bottom:3px}
+.link i{display:inline-block;font-style:normal;animation:nudge 1.8s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+.usage{margin-top:34px;font-size:12.5px;letter-spacing:.02em;color:#777773;display:flex;align-items:center;gap:10px;animation:up 1s .7s cubic-bezier(.2,.7,.2,1) both}
+.dot{width:6px;height:6px;border-radius:50%;background:#f4f4f2;box-shadow:0 0 0 0 rgba(255,255,255,.5);animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.45)}100%{box-shadow:0 0 0 9px rgba(255,255,255,0)}}
+@keyframes up{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+
+/* capability band */
+.band{position:absolute;left:0;right:0;bottom:0;height:172px;z-index:5;background:linear-gradient(to top,#070707 55%,rgba(7,7,7,.85) 80%,transparent);padding:0 72px}
+.band .rule{position:absolute;left:72px;right:72px;top:38px;height:1px;background:rgba(255,255,255,.1);overflow:hidden}
+.band .rule::after{content:"";position:absolute;top:0;left:-20%;width:20%;height:100%;background:linear-gradient(90deg,transparent,#f4f4f2,transparent);animation:travel 6s linear infinite}
+@keyframes travel{to{left:120%}}
+.caps{position:absolute;left:72px;right:72px;top:66px;display:grid;grid-template-columns:repeat(4,1fr);gap:40px}
+.cap{animation:up 1s cubic-bezier(.2,.7,.2,1) both}
+.cap:nth-child(1){animation-delay:.8s}.cap:nth-child(2){animation-delay:.9s}.cap:nth-child(3){animation-delay:1s}.cap:nth-child(4){animation-delay:1.1s}
+.cap h2{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:500;color:#5f5f5b;margin-bottom:12px}
+.cap p{font-size:16px;line-height:1.4;color:#cfcfcb;letter-spacing:-.01em;max-width:300px}
+</style>
+</head>
+<body>
+
+<div class="glow"></div>
+
+<div class="stage" aria-hidden="true">
+  <div class="plane">
+    <div class="track" id="track"></div>
+    <div class="scan"></div>
+  </div>
+</div>
+
+<div class="brand"><span class="mark"></span>Ledger</div>
+
+<section class="hero">
+  <h1><span>Every subscription</span><span>your company</span><span>forgot about.</span></h1>
+  <div class="actions">
+    <button class="btn">Start free</button>
+    <a class="link" href="#">See how it works <i>→</i></a>
+  </div>
+  <p class="usage mono"><span class="dot"></span>Used by 40 teams across 12 countries.</p>
+</section>
+
+<section class="band">
+  <div class="rule"></div>
+  <div class="caps">
+    <div class="cap"><h2 class="mono">Find</h2><p>Finds the charges nobody recognises.</p></div>
+    <div class="cap"><h2 class="mono">Group</h2><p>Groups them by the person who signed up.</p></div>
+    <div class="cap"><h2 class="mono">Cancel</h2><p>Cancels in one click and records who approved it.</p></div>
+    <div class="cap"><h2 class="mono">Warn</h2><p>Warns you before the annual renewal lands.</p></div>
+  </div>
+</section>
+
+<div class="vignette"></div>
+<svg class="grain" xmlns="http://www.w3.org/2000/svg">
+  <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .6 0"/></filter>
+  <rect width="100%" height="100%" filter="url(#n)"/>
+</svg>
+
+<script>
+(function(){
+  var V=["Northwind CRM","Halide Analytics","Quill Docs","Beacon Status","Lumen Design","Orbit Mail","Pacer CI","Tessel Forms","Kestrel Video","Fathom BI","Ridge Hosting","Cobalt Auth","Paper Trail","Drift Calendar","Sable Search","Vantage Ads","Marlow Chat","Ember Notes","Cairn Storage","Loop Surveys","Helix Monitoring","Tide Payroll","Summit Boards","Glint Screens"];
+  var O=["Dana K. · Marketing","Tomás R. · Engineering","Mei L. · Design","Jonah P. · Sales","Aisha B. · Finance","Leo F. · Ops","Sofia M. · Product","Ravi S. · Data"];
+  var M=[12,29,48,79,120,240,450,96];
+  var Y=[960,1440,2400,4800,1200,3600];
+  var A=["Aisha B.","Noa H.","Leo F.","Sofia M."];
+  var N=V.length, rows=[];
+  for(var i=0;i<N;i++){
+    var annual=i%3===0;
+    var amt=annual?Y[(i/3|0)%Y.length]:M[i%M.length];
+    rows.push({v:V[i],o:O[(i*5)%O.length],a:"$"+amt.toLocaleString("en-US")+".00",c:annual?"Annual":"Monthly",annual:annual});
+  }
+  function head(){return '<div class="head mono"><span>Vendor</span><span>Signed up by</span><span>Amount</span><span>Cycle</span><span>Status</span></div>';}
+  function copy(){
+    var h=head();
+    for(var i=0;i<N;i++){var r=rows[i];
+      h+='<div class="row" data-i="'+i+'"><span class="v">'+r.v+'</span><span>'+r.o+'</span><span class="a mono">'+r.a+'</span><span>'+r.c+'</span><span><i class="chip mono">Active</i></span></div>';}
+    return h;
+  }
+  var track=document.getElementById("track");
+  track.innerHTML=copy()+copy();
+
+  var busy={};
+  function set(i,cls,txt){
+    var els=track.querySelectorAll('.row[data-i="'+i+'"]');
+    for(var k=0;k<els.length;k++){els[k].className="row"+(cls?" "+cls:"");els[k].querySelector(".chip").textContent=txt;}
+  }
+  function pick(filter){
+    var tries=40;
+    while(tries--){var i=Math.floor(Math.random()*N);if(!busy[i]&&(!filter||filter(rows[i])))return i;}
+    return -1;
+  }
+  function flagCycle(){
+    var i=pick(function(r){return !r.annual;});
+    if(i>=0){
+      busy[i]=1;
+      set(i,"flag","Unrecognised");
+      var who=A[Math.floor(Math.random()*A.length)];
+      setTimeout(function(){set(i,"cut","Cancelled · "+who+" approved");},1700);
+      setTimeout(function(){set(i,"","Active");delete busy[i];},6200);
+    }
+    setTimeout(flagCycle,1500+Math.random()*1100);
+  }
+  function warnCycle(){
+    var i=pick(function(r){return r.annual;});
+    if(i>=0){
+      busy[i]=1;
+      var d=3+Math.floor(Math.random()*12);
+      set(i,"warn","Renews in "+d+" days");
+      setTimeout(function(){set(i,"","Active");delete busy[i];},5200);
+    }
+    setTimeout(warnCycle,3200+Math.random()*1800);
+  }
+  set(4,"flag","Unrecognised");busy[4]=1;setTimeout(function(){set(4,"cut","Cancelled · Aisha B. approved");},1200);setTimeout(function(){set(4,"","Active");delete busy[4];},5200);
+  set(9,"warn","Renews in 6 days");busy[9]=1;setTimeout(function(){set(9,"","Active");delete busy[9];},4200);
+  setTimeout(flagCycle,900);
+  setTimeout(warnCycle,2600);
+})();
+</script>
+</body>
+</html>

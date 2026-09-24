@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f1e8">
+  <meta name="description" content="Build a personal AI coding agent profile from Claude Code, Codex and other supported session logs. Emulo setup, Cursor adapters, MCP and privacy explained.">
+  <link rel="canonical" href="https://emulo.vercel.app/agent-profile">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="stylesheet" href="/legal.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="A working profile for your AI coding agent | Emulo">
+  <meta property="og:description" content="Turn repeated corrections in your coding sessions into an editable profile. Supported inputs, installation, adapters and privacy.">
+  <meta property="og:url" content="https://emulo.vercel.app/agent-profile">
+  <meta property="og:image" content="https://emulo.vercel.app/assets/emulo.png">
+  <meta property="og:image:alt" content="Emulo logo">
+  <meta name="twitter:card" content="summary">
+  <title>A working profile for your AI coding agent | Emulo</title>
+  <style>
+    .legal-document h1 { max-width: 17ch; }
+    .legal-document code { font-size: .9em; overflow-wrap: anywhere; }
+    .legal-document pre { padding: 16px; background: #fff9; border: 1px solid var(--line); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .guide-nav { border-block: 1px solid var(--line); padding-block: 18px; }
+    .guide-nav ul { display: flex; flex-wrap: wrap; gap: 10px 24px; list-style: none; padding: 0; margin: 0; }
+    .guide-nav li + li { margin-top: 0; }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "A working profile for your AI coding agent",
+    "description": "How to use Emulo to build an editable personal profile from supported AI coding session logs, with installation, adapters and privacy boundaries.",
+    "url": "https://emulo.vercel.app/agent-profile",
+    "mainEntityOfPage": "https://emulo.vercel.app/agent-profile",
+    "datePublished": "2026-09-15",
+    "dateModified": "2026-09-15",
+    "inLanguage": "en",
+    "author": { "@type": "Organization", "name": "Emulo", "url": "https://emulo.vercel.app/" },
+    "about": { "@type": "SoftwareApplication", "name": "Emulo", "applicationCategory": "DeveloperApplication", "operatingSystem": "Windows, macOS, Linux", "url": "https://emulo.vercel.app/", "downloadUrl": "https://pypi.org/project/emulo/", "license": "https://github.com/ohad6k/emulo/blob/main/LICENSE" }
+  }
+  </script>
+</head>
+<body>
+  <header class="legal-header"><a href="/"><img src="/assets/emulo.png" alt=""><span>EMULO</span></a></header>
+  <main class="legal-document">
+    <p class="legal-kicker">Practical guide</p>
+    <h1>A working profile for your AI coding agent.</h1>
+    <p class="legal-updated">Updated September 15, 2026</p>
+    <p class="legal-intro">If you keep correcting how your AI agent works, your past sessions may contain useful instructions for its next task. Emulo extracts evidence from supported coding-agent logs and helps turn it into an editable <code>you.md</code> profile: how you make decisions, what you reject, and what you expect before calling work complete.</p>
+    <nav class="guide-nav" aria-label="On this page"><ul><li><a href="#fit">When to use it</a></li><li><a href="#support">Agent support</a></li><li><a href="#start">Get started</a></li><li><a href="#privacy">Privacy</a></li><li><a href="#limits">Limits</a></li></ul></nav>
+    <section id="fit">
+      <h2>When is a session-derived profile useful?</h2>
+      <p>Consider Emulo when you already have coding-session history and want recurring preferences to carry into future tasks. For example, repeated requests to show a running result may support a rule to verify behavior before reporting completion. Review the supporting messages before accepting that rule.</p>
+      <p>A handwritten <code>AGENTS.md</code>, <code>CLAUDE.md</code> or Cursor rule is a good place for instructions you already know. Emulo helps discover patterns you have not collected yet. It uses actual session evidence as its input; those instruction files are not mining sources. Keep project facts and explicit project rules alongside the personal profile.</p>
+    </section>
+    <section id="support">
+      <h2>Session sources and profile destinations are different</h2>
+      <ul>
+        <li><strong>Logs Emulo can read:</strong> Claude Code, Codex, GitHub Copilot CLI, OpenCode and Google Antigravity. Antigravity requires interaction logging to have produced readable transcripts.</li>
+        <li><strong>Agents that can receive a profile:</strong> Claude Code and Codex through their supported install paths; Cursor, Gemini and OpenCode through explicit adapters. A generic <code>AGENTS.md</code> adapter is also available.</li>
+        <li><strong>MCP clients:</strong> Emulo provides a local server with the <code>load_emulo_profile</code> tool. Configure your client to call it when the profile is relevant.</li>
+      </ul>
+      <p>Cursor is a profile destination here, not a supported raw-log source in the published CLI. A profile only helps when the agent actually loads it. Installation and automatic loading depend on the host; see the <a href="https://github.com/ohad6k/emulo#support-matrix">current support matrix</a>.</p>
+    </section>
+    <section id="start">
+      <h2>Start with the released CLI</h2>
+      <p>The <a href="https://pypi.org/project/emulo/0.6.2/">published 0.6.2 package</a> requires Python 3.8 or newer. In a Python environment, install it and inspect your available history without writing extracted output:</p>
+      <pre><code>python -m pip install emulo==0.6.2
+emulo --dry-run</code></pre>
+      <p>When ready, run <code>emulo</code> to prepare the extracted chunks and <code>RUN_ME.md</code>. Ask your coding agent to follow that generated file to mine the evidence and produce the profile. Review the mining plan and model cost before authorizing model work. Preparing chunks alone does not produce a finished personal profile.</p>
+      <p>Prefer setup through an agent? The <a href="https://github.com/ohad6k/emulo#quickstart">documented skill bootstrap</a> is:</p>
+      <pre><code>npx skills add ohad6k/emulo@emulo</code></pre>
+      <p>Then ask your agent to <code>run emulo</code>. It prepares a mining plan for review. The repository also documents <a href="https://github.com/ohad6k/emulo#install">native plugin installation</a>.</p>
+      <h2>Review, then load the profile</h2>
+      <p>Check the generated rules against their receipts. <code>emulo verify you.md</code> checks whether quoted evidence can be found in the mined sessions; it cannot decide whether a rule is useful or accurately describes you.</p>
+      <p>For a Cursor repository, run this from the repository after replacing <code>you.md</code> with your generated profile's path:</p>
+      <pre><code>emulo --install you.md --target cursor --repo .</code></pre>
+      <p>For an MCP client, use the installed <code>emulo</code> command with the argument <code>mcp</code>. A common client configuration is:</p>
+      <pre><code>{
+  "mcpServers": {
+    "emulo": { "command": "emulo", "args": ["mcp"] }
+  }
+}</code></pre>
+      <p>The MCP server serves an existing local profile. Mining and installing the profile are separate setup steps. See <a href="https://github.com/ohad6k/emulo#mcp-server">MCP setup</a> for alternatives.</p>
+    </section>
+    <section id="privacy">
+      <h2>What stays local, and what reaches a model?</h2>
+      <p>Session extraction, redaction, caches and generated profiles stay on your machine in the local workflow. Mining uses the model you choose: a hosted model receives selected evidence, while a local model can keep that processing on your machine. An agent or MCP client backed by a hosted model can also send loaded profile text to its provider as context.</p>
+      <p>Secret redaction is best-effort. Inspect extracted evidence and profiles before sharing them. The local engine is MIT licensed and works without an Emulo account; model-provider usage can still cost money. This guide covers the local workflow. Consult <a href="https://github.com/ohad6k/emulo/blob/main/SECURITY.md">the security policy</a> for its data boundary.</p>
+    </section>
+    <section id="limits">
+      <h2>What to expect</h2>
+      <p>Sparse history can produce a sparse profile. A mined preference can be wrong, outdated or specific to one project. Edit the result and keep only rules you can defend. Emulo does not enforce agent behavior or guarantee that a model follows every instruction.</p>
+      <p>Evaluate it on your own recurring tasks: check whether the agent loaded the profile, whether it honored the relevant instructions, and whether the result improved. This guide makes no benchmark or recommendation-ranking claim.</p>
+    </section>
+  </main>
+  <footer class="legal-footer"><a href="/">Emulo</a><a href="https://github.com/ohad6k/emulo">Source &amp; documentation</a><a href="https://pypi.org/project/emulo/">Python package</a><a href="/llms.txt">Machine-readable overview</a></footer>
+</body>
+</html>

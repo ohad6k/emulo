@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#0e0d0a;color:#e8e2cf;font:13px/1.45 ui-monospace,Consolas,monospace;padding:18px 22px;white-space:pre;overflow:auto">Deploy report
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  #  Step                        Status      Duration  Note
+  1  install dependencies        ok             12.4s
+  2  typecheck                   ok              8.1s
+  3  run tests                   FAILED         41.7s  see the test output above this report
+  4  build                       skipped         0.0s  not run because &quot;run tests&quot; failed
+  5  deploy                      skipped         0.0s  not run because &quot;run tests&quot; failed
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Result: FAILED   2 passed, 1 failed, 2 skipped   62.2s total
+
+Next: fix &quot;run tests&quot;, then run the deploy again. Skipped steps run once it passes.
+</body>

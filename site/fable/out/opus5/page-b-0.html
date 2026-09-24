@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Orbit</title>
+    <style>
+      :root {
+        --bg: #0b0c0d;
+        --ink: #f2f1ee;
+        --muted: #8a8d92;
+        --dim: #63666b;
+        --line: rgba(255, 255, 255, 0.09);
+        --amber: #d8a15a;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: #08090a; }
+      body {
+        display: flex;
+        justify-content: center;
+        font-family: var(--sans);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+      .stage {
+        position: relative;
+        width: 1000px;
+        height: 1400px;
+        overflow: hidden;
+        background:
+          radial-gradient(620px 540px at 50% 27%, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0) 68%),
+          radial-gradient(900px 700px at 50% 100%, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 70%),
+          var(--bg);
+      }
+      .grain {
+        position: absolute;
+        inset: 0;
+        opacity: 0.05;
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      /* rail */
+      .rail {
+        position: absolute;
+        top: 0; left: 0;
+        width: 1000px; height: 74px;
+        padding: 0 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+        z-index: 2;
+      }
+      .mark { display: flex; align-items: center; gap: 10px; }
+      .mark span { font-size: 16px; font-weight: 600; letter-spacing: -0.015em; }
+      .used { font-family: var(--mono); font-size: 11.5px; color: var(--dim); letter-spacing: 0.01em; }
+
+      /* hero art */
+      .art { position: absolute; top: 74px; left: 0; z-index: 1; }
+      .ring-line { fill: none; stroke: rgba(255, 255, 255, 0.14); stroke-width: 1; }
+      .ring-faint { fill: none; stroke: rgba(255, 255, 255, 0.05); stroke-width: 1; }
+      .ring-dash {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.08);
+        stroke-width: 1;
+        stroke-dasharray: 2 9;
+        transform-box: view-box;
+        transform-origin: 500px 300px;
+        animation: spin 200s linear infinite;
+      }
+      .ring-dash.inner { animation: spin 150s linear infinite reverse; stroke-dasharray: 1 7; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .tick { stroke: rgba(255, 255, 255, 0.16); stroke-width: 1; }
+      .tick.q { stroke: rgba(255, 255, 255, 0.3); }
+      .spoke { stroke: rgba(255, 255, 255, 0.07); stroke-width: 1; }
+      .arc {
+        fill: none;
+        stroke: #ffffff;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-dasharray: 260;
+        stroke-dashoffset: 260;
+        animation: draw 1.7s cubic-bezier(0.2, 0.75, 0.25, 1) 0.35s forwards;
+      }
+      @keyframes draw { to { stroke-dashoffset: 0; } }
+      .halo {
+        fill: rgba(255, 255, 255, 0.13);
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: breathe 5.5s ease-in-out infinite;
+      }
+      .n2 .halo { animation-delay: 0.9s; }
+      .n3 .halo { animation-delay: 1.8s; }
+      .n4 .halo { animation-delay: 2.7s; }
+      .n5 .halo { animation-delay: 3.6s; }
+      @keyframes breathe {
+        0%, 100% { transform: scale(1); opacity: 0.55; }
+        50% { transform: scale(1.75); opacity: 0.12; }
+      }
+      .dot { fill: #ffffff; }
+      .lbl { font-family: var(--mono); font-size: 11px; fill: #8a8d92; letter-spacing: 0.06em; }
+      .lbl-w { font-family: var(--mono); font-size: 11px; fill: #f2f1ee; letter-spacing: 0.06em; }
+
+      /* hero type */
+      .hero {
+        position: absolute;
+        top: 236px; left: 0;
+        width: 1000px;
+        text-align: center;
+        z-index: 2;
+        animation: rise 0.9s cubic-bezier(0.2, 0.75, 0.25, 1) both;
+      }
+      .hero::before {
+        content: "";
+        position: absolute;
+        left: 50%; top: 50%;
+        width: 900px; height: 330px;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(closest-side, rgba(11, 12, 13, 0.94) 42%, rgba(11, 12, 13, 0) 100%);
+        z-index: -1;
+      }
+      @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+      h1 {
+        margin: 0;
+        font-size: 68px;
+        line-height: 1.03;
+        font-weight: 600;
+        letter-spacing: -0.032em;
+      }
+      h1 .soft { color: #9a9da2; }
+      .sub {
+        margin: 22px 0 0;
+        font-size: 18.5px;
+        line-height: 1.5;
+        color: var(--muted);
+        letter-spacing: -0.005em;
+      }
+
+      /* actions */
+      .actions {
+        position: absolute;
+        top: 634px; left: 0;
+        width: 1000px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        z-index: 2;
+      }
+      .btn {
+        appearance: none;
+        border: 0;
+        background: var(--ink);
+        color: #0b0c0d;
+        font-family: var(--sans);
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        padding: 15px 28px;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+      }
+      .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(255, 255, 255, 0.12); }
+      .link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--ink);
+        font-size: 15px;
+        text-decoration: none;
+        letter-spacing: -0.01em;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+        padding-bottom: 3px;
+        transition: border-color 0.18s ease;
+      }
+      .link:hover { border-color: var(--ink); }
+      .link svg { transition: transform 0.18s ease; }
+      .link:hover svg { transform: translateX(3px); }
+
+      /* section labels */
+      .slabel {
+        position: absolute;
+        left: 56px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--dim);
+        letter-spacing: 0.09em;
+        z-index: 2;
+      }
+      .rule { position: absolute; left: 56px; width: 888px; height: 1px; background: var(--line); z-index: 2; }
+
+      /* capability grid */
+      .grid {
+        position: absolute;
+        top: 800px; left: 56px;
+        width: 888px; height: 300px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        z-index: 2;
+      }
+      .cell { padding: 0 40px 0 0; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+      .cell:nth-child(2n) { padding-left: 40px; border-left: 1px solid var(--line); }
+      .cell:nth-child(-n + 2) { border-bottom: 1px solid var(--line); padding-bottom: 34px; }
+      .cell:nth-child(n + 3) { padding-top: 34px; }
+      .cell .top { display: flex; align-items: center; gap: 14px; }
+      .cell .num { font-family: var(--mono); font-size: 11px; color: var(--dim); letter-spacing: 0.06em; }
+      .cell p { margin: 0; font-size: 17px; line-height: 1.45; letter-spacing: -0.012em; color: #e7e6e3; max-width: 350px; }
+
+      /* clock strip */
+      .strip { position: absolute; top: 1176px; left: 56px; z-index: 2; }
+      .track { fill: rgba(255, 255, 255, 0.07); }
+      .bar { fill: rgba(255, 255, 255, 0.34); }
+      .bar.flag { fill: rgba(216, 161, 90, 0.55); }
+      .band-fill { fill: rgba(255, 255, 255, 0.1); animation: glow 5s ease-in-out infinite; }
+      @keyframes glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+      .band-edge { stroke: rgba(255, 255, 255, 0.55); stroke-width: 1; }
+      .axis { stroke: var(--line); stroke-width: 1; }
+      .cap { font-family: var(--mono); font-size: 10.5px; fill: #63666b; letter-spacing: 0.06em; }
+      .cap-w { font-family: var(--mono); font-size: 10.5px; fill: #f2f1ee; letter-spacing: 0.06em; }
+      .cap-a { font-family: var(--mono); font-size: 10.5px; fill: #d8a15a; letter-spacing: 0.06em; }
+
+      @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; }
+        .arc { stroke-dashoffset: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <!-- rail -->
+      <div class="rail">
+        <div class="mark">
+          <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="10" cy="10" r="7" fill="none" stroke="#f2f1ee" stroke-width="1.4" />
+            <circle cx="10" cy="3" r="2.1" fill="#f2f1ee" />
+          </svg>
+          <span>Orbit</span>
+        </div>
+        <div class="used">Used by 40 teams across 12 countries.</div>
+      </div>
+
+      <!-- hero art -->
+      <svg class="art" width="1000" height="620" viewBox="0 0 1000 620" aria-hidden="true">
+        <circle class="ring-faint" cx="500" cy="300" r="420" />
+        <circle class="ring-dash" cx="500" cy="300" r="340" />
+        <circle class="ring-dash inner" cx="500" cy="300" r="150" />
+        <circle class="ring-line" cx="500" cy="300" r="236" />
+
+        <g>
+          <line class="tick q" x1="500" y1="52" x2="500" y2="64" transform="rotate(0 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(15 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(30 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(45 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(60 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(75 500 300)" />
+          <line class="tick q" x1="500" y1="52" x2="500" y2="64" transform="rotate(90 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(105 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(120 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(135 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(150 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(165 500 300)" />
+          <line class="tick q" x1="500" y1="52" x2="500" y2="64" transform="rotate(180 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(195 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(210 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(225 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(240 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(255 500 300)" />
+          <line class="tick q" x1="500" y1="52" x2="500" y2="64" transform="rotate(270 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(285 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(300 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(315 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(330 500 300)" />
+          <line class="tick" x1="500" y1="56" x2="500" y2="64" transform="rotate(345 500 300)" />
+        </g>
+
+        <line class="spoke" x1="500" y1="300" x2="307" y2="435" />
+        <line class="spoke" x1="500" y1="300" x2="296" y2="182" />
+        <line class="spoke" x1="500" y1="300" x2="427" y2="76" />
+        <line class="spoke" x1="500" y1="300" x2="632" y2="104" />
+        <line class="spoke" x1="500" y1="300" x2="735" y2="325" />
+
+        <!-- shared window -->
+        <path class="arc" d="M411.6 81.2 A236 236 0 0 1 645.3 114" />
+        <line x1="528" y1="118" x2="528" y2="140" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
+        <text class="lbl-w" x="528" y="156" text-anchor="middle">shared window</text>
+
+        <g class="n1">
+          <circle class="halo" cx="307" cy="435" r="7" />
+          <circle class="dot" cx="307" cy="435" r="3.4" />
+          <text class="lbl" x="289" y="452" text-anchor="end">UTC−8</text>
+        </g>
+        <g class="n2">
+          <circle class="halo" cx="296" cy="182" r="7" />
+          <circle class="dot" cx="296" cy="182" r="3.4" />
+          <text class="lbl" x="277" y="175" text-anchor="end">UTC−3</text>
+        </g>
+        <g class="n3">
+          <circle class="halo" cx="427" cy="76" r="7" />
+          <circle class="dot" cx="427" cy="76" r="3.4" />
+          <text class="lbl" x="420" y="52" text-anchor="middle">UTC+0</text>
+        </g>
+        <g class="n4">
+          <circle class="halo" cx="632" cy="104" r="7" />
+          <circle class="dot" cx="632" cy="104" r="3.4" />
+          <text class="lbl" x="653" y="80" text-anchor="start">UTC+2</text>
+        </g>
+        <g class="n5">
+          <circle class="halo" cx="735" cy="325" r="7" />
+          <circle class="dot" cx="735" cy="325" r="3.4" />
+          <text class="lbl" x="757" y="329" text-anchor="start">UTC+3</text>
+        </g>
+      </svg>
+
+      <!-- hero type -->
+      <div class="hero">
+        <h1>The hour every office<br /><span class="soft">is actually awake.</span></h1>
+        <p class="sub">Scheduling for teams across time zones.</p>
+      </div>
+
+      <div class="actions">
+        <button class="btn">Start free</button>
+        <a class="link" href="#">
+          See how it works
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none" aria-hidden="true">
+            <path d="M1 5h11M8.5 1.5 12 5l-3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+      </div>
+
+      <!-- capabilities -->
+      <div class="rule" style="top: 742px"></div>
+      <div class="slabel" style="top: 764px">What it does</div>
+
+      <div class="grid">
+        <div class="cell">
+          <div class="top">
+            <span class="num">01</span>
+            <svg width="46" height="14" viewBox="0 0 46 14" aria-hidden="true">
+              <rect x="0" y="2" width="30" height="4" rx="2" fill="rgba(255,255,255,0.22)" />
+              <rect x="16" y="8" width="30" height="4" rx="2" fill="rgba(255,255,255,0.22)" />
+              <rect x="16" y="2" width="14" height="4" rx="2" fill="#f2f1ee" />
+              <rect x="16" y="8" width="14" height="4" rx="2" fill="#f2f1ee" />
+            </svg>
+          </div>
+          <p>Finds the hours every office is awake at the same time.</p>
+        </div>
+
+        <div class="cell">
+          <div class="top">
+            <span class="num">02</span>
+            <svg width="46" height="18" viewBox="0 0 46 18" aria-hidden="true">
+              <circle cx="10" cy="9" r="6" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1" />
+              <circle cx="17" cy="9" r="6" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1" />
+              <circle cx="30" cy="9" r="7" fill="none" stroke="#f2f1ee" stroke-width="1.3" />
+              <path d="M30 5v4.2l2.6 1.6" stroke="#f2f1ee" stroke-width="1.3" stroke-linecap="round" fill="none" />
+            </svg>
+          </div>
+          <p>Shows one shared clock instead of five converted ones.</p>
+        </div>
+
+        <div class="cell">
+          <div class="top">
+            <span class="num">03</span>
+            <svg width="46" height="18" viewBox="0 0 46 18" aria-hidden="true">
+              <rect x="0.5" y="2.5" width="13" height="13" rx="2.5" fill="none" stroke="rgba(255,255,255,0.2)" />
+              <rect x="16.5" y="2.5" width="13" height="13" rx="2.5" fill="none" stroke="rgba(255,255,255,0.2)" />
+              <rect x="32.5" y="2.5" width="13" height="13" rx="2.5" fill="none" stroke="#f2f1ee" />
+              <path d="M35.6 9.2l2.2 2.2 4.1-4.4" stroke="#f2f1ee" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <p>Books the meeting in everyone's local calendar.</p>
+        </div>
+
+        <div class="cell">
+          <div class="top">
+            <span class="num">04</span>
+            <svg width="46" height="18" viewBox="0 0 46 18" aria-hidden="true">
+              <circle cx="5" cy="9" r="3" fill="rgba(255,255,255,0.2)" />
+              <circle cx="17" cy="9" r="3" fill="rgba(255,255,255,0.2)" />
+              <circle cx="41" cy="9" r="3" fill="rgba(255,255,255,0.2)" />
+              <circle cx="29" cy="9" r="7.5" fill="none" stroke="#d8a15a" stroke-width="1" opacity="0.55" />
+              <circle cx="29" cy="9" r="3.4" fill="#d8a15a" />
+            </svg>
+          </div>
+          <p>Flags the person who always gets the 6am call.</p>
+        </div>
+      </div>
+
+      <!-- shared clock strip -->
+      <div class="rule" style="top: 1130px"></div>
+      <div class="slabel" style="top: 1150px">One shared clock</div>
+
+      <svg class="strip" width="888" height="196" viewBox="0 0 888 196" aria-hidden="true">
+        <line class="axis" x1="120" y1="30" x2="880" y2="30" />
+        <text class="cap" x="120" y="20" text-anchor="middle">00</text>
+        <text class="cap" x="310" y="20" text-anchor="middle">06</text>
+        <text class="cap" x="500" y="20" text-anchor="middle">12</text>
+        <text class="cap" x="690" y="20" text-anchor="middle">18</text>
+        <text class="cap" x="880" y="20" text-anchor="middle">24</text>
+
+        <rect class="band-fill" x="563.3" y="30" width="31.7" height="140" />
+        <line class="band-edge" x1="563.3" y1="30" x2="563.3" y2="170" />
+        <line class="band-edge" x1="595" y1="30" x2="595" y2="170" />
+
+        <g>
+          <text class="cap-a" x="100" y="52" text-anchor="end">UTC−8</text>
+          <rect class="track" x="120" y="43" width="760" height="9" rx="4.5" />
+          <rect class="bar flag" x="563.3" y="43" width="285" height="9" rx="4.5" />
+          <text class="cap-a" x="858" y="51" text-anchor="start">06:00</text>
+        </g>
+        <g>
+          <text class="cap" x="100" y="80" text-anchor="end">UTC−3</text>
+          <rect class="track" x="120" y="71" width="760" height="9" rx="4.5" />
+          <rect class="bar" x="500" y="71" width="285" height="9" rx="4.5" />
+        </g>
+        <g>
+          <text class="cap" x="100" y="108" text-anchor="end">UTC+0</text>
+          <rect class="track" x="120" y="99" width="760" height="9" rx="4.5" />
+          <rect class="bar" x="405" y="99" width="285" height="9" rx="4.5" />
+        </g>
+        <g>
+          <text class="cap" x="100" y="136" text-anchor="end">UTC+2</text>
+          <rect class="track" x="120" y="127" width="760" height="9" rx="4.5" />
+          <rect class="bar" x="341.7" y="127" width="285" height="9" rx="4.5" />
+        </g>
+        <g>
+          <text class="cap" x="100" y="164" text-anchor="end">UTC+3</text>
+          <rect class="track" x="120" y="155" width="760" height="9" rx="4.5" />
+          <rect class="bar" x="310" y="155" width="285" height="9" rx="4.5" />
+        </g>
+
+        <line class="axis" x1="120" y1="178" x2="880" y2="178" />
+        <text class="cap-w" x="579" y="192" text-anchor="middle">the hour all five share</text>
+        <text class="cap" x="120" y="192" text-anchor="start">working hours, one axis</text>
+      </svg>
+
+      <!-- grain -->
+      <svg class="grain" width="1000" height="1400" aria-hidden="true">
+        <filter id="n">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
+        <rect width="1000" height="1400" filter="url(#n)" />
+      </svg>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Orbit</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --panel: #111a2c;
+        --line: #22304a;
+        --ink: #eef2f8;
+        --muted: #9aa8bf;
+        --amber: #ffb454;
+        --amber-soft: rgba(255, 180, 84, 0.16);
+        --c1: #6ec3ff;
+        --c2: #b48cff;
+        --c3: #5fe0b0;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        width: 1000px;
+        height: 1400px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        flex-direction: column;
+        padding: 36px 56px 40px;
+      }
+      a { color: inherit; }
+
+      /* Header */
+      .top {
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .brand h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.2px; }
+      .top .tag { color: var(--muted); font-size: 14px; }
+
+      /* Hero */
+      .hero { margin-top: 56px; height: 236px; }
+      .hero h2 {
+        margin: 0;
+        font-size: 60px;
+        line-height: 1.08;
+        font-weight: 700;
+        letter-spacing: -1.2px;
+        max-width: 760px;
+      }
+      .hero h2 span { color: var(--amber); }
+      .actions { margin-top: 30px; display: flex; align-items: center; gap: 24px; }
+      .btn {
+        appearance: none;
+        border: 0;
+        background: var(--amber);
+        color: #1a1204;
+        font: inherit;
+        font-size: 17px;
+        font-weight: 700;
+        padding: 15px 28px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .link { font-size: 17px; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--muted); padding-bottom: 2px; }
+      .link:hover { border-color: var(--ink); }
+
+      /* Clock panel */
+      .panel {
+        margin-top: 8px;
+        height: 410px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        display: flex;
+        overflow: hidden;
+      }
+      .panel svg { width: 500px; height: 408px; flex: none; }
+      .legend { padding: 40px 40px 40px 8px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+      .legend h3 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
+      .legend p { margin: 0 0 22px; color: var(--muted); font-size: 15px; line-height: 1.45; }
+      .row { display: flex; align-items: center; gap: 14px; font-size: 15px; padding: 9px 0; border-top: 1px solid var(--line); }
+      .row:last-child { border-bottom: 1px solid var(--line); }
+      .row .sw { width: 28px; height: 4px; border-radius: 2px; flex: none; }
+      .row .name { width: 120px; font-weight: 600; }
+      .row .win { color: var(--muted); }
+      .row.overlap .sw { height: 14px; background: var(--amber-soft); border: 1px solid var(--amber); }
+      .row.overlap .name { width: auto; }
+      .row.flag .name { width: auto; }
+      .flagmark { width: 28px; flex: none; display: flex; justify-content: center; }
+
+      /* Capabilities */
+      .caps { margin-top: 32px; }
+      .caps h3 { margin: 0 0 18px; font-size: 14px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 20px 22px 22px;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        height: 118px;
+      }
+      .card .ic { width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--panel); display: flex; align-items: center; justify-content: center; }
+      .card h4 { margin: 2px 0 6px; font-size: 18px; font-weight: 700; }
+      .card p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
+
+      /* Footer */
+      .foot {
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 16px;
+        color: var(--muted);
+      }
+      .foot strong { color: var(--ink); font-weight: 600; }
+      .foot .rule { flex: 1; height: 1px; background: var(--line); }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+          <circle cx="15" cy="15" r="12" fill="none" stroke="#9aa8bf" stroke-width="1.5" transform="rotate(-30 15 15)" />
+          <circle cx="15" cy="15" r="5" fill="#ffb454" />
+          <circle cx="25.4" cy="9" r="2.4" fill="#eef2f8" />
+        </svg>
+        <h1>Orbit</h1>
+      </div>
+      <div class="tag">Scheduling for teams across time zones</div>
+    </header>
+
+    <section class="hero">
+      <h2>Scheduling for teams across <span>time zones.</span></h2>
+      <div class="actions">
+        <button class="btn">Start free</button>
+        <a class="link" href="#">See how it works</a>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="One shared clock">
+      <svg viewBox="0 0 500 408" role="img" aria-label="A 24 hour ring showing when 3 offices are awake and the hours they share">
+        <!-- 24 hour ticks -->
+        <g stroke="#3a4a68" stroke-width="1.5">
+          <line x1="250" y1="38" x2="250" y2="48" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(15 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(30 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(45 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(60 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(75 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(90 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(105 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(120 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(135 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(150 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(165 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(180 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(195 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(210 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(225 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(240 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(255 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(270 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(285 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(300 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(315 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(330 250 208)" />
+          <line x1="250" y1="38" x2="250" y2="48" transform="rotate(345 250 208)" />
+        </g>
+        <!-- hour labels (UTC) -->
+        <g fill="#9aa8bf" font-size="12" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" text-anchor="middle">
+          <text x="250" y="28">00:00</text>
+          <text x="440" y="212">06:00</text>
+          <text x="250" y="398">12:00</text>
+          <text x="60" y="212">18:00</text>
+          <text x="250" y="212" font-size="11" fill="#5c6b85">UTC</text>
+        </g>
+        <!-- faint ring -->
+        <circle cx="250" cy="208" r="150" fill="none" stroke="#22304a" stroke-width="1" />
+        <circle cx="250" cy="208" r="125" fill="none" stroke="#22304a" stroke-width="1" />
+        <circle cx="250" cy="208" r="100" fill="none" stroke="#22304a" stroke-width="1" />
+        <!-- shared hours wedge: 12:00 to 13:30 UTC -->
+        <path d="M250 208 L250 373 A165 165 0 0 1 186.9 360.4 Z" fill="rgba(255,180,84,0.16)" stroke="#ffb454" stroke-width="1" />
+        <!-- London 07:00-18:00 UTC, r150 -->
+        <path d="M394.9 246.8 A150 150 0 0 1 100 208" fill="none" stroke="#6ec3ff" stroke-width="8" stroke-linecap="round" />
+        <!-- New York 12:00-23:00 UTC, r125 -->
+        <path d="M250 333 A125 125 0 0 1 217.6 87.3" fill="none" stroke="#b48cff" stroke-width="8" stroke-linecap="round" />
+        <!-- Bengaluru 02:30-13:30 UTC, r100 -->
+        <path d="M310.9 128.7 A100 100 0 0 1 211.7 300.4" fill="none" stroke="#5fe0b0" stroke-width="8" stroke-linecap="round" />
+        <!-- earliest local start flag on the New York arc -->
+        <g transform="translate(250 333)">
+          <circle r="7" fill="#0b1220" stroke="#ffb454" stroke-width="2" />
+          <line x1="0" y1="-3.5" x2="0" y2="3.5" stroke="#ffb454" stroke-width="2" stroke-linecap="round" />
+        </g>
+      </svg>
+      <div class="legend">
+        <h3>One clock, every office on it</h3>
+        <p>Each ring is an office from 08:00 to 19:00 local time, drawn on the same 24 hour dial. The amber wedge is the window where all 3 are awake.</p>
+        <div class="row"><span class="sw" style="background:#6ec3ff"></span><span class="name">London</span><span class="win">07:00 to 18:00 UTC</span></div>
+        <div class="row"><span class="sw" style="background:#b48cff"></span><span class="name">New York</span><span class="win">12:00 to 23:00 UTC</span></div>
+        <div class="row"><span class="sw" style="background:#5fe0b0"></span><span class="name">Bengaluru</span><span class="win">02:30 to 13:30 UTC</span></div>
+        <div class="row overlap"><span class="sw"></span><span class="name">Everyone awake</span><span class="win">12:00 to 13:30 UTC</span></div>
+        <div class="row flag">
+          <span class="flagmark"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="none" stroke="#ffb454" stroke-width="1.6"/><line x1="7" y1="4" x2="7" y2="10" stroke="#ffb454" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+          <span class="name">Earliest local start</span><span class="win">New York, 08:00</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="caps">
+      <h3>What Orbit does</h3>
+      <div class="grid">
+        <div class="card">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+              <circle cx="8" cy="11" r="6.5" fill="none" stroke="#6ec3ff" stroke-width="1.8"/>
+              <circle cx="14" cy="11" r="6.5" fill="none" stroke="#5fe0b0" stroke-width="1.8"/>
+              <path d="M11 5.4 A6.5 6.5 0 0 1 11 16.6 A6.5 6.5 0 0 1 11 5.4 Z" fill="#ffb454"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Find the shared hours</h4>
+            <p>Finds the hours every office is awake at the same time.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke="#eef2f8" stroke-width="1.8"/>
+              <line x1="11" y1="11" x2="11" y2="5.5" stroke="#ffb454" stroke-width="2" stroke-linecap="round"/>
+              <line x1="11" y1="11" x2="15" y2="13" stroke="#eef2f8" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Read one clock</h4>
+            <p>Shows one shared clock instead of five converted ones.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+              <rect x="3" y="4.5" width="16" height="14" rx="2" fill="none" stroke="#eef2f8" stroke-width="1.8"/>
+              <line x1="3" y1="9" x2="19" y2="9" stroke="#eef2f8" stroke-width="1.8"/>
+              <path d="M7.5 13.5 L10 16 L14.5 11.5" fill="none" stroke="#5fe0b0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Book it everywhere</h4>
+            <p>Books the meeting in everyone's local calendar.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+              <line x1="6" y1="3" x2="6" y2="19" stroke="#eef2f8" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M6 4 H17 L14 7.5 L17 11 H6 Z" fill="#ffb454"/>
+            </svg>
+          </div>
+          <div>
+            <h4>Share the early calls</h4>
+            <p>Flags the person who always gets the 6am call.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span>Used by <strong>40 teams</strong> across <strong>12 countries</strong>.</span>
+      <span class="rule"></span>
+      <a class="link" href="#">See how it works</a>
+    </footer>
+  </body>
+</html>

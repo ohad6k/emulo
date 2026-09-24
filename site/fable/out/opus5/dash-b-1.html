@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, height=900">
+<title>Ledger Instrument Panel</title>
+<style>
+  :root{
+    --ground:#08090A;
+    --ink:#0E1113;
+    --bone:#ECE7DD;
+    --muted:#8B8C87;
+    --dim:#5E605C;
+    --hair:rgba(236,231,221,0.11);
+    --hair-soft:rgba(236,231,221,0.06);
+    --gold:#C9A227;
+    --gold-hi:#E0B93F;
+    --vermilion:#C4552F;
+    --mono:ui-monospace,"SFMono-Regular","SF Mono","Cascadia Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+    --sans:"Helvetica Neue",Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+    color-scheme:dark;
+  }
+
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:var(--ground);}
+  body{font-family:var(--sans);color:var(--bone);-webkit-font-smoothing:antialiased;}
+
+  #bg{position:fixed;inset:0;width:100vw;height:100vh;display:block;}
+  #vignette{
+    position:fixed;inset:0;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 22% 42%, rgba(201,162,39,0.055), transparent 62%),
+      radial-gradient(100% 100% at 50% 50%, transparent 46%, rgba(0,0,0,0.62) 100%);
+  }
+
+  #stage{
+    position:fixed;left:50%;top:50%;
+    width:1600px;height:900px;
+    transform:translate(-50%,-50%);
+    transform-origin:50% 50%;
+    padding:44px 56px 40px;
+    box-sizing:border-box;
+    display:flex;flex-direction:column;
+  }
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:baseline;justify-content:space-between;}
+  .wordmark{display:flex;align-items:center;gap:14px;}
+  .stamp{width:9px;height:9px;background:var(--gold);flex:none;animation:stamp 3.4s ease-in-out infinite;}
+  @keyframes stamp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.42;transform:scale(.72)}}
+  h1{
+    margin:0;font-family:var(--mono);font-size:29px;font-weight:500;
+    letter-spacing:.26em;text-transform:uppercase;
+  }
+  .kicker{
+    font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--dim);margin-left:4px;
+  }
+  .meta{display:flex;align-items:center;gap:22px;font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;}
+  .meta .period{color:var(--bone);}
+  .meta .sep{width:1px;height:13px;background:var(--hair);display:inline-block;}
+  .meta .count{color:var(--muted);}
+  .meta .count b{color:var(--gold-hi);font-weight:500;}
+
+  .rule{position:relative;height:1px;background:var(--hair);margin:22px 0 0;overflow:hidden;flex:none;}
+  .rule::after{
+    content:"";position:absolute;top:0;left:0;width:180px;height:1px;
+    background:linear-gradient(90deg,transparent,var(--gold-hi),transparent);
+    animation:travel 7.5s linear infinite;
+  }
+  @keyframes travel{0%{transform:translateX(-200px)}100%{transform:translateX(1500px)}}
+
+  /* ---------- body ---------- */
+  .body{flex:1;display:flex;gap:46px;padding-top:26px;min-height:0;}
+
+  /* left: instrument */
+  .instrument{width:452px;flex:none;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;}
+  .ring-wrap{position:relative;width:452px;height:392px;}
+  .ring-wrap svg{position:absolute;left:0;top:0;width:452px;height:392px;overflow:visible;}
+  .ring text{font-family:var(--mono);}
+  .spin-slow{animation:spin 96s linear infinite;transform-origin:36.4% 50%;}
+  .spin-back{animation:spin 64s linear infinite reverse;transform-origin:36.4% 50%;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .arc-val{
+    stroke-dasharray:872.6 879.65;
+    stroke-dashoffset:872.6;
+    animation:draw 1.3s cubic-bezier(.16,.9,.3,1) .25s forwards;
+  }
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .glimmer{stroke-dasharray:54 825.6;animation:glide 9s linear infinite;}
+  @keyframes glide{to{stroke-dashoffset:-879.65}}
+  .halo{animation:halo 2.6s ease-out infinite;transform-origin:163px 50.2px;}
+  @keyframes halo{0%{r:4;opacity:.55}70%,100%{r:15;opacity:0}}
+  .breathe{animation:breathe 5.2s ease-in-out infinite;transform-origin:36.4% 50%;}
+  @keyframes breathe{0%,100%{opacity:.16;transform:scale(1)}50%{opacity:.34;transform:scale(1.035)}}
+  .caption{
+    margin-top:2px;padding-left:2px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);
+  }
+
+  /* right: ledger sheet */
+  .sheet{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .eyebrow{display:flex;align-items:center;gap:16px;margin-bottom:0;}
+  .eyebrow span{
+    font-family:var(--mono);font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);white-space:nowrap;
+  }
+  .eyebrow i{flex:1;height:1px;background:var(--hair-soft);display:block;}
+  .dotmark{width:5px;height:5px;flex:none;background:var(--bone);animation:stamp 2.8s ease-in-out infinite;}
+  .dotmark.off{background:var(--dim);}
+
+  .report{display:grid;grid-template-columns:repeat(3,1fr);height:330px;border-top:1px solid var(--hair);margin-top:14px;}
+  .cell{position:relative;padding:34px 30px 0;display:flex;flex-direction:column;justify-content:flex-start;min-width:0;}
+  .cell + .cell{border-left:1px solid var(--hair-soft);}
+  .label{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);}
+  .figure{
+    display:flex;align-items:baseline;gap:10px;margin-top:auto;
+    clip-path:inset(0 100% 0 0);animation:wipe .8s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  .cell:nth-child(1) .figure{animation-delay:.12s}
+  .cell:nth-child(2) .figure{animation-delay:.26s}
+  .cell:nth-child(3) .figure{animation-delay:.4s}
+  @keyframes wipe{to{clip-path:inset(0 0 0 0)}}
+  .num{font-family:var(--mono);font-size:66px;font-weight:400;letter-spacing:-.03em;line-height:.92;font-variant-numeric:tabular-nums;}
+  .unit{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+  .cell .baseline{position:relative;height:1px;background:var(--hair-soft);margin:26px 0 30px;overflow:hidden;}
+  .cell .baseline::after{
+    content:"";position:absolute;top:0;left:0;width:70px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(236,231,221,.85),transparent);
+    animation:crawl 6s linear infinite;
+  }
+  .cell:nth-child(2) .baseline::after{animation-delay:2s}
+  .cell:nth-child(3) .baseline::after{animation-delay:4s}
+  @keyframes crawl{0%{transform:translateX(-80px)}100%{transform:translateX(420px)}}
+
+  .pending{
+    display:grid;grid-template-columns:repeat(4,1fr);height:174px;margin-top:14px;
+    border-top:1px solid var(--hair);
+    background-image:repeating-linear-gradient(135deg,rgba(236,231,221,.055) 0 1px,transparent 1px 10px);
+    background-size:auto;
+    animation:pole 7s linear infinite;
+  }
+  @keyframes pole{from{background-position:0 0}to{background-position:141.42px 0}}
+  .pcell{padding:26px 30px;display:flex;flex-direction:column;justify-content:space-between;min-width:0;}
+  .pcell + .pcell{border-left:1px solid var(--hair-soft);}
+  .pcell .label{color:var(--dim);}
+  .dash{
+    font-family:var(--mono);font-size:44px;line-height:1;color:var(--muted);letter-spacing:.02em;
+    animation:pulse 3.6s ease-in-out infinite;
+  }
+  .pcell:nth-child(2) .dash{animation-delay:.5s}
+  .pcell:nth-child(3) .dash{animation-delay:1s}
+  .pcell:nth-child(4) .dash{animation-delay:1.5s}
+  @keyframes pulse{0%,100%{opacity:.9}50%{opacity:.42}}
+  .nodata{font-family:var(--mono);font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);}
+
+  /* ---------- footer ---------- */
+  footer{
+    display:flex;align-items:center;justify-content:space-between;gap:28px;
+    border-top:1px solid var(--hair-soft);padding-top:14px;margin-top:20px;flex:none;
+  }
+  .note{font-size:12.5px;color:var(--muted);letter-spacing:.005em;}
+  .ticker{flex:1;height:10px;max-width:420px;overflow:hidden;opacity:.5;}
+  .ticker i{
+    display:block;height:10px;width:200%;
+    background-image:repeating-linear-gradient(90deg,rgba(236,231,221,.45) 0 1px,transparent 1px 14px);
+    animation:slide 11s linear infinite;
+  }
+  @keyframes slide{from{transform:translateX(0)}to{transform:translateX(-25%)}}
+  .sig{font-family:var(--mono);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--dim);white-space:nowrap;}
+
+  @media (prefers-reduced-motion: reduce){
+    .spin-slow{animation-duration:320s}
+    .spin-back{animation-duration:280s}
+    .rule::after,.cell .baseline::after{animation-duration:26s}
+    .pending{animation-duration:34s}
+    .glimmer{animation-duration:34s}
+    .dash,.stamp,.dotmark,.breathe,.halo{animation-duration:9s}
+  }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="vignette"></div>
+
+<div id="stage">
+
+  <header>
+    <div class="wordmark">
+      <div class="stamp"></div>
+      <h1>Ledger</h1>
+      <div class="kicker">product metrics</div>
+    </div>
+    <div class="meta">
+      <div class="period">Last 30 days</div>
+      <i class="sep"></i>
+      <div class="count"><b>4</b> of 8 metrics reporting</div>
+    </div>
+  </header>
+
+  <div class="rule"></div>
+
+  <div class="body">
+
+    <!-- crash-free instrument -->
+    <section class="instrument">
+      <div class="ring-wrap">
+        <!-- rotating tick ring -->
+        <svg class="ring spin-slow" viewBox="0 0 452 392" aria-hidden="true"><g id="ticks"></g></svg>
+        <!-- rotating dashed orbit -->
+        <svg class="ring spin-back" viewBox="0 0 452 392" aria-hidden="true">
+          <circle cx="170" cy="190" r="172" fill="none" stroke="rgba(236,231,221,0.18)" stroke-width="1" stroke-dasharray="2 12"></circle>
+        </svg>
+        <!-- static gauge -->
+        <svg class="ring" viewBox="0 0 452 392" role="img" aria-label="Crash-free rate 99.2 percent">
+          <circle class="breathe" cx="170" cy="190" r="112" fill="none" stroke="#ECE7DD" stroke-width="1"></circle>
+          <circle cx="170" cy="190" r="140" fill="none" stroke="rgba(236,231,221,0.10)" stroke-width="9"></circle>
+
+          <g transform="rotate(-90 170 190)">
+            <circle class="arc-val" cx="170" cy="190" r="140" fill="none" stroke="#ECE7DD" stroke-width="9" stroke-linecap="butt"></circle>
+            <circle cx="170" cy="190" r="140" fill="none" stroke="#C4552F" stroke-width="9"
+                    stroke-dasharray="7.04 879.65" stroke-dashoffset="-872.6"></circle>
+            <circle class="glimmer" cx="170" cy="190" r="140" fill="none" stroke="#E0B93F" stroke-width="2" stroke-opacity="0.75"></circle>
+          </g>
+
+          <circle class="halo" cx="163" cy="50.2" r="4" fill="none" stroke="#ECE7DD" stroke-width="1"></circle>
+          <circle cx="163" cy="50.2" r="3.4" fill="#ECE7DD"></circle>
+
+          <!-- annotation on the 0.8% gap -->
+          <path d="M166.5 48 L166.5 22 L300 22" fill="none" stroke="#C4552F" stroke-width="1" stroke-opacity="0.8"></path>
+          <text x="308" y="19" fill="#C4552F" font-size="11" letter-spacing="0.5">0.8%</text>
+          <text x="308" y="33" fill="#8B8C87" font-size="9" letter-spacing="2.1">NOT CRASH-FREE</text>
+
+          <text x="170" y="204" text-anchor="middle" fill="#ECE7DD" font-size="72" letter-spacing="-2">99.2<tspan font-size="26" fill="#8B8C87" dx="4" dy="-26">%</tspan></text>
+          <text x="170" y="238" text-anchor="middle" fill="#8B8C87" font-size="10" letter-spacing="4.4">CRASH-FREE RATE</text>
+        </svg>
+      </div>
+      <div class="caption">Sessions without a crash, last 30 days</div>
+    </section>
+
+    <!-- ledger sheet -->
+    <section class="sheet">
+
+      <div class="eyebrow">
+        <div class="dotmark"></div><span>Reporting</span><i></i>
+      </div>
+
+      <div class="report">
+        <div class="cell">
+          <div class="label">Active installs</div>
+          <div class="figure"><div class="num">1,284</div></div>
+          <div class="baseline"></div>
+        </div>
+        <div class="cell">
+          <div class="label">Median session</div>
+          <div class="figure"><div class="num">12.4</div><div class="unit">min</div></div>
+          <div class="baseline"></div>
+        </div>
+        <div class="cell">
+          <div class="label">Support tickets</div>
+          <div class="figure"><div class="num">37</div></div>
+          <div class="baseline"></div>
+        </div>
+      </div>
+
+      <div class="eyebrow" style="margin-top:26px">
+        <div class="dotmark off"></div><span>No data this period</span><i></i>
+      </div>
+
+      <div class="pending">
+        <div class="pcell">
+          <div class="label">Weekly active users</div>
+          <div class="dash">--</div>
+          <div class="nodata">No data</div>
+        </div>
+        <div class="pcell">
+          <div class="label">Retention D30</div>
+          <div class="dash">--</div>
+          <div class="nodata">No data</div>
+        </div>
+        <div class="pcell">
+          <div class="label">Paid conversions</div>
+          <div class="dash">--</div>
+          <div class="nodata">No data</div>
+        </div>
+        <div class="pcell">
+          <div class="label">NPS</div>
+          <div class="dash">--</div>
+          <div class="nodata">No data</div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <footer>
+    <div class="note">4 of 8 metrics returned values for this period. Empty fields mean no data, not zero.</div>
+    <div class="ticker"><i></i></div>
+    <div class="sig">Ledger / Last 30 days</div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---- fit the fixed 1600x900 stage into whatever window it opens in ---- */
+  var stage = document.getElementById('stage');
+  function fitStage(){
+    var s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+  fitStage();
+  window.addEventListener('resize', fitStage);
+
+  /* ---- rotating tick ring (built here so the markup stays readable) ---- */
+  var g = document.getElementById('ticks');
+  var cx = 170, cy = 190, ns = 'http://www.w3.org/2000/svg';
+  for (var i = 0; i < 72; i++){
+    var major = (i % 6 === 0);
+    var a = (i / 72) * Math.PI * 2 - Math.PI / 2;
+    var r1 = 152, r2 = 152 + (major ? 13 : 6);
+    var ln = document.createElementNS(ns, 'line');
+    ln.setAttribute('x1', (cx + Math.cos(a) * r1).toFixed(2));
+    ln.setAttribute('y1', (cy + Math.sin(a) * r1).toFixed(2));
+    ln.setAttribute('x2', (cx + Math.cos(a) * r2).toFixed(2));
+    ln.setAttribute('y2', (cy + Math.sin(a) * r2).toFixed(2));
+    ln.setAttribute('stroke', major ? 'rgba(236,231,221,0.34)' : 'rgba(236,231,221,0.14)');
+    ln.setAttribute('stroke-width', '1');
+    g.appendChild(ln);
+  }
+
+  /* ---- ambient ledger field ---- */
+  var W = 1600, H = 900;
+  var cv = document.getElementById('bg');
+  var ctx = cv.getContext('2d');
+  var dpr = 1;
+
+  function sizeCanvas(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width  = Math.round(W * dpr);
+    cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  sizeCanvas();
+  window.addEventListener('resize', sizeCanvas);
+
+  var motes = [];
+  for (var m = 0; m < 120; m++){
+    motes.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.0 + 0.3,
+      s: Math.random() * 0.20 + 0.05,
+      o: Math.random() * 0.10 + 0.03,
+      p: Math.random() * 6.283
+    });
+  }
+
+  var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var k = calm ? 0.22 : 1;
+  var t0 = performance.now();
+
+  function frame(now){
+    var t = (now - t0) / 1000;
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = 1;
+
+    /* horizontal ruling, drifting up */
+    for (var i = 0; i < 26; i++){
+      var y = ((i * 42 + t * 4 * k) % (H + 84)) - 42;
+      var o = 0.020 + 0.013 * Math.sin(t * 0.5 * k + i * 0.7);
+      ctx.strokeStyle = 'rgba(236,231,221,' + o.toFixed(4) + ')';
+      ctx.beginPath();
+      ctx.moveTo(0, Math.round(y) + 0.5);
+      ctx.lineTo(W, Math.round(y) + 0.5);
+      ctx.stroke();
+    }
+
+    /* column ruling, drifting right */
+    ctx.strokeStyle = 'rgba(236,231,221,0.015)';
+    for (var j = 0; j < 14; j++){
+      var x = ((j * 124 + t * 6 * k) % (W + 160)) - 80;
+      ctx.beginPath();
+      ctx.moveTo(Math.round(x) + 0.5, 0);
+      ctx.lineTo(Math.round(x) + 0.5, H);
+      ctx.stroke();
+    }
+
+    /* slow warm sweep */
+    var bx = ((t * 78 * k) % (W + 760)) - 380;
+    var grad = ctx.createLinearGradient(bx - 280, 0, bx + 280, 0);
+    grad.addColorStop(0,   'rgba(201,162,39,0)');
+    grad.addColorStop(0.5, 'rgba(201,162,39,0.05)');
+    grad.addColorStop(1,   'rgba(201,162,39,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(bx - 280, 0, 560, H);
+
+    /* dust */
+    for (var n = 0; n < motes.length; n++){
+      var d = motes[n];
+      d.y -= d.s * k;
+      if (d.y < -4) { d.y = H + 4; d.x = Math.random() * W; }
+      var op = d.o * (0.55 + 0.45 * Math.sin(t * 0.8 * k + d.p));
+      ctx.fillStyle = 'rgba(236,231,221,' + (op > 0 ? op : 0).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(d.x + Math.sin(t * 0.25 * k + d.p) * 7, d.y, d.r, 0, 6.283);
+      ctx.fill();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

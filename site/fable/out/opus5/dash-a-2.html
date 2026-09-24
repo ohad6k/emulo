@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, height=900">
+<title>Ledger Metrics Sheet</title>
+<style>
+/* ------------------------------------------------------------------
+   Ledger — metrics sheet.
+   A single, deliberate visual world: accounting-ledger paper, ruled and
+   posted in ink. Committed to one theme on purpose; every colour is
+   painted explicitly so the sheet holds on any host ground.
+   No external requests, no bitmaps: system faces, CSS, SVG, Canvas 2D.
+   ------------------------------------------------------------------ */
+
+:root{
+  color-scheme: light;
+
+  --paper:      #E7EBE1;   /* pale ledger stock */
+  --paper-2:    #F4F6EE;   /* posted panel */
+  --ink:        #151E19;   /* deep green-black ink */
+  --ink-2:      #3F4A43;
+  --ink-3:      #5F6B61;
+  --rule:       #B3C2B4;   /* the ruling */
+  --rule-soft:  #CCD7C9;
+  --accent:     #2F6154;   /* posting ink, viridian */
+  --red:        #A33B2A;   /* the ledger's red column */
+
+  --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
+  --mono: ui-monospace, "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{background:var(--paper)}
+body{
+  width:1600px;height:900px;overflow:hidden;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--serif);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- the sheet ---------- */
+.sheet{
+  position:relative;
+  width:1600px;height:900px;
+  padding:32px 44px 34px;
+  display:flex;flex-direction:column;
+  background-image:repeating-linear-gradient(
+     to bottom, transparent 0 26px, rgba(101,133,108,.16) 26px 27px);
+}
+/* the two red rules down the binding edge */
+.sheet::after{
+  content:"";position:absolute;left:26px;top:0;bottom:0;width:1px;
+  background:rgba(163,59,42,.34);
+  box-shadow:5px 0 0 rgba(163,59,42,.18);
+  pointer-events:none;
+}
+/* a slow desk-lamp pass across the whole sheet */
+.glare{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6}
+.glare i{
+  position:absolute;top:-12%;bottom:-12%;width:380px;left:-460px;
+  background:linear-gradient(100deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.62) 50%,rgba(255,255,255,0) 100%);
+  transform:skewX(-11deg);
+  animation:sweep 21s linear infinite;
+}
+@keyframes sweep{from{left:-460px}to{left:1680px}}
+
+/* ---------- header ---------- */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;position:relative;z-index:2}
+.eyebrow{
+  font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--ink-3);
+}
+h1{
+  font-family:var(--serif);font-weight:400;font-size:58px;line-height:1;
+  margin:6px 0 6px;letter-spacing:-.015em;color:var(--ink);
+}
+.period{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--ink-2)}
+.period b{font-weight:500;color:var(--ink)}
+
+.coverage{display:flex;align-items:flex-end;gap:18px;text-align:right}
+.cov-text{font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--ink-3);letter-spacing:.05em}
+.cov-text b{
+  display:block;font-family:var(--serif);font-size:30px;font-weight:400;
+  color:var(--ink);letter-spacing:0;line-height:1.15;
+}
+.cov-cells{display:flex;gap:5px;align-items:flex-end;padding-bottom:4px}
+.cov-cells span{width:13px;height:30px;display:block;border-radius:1px}
+.cov-cells .on{
+  background:var(--accent);
+  animation:breathe 3.4s ease-in-out infinite;
+}
+.cov-cells .off{
+  border:1px dashed var(--rule);background:transparent;
+  animation:flicker 5.2s ease-in-out infinite;
+}
+@keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes flicker{0%,100%{opacity:.45}50%{opacity:.9}}
+
+/* accounting double rule, as drawn under a total */
+.rule2{height:4px;margin:16px 0 0;border-top:1px solid rgba(21,30,25,.62);border-bottom:1px solid rgba(21,30,25,.62);position:relative;z-index:2}
+
+/* ---------- section headings ---------- */
+.sec{display:flex;align-items:center;gap:14px;margin:18px 0 11px;position:relative;z-index:2}
+.sec-l{font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink)}
+.sec .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.sec .dot.open{background:transparent;border:1px dashed var(--red)}
+.sec-line{flex:1;height:1px;background:var(--rule)}
+.sec-n{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--ink-3)}
+
+/* ---------- rows ---------- */
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;position:relative;z-index:2}
+.row-posted{flex:1;min-height:0}
+.row-open{height:168px}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--paper-2);
+  border:1px solid var(--rule-soft);
+  border-top:2px solid var(--ink);
+  padding:16px 20px 14px;
+  display:flex;flex-direction:column;min-height:0;
+}
+.card-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.mname{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.mtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+
+.val{
+  font-family:var(--serif);font-size:62px;line-height:1.05;
+  margin:8px 0 2px;letter-spacing:-.02em;color:var(--ink);
+  display:flex;align-items:baseline;gap:9px;
+}
+.val .unit{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-3);white-space:nowrap}
+
+.viz{flex:1;min-height:0;position:relative;margin:6px 0 8px}
+.viz canvas,.viz svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+.note{
+  font-family:var(--mono);font-size:10px;line-height:1.6;letter-spacing:.03em;
+  color:var(--ink-3);margin:0;padding-top:9px;border-top:1px solid var(--rule-soft);
+}
+.note em{font-style:normal;color:var(--red)}
+
+/* ---------- open (uninstrumented) lines ---------- */
+.card.open{
+  background:transparent;
+  border:1px dashed var(--rule);
+  border-top:1px dashed var(--red);
+  padding:14px 20px 12px;
+}
+.card.open .mtag{color:var(--red)}
+.open-body{flex:1;display:flex;align-items:center;gap:16px;min-height:0}
+.dash{font-family:var(--serif);font-size:46px;line-height:1;color:var(--rule);letter-spacing:0}
+.would{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink-3);white-space:nowrap}
+.scan{position:relative;flex:1;height:30px;overflow:hidden}
+.scan::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--rule)}
+.scan i{
+  position:absolute;top:0;bottom:0;width:70px;left:-80px;
+  background:radial-gradient(ellipse at center,rgba(47,97,84,.30),rgba(47,97,84,0) 72%);
+  animation:scanmove 5.2s cubic-bezier(.45,0,.55,1) infinite;
+}
+@keyframes scanmove{from{left:-80px}to{left:100%}}
+.card.open .note{border-top-color:var(--rule)}
+
+@media (prefers-reduced-motion: reduce){
+  .glare i,.scan i,.cov-cells .on,.cov-cells .off{animation:none}
+  .scan i{left:38%}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="glare"><i></i></div>
+
+  <header class="head">
+    <div class="brand">
+      <div class="eyebrow">Product metrics &middot; sheet 01</div>
+      <h1>Ledger</h1>
+      <div class="period">Period: <b>last 30 days</b> &nbsp;·&nbsp; 8 metric lines on this sheet</div>
+    </div>
+
+    <div class="coverage">
+      <div class="cov-cells">
+        <span class="on"  style="animation-delay:0s"></span>
+        <span class="on"  style="animation-delay:.28s"></span>
+        <span class="on"  style="animation-delay:.56s"></span>
+        <span class="on"  style="animation-delay:.84s"></span>
+        <span class="off" style="animation-delay:.2s"></span>
+        <span class="off" style="animation-delay:.9s"></span>
+        <span class="off" style="animation-delay:1.6s"></span>
+        <span class="off" style="animation-delay:2.3s"></span>
+      </div>
+      <div class="cov-text">
+        <b>4 of 8</b>
+        lines posted &nbsp;·&nbsp; 4 open<br>
+        figures below are only what was measured
+      </div>
+    </div>
+  </header>
+
+  <div class="rule2"></div>
+
+  <div class="sec">
+    <span class="dot"></span>
+    <span class="sec-l">Posted</span>
+    <span class="sec-line"></span>
+    <span class="sec-n">measured over the period</span>
+  </div>
+
+  <section class="row row-posted">
+
+    <article class="card">
+      <div class="card-hd"><span class="mname">Active installs</span><span class="mtag">posted</span></div>
+      <div class="val">1,284<span class="unit">installs</span></div>
+      <div class="viz"><canvas id="c-installs"></canvas></div>
+      <p class="note">One mark, one install — 29 full rows of 44, then a short row of 8.</p>
+    </article>
+
+    <article class="card">
+      <div class="card-hd"><span class="mname">Median session</span><span class="mtag">posted</span></div>
+      <div class="val">12.4<span class="unit">minutes</span></div>
+      <div class="viz"><svg id="dial" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet" aria-label="12.4 minutes swept on a 60-minute face"></svg></div>
+      <p class="note">The median session, swept on a 60-minute face. Half of sessions run longer.</p>
+    </article>
+
+    <article class="card">
+      <div class="card-hd"><span class="mname">Crash-free rate</span><span class="mtag">posted</span></div>
+      <div class="val">99.2<span class="unit">% of sessions</span></div>
+      <div class="viz"><canvas id="c-crash"></canvas></div>
+      <p class="note">1,000 ticks, one per session: <em>8 in red</em> ended in a crash.</p>
+    </article>
+
+    <article class="card">
+      <div class="card-hd"><span class="mname">Support tickets</span><span class="mtag">posted</span></div>
+      <div class="val">37<span class="unit">tickets</span></div>
+      <div class="viz"><svg id="tally" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet" aria-label="37 tickets posted as tally gates"></svg></div>
+      <p class="note">Posted five to a gate: seven full gates, and two.</p>
+    </article>
+
+  </section>
+
+  <div class="sec">
+    <span class="dot open"></span>
+    <span class="sec-l">Open lines &mdash; no entry</span>
+    <span class="sec-line"></span>
+    <span class="sec-n">not instrumented this period · nothing inferred</span>
+  </div>
+
+  <section class="row row-open">
+
+    <article class="card open">
+      <div class="card-hd"><span class="mname">Weekly active users</span><span class="mtag">no entry</span></div>
+      <div class="open-body">
+        <span class="dash">&mdash;</span><span class="would">users / week</span>
+        <span class="scan"><i style="animation-delay:0s"></i></span>
+      </div>
+      <p class="note">Nothing was recorded against this line.</p>
+    </article>
+
+    <article class="card open">
+      <div class="card-hd"><span class="mname">Retention, D30</span><span class="mtag">no entry</span></div>
+      <div class="open-body">
+        <span class="dash">&mdash;</span><span class="would">% of cohort</span>
+        <span class="scan"><i style="animation-delay:1.3s"></i></span>
+      </div>
+      <p class="note">The line stands open — no cohort was followed.</p>
+    </article>
+
+    <article class="card open">
+      <div class="card-hd"><span class="mname">Paid conversions</span><span class="mtag">no entry</span></div>
+      <div class="open-body">
+        <span class="dash">&mdash;</span><span class="would">count</span>
+        <span class="scan"><i style="animation-delay:2.6s"></i></span>
+      </div>
+      <p class="note">No entry recorded in the period.</p>
+    </article>
+
+    <article class="card open">
+      <div class="card-hd"><span class="mname">Net promoter score</span><span class="mtag">no entry</span></div>
+      <div class="open-body">
+        <span class="dash">&mdash;</span><span class="would">&minus;100 … +100</span>
+        <span class="scan"><i style="animation-delay:3.9s"></i></span>
+      </div>
+      <p class="note">Not measured. No survey ran.</p>
+    </article>
+
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var ACCENT = "47,97,84";
+  var RED    = "163,59,42";
+  var RULEC  = "132,150,134";
+
+  function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+  function easeOut(p){ return 1-Math.pow(1-p,3); }
+
+  /* ---------- canvas plumbing ---------- */
+  function setup(id){
+    var el = document.getElementById(id);
+    var ctx = el.getContext("2d");
+    var box = {w:0,h:0};
+    function fit(){
+      var r = el.getBoundingClientRect();
+      var d = Math.min(2, window.devicePixelRatio || 1);
+      box.w = Math.max(1, Math.round(r.width));
+      box.h = Math.max(1, Math.round(r.height));
+      el.width  = Math.round(box.w * d);
+      el.height = Math.round(box.h * d);
+      ctx.setTransform(d,0,0,d,0,0);
+    }
+    return {el:el, ctx:ctx, box:box, fit:fit};
+  }
+
+  var installs = setup("c-installs");
+  var crash    = setup("c-crash");
+
+  /* ---------- 1,284 installs: one mark per install ---------- */
+  var I_COLS = 44, I_ROWS = 30, I_TOTAL = 1284;
+  function drawInstalls(t){
+    var ctx = installs.ctx, W = installs.box.w, H = installs.box.h;
+    ctx.clearRect(0,0,W,H);
+    var cell = Math.min(W/I_COLS, H/I_ROWS);
+    var ox = (W - cell*I_COLS)/2, oy = (H - cell*I_ROWS)/2;
+    for(var i=0;i<I_TOTAL;i++){
+      var col = i % I_COLS, row = (i / I_COLS) | 0;
+      var wave = 0.5 + 0.5*Math.sin(t*1.5 - col*0.155 - row*0.285);
+      var intro = clamp((t - i*0.00085 - 0.1) / 0.55, 0, 1);
+      var a = (0.26 + 0.56*wave) * intro;
+      var r = cell*0.30*(0.70 + 0.40*wave);
+      ctx.beginPath();
+      ctx.arc(ox + cell*(col+0.5), oy + cell*(row+0.5), r, 0, 6.2832);
+      ctx.fillStyle = "rgba(" + ACCENT + "," + a.toFixed(3) + ")";
+      ctx.fill();
+    }
+  }
+
+  /* ---------- crash-free: 1,000 sessions, 8 of them crashed ---------- */
+  var C_COLS = 50, C_ROWS = 20;
+  var CRASHED = [23,168,241,394,507,616,703,941];
+  var crashSet = {};
+  CRASHED.forEach(function(n){ crashSet[n] = true; });
+
+  function drawCrash(t){
+    var ctx = crash.ctx, W = crash.box.w, H = crash.box.h;
+    ctx.clearRect(0,0,W,H);
+    var cw = W / C_COLS, ch = H / C_ROWS;
+    var tickH = Math.min(ch*0.66, 9);
+    var s = ((t % 6.6) / 4.4);                 /* sweep, then a pause */
+    for(var i=0;i<1000;i++){
+      var col = i % C_COLS, row = (i / C_COLS) | 0;
+      var cx = cw*(col+0.5), cy = ch*(row+0.5);
+      var d = (col+0.5)/C_COLS - s;
+      var glow = Math.exp(-(d*d)/0.0032);
+      if(crashSet[i]){
+        var pulse = 0.5 + 0.5*Math.sin(t*2.1 + i);
+        ctx.fillStyle = "rgba(" + RED + "," + (0.55 + 0.45*Math.max(glow,pulse*0.5)).toFixed(3) + ")";
+        ctx.fillRect(cx-1.6, cy-tickH*0.72, 3.2, tickH*1.44);
+      }else{
+        ctx.fillStyle = "rgba(" + RULEC + "," + (0.34 + 0.52*glow).toFixed(3) + ")";
+        ctx.fillRect(cx-0.9, cy-tickH/2, 1.8, tickH);
+      }
+    }
+  }
+
+  /* ---------- median session: 12.4 minutes on a 60-minute face ---------- */
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var dial = document.getElementById("dial");
+  function mk(tag, attrs){
+    var e = document.createElementNS(SVGNS, tag);
+    for(var k in attrs){ e.setAttribute(k, attrs[k]); }
+    return e;
+  }
+  var CX = 100, CY = 100;
+  function pt(r, deg){
+    var a = deg * Math.PI / 180;
+    return [CX + r*Math.sin(a), CY - r*Math.cos(a)];
+  }
+  (function buildDial(){
+    dial.appendChild(mk("circle",{cx:CX,cy:CY,r:78,fill:"none",stroke:"#CCD7C9","stroke-width":1}));
+    for(var m=0;m<60;m++){
+      var major = (m % 5 === 0);
+      var a = m*6;
+      var p1 = pt(major ? 68 : 73.5, a), p2 = pt(78, a);
+      dial.appendChild(mk("line",{
+        x1:p1[0].toFixed(2), y1:p1[1].toFixed(2), x2:p2[0].toFixed(2), y2:p2[1].toFixed(2),
+        stroke: major ? "#8FA292" : "#BDCBBD", "stroke-width": major ? 1.4 : 0.8
+      }));
+    }
+    [[0,"0"],[15,"15"],[30,"30"],[45,"45"]].forEach(function(L){
+      var p = pt(55, L[0]*6);
+      var tx = mk("text",{
+        x:p[0].toFixed(2), y:(p[1]+3.4).toFixed(2), fill:"#5F6B61",
+        "text-anchor":"middle","font-size":"9.5","letter-spacing":"1",
+        "font-family":'ui-monospace, Consolas, Menlo, monospace'
+      });
+      tx.textContent = L[1];
+      dial.appendChild(tx);
+    });
+    dial.appendChild(mk("path",{id:"sector", d:"", fill:"rgba(47,97,84,.16)", stroke:"rgba(47,97,84,.55)","stroke-width":1}));
+    var hand = mk("g",{id:"hand"});
+    hand.appendChild(mk("line",{id:"handline",x1:CX,y1:CY,x2:CX,y2:CY-70,stroke:"#2F6154","stroke-width":2.2,"stroke-linecap":"round"}));
+    hand.appendChild(mk("circle",{cx:CX,cy:CY,r:3.4,fill:"#2F6154"}));
+    dial.appendChild(hand);
+    var cap = mk("text",{
+      x:CX, y:CY+36, fill:"#5F6B61","text-anchor":"middle","font-size":"9",
+      "letter-spacing":"1.6","font-family":'ui-monospace, Consolas, Menlo, monospace'
+    });
+    cap.textContent = "MINUTES";
+    dial.appendChild(cap);
+  })();
+
+  var sector = document.getElementById("sector");
+  var handG  = document.getElementById("hand");
+  var handL  = document.getElementById("handline");
+  var MEDIAN = 12.4;
+
+  function drawDial(t){
+    var cyc = 5.6, tc = t % cyc, m, op = 1;
+    if(REDUCED){ m = MEDIAN; }
+    else if(tc < 2.4){ m = MEDIAN * easeOut(tc/2.4); }
+    else if(tc < 4.6){ m = MEDIAN; }
+    else { m = MEDIAN; op = clamp(1 - (tc-4.6)/0.8, 0, 1); }
+    var deg = m*6, R = 52;
+    var e = pt(R, deg);
+    sector.setAttribute("d", "M"+CX+","+CY+" L"+CX+","+(CY-R)+" A"+R+","+R+" 0 "+(deg>180?1:0)+" 1 "+e[0].toFixed(2)+","+e[1].toFixed(2)+" Z");
+    sector.setAttribute("opacity", op.toFixed(3));
+    var h = pt(70, deg);
+    handL.setAttribute("x2", h[0].toFixed(2));
+    handL.setAttribute("y2", h[1].toFixed(2));
+    handG.setAttribute("opacity", op.toFixed(3));
+  }
+
+  /* ---------- 37 tickets, posted five to a gate ---------- */
+  var tally = document.getElementById("tally");
+  var strokes = [];
+  (function buildTally(){
+    var g = mk("g",{id:"tallyG"});
+    var groups = [5,5,5,5,5,5,5,2];
+    for(var gi=0; gi<groups.length; gi++){
+      var col = gi % 4, row = (gi/4)|0;
+      var gx = col*80 + 20, gy = row*100 + 26;
+      var tilt = ((gi*37) % 7 - 3) * 0.9;
+      var gg = mk("g",{transform:"translate("+gx+","+gy+") rotate("+tilt.toFixed(2)+",24,28)"});
+      var n = groups[gi];
+      var bars = Math.min(n,4);
+      for(var b=0;b<bars;b++){
+        var x = b*13;
+        gg.appendChild(mkStroke("M"+x+",0 L"+(x+2)+",54"));
+      }
+      if(n === 5){ gg.appendChild(mkStroke("M-7,57 L48,-4")); }
+      g.appendChild(gg);
+    }
+    tally.appendChild(g);
+
+    function mkStroke(d){
+      var p = mk("path",{d:d,fill:"none",stroke:"#2F6154","stroke-width":3,"stroke-linecap":"round"});
+      strokes.push(p);
+      return p;
+    }
+    var cap = mk("text",{
+      x:160,y:196,fill:"#5F6B61","text-anchor":"middle","font-size":"9","letter-spacing":"1.6",
+      "font-family":'ui-monospace, Consolas, Menlo, monospace'
+    });
+    cap.textContent = "7 GATES + 2  =  37";
+    tally.appendChild(cap);
+  })();
+
+  var tallyG = document.getElementById("tallyG");
+  var lens = null;
+  function measureTally(){
+    lens = strokes.map(function(p){
+      var L = 0;
+      try { L = p.getTotalLength(); } catch(e) { L = 60; }
+      if(!L || !isFinite(L)) L = 60;
+      p.setAttribute("stroke-dasharray", L.toFixed(2));
+      return L;
+    });
+  }
+
+  function drawTally(t){
+    if(!lens) return;
+    var cyc = 9.6, tc = t % cyc;
+    for(var i=0;i<strokes.length;i++){
+      var p = REDUCED ? 1 : clamp((tc - i*0.175) / 0.30, 0, 1);
+      strokes[i].setAttribute("stroke-dashoffset", (lens[i]*(1 - easeOut(p))).toFixed(2));
+    }
+    tallyG.setAttribute("opacity", REDUCED ? 1 : clamp(1 - (tc - 8.1)/1.1, 0, 1).toFixed(3));
+  }
+
+  /* ---------- run ---------- */
+  function fitAll(){ installs.fit(); crash.fit(); }
+
+  function frame(now){
+    var t = now/1000;
+    drawInstalls(t); drawCrash(t); drawDial(t); drawTally(t);
+    requestAnimationFrame(frame);
+  }
+
+  function start(){
+    fitAll();
+    measureTally();
+    if(REDUCED){
+      drawInstalls(3.2); drawCrash(1.9); drawDial(0); drawTally(0);
+    }else{
+      requestAnimationFrame(frame);
+    }
+  }
+
+  window.addEventListener("resize", function(){ fitAll(); });
+  if(document.readyState === "complete" || document.readyState === "interactive"){
+    requestAnimationFrame(start);
+  }else{
+    window.addEventListener("DOMContentLoaded", function(){ requestAnimationFrame(start); });
+  }
+})();
+</script>
+</body>
+</html>

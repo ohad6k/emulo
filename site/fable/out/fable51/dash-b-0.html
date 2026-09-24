@@ -1,0 +1,186 @@
+<title>Ledger Dashboard</title>
+<style>
+  :root{
+    --bg:#070707;--ink:#f4f4f2;--mute:#8a8a86;--line:rgba(255,255,255,.10);--dim:#4a4a48;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:900px;overflow:hidden;background:var(--bg);color:var(--ink);
+    font-family:"Inter","Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  #field{position:absolute;inset:0;width:1600px;height:900px;display:block}
+  .wrap{position:absolute;inset:0;padding:56px 72px 48px;display:grid;
+    grid-template-rows:auto 1fr auto;grid-template-columns:1fr;gap:0}
+  header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:28px}
+  .brand{display:flex;align-items:baseline;gap:18px}
+  .brand h1{font-size:34px;font-weight:600;letter-spacing:-.03em}
+  .brand span{font-size:14px;color:var(--mute);letter-spacing:.02em}
+  .live{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mute);letter-spacing:.06em;text-transform:uppercase}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ink);animation:pulse 2.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,255,255,.45)}50%{opacity:.6;box-shadow:0 0 0 10px rgba(255,255,255,0)}}
+  main{display:grid;grid-template-columns:560px 1fr;gap:64px;align-items:center;padding:24px 0 18px}
+  .hero{position:relative;width:560px;height:560px;display:flex;align-items:center;justify-content:center}
+  .hero svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .ring-track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:2}
+  .ring-val{fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;
+    stroke-dasharray:0 2000;animation:fill 2.4s cubic-bezier(.2,.8,.2,1) .3s forwards}
+  @keyframes fill{to{stroke-dasharray:var(--len) 2000}}
+  .ring-spin{fill:none;stroke:rgba(255,255,255,.35);stroke-width:1;stroke-dasharray:2 14;transform-origin:280px 280px;animation:spin 40s linear infinite}
+  .ring-spin2{fill:none;stroke:rgba(255,255,255,.18);stroke-width:1;stroke-dasharray:60 300;transform-origin:280px 280px;animation:spin 18s linear infinite reverse}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .orbit{transform-origin:280px 280px;animation:spin 12s linear infinite}
+  .orbit circle{fill:var(--ink)}
+  .hero-num{position:relative;text-align:center;z-index:2}
+  .hero-num .n{font-size:132px;font-weight:600;letter-spacing:-.06em;line-height:1;font-variant-numeric:tabular-nums}
+  .hero-num .n small{font-size:48px;font-weight:500;letter-spacing:-.02em;color:var(--mute);margin-left:4px}
+  .hero-num .l{margin-top:14px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);height:520px}
+  .m{position:relative;padding:34px 28px;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+  .m:nth-child(-n+4){border-bottom:1px solid var(--line)}
+  .m:nth-child(4n+1){border-left:0}
+  .m::after{content:"";position:absolute;left:0;right:0;height:1px;top:-1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);
+    animation:sweep 6s linear infinite;animation-delay:var(--d,0s);opacity:.7}
+  @keyframes sweep{0%{transform:translateY(0)}100%{transform:translateY(262px)}}
+  .m .k{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+  .m .v{font-size:54px;font-weight:600;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+  .m .v small{font-size:20px;color:var(--mute);font-weight:500;margin-left:4px;letter-spacing:0}
+  .m .v.na{color:var(--dim)}
+  .m .s{font-size:12px;color:var(--mute);letter-spacing:.02em}
+  .m .s.na{color:var(--dim)}
+  .bar{height:2px;background:rgba(255,255,255,.08);position:relative;margin-top:10px;overflow:hidden}
+  .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);width:0;animation:grow 1.8s cubic-bezier(.2,.8,.2,1) .6s forwards}
+  .bar b{position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);animation:shine 3.2s linear infinite;animation-delay:var(--d,0s)}
+  @keyframes grow{to{width:var(--w)}}
+  @keyframes shine{0%{left:-60px}100%{left:100%}}
+  .bar.na i{animation:none;width:0}
+  .bar.na b{background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent)}
+  footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:22px;font-size:12px;color:var(--mute);letter-spacing:.04em}
+  .ticker{overflow:hidden;width:900px;white-space:nowrap;mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+  .ticker div{display:inline-block;animation:tick 34s linear infinite}
+  .ticker span{display:inline-block;margin-right:56px;text-transform:uppercase;letter-spacing:.14em}
+  .ticker span em{font-style:normal;color:var(--ink);margin-left:10px}
+  @keyframes tick{to{transform:translateX(-50%)}}
+  .clock{font-variant-numeric:tabular-nums;color:var(--ink)}
+</style>
+
+<canvas id="field" width="1600" height="900"></canvas>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><h1>Ledger</h1><span>last 30 days</span></div>
+    <div class="live"><i class="dot"></i>Live</div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <svg viewBox="0 0 560 560">
+        <circle class="ring-spin" cx="280" cy="280" r="268"/>
+        <circle class="ring-spin2" cx="280" cy="280" r="248"/>
+        <circle class="ring-track" cx="280" cy="280" r="220"/>
+        <circle class="ring-val" cx="280" cy="280" r="220" transform="rotate(-90 280 280)" style="--len:1371"/>
+        <g class="orbit"><circle cx="280" cy="60" r="4"/></g>
+      </svg>
+      <div class="hero-num">
+        <div class="n"><span data-count="99.2" data-dec="1">0.0</span><small>%</small></div>
+        <div class="l">Crash-free rate</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="m" style="--d:0s">
+        <div class="k">Active installs</div>
+        <div class="v"><span data-count="1284">0</span></div>
+        <div><div class="s">Devices with Ledger installed</div><div class="bar"><i style="--w:100%"></i><b></b></div></div>
+      </div>
+      <div class="m" style="--d:.8s">
+        <div class="k">Weekly active users</div>
+        <div class="v na">--</div>
+        <div><div class="s na">No data for this period</div><div class="bar na"><i></i><b></b></div></div>
+      </div>
+      <div class="m" style="--d:1.6s">
+        <div class="k">Median session</div>
+        <div class="v"><span data-count="12.4" data-dec="1">0.0</span><small>min</small></div>
+        <div><div class="s">Per session, median</div><div class="bar"><i style="--w:62%"></i><b></b></div></div>
+      </div>
+      <div class="m" style="--d:2.4s">
+        <div class="k">Retention D30</div>
+        <div class="v na">--</div>
+        <div><div class="s na">No data for this period</div><div class="bar na"><i></i><b></b></div></div>
+      </div>
+      <div class="m" style="--d:3.2s">
+        <div class="k">Crash-free rate</div>
+        <div class="v"><span data-count="99.2" data-dec="1">0.0</span><small>%</small></div>
+        <div><div class="s">Sessions without a crash</div><div class="bar"><i style="--w:99.2%"></i><b></b></div></div>
+      </div>
+      <div class="m" style="--d:4s">
+        <div class="k">Paid conversions</div>
+        <div class="v na">--</div>
+        <div><div class="s na">No data for this period</div><div class="bar na"><i></i><b></b></div></div>
+      </div>
+      <div class="m" style="--d:4.8s">
+        <div class="k">Support tickets</div>
+        <div class="v"><span data-count="37">0</span></div>
+        <div><div class="s">Opened in period</div><div class="bar"><i style="--w:18%"></i><b></b></div></div>
+      </div>
+      <div class="m" style="--d:5.6s">
+        <div class="k">NPS</div>
+        <div class="v na">--</div>
+        <div><div class="s na">No data for this period</div><div class="bar na"><i></i><b></b></div></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="ticker"><div>
+      <span>Active installs<em>1,284</em></span><span>Weekly active users<em>--</em></span><span>Median session<em>12.4 min</em></span><span>Retention D30<em>--</em></span><span>Crash-free<em>99.2%</em></span><span>Paid conversions<em>--</em></span><span>Support tickets<em>37</em></span><span>NPS<em>--</em></span>
+      <span>Active installs<em>1,284</em></span><span>Weekly active users<em>--</em></span><span>Median session<em>12.4 min</em></span><span>Retention D30<em>--</em></span><span>Crash-free<em>99.2%</em></span><span>Paid conversions<em>--</em></span><span>Support tickets<em>37</em></span><span>NPS<em>--</em></span>
+    </div></div>
+    <div>4 of 8 metrics reporting &nbsp;·&nbsp; <span class="clock" id="clock">00:00:00</span></div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  // count-up
+  var els=document.querySelectorAll('[data-count]');
+  var t0=performance.now(),D=2200;
+  function fmt(v,dec){return dec?v.toFixed(dec):Math.round(v).toLocaleString('en-US')}
+  function tickNum(now){
+    var p=Math.min(1,(now-t0-300)/D);if(p<0)p=0;
+    var e=1-Math.pow(1-p,4);
+    els.forEach(function(el){var t=parseFloat(el.dataset.count),dec=+(el.dataset.dec||0);el.textContent=fmt(t*e,dec)});
+    if(p<1)requestAnimationFrame(tickNum);
+  }
+  requestAnimationFrame(tickNum);
+
+  // clock
+  var ck=document.getElementById('clock');
+  function clock(){var d=new Date();ck.textContent=[d.getHours(),d.getMinutes(),d.getSeconds()].map(function(n){return String(n).padStart(2,'0')}).join(':')}
+  clock();setInterval(clock,1000);
+
+  // flow field canvas
+  var c=document.getElementById('field'),ctx=c.getContext('2d'),W=1600,H=900;
+  var N=420,P=[];
+  function rnd(a,b){return a+Math.random()*(b-a)}
+  for(var i=0;i<N;i++)P.push({x:rnd(0,W),y:rnd(0,H),l:rnd(80,400),a:rnd(0,1)});
+  function noise(x,y,t){return Math.sin(x*.0021+t*.35)*Math.cos(y*.0027-t*.22)+Math.sin((x+y)*.0011+t*.15)*.6}
+  ctx.fillStyle='#070707';ctx.fillRect(0,0,W,H);
+  var start=performance.now();
+  function draw(now){
+    var t=(now-start)/1000;
+    ctx.fillStyle='rgba(7,7,7,.06)';ctx.fillRect(0,0,W,H);
+    ctx.lineWidth=1;
+    for(var i=0;i<N;i++){
+      var p=P[i],ang=noise(p.x,p.y,t)*Math.PI*1.4;
+      var nx=p.x+Math.cos(ang)*1.4,ny=p.y+Math.sin(ang)*1.4;
+      var cx=W*.35,cy=H*.52,dx=(nx-cx)/560,dy=(ny-cy)/560,d=Math.sqrt(dx*dx+dy*dy);
+      var al=(.05+.16*Math.max(0,1-d))*p.a;
+      ctx.strokeStyle='rgba(255,255,255,'+al.toFixed(3)+')';
+      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(nx,ny);ctx.stroke();
+      p.x=nx;p.y=ny;p.l--;
+      if(p.l<0||p.x<0||p.x>W||p.y<0||p.y>H){p.x=rnd(0,W);p.y=rnd(0,H);p.l=rnd(80,400);p.a=rnd(.3,1)}
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+</script>

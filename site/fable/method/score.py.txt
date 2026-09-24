@@ -1,0 +1,133 @@
+# -*- coding: utf-8 -*-
+"""Metric computation for the three-condition replication.
+
+RECONSTRUCTED 2026-08-27. The original was lost when the session scratchpad was
+cleaned. This file is rebuilt from the metric definitions published in the note,
+which were themselves frozen before any output existed.
+
+It is NOT byte-identical to the original and must not be presented as such. What
+makes it trustworthy is the same check the original passed: run it against the
+surviving 2026-07-30 outputs and it must reproduce that note's published counts
+exactly, 9 against 1 border-radius, 3 against 0 accent hues, 98 against 64 columns.
+If it does not, this reconstruction is wrong and should be thrown away.
+
+Usage:  python score.py OUTDIR
+"""
+import colorsys
+import io
+import os
+import re
+import subprocess
+import sys
+
+HEX6 = re.compile(r"#([0-9a-fA-F]{6})\b")
+HEX3 = re.compile(r"#([0-9a-fA-F]{3})\b")
+RGBF = re.compile(r"rgba?\(\s*([0-9.]+)\s*[, ]\s*([0-9.]+)\s*[, ]\s*([0-9.]+)", re.I)
+HSLF = re.compile(r"hsla?\(\s*([0-9.]+)\s*(?:deg)?\s*[, ]\s*([0-9.]+)%\s*[, ]\s*([0-9.]+)%", re.I)
+BLOCK = re.compile(r"\{([^{}]*)\}", re.S)
+ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+
+
+def colours(text):
+    """Every colour literal as (hue degrees, saturation 0..1, lightness 0..1)."""
+    found = []
+    for m in HEX6.finditer(text):
+        v = m.group(1)
+        r, g, b = (int(v[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+        h, l, s = colorsys.rgb_to_hls(r, g, b)
+        found.append((h * 360.0, s, l))
+    for m in HEX3.finditer(text):
+        r, g, b = (int(c * 2, 16) / 255.0 for c in m.group(1))
+        h, l, s = colorsys.rgb_to_hls(r, g, b)
+        found.append((h * 360.0, s, l))
+    for m in RGBF.finditer(text):
+        try:
+            r, g, b = (min(255.0, float(m.group(i))) / 255.0 for i in (1, 2, 3))
+        except ValueError:
+            continue
+        h, l, s = colorsys.rgb_to_hls(r, g, b)
+        found.append((h * 360.0, s, l))
+    for m in HSLF.finditer(text):
+        try:
+            h = float(m.group(1)) % 360.0
+            s = min(100.0, float(m.group(2))) / 100.0
+            l = min(100.0, float(m.group(3))) / 100.0
+        except ValueError:
+            continue
+        found.append((h, s, l))
+    return found
+
+
+def m1_border_radius(t):
+    """Count of case-insensitive 'border-radius' occurrences."""
+    return len(re.findall(r"border-radius", t, re.I))
+
+
+def m2_accent_hues(t):
+    """Colours with S >= 0.15 and 0.10 <= L <= 0.90, hue binned into 30 degree
+    buckets; count distinct occupied buckets."""
+    return len({int(h // 30) % 12 for h, s, l in colours(t)
+                if s >= 0.15 and 0.10 <= l <= 0.90})
+
+
+def m3_mean_saturation(t):
+    """Mean saturation as a percentage over colours with 0.05 <= L <= 0.95.
+    Pure black and white are excluded: their hue and saturation are undefined."""
+    vals = [s for _, s, l in colours(t) if 0.05 <= l <= 0.95]
+    return round(100.0 * sum(vals) / len(vals), 1) if vals else 0.0
+
+
+def m4_containers(t):
+    """CSS rule blocks declaring BOTH a background AND at least one of
+    border / box-shadow / border-radius. The operational definition of 'card'."""
+    n = 0
+    for m in BLOCK.finditer(t):
+        body = m.group(1)
+        if re.search(r"(?<![-\w])background(-color)?\s*:", body, re.I) and \
+           re.search(r"(?<![-\w])(border\s*:|border-radius\s*:|box-shadow\s*:)", body, re.I):
+            n += 1
+    return n
+
+
+def run_tui(path):
+    env = dict(os.environ)
+    env.update({"PYTHONIOENCODING": "utf-8", "COLUMNS": "100", "TERM": "xterm-256color"})
+    try:
+        p = subprocess.run([sys.executable, path], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60, env=env)
+    except Exception as e:
+        return "", "exec failed: %s" % e
+    return (p.stdout or ""), (None if p.returncode == 0 else "exit %s" % p.returncode)
+
+
+def m7_render_width(stdout):
+    w = [len(ANSI.sub("", ln).rstrip()) for ln in stdout.split("\n")]
+    return max(w) if w else 0
+
+
+def m8_ansi_density(stdout):
+    lines = [l for l in stdout.split("\n") if l.strip()]
+    return round(len(ANSI.findall(stdout)) / float(len(lines)), 2) if lines else 0.0
+
+
+def score_file(path):
+    text = io.open(path, encoding="utf-8", errors="replace").read()
+    row = {"file": os.path.basename(path), "M5_chars": len(text)}
+    if path.endswith(".html"):
+        row.update({"M1_border_radius": m1_border_radius(text),
+                    "M2_accent_hues": m2_accent_hues(text),
+                    "M3_mean_saturation": m3_mean_saturation(text),
+                    "M4_containers": m4_containers(text)})
+    elif path.endswith(".py"):
+        out, err = run_tui(path)
+        row.update({"M7_render_width": m7_render_width(out),
+                    "M8_ansi_density": m8_ansi_density(out), "exec_error": err})
+    return row
+
+
+if __name__ == "__main__":
+    d = sys.argv[1]
+    for fn in sorted(os.listdir(d)):
+        if fn.endswith((".html", ".py")) and not fn.endswith("score.py"):
+            r = score_file(os.path.join(d, fn))
+            print(" ".join("%s=%s" % (k, v) for k, v in r.items()))

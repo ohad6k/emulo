@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1000" />
+    <title>Orbit — Scheduling for teams across time zones</title>
+    <style>
+      :root {
+        --bg: #0a0e1a;
+        --panel: rgba(255, 255, 255, 0.035);
+        --panel-2: rgba(255, 255, 255, 0.055);
+        --line: rgba(255, 255, 255, 0.09);
+        --ink: #eef2fa;
+        --muted: #8e9bb8;
+        --amber: #ffb454;
+        --blue: #6fa8ff;
+        --teal: #4fd1c5;
+        --violet: #a78bfa;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body { margin: 0; padding: 0; }
+
+      body {
+        width: 1000px;
+        height: 1400px;
+        overflow: hidden;
+        color: var(--ink);
+        background:
+          radial-gradient(760px 520px at 84% 14%, rgba(255, 180, 84, 0.14), transparent 62%),
+          radial-gradient(700px 600px at 6% 90%, rgba(111, 168, 255, 0.11), transparent 65%),
+          var(--bg);
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .page {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      /* ---------- header ---------- */
+
+      .masthead {
+        height: 104px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        padding: 0 64px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 20px;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+
+      /* ---------- hero ---------- */
+
+      .hero {
+        flex: none;
+        display: grid;
+        grid-template-columns: 1fr 344px;
+        gap: 56px;
+        align-items: center;
+        padding: 40px 64px 56px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 54px;
+        line-height: 1.06;
+        letter-spacing: -0.025em;
+        font-weight: 660;
+        max-width: 12ch;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        margin: 36px 0 0;
+      }
+
+      .btn {
+        appearance: none;
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 620;
+        font-size: 17px;
+        letter-spacing: -0.01em;
+        color: #16110a;
+        background: linear-gradient(180deg, #ffc472, var(--amber));
+        padding: 15px 30px;
+        border-radius: 11px;
+        box-shadow: 0 10px 26px rgba(255, 180, 84, 0.22);
+      }
+
+      .btn:hover { background: linear-gradient(180deg, #ffd08c, #ffbe66); }
+
+      .secondary {
+        color: var(--ink);
+        font-size: 17px;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+        padding-bottom: 3px;
+      }
+
+      .secondary span { color: var(--muted); margin-left: 8px; }
+      .secondary:hover { border-bottom-color: var(--amber); }
+
+      .btn:focus-visible,
+      .secondary:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: 4px;
+      }
+
+      /* ---------- dial ---------- */
+
+      .dial { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+      .legend {
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 8px 20px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .legend div { display: flex; align-items: center; gap: 8px; }
+
+      .key { width: 18px; height: 3px; border-radius: 2px; flex: none; }
+
+      .caption {
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: var(--muted);
+        text-align: center;
+        max-width: 320px;
+      }
+
+      /* ---------- capabilities ---------- */
+
+      .does { flex: none; padding: 0 64px; }
+
+      h2 {
+        margin: 0 0 6px;
+        font-size: 26px;
+        font-weight: 640;
+        letter-spacing: -0.02em;
+      }
+
+      .rule {
+        height: 1px;
+        background: var(--line);
+        margin: 22px 0 26px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      .card {
+        position: relative;
+        min-height: 196px;
+        padding: 26px 26px 28px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: linear-gradient(180deg, var(--panel-2), var(--panel));
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .tile {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 180, 84, 0.13);
+        color: var(--amber);
+      }
+
+      .card p {
+        margin: 0;
+        font-size: 19px;
+        line-height: 1.45;
+        letter-spacing: -0.01em;
+        color: #dfe6f4;
+        max-width: 26ch;
+      }
+
+      .idx {
+        position: absolute;
+        top: 24px;
+        right: 26px;
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        color: rgba(255, 255, 255, 0.24);
+      }
+
+      .c2 .tile { background: rgba(111, 168, 255, 0.13); color: var(--blue); }
+      .c3 .tile { background: rgba(79, 209, 197, 0.13); color: var(--teal); }
+      .c4 .tile { background: rgba(167, 139, 250, 0.14); color: var(--violet); }
+
+      /* ---------- bottom band ---------- */
+
+      .band {
+        margin-top: auto;
+        flex: none;
+        height: 132px;
+        border-top: 1px solid var(--line);
+        padding: 0 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 15px;
+        color: var(--muted);
+      }
+
+      .band strong { color: var(--ink); font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead">
+        <div class="brand">
+          <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+            <ellipse cx="13" cy="13" rx="11.5" ry="5" fill="none" stroke="#6fa8ff" stroke-width="1.4" transform="rotate(-28 13 13)"/>
+            <circle cx="13" cy="13" r="4.6" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/>
+            <circle cx="22.2" cy="8.6" r="2.5" fill="#ffb454"/>
+          </svg>
+          Orbit
+        </div>
+      </header>
+
+      <section class="hero">
+        <div>
+          <h1>Scheduling for teams across time zones.</h1>
+          <p class="actions">
+            <button class="btn" type="button">Start free</button>
+            <a class="secondary" href="#">See how it works<span>&rarr;</span></a>
+          </p>
+        </div>
+
+        <div class="dial">
+          <svg width="344" height="344" viewBox="-172 -172 344 344" role="img" aria-labelledby="dialTitle dialDesc">
+            <title id="dialTitle">One 24-hour clock with three offices on it</title>
+            <desc id="dialDesc">Three arcs mark the working hours of three offices. The shaded wedge from 14:00 to 18:00 is the stretch every office is awake.</desc>
+
+            <circle cx="0" cy="0" r="152" fill="rgba(255,255,255,.02)"/>
+            <circle cx="0" cy="0" r="146" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+
+            <!-- overlap wedge: 14:00 to 18:00 -->
+            <path d="M 0 0 L -73 126.4 A 146 146 0 0 1 -146 0 Z" fill="rgba(255,180,84,.15)"/>
+            <line x1="0" y1="0" x2="-73" y2="126.4" stroke="rgba(255,180,84,.45)" stroke-width="1"/>
+            <line x1="0" y1="0" x2="-146" y2="0" stroke="rgba(255,180,84,.45)" stroke-width="1"/>
+
+            <!-- hour ticks -->
+            <g stroke="rgba(255,255,255,.22)" stroke-width="1.5" stroke-linecap="round">
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(15)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(30)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(45)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(60)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(75)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(105)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(120)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(135)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(150)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(165)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(195)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(210)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(225)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(240)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(255)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(285)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(300)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(315)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(330)"/>
+              <line x1="0" y1="-146" x2="0" y2="-138" transform="rotate(345)"/>
+            </g>
+            <g stroke="rgba(255,255,255,.45)" stroke-width="1.8" stroke-linecap="round">
+              <line x1="0" y1="-148" x2="0" y2="-134"/>
+              <line x1="0" y1="-148" x2="0" y2="-134" transform="rotate(90)"/>
+              <line x1="0" y1="-148" x2="0" y2="-134" transform="rotate(180)"/>
+              <line x1="0" y1="-148" x2="0" y2="-134" transform="rotate(270)"/>
+            </g>
+
+            <!-- hour labels -->
+            <g fill="#8e9bb8" font-size="12" font-family="inherit" text-anchor="middle" dominant-baseline="middle">
+              <text x="0" y="-160">00</text>
+              <text x="163" y="0">06</text>
+              <text x="0" y="161">12</text>
+              <text x="-163" y="0">18</text>
+            </g>
+
+            <!-- office bands -->
+            <g fill="none" stroke-width="7" stroke-linecap="round">
+              <path d="M 109.1 63 A 126 126 0 0 1 -126 0" stroke="#6fa8ff"/>
+              <path d="M 0 108 A 108 108 0 0 1 -54 -93.5" stroke="#a78bfa"/>
+              <path d="M -45 77.9 A 90 90 0 0 1 0 -90" stroke="#4fd1c5"/>
+            </g>
+
+            <!-- centre readout -->
+            <circle cx="0" cy="0" r="62" fill="rgba(10,14,26,.72)" stroke="rgba(255,180,84,.28)" stroke-width="1"/>
+            <text x="0" y="-14" fill="#8e9bb8" font-size="10.5" font-family="inherit" letter-spacing="2.4" text-anchor="middle">EVERYONE AWAKE</text>
+            <text x="0" y="12" fill="#ffb454" font-size="21" font-weight="600" font-family="inherit" text-anchor="middle">14:00</text>
+            <text x="0" y="34" fill="#ffb454" font-size="21" font-weight="600" font-family="inherit" text-anchor="middle">18:00</text>
+            <line x1="-18" y1="22" x2="18" y2="22" stroke="rgba(255,180,84,.35)" stroke-width="1"/>
+          </svg>
+
+          <div class="legend">
+            <div><span class="key" style="background:#6fa8ff"></span>Office 1, 08:00&ndash;18:00</div>
+            <div><span class="key" style="background:#a78bfa"></span>Office 2, 12:00&ndash;22:00</div>
+            <div><span class="key" style="background:#4fd1c5"></span>Office 3, 14:00&ndash;24:00</div>
+            <div><span class="key" style="background:rgba(255,180,84,.55)"></span>Hours all 3 share</div>
+          </div>
+
+          <p class="caption">Example. Three offices on one 24-hour clock, read left as it runs.</p>
+        </div>
+      </section>
+
+      <section class="does">
+        <h2>What Orbit does</h2>
+        <div class="rule"></div>
+
+        <div class="grid">
+          <div class="card c1">
+            <span class="idx">01</span>
+            <span class="tile">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                <circle cx="9" cy="12" r="6"/>
+                <circle cx="15" cy="12" r="6"/>
+                <ellipse cx="12" cy="12" rx="3" ry="5.2" fill="currentColor" stroke="none" opacity=".85"/>
+              </svg>
+            </span>
+            <p>Finds the hours every office is awake at the same time.</p>
+          </div>
+
+          <div class="card c2">
+            <span class="idx">02</span>
+            <span class="tile">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 6.8V12l3.4 2.2"/>
+              </svg>
+            </span>
+            <p>Shows one shared clock instead of five converted ones.</p>
+          </div>
+
+          <div class="card c3">
+            <span class="idx">03</span>
+            <span class="tile">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3.2" y="5" width="17.6" height="15.8" rx="2.4"/>
+                <path d="M3.2 10h17.6M8 3.2v3.6M16 3.2v3.6M9 15l2.4 2.4L16 13"/>
+              </svg>
+            </span>
+            <p>Books the meeting in everyone's local calendar.</p>
+          </div>
+
+          <div class="card c4">
+            <span class="idx">04</span>
+            <span class="tile">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <path d="M2.8 19.2h18.4"/>
+                <path d="M7.4 19.2a4.6 4.6 0 0 1 9.2 0"/>
+                <path d="M12 5.2v3M5.6 8.1l2.1 2.1M18.4 8.1l-2.1 2.1"/>
+              </svg>
+            </span>
+            <p>Flags the person who always gets the 6am call.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="band">
+        <div>Used by <strong>40 teams</strong> across <strong>12 countries</strong>.</div>
+        <div class="brand" style="font-size:16px;opacity:.7">
+          <svg width="20" height="20" viewBox="0 0 26 26" aria-hidden="true">
+            <ellipse cx="13" cy="13" rx="11.5" ry="5" fill="none" stroke="#6fa8ff" stroke-width="1.6" transform="rotate(-28 13 13)"/>
+            <circle cx="22.2" cy="8.6" r="2.5" fill="#ffb454"/>
+          </svg>
+          Orbit
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

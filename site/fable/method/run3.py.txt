@@ -1,0 +1,339 @@
+# -*- coding: utf-8 -*-
+"""
+Three-condition, two-model run harness. 2026-09-01.
+
+For each (model, task, condition, rep) invoke Claude Code headless on the same prompt.
+All conditions share an identical minimal system prompt that REPLACES Claude Code's
+default one, so no CLAUDE.md, memory, skills or per-machine context reach any run.
+Condition b appends the mined profile, condition c appends the placebo. That appended
+text is the only difference between conditions. The model id is the only difference
+between the two halves. Every command line is recorded in out/manifest.json.
+
+Runs are interleaved across models and conditions and executed by WORKERS threads
+at once so no model or condition is confounded with time of night.
+
+Refuses to start if PREREGISTRATION.md has changed since the manifest was created.
+
+Run:   python run3.py                 all 120
+       python run3.py --smoke         one cold tui run per model, then stop
+       python run3.py --reps 5 --workers 4
+       python run3.py --tasks dash tui --models fable51
+Resumable: a run whose output file exists is skipped.
+"""
+import argparse
+import hashlib
+import json
+import os
+import random
+import subprocess
+import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PARENT = os.path.dirname(HERE)
+INPUTS = os.path.join(PARENT, "inputs")
+OUT = os.path.join(HERE, "out")
+MANIFEST = os.path.join(OUT, "manifest.json")
+PREREG = os.path.join(HERE, "PREREGISTRATION.md")
+
+CLAUDE = r"C:\Users\ohad1\.local\bin\claude.exe"
+PROFILE = r"C:\Users\ohad1\.claude\skills\emulo\SKILL.md"
+PLACEBO = os.path.join(HERE, "placebo.md")
+SANDBOX = os.path.join(os.environ.get("TEMP", "/tmp"), "three-condition-sandbox")
+
+MODELS = {"opus5": "claude-opus-5", "fable51": "claude-fable-5-1"}
+CONDITIONS = ("a", "b", "c")
+
+# Identical for every condition. This is the control.
+BASE_SYSTEM = (
+    "You are an expert software engineer and writer. Complete the task exactly as "
+    "specified. Output only the requested artifact. No commentary, no explanation, "
+    "no preamble, and no markdown code fences."
+)
+
+DENY = ",".join([
+    "Bash", "Write", "Edit", "Read", "Glob", "Grep", "WebFetch", "WebSearch",
+    "Task", "NotebookEdit", "TodoWrite", "Agent", "MultiEdit", "LS",
+])
+
+# Verbatim from run_pair-JULY-ORIGINAL.py. Do not edit.
+TASKS = {
+    "dash": {
+        "ext": "html",
+        "input": "metrics.json",
+        "prompt": (
+            "Build a single-file HTML dashboard for these product metrics.\n\n"
+            "Rules for the task:\n"
+            "- Return one complete standalone HTML file.\n"
+            "- The viewport is exactly 1600x900, with nothing below the fold.\n"
+            "- Show the product name, the period, and all eight metrics.\n"
+            "- It must be visually alive: continuous motion that starts on load and "
+            "never depends on scrolling, hovering or clicking.\n"
+            "- Inline SVG, CSS animation and Canvas 2D are all available. No bitmap "
+            "images and no external requests.\n"
+            "- The file must run standalone from a file:// URL with no build step.\n\n"
+            "The data:\n\n"
+        ),
+    },
+    "page": {
+        "ext": "html",
+        "input": "page.html",
+        "prompt": (
+            "Make this landing page better.\n\n"
+            "Rules for the task:\n"
+            "- Return one complete standalone HTML file with inline CSS.\n"
+            "- Keep all of the existing content: the product name, the one-line "
+            "description, the primary action, the secondary link, the four capability "
+            "lines, and the usage line. You may restructure and re-word headings.\n"
+            "- The page is 1000px wide and 1400px tall. Design for exactly that "
+            "shape, with nothing below the fold.\n"
+            "- No external requests, no web fonts, no bitmap images. Inline SVG and "
+            "CSS are both fine, and worth using.\n"
+            "- Invent no statistics that are not already in the content.\n\n"
+            "The file:\n\n"
+        ),
+    },
+    "ledger": {
+        "ext": "html",
+        "input": "ledger.html",
+        "prompt": (
+            "Make this landing page better. Aim for something that could headline an "
+            "awards site.\n\n"
+            "Rules for the task:\n"
+            "- Return one complete standalone HTML file.\n"
+            "- The viewport is exactly 1600x900, with nothing below the fold.\n"
+            "- Keep all of the existing content: the product name, the one-line "
+            "description, the primary action, the secondary link, the four capability "
+            "lines and the usage line. You may restructure and re-word headings.\n"
+            "- The page must be visually alive: continuous motion that starts on load "
+            "and never depends on scrolling, hovering or clicking.\n"
+            "- Inline SVG, CSS animation, Canvas 2D and WebGL through Three.js are all "
+            "available. Use whatever serves the design; none of them is required.\n"
+            "- If you import Three.js, use the full CDN URL "
+            "(https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js) or an "
+            "importmap. The file must run standalone from a file:// URL with no build "
+            "step; a bare \"three\" specifier will not resolve.\n"
+            "- No bitmap images.\n"
+            "- Invent no statistics that are not already in the content.\n\n"
+            "The file:\n\n"
+        ),
+    },
+    "tui": {
+        "ext": "py",
+        "input": "deploy.py",
+        "prompt": (
+            "Make this deploy script's terminal output better.\n\n"
+            "Rules for the task:\n"
+            "- Return one complete standalone Python 3 file.\n"
+            "- Keep the same information: the five steps, each step's status, each "
+            "step's duration, and the final result.\n"
+            "- Print to stdout only. ANSI escape codes are allowed. No third-party "
+            "packages, no network, no screen clearing, no animation, no input, no "
+            "timers. It must run once and exit.\n"
+            "- Assume a terminal 100 columns wide.\n\n"
+            "The file:\n\n"
+        ),
+    },
+}
+
+LOCK = threading.Lock()
+
+
+def sha256(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def read(path):
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
+def strip_fences(text):
+    """Remove a wrapping markdown fence if the model added one anyway.
+    Returns (text, was_stripped) so the manifest records it honestly."""
+    lines = text.strip().split("\n")
+    if lines and lines[0].startswith("```"):
+        lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        return "\n".join(lines).strip(), True
+    return text.strip(), False
+
+
+def load_manifest(profile_text, placebo_text):
+    if os.path.exists(MANIFEST):
+        m = json.load(open(MANIFEST, encoding="utf-8"))
+        if m["prereg_sha256"] != sha256(PREREG):
+            sys.exit("PREREGISTRATION.md changed after the manifest was created. Refusing.")
+        if m["profile_sha256"] != sha256(PROFILE) or m["placebo_sha256"] != sha256(PLACEBO):
+            sys.exit("profile or placebo changed after the manifest was created. Refusing.")
+        return m
+    return {
+        "date": "2026-09-01",
+        "claude_code_version": subprocess.run(
+            [CLAUDE, "--version"], capture_output=True, text=True).stdout.strip(),
+        "models": MODELS,
+        "conditions": {
+            "a": "minimal system prompt only",
+            "b": "same minimal system prompt plus the mined profile appended",
+            "c": "same minimal system prompt plus the placebo profile appended",
+        },
+        "base_system_prompt": BASE_SYSTEM,
+        "profile_file": PROFILE,
+        "profile_bytes": len(profile_text.encode("utf-8")),
+        "profile_sha256": sha256(PROFILE),
+        "placebo_file": PLACEBO,
+        "placebo_bytes": len(placebo_text.encode("utf-8")),
+        "placebo_sha256": sha256(PLACEBO),
+        "prereg_sha256": sha256(PREREG),
+        "denied_tools": DENY,
+        "runs": [],
+    }
+
+
+def save_manifest(m):
+    tmp = MANIFEST + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(m, f, indent=1)
+    os.replace(tmp, MANIFEST)
+
+
+def out_path(model_key, task, cond, rep, ext):
+    return os.path.join(OUT, model_key, "%s-%s-%d.%s" % (task, cond, rep, ext))
+
+
+def run_one(job, texts):
+    model_key, task, cond, rep = job
+    spec = TASKS[task]
+    prompt = spec["prompt"] + read(os.path.join(INPUTS, spec["input"]))
+    cmd = [
+        CLAUDE, "-p",
+        "--model", MODELS[model_key],
+        "--system-prompt", BASE_SYSTEM,
+        "--setting-sources", "",
+        "--strict-mcp-config",
+        "--disallowed-tools", DENY,
+        "--output-format", "json",
+    ]
+    if cond == "b":
+        cmd += ["--append-system-prompt", texts["b"]]
+    elif cond == "c":
+        cmd += ["--append-system-prompt", texts["c"]]
+
+    os.makedirs(SANDBOX, exist_ok=True)
+    t0 = time.time()
+    proc = subprocess.run(
+        cmd, cwd=SANDBOX, input=prompt, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=1800,
+    )
+    elapsed = round(time.time() - t0, 1)
+    rec = {
+        "model": model_key, "model_id": MODELS[model_key], "task": task,
+        "condition": cond, "rep": rep, "elapsed_s": elapsed,
+        "cmd": [c if len(c) < 200 else "<%d bytes appended text>" % len(c.encode("utf-8")) for c in cmd],
+        "prompt_bytes": len(prompt.encode("utf-8")),
+    }
+    if proc.returncode != 0:
+        rec.update({"status": "FAILED", "exit": proc.returncode,
+                    "stderr": (proc.stderr or "")[:500]})
+        return rec, None
+    try:
+        payload = json.loads(proc.stdout)
+    except ValueError:
+        rec.update({"status": "FAILED", "exit": 0, "stderr": "non-json stdout: " + proc.stdout[:300]})
+        return rec, None
+    if payload.get("is_error"):
+        rec.update({"status": "FAILED", "exit": 0, "stderr": str(payload.get("result"))[:500]})
+        return rec, None
+    body, stripped = strip_fences(payload.get("result") or "")
+    usage = payload.get("modelUsage", {}).get(MODELS[model_key], {})
+    rec.update({
+        "status": "OK", "fence_stripped": stripped,
+        "output_bytes": len(body.encode("utf-8")),
+        "cost_usd_list": payload.get("total_cost_usd"),
+        "duration_api_ms": payload.get("duration_api_ms"),
+        "input_tokens": usage.get("inputTokens"),
+        "output_tokens": usage.get("outputTokens"),
+        "thinking_tokens": usage.get("thinkingTokens"),
+        "cache_read": usage.get("cacheReadInputTokens"),
+        "cache_creation": usage.get("cacheCreationInputTokens"),
+        "session_id": payload.get("session_id"),
+    })
+    return rec, body
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--reps", type=int, default=5)
+    ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--tasks", nargs="*", default=list(TASKS))
+    ap.add_argument("--models", nargs="*", default=list(MODELS))
+    ap.add_argument("--conditions", nargs="*", default=list(CONDITIONS))
+    ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--seed", type=int, default=20260901)
+    args = ap.parse_args()
+
+    texts = {"b": read(PROFILE), "c": read(PLACEBO)}
+    pb, cb = len(texts["b"].encode("utf-8")), len(texts["c"].encode("utf-8"))
+    if abs(pb - cb) > 0.01 * pb:
+        sys.exit("placebo is not length-matched: profile %d bytes, placebo %d bytes" % (pb, cb))
+
+    os.makedirs(OUT, exist_ok=True)
+    manifest = load_manifest(texts["b"], texts["c"])
+    save_manifest(manifest)
+
+    if args.smoke:
+        jobs = [(m, "tui", "a", 99) for m in args.models]
+    else:
+        jobs = [(m, t, c, r) for m in args.models for t in args.tasks
+                for c in args.conditions for r in range(args.reps)]
+        random.Random(args.seed).shuffle(jobs)
+
+    todo = []
+    for job in jobs:
+        m, t, c, r = job
+        p = out_path(m, t, c, r, TASKS[t]["ext"])
+        if os.path.exists(p):
+            continue
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        todo.append(job)
+    print("%d runs to do, %d already done, %d workers" % (
+        len(todo), len(jobs) - len(todo), args.workers), flush=True)
+
+    done = 0
+    with ThreadPoolExecutor(max_workers=args.workers) as ex:
+        futs = {ex.submit(run_one, job, texts): job for job in todo}
+        for fut in as_completed(futs):
+            job = futs[fut]
+            m, t, c, r = job
+            try:
+                rec, body = fut.result()
+            except Exception as e:  # timeout or worse
+                rec, body = {"model": m, "task": t, "condition": c, "rep": r,
+                             "status": "FAILED", "stderr": repr(e)[:500]}, None
+            with LOCK:
+                manifest["runs"].append(rec)
+                save_manifest(manifest)
+                if body is not None:
+                    p = out_path(m, t, c, r, TASKS[t]["ext"])
+                    with open(p, "w", encoding="utf-8", newline="\n") as f:
+                        f.write(body + "\n")
+                done += 1
+                print("[%d/%d] %s %s/%s#%d %s %ss out=%s thinking=%s cost=%s" % (
+                    done, len(todo), m, t, c, r, rec["status"], rec.get("elapsed_s"),
+                    rec.get("output_bytes"), rec.get("thinking_tokens"),
+                    rec.get("cost_usd_list")), flush=True)
+
+    ok = sum(1 for x in manifest["runs"] if x["status"] == "OK")
+    failed = [x for x in manifest["runs"] if x["status"] != "OK"]
+    print("done. OK=%d FAILED=%d total_list_cost=$%.2f" % (
+        ok, len(failed), sum((x.get("cost_usd_list") or 0) for x in manifest["runs"])))
+    for x in failed:
+        print("  FAILED", x["model"], x["task"], x["condition"], x["rep"], x.get("stderr", "")[:200])
+
+
+if __name__ == "__main__":
+    main()

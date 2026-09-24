@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger — last 30 days</title>
+<style>
+  html,body{margin:0;width:1600px;height:900px;overflow:hidden;background:#0b0e13;color:#e6edf3;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  #bg{position:absolute;left:0;top:0;width:1600px;height:900px;z-index:0}
+  .wrap{position:relative;z-index:1;box-sizing:border-box;width:1600px;height:900px;padding:36px 44px;display:flex;flex-direction:column;gap:22px}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;height:88px;flex:none}
+  .brand{display:flex;align-items:baseline;gap:18px}
+  .brand h1{margin:0;font-size:54px;font-weight:700;letter-spacing:-.03em;line-height:1}
+  .brand .period{font-size:18px;color:#8b98a8;letter-spacing:.02em}
+  .brand .period b{color:#c9d3df;font-weight:500}
+  .meta{display:flex;align-items:center;gap:28px;font-size:14px;color:#8b98a8;padding-bottom:6px}
+  .meta .pill{display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(255,255,255,.08);border-radius:999px;background:rgba(22,27,34,.7)}
+  .meta .clock{font-variant-numeric:tabular-nums;color:#e6edf3;font-size:15px;letter-spacing:.04em}
+  .live{width:9px;height:9px;border-radius:50%;background:#3ddc97;position:relative}
+  .live::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid #3ddc97;animation:ping 1.8s ease-out infinite}
+  @keyframes ping{0%{transform:scale(.5);opacity:.9}100%{transform:scale(1.9);opacity:0}}
+  .coverage{display:flex;gap:5px;align-items:center}
+  .coverage i{display:block;width:14px;height:6px;border-radius:2px;background:#3ddc97}
+  .coverage i.off{background:#2a3340;border:1px solid #3a4553;box-sizing:border-box}
+
+  .grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr);gap:20px;min-height:0}
+  .tile{background:rgba(22,27,34,.86);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px 24px 20px;
+    display:flex;flex-direction:column;position:relative;overflow:hidden;min-height:0}
+  .tile::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--accent,#3ddc97);opacity:.7}
+  .label{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:#8b98a8;display:flex;justify-content:space-between;align-items:center}
+  .label .tag{font-size:10.5px;letter-spacing:.1em;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.05);color:#6b7787}
+  .value{font-size:58px;font-weight:600;letter-spacing:-.03em;margin-top:10px;line-height:1;font-variant-numeric:tabular-nums;display:flex;align-items:baseline}
+  .value .unit{font-size:20px;color:#8b98a8;margin-left:8px;font-weight:500;letter-spacing:0}
+  .sub{font-size:13px;color:#8b98a8;margin-top:8px}
+  .viz{flex:1;margin-top:14px;position:relative;min-height:0}
+  .viz svg{width:100%;height:100%;display:block}
+
+  .tile.empty{--accent:#3a4553;border-style:dashed;background:rgba(18,22,28,.7)}
+  .tile.empty .value{color:#4a5563}
+  .tile.empty .label{color:#6b7787}
+  .empty-box{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .empty-box svg{position:absolute;inset:0}
+  .empty-box rect{fill:none;stroke:#3a4553;stroke-width:1.5;stroke-dasharray:6 8;animation:march 1.4s linear infinite}
+  @keyframes march{to{stroke-dashoffset:-28}}
+  .shimmer{position:absolute;top:0;bottom:0;width:38%;left:-40%;background:linear-gradient(90deg,transparent,rgba(120,150,190,.12),transparent);animation:sweep 3.2s ease-in-out infinite}
+  @keyframes sweep{to{left:110%}}
+  .awaiting{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#56627a;display:flex;align-items:center;gap:8px}
+  .awaiting::after{content:"";width:8px;height:14px;background:#56627a;animation:blink 1s steps(2,start) infinite}
+  @keyframes blink{to{visibility:hidden}}
+  .empty .bars{position:absolute;left:0;right:0;bottom:0;height:40%;display:flex;align-items:flex-end;gap:6px;padding:0 10px;box-sizing:border-box;opacity:.5}
+  .empty .bars i{flex:1;background:#2a3340;border-radius:3px 3px 0 0;height:20%;animation:idle 2.8s ease-in-out infinite}
+  @keyframes idle{50%{height:55%}}
+
+  /* session ring */
+  .hand{transform-origin:100px 100px;animation:spin 12.4s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .tick{stroke:#2f3a48;stroke-width:2}
+  .tick.major{stroke:#56627a}
+
+  /* crash-free gauge */
+  .orbit{transform-origin:100px 100px;animation:spin 8s linear infinite}
+  .glow{animation:pulse 2.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.25}50%{opacity:.75}}
+  .dropspark{filter:drop-shadow(0 0 6px rgba(61,220,151,.8))}
+
+  /* tickets */
+  .dots{position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,1fr);grid-auto-rows:1fr;gap:8px;align-content:center;padding:6px 0}
+  .dots i{display:block;width:100%;aspect-ratio:1;max-height:100%;border-radius:50%;background:#3a2c1c;
+    border:1px solid rgba(245,166,35,.25);animation:lit 3.7s ease-in-out infinite}
+  @keyframes lit{0%,60%,100%{background:#3a2c1c;box-shadow:none}10%,30%{background:#f5a623;box-shadow:0 0 10px rgba(245,166,35,.6)}}
+</style>
+</head>
+<body>
+<canvas id="bg" width="1600" height="900"></canvas>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Ledger</h1>
+      <div class="period">Product metrics · <b>last 30 days</b></div>
+    </div>
+    <div class="meta">
+      <div class="coverage" title="4 of 8 metrics reported">
+        <i></i><i></i><i></i><i></i><i class="off"></i><i class="off"></i><i class="off"></i><i class="off"></i>
+        <span style="margin-left:8px">4 of 8 metrics reported</span>
+      </div>
+      <div class="pill"><span class="live"></span><span>Live</span><span class="clock" id="clock">00:00:00</span></div>
+    </div>
+  </header>
+
+  <main class="grid">
+
+    <!-- 1 Active installs -->
+    <section class="tile" style="--accent:#3ddc97">
+      <div class="label"><span>Active installs</span><span class="tag">count</span></div>
+      <div class="value"><span class="num" data-target="1284" data-dec="0">0</span></div>
+      <div class="sub">Devices with the app installed and active</div>
+      <div class="viz">
+        <svg viewBox="0 0 600 200" preserveAspectRatio="none" id="wave">
+          <defs>
+            <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3ddc97" stop-opacity=".35"/>
+              <stop offset="1" stop-color="#3ddc97" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <g id="waveA"></g>
+          <g id="waveB"></g>
+          <line x1="0" y1="199" x2="600" y2="199" stroke="#2f3a48" stroke-width="1"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- 2 Weekly active users -->
+    <section class="tile empty">
+      <div class="label"><span>Weekly active users</span><span class="tag">null</span></div>
+      <div class="value">—</div>
+      <div class="sub">Not reported for this period</div>
+      <div class="viz">
+        <div class="empty-box">
+          <svg viewBox="0 0 300 160" preserveAspectRatio="none"><rect x="1" y="1" width="298" height="158" rx="10"/></svg>
+          <div class="bars"><i style="animation-delay:0s"></i><i style="animation-delay:.3s"></i><i style="animation-delay:.6s"></i><i style="animation-delay:.9s"></i><i style="animation-delay:1.2s"></i><i style="animation-delay:1.5s"></i><i style="animation-delay:1.8s"></i></div>
+          <div class="shimmer"></div>
+          <div class="awaiting">awaiting data</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 Median session -->
+    <section class="tile" style="--accent:#5b9cff">
+      <div class="label"><span>Median session</span><span class="tag">minutes</span></div>
+      <div class="value"><span class="num" data-target="12.4" data-dec="1">0.0</span><span class="unit">min</span></div>
+      <div class="sub">One full sweep of the dial = 12.4 minutes</div>
+      <div class="viz">
+        <svg viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="82" fill="none" stroke="#1d2430" stroke-width="10"/>
+          <g id="ticks"></g>
+          <g class="hand">
+            <path d="M100 100 L100 18 A82 82 0 0 0 42.5 41.5 Z" fill="#5b9cff" opacity=".18"/>
+            <line x1="100" y1="100" x2="100" y2="22" stroke="#5b9cff" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="100" cy="22" r="5" fill="#5b9cff"/>
+          </g>
+          <circle cx="100" cy="100" r="6" fill="#0b0e13" stroke="#5b9cff" stroke-width="3"/>
+          <text x="100" y="146" text-anchor="middle" font-size="12" fill="#8b98a8" letter-spacing="2">SESSION</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- 4 Retention D30 -->
+    <section class="tile empty">
+      <div class="label"><span>Retention D30</span><span class="tag">null</span></div>
+      <div class="value">—<span class="unit">%</span></div>
+      <div class="sub">Not reported for this period</div>
+      <div class="viz">
+        <div class="empty-box">
+          <svg viewBox="0 0 300 160" preserveAspectRatio="none"><rect x="1" y="1" width="298" height="158" rx="10"/></svg>
+          <div class="bars"><i style="animation-delay:.2s"></i><i style="animation-delay:.5s"></i><i style="animation-delay:.8s"></i><i style="animation-delay:1.1s"></i><i style="animation-delay:1.4s"></i><i style="animation-delay:1.7s"></i><i style="animation-delay:2s"></i></div>
+          <div class="shimmer" style="animation-delay:.8s"></div>
+          <div class="awaiting">awaiting data</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 Crash-free rate -->
+    <section class="tile" style="--accent:#3ddc97">
+      <div class="label"><span>Crash-free rate</span><span class="tag">sessions</span></div>
+      <div class="value"><span class="num" data-target="99.2" data-dec="1">0.0</span><span class="unit">%</span></div>
+      <div class="sub">0.8% of sessions ended in a crash</div>
+      <div class="viz">
+        <svg viewBox="0 0 200 200">
+          <g transform="rotate(135 100 100)">
+            <circle class="glow" cx="100" cy="100" r="82" fill="none" stroke="#3ddc97" stroke-width="18" pathLength="360" stroke-dasharray="267.84 92.16" stroke-linecap="butt" opacity=".3"/>
+            <circle cx="100" cy="100" r="82" fill="none" stroke="#1d2430" stroke-width="10" pathLength="360" stroke-dasharray="270 90"/>
+            <circle cx="100" cy="100" r="82" fill="none" stroke="#3ddc97" stroke-width="10" pathLength="360" stroke-dasharray="267.84 92.16"/>
+            <circle cx="100" cy="100" r="82" fill="none" stroke="#ff5c5c" stroke-width="10" pathLength="360" stroke-dasharray="2.16 357.84" stroke-dashoffset="-267.84"/>
+          </g>
+          <g class="orbit">
+            <circle class="dropspark" cx="100" cy="18" r="4" fill="#e6edf3"/>
+          </g>
+          <text x="100" y="96" text-anchor="middle" font-size="12" fill="#8b98a8" letter-spacing="2">STABLE</text>
+          <text x="100" y="120" text-anchor="middle" font-size="20" fill="#3ddc97" font-weight="600">99.2%</text>
+          <text x="52" y="176" text-anchor="middle" font-size="10" fill="#56627a">0</text>
+          <text x="148" y="176" text-anchor="middle" font-size="10" fill="#56627a">100</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- 6 Paid conversions -->
+    <section class="tile empty">
+      <div class="label"><span>Paid conversions</span><span class="tag">null</span></div>
+      <div class="value">—</div>
+      <div class="sub">Not reported for this period</div>
+      <div class="viz">
+        <div class="empty-box">
+          <svg viewBox="0 0 300 160" preserveAspectRatio="none"><rect x="1" y="1" width="298" height="158" rx="10"/></svg>
+          <div class="bars"><i style="animation-delay:.4s"></i><i style="animation-delay:.7s"></i><i style="animation-delay:1s"></i><i style="animation-delay:1.3s"></i><i style="animation-delay:1.6s"></i><i style="animation-delay:1.9s"></i><i style="animation-delay:2.2s"></i></div>
+          <div class="shimmer" style="animation-delay:1.6s"></div>
+          <div class="awaiting">awaiting data</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 Support tickets -->
+    <section class="tile" style="--accent:#f5a623">
+      <div class="label"><span>Support tickets</span><span class="tag">count</span></div>
+      <div class="value"><span class="num" data-target="37" data-dec="0">0</span></div>
+      <div class="sub">One dot per ticket opened this period</div>
+      <div class="viz"><div class="dots" id="dots"></div></div>
+    </section>
+
+    <!-- 8 NPS -->
+    <section class="tile empty">
+      <div class="label"><span>NPS</span><span class="tag">null</span></div>
+      <div class="value">—</div>
+      <div class="sub">Not reported for this period</div>
+      <div class="viz">
+        <div class="empty-box">
+          <svg viewBox="0 0 300 160" preserveAspectRatio="none"><rect x="1" y="1" width="298" height="158" rx="10"/></svg>
+          <div class="bars"><i style="animation-delay:.6s"></i><i style="animation-delay:.9s"></i><i style="animation-delay:1.2s"></i><i style="animation-delay:1.5s"></i><i style="animation-delay:1.8s"></i><i style="animation-delay:2.1s"></i><i style="animation-delay:2.4s"></i></div>
+          <div class="shimmer" style="animation-delay:2.4s"></div>
+          <div class="awaiting">awaiting data</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+  // ---------- background: drifting ledger rules ----------
+  var c=document.getElementById('bg'),x=c.getContext('2d');
+  function bg(t){
+    x.clearRect(0,0,1600,900);
+    var gx=800+Math.sin(t/9000)*420, gy=300+Math.cos(t/7000)*160;
+    var g=x.createRadialGradient(gx,gy,0,gx,gy,760);
+    g.addColorStop(0,'rgba(61,220,151,0.09)');g.addColorStop(.5,'rgba(91,156,255,0.04)');g.addColorStop(1,'rgba(0,0,0,0)');
+    x.fillStyle=g;x.fillRect(0,0,1600,900);
+    x.lineWidth=1;
+    for(var y=24;y<900;y+=32){
+      x.beginPath();
+      for(var px=0;px<=1600;px+=16){
+        var dy=Math.sin(px/240+t/1700+y/150)*5+Math.sin(px/70-t/2900+y/40)*1.5;
+        px?x.lineTo(px,y+dy):x.moveTo(px,y+dy);
+      }
+      x.strokeStyle='rgba(120,150,190,'+(0.05+0.03*Math.sin(t/2200+y/90))+')';x.stroke();
+    }
+    var mx=118+Math.sin(t/4000)*2;
+    x.strokeStyle='rgba(255,92,92,0.10)';x.beginPath();x.moveTo(mx,0);x.lineTo(mx,900);x.stroke();
+    requestAnimationFrame(bg);
+  }
+  requestAnimationFrame(bg);
+
+  // ---------- clock ----------
+  var clk=document.getElementById('clock');
+  function tick(){var d=new Date(),p=function(n){return (n<10?'0':'')+n};clk.textContent=p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());}
+  tick();setInterval(tick,1000);
+
+  // ---------- count-up ----------
+  var nums=document.querySelectorAll('.num'),t0=null;
+  function fmt(v,d){var s=v.toFixed(d);return d?s:s.replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+  function cu(ts){
+    if(!t0)t0=ts;var p=Math.min(1,(ts-t0)/1800),e=1-Math.pow(1-p,3);
+    for(var i=0;i<nums.length;i++){var n=nums[i],tg=+n.dataset.target,d=+n.dataset.dec;n.textContent=fmt(tg*e,d);}
+    if(p<1)requestAnimationFrame(cu);
+  }
+  requestAnimationFrame(cu);
+
+  // ---------- installs: flowing activity wave ----------
+  function wavePath(amp,base,period,phase,len){
+    var d='M0 '+base,q=period/4;
+    for(var s=0;s<len;s+=period){
+      d+=' C'+(s+q)+' '+(base-amp*phase)+' '+(s+q)+' '+(base-amp*phase)+' '+(s+period/2)+' '+base
+        +' C'+(s+3*q)+' '+(base+amp)+' '+(s+3*q)+' '+(base+amp)+' '+(s+period)+' '+base;
+    }
+    return d;
+  }
+  function makeWave(id,amp,base,period,dur,col,w,fill){
+    var g=document.getElementById(id),ns='http://www.w3.org/2000/svg';
+    var d=wavePath(amp,base,period,1,600+period*2);
+    if(fill){var f=document.createElementNS(ns,'path');f.setAttribute('d',d+' L'+(600+period*2)+' 200 L0 200 Z');f.setAttribute('fill','url(#wg)');g.appendChild(f);}
+    var p=document.createElementNS(ns,'path');p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke',col);p.setAttribute('stroke-width',w);p.setAttribute('stroke-linecap','round');g.appendChild(p);
+    var a=document.createElementNS(ns,'animateTransform');a.setAttribute('attributeName','transform');a.setAttribute('type','translate');
+    a.setAttribute('from','0 0');a.setAttribute('to','-'+period+' 0');a.setAttribute('dur',dur);a.setAttribute('repeatCount','indefinite');g.appendChild(a);
+  }
+  makeWave('waveA',46,120,300,'5s','#3ddc97',2.5,true);
+  makeWave('waveB',22,140,180,'3.4s','rgba(61,220,151,.45)',1.5,false);
+
+  // ---------- session dial ticks ----------
+  var tk=document.getElementById('ticks'),ns='http://www.w3.org/2000/svg';
+  for(var i=0;i<60;i++){
+    var a=i/60*Math.PI*2,maj=i%5===0,r1=maj?66:71,r2=76;
+    var l=document.createElementNS(ns,'line');
+    l.setAttribute('x1',100+Math.sin(a)*r1);l.setAttribute('y1',100-Math.cos(a)*r1);
+    l.setAttribute('x2',100+Math.sin(a)*r2);l.setAttribute('y2',100-Math.cos(a)*r2);
+    l.setAttribute('class','tick'+(maj?' major':''));tk.appendChild(l);
+  }
+
+  // ---------- tickets: 37 dots ----------
+  var dots=document.getElementById('dots');
+  for(var j=0;j<37;j++){var d=document.createElement('i');d.style.animationDelay=(j*0.1)+'s';dots.appendChild(d);}
+})();
+</script>
+</body>
+</html>

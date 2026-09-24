@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, initial-scale=1">
+<title>Ledger Metrics</title>
+<style>
+  :root{
+    --bg:#070708;
+    --ink:#f4f2ee;
+    --dim:#8b8b92;
+    --faint:rgba(255,255,255,.075);
+    --hair:rgba(255,255,255,.10);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:var(--bg)}
+  body{
+    display:grid;place-items:center;
+    font-family:"Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  #stage{
+    position:relative;
+    width:1600px;height:900px;
+    overflow:hidden;
+    background:var(--bg);
+    transform-origin:center center;
+  }
+
+  /* ---------- atmosphere ---------- */
+  #hero{position:absolute;inset:0;width:1600px;height:900px}
+  .glow{
+    position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(680px 620px at 1120px 415px, rgba(255,246,232,.075), transparent 68%),
+      radial-gradient(900px 700px at 120px 120px, rgba(255,255,255,.035), transparent 70%);
+  }
+  .grain{
+    position:absolute;inset:-40px;pointer-events:none;opacity:.5;
+    background-image:radial-gradient(rgba(255,255,255,.055) .6px, transparent .7px);
+    background-size:3px 3px;
+    animation:grain 5.5s steps(6) infinite;
+  }
+  @keyframes grain{
+    0%{transform:translate(0,0)}   16%{transform:translate(-2px,1px)}
+    33%{transform:translate(1px,-2px)} 50%{transform:translate(-1px,-1px)}
+    66%{transform:translate(2px,1px)} 83%{transform:translate(1px,2px)}
+    100%{transform:translate(0,0)}
+  }
+  .scan{
+    position:absolute;top:0;left:0;width:340px;height:900px;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.030),transparent);
+    animation:scan 17s linear infinite;
+  }
+  @keyframes scan{0%{transform:translateX(-360px)}100%{transform:translateX(1600px)}}
+  .vig{
+    position:absolute;inset:0;pointer-events:none;
+    box-shadow:inset 0 0 240px 60px rgba(0,0,0,.72);
+  }
+
+  /* ---------- header ---------- */
+  header{position:absolute;left:74px;top:96px;width:660px;z-index:3}
+  .eyebrow{
+    font-size:11px;letter-spacing:.30em;text-transform:uppercase;color:var(--dim);
+    display:flex;align-items:center;gap:10px;
+  }
+  .dot{
+    width:6px;height:6px;border-radius:50%;background:var(--ink);
+    animation:beat 2.4s ease-in-out infinite;
+  }
+  @keyframes beat{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+
+  h1{
+    font-size:172px;line-height:.86;font-weight:640;letter-spacing:-.055em;
+    margin:26px 0 0 -8px;
+    color:var(--ink);
+    text-shadow:0 0 70px rgba(0,0,0,.85), 0 0 22px rgba(0,0,0,.7);
+  }
+  .period{
+    margin-top:26px;font-size:19px;color:var(--dim);letter-spacing:-.01em;
+    display:flex;align-items:baseline;gap:14px;
+  }
+  .period b{color:var(--ink);font-weight:520}
+  .sep{width:34px;height:1px;background:var(--hair);transform:translateY(-6px)}
+
+  .meter{margin-top:30px;display:flex;align-items:center;gap:16px}
+  .segs{display:flex;gap:5px}
+  .segs i{width:26px;height:3px;background:rgba(255,255,255,.10);border-radius:2px;display:block}
+  .segs i.on{background:var(--ink);animation:seg 3.4s ease-in-out infinite}
+  .segs i.on:nth-child(2){animation-delay:.35s}
+  .segs i.on:nth-child(3){animation-delay:.7s}
+  .segs i.on:nth-child(4){animation-delay:1.05s}
+  @keyframes seg{0%,100%{opacity:.45}50%{opacity:1}}
+  .meter span{font-size:12.5px;color:var(--dim);letter-spacing:.02em}
+
+  .note{
+    margin-top:22px;font-size:12.5px;line-height:1.6;color:#6d6d75;max-width:430px;
+  }
+
+  /* ---------- metrics band ---------- */
+  .band{
+    position:absolute;left:0;right:0;bottom:0;height:252px;z-index:3;
+    border-top:1px solid var(--hair);
+    background:linear-gradient(180deg, rgba(7,7,8,.35), rgba(7,7,8,.92) 45%);
+    backdrop-filter:blur(2px);
+    display:grid;grid-template-columns:repeat(8,1fr);
+    padding:34px 74px 0 74px;
+  }
+  .m{position:relative;padding-right:26px}
+  .m + .m::before{
+    content:"";position:absolute;left:-13px;top:2px;width:1px;height:150px;background:var(--faint);
+  }
+  .lab{
+    font-size:10.5px;letter-spacing:.155em;text-transform:uppercase;color:var(--dim);
+    height:26px;line-height:1.35;
+  }
+  .val{
+    margin-top:16px;font-size:40px;font-weight:600;letter-spacing:-.035em;line-height:1;
+    color:var(--ink);white-space:nowrap;
+  }
+  .val u{font-size:16px;font-weight:500;letter-spacing:-.01em;text-decoration:none;color:var(--dim);margin-left:5px}
+  .m.off .val{color:rgba(244,242,238,.22);font-weight:500;letter-spacing:.02em}
+
+  .rail{
+    position:relative;margin-top:26px;height:2px;width:100%;
+    background:rgba(255,255,255,.075);overflow:hidden;border-radius:2px;
+  }
+  .rail i{
+    position:absolute;top:0;left:-32%;width:32%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(244,242,238,.95),transparent);
+    animation:flow 3.4s linear infinite;
+  }
+  @keyframes flow{from{transform:translateX(0)}to{transform:translateX(415%)}}
+  .rail.dead{
+    background:repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 3px, transparent 3px 10px);
+    background-size:10px 2px;
+    animation:drift 7s linear infinite;
+  }
+  @keyframes drift{to{background-position:-10px 0}}
+
+  .st{margin-top:13px;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:#5f5f67}
+  .st b{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ink);
+        margin-right:7px;transform:translateY(-1px);animation:beat 2.2s ease-in-out infinite}
+  .m.off .st{color:#4a4a52}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="hero" width="1600" height="900"></canvas>
+  <div class="glow"></div>
+  <div class="grain"></div>
+  <div class="scan"></div>
+  <div class="vig"></div>
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span>product metrics</div>
+    <h1>Ledger</h1>
+    <div class="period"><b>last 30 days</b><span class="sep"></span>8 metrics</div>
+    <div class="meter">
+      <div class="segs">
+        <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+        <i></i><i></i><i></i><i></i>
+      </div>
+      <span>4 of 8 instrumented</span>
+    </div>
+    <p class="note">Four metrics have no collector wired up yet. They read <b style="color:#9a9aa2;font-weight:600">--</b> instead of an estimate.</p>
+  </header>
+
+  <div class="band">
+    <div class="m" data-target="1284" data-dec="0">
+      <div class="lab">active<br>installs</div>
+      <div class="val"><span class="num">0</span></div>
+      <div class="rail"><i style="animation-delay:-.2s"></i></div>
+      <div class="st"><b></b>collecting</div>
+    </div>
+
+    <div class="m off">
+      <div class="lab">weekly<br>active users</div>
+      <div class="val">--</div>
+      <div class="rail dead"></div>
+      <div class="st">no signal</div>
+    </div>
+
+    <div class="m" data-target="12.4" data-dec="1">
+      <div class="lab">median<br>session</div>
+      <div class="val"><span class="num">0.0</span><u>min</u></div>
+      <div class="rail"><i style="animation-delay:-1.1s"></i></div>
+      <div class="st"><b style="animation-delay:.4s"></b>collecting</div>
+    </div>
+
+    <div class="m off">
+      <div class="lab">retention<br>d30</div>
+      <div class="val">--</div>
+      <div class="rail dead" style="animation-delay:-2s"></div>
+      <div class="st">no signal</div>
+    </div>
+
+    <div class="m" data-target="99.2" data-dec="1">
+      <div class="lab">crash-free<br>rate</div>
+      <div class="val"><span class="num">0.0</span><u>%</u></div>
+      <div class="rail"><i style="animation-delay:-2.4s"></i></div>
+      <div class="st"><b style="animation-delay:.9s"></b>collecting</div>
+    </div>
+
+    <div class="m off">
+      <div class="lab">paid<br>conversions</div>
+      <div class="val">--</div>
+      <div class="rail dead" style="animation-delay:-4s"></div>
+      <div class="st">no signal</div>
+    </div>
+
+    <div class="m" data-target="37" data-dec="0">
+      <div class="lab">support<br>tickets</div>
+      <div class="val"><span class="num">0</span></div>
+      <div class="rail"><i style="animation-delay:-1.7s"></i></div>
+      <div class="st"><b style="animation-delay:1.3s"></b>collecting</div>
+    </div>
+
+    <div class="m off">
+      <div class="lab">nps</div>
+      <div class="val">--</div>
+      <div class="rail dead" style="animation-delay:-5.5s"></div>
+      <div class="st">no signal</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- fit 1600x900 into whatever window we get, never scroll ---------- */
+  var stage = document.getElementById('stage');
+  function fit(){
+    var s = Math.min(window.innerWidth/1600, window.innerHeight/900);
+    stage.style.transform = 'scale(' + s + ')';
+  }
+  fit(); window.addEventListener('resize', fit);
+
+  /* ---------- value count-up (real values only, nulls stay --) ---------- */
+  var cells = document.querySelectorAll('.m[data-target]');
+  var start = null, DUR = 1700;
+  function fmt(v, dec){
+    var s = v.toFixed(dec);
+    var p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return p.join('.');
+  }
+  function count(ts){
+    if(start === null) start = ts;
+    var p = Math.min(1, (ts - start)/DUR);
+    var e = 1 - Math.pow(2, -10*p);
+    cells.forEach(function(c){
+      var t = parseFloat(c.dataset.target), d = parseInt(c.dataset.dec,10);
+      c.querySelector('.num').textContent = fmt(t*e, d);
+    });
+    if(p < 1) requestAnimationFrame(count);
+    else cells.forEach(function(c){
+      c.querySelector('.num').textContent = fmt(parseFloat(c.dataset.target), parseInt(c.dataset.dec,10));
+    });
+  }
+  requestAnimationFrame(count);
+
+  /* ---------- hero: a slowly rotating drum of ledger rows ---------- */
+  var cv = document.getElementById('hero'), g = cv.getContext('2d');
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = 1600*dpr; cv.height = 900*dpr;
+  g.scale(dpr, dpr);
+
+  var ROWS = 32, TICKS = 46, RAD = 302, GAP = 16.5, CX = 1128, CY = 412;
+
+  function hash(a,b){ var s = Math.sin(a*127.1 + b*311.7)*43758.5453; return s - Math.floor(s); }
+
+  var flashRow = -1, flashAt = -99, nextFlash = 2.2;
+
+  function frame(now){
+    var t = now/1000;
+    g.clearRect(0,0,1600,900);
+
+    if(t > nextFlash){
+      flashRow = Math.floor(hash(t,7.3)*ROWS);
+      flashAt = t;
+      nextFlash = t + 2.0 + hash(t,3.1)*2.6;
+    }
+
+    /* structure rings */
+    g.strokeStyle = 'rgba(255,255,255,.07)';
+    g.lineWidth = 1;
+    [-1,1].forEach(function(s){
+      g.beginPath();
+      g.ellipse(CX, CY + s*(ROWS/2)*GAP, RAD, RAD*0.15, 0, 0, Math.PI*2);
+      g.stroke();
+    });
+
+    /* rows of ticks */
+    for(var r=0; r<ROWS; r++){
+      var edge = Math.pow(Math.sin(Math.PI*(r+0.5)/ROWS), 0.55);
+      var wave = 0.45 + 0.55*(0.5 + 0.5*Math.sin(t*1.15 - r*0.36));
+      var isFlash = (r === flashRow) && (t - flashAt < 0.9);
+      var fk = isFlash ? Math.max(0, 1 - (t - flashAt)/0.9) : 0;
+
+      for(var i=0; i<TICKS; i++){
+        var th = (i/TICKS)*Math.PI*2 + t*0.21 + r*0.055;
+        var ct = Math.cos(th), st = Math.sin(th);
+        var d = (ct + 1)/2;                       /* 1 = facing us */
+        var sc = 0.60 + 0.40*d;
+        var px = CX + RAD*st;
+        var py = CY + (r - ROWS/2)*GAP + ct*20;
+        var len = (7 + hash(r, i)*23) * sc;
+        var a = (0.05 + 0.52*Math.pow(d, 2.2)) * edge * wave;
+        a += fk*0.55*Math.pow(d, 1.4);
+        if(a <= 0.012) continue;
+        g.fillStyle = 'rgba(246,243,236,' + Math.min(0.95, a).toFixed(3) + ')';
+        g.fillRect(px - len/2, py - 0.9, len, 1.8);
+      }
+
+      /* a committed row throws a hairline back toward the title */
+      if(isFlash){
+        var y = CY + (r - ROWS/2)*GAP;
+        var grd = g.createLinearGradient(CX - RAD - 30, 0, 620, 0);
+        grd.addColorStop(0, 'rgba(246,243,236,' + (0.26*fk).toFixed(3) + ')');
+        grd.addColorStop(1, 'rgba(246,243,236,0)');
+        g.fillStyle = grd;
+        g.fillRect(620, y - 0.5, CX - RAD - 30 - 620, 1);
+        g.fillStyle = 'rgba(246,243,236,' + (0.5*fk).toFixed(3) + ')';
+        g.beginPath(); g.arc(CX - RAD - 30, y, 2.2, 0, Math.PI*2); g.fill();
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

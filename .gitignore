@@ -80,3 +80,18 @@ docs/superpowers/
 docs/release/
 docs/FEEDBACK.md
 docs/proof/implementation-verification.md
+
+# internal working notes and tooling, never part of the public repo
+docs/opportunities/
+docs/plans/
+docs/radar/
+docs/OPERATING-SYSTEM.md
+docs/MASTER-PROMPT-STANDARD.md
+tools/radar/
+docs/AUTHORITY.md
+docs/ledger/
+tools/authority.py
+tools/test_authority.py
+tools/outreach/
+.mcp.json
+node_modules/

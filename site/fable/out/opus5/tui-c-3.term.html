@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#0e0d0a;color:#e8e2cf;font:13px/1.45 ui-monospace,Consolas,monospace;padding:18px 22px;white-space:pre;overflow:auto">deploy report
+failed at step 3 of 5: run tests (41.7s). build and deploy did not run.
+
+    step                    status    duration
+  ──────────────────────────────────────────────────────────────────────────────────────
+  ✓ install dependencies    ok           12.4s  ████████████
+  ✓ typecheck               ok            8.1s  ████████
+  ✗ run tests               failed       41.7s  ████████████████████████████████████████
+  · build                   skipped       0.0s
+  · deploy                  skipped       0.0s
+  ──────────────────────────────────────────────────────────────────────────────────────
+  5 steps                                62.2s  3 run, 2 skipped
+
+result: failed
+what to check: the run tests output above this report. Fix it and re-run; build and deploy have not run yet.
+</body>

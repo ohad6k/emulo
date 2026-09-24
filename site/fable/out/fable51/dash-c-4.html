@@ -1,0 +1,374 @@
+<title>Ledger Metrics</title>
+<style>
+  :root {
+    --bg: #0f1216;
+    --panel: #171b21;
+    --panel-2: #1d222a;
+    --line: #2a313b;
+    --text: #e8ecf1;
+    --muted: #8d97a5;
+    --accent: #5cc8a8;
+    --accent-2: #6aa9ff;
+    --warn: #e0b45c;
+    --empty: #4b5563;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    width: 1600px;
+    height: 900px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.4 -apple-system, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  }
+  #bg {
+    position: absolute;
+    inset: 0;
+    width: 1600px;
+    height: 900px;
+    z-index: 0;
+  }
+  .page {
+    position: relative;
+    z-index: 1;
+    width: 1600px;
+    height: 900px;
+    padding: 44px 56px 40px;
+    display: grid;
+    grid-template-rows: 96px 1fr 44px;
+    gap: 28px;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 20px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  header .period {
+    color: var(--muted);
+    font-size: 18px;
+    margin-top: 6px;
+  }
+  header .live {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  header .live .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    position: relative;
+  }
+  header .live .dot::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    animation: ping 2.2s ease-out infinite;
+  }
+  @keyframes ping {
+    0%   { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .tile {
+    background: linear-gradient(160deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px 26px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .tile .label {
+    color: var(--muted);
+    font-size: 15px;
+    text-transform: none;
+    letter-spacing: 0.2px;
+  }
+  .tile .value {
+    font-size: 64px;
+    font-weight: 600;
+    letter-spacing: -1.5px;
+    line-height: 1;
+    margin-top: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile .unit {
+    font-size: 22px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0;
+    margin-left: 6px;
+  }
+  .tile .note {
+    margin-top: auto;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .tile .viz {
+    position: absolute;
+    right: 22px;
+    bottom: 22px;
+  }
+  .tile.empty {
+    background: transparent;
+    border: none;
+  }
+  .tile.empty svg.frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .tile.empty svg.frame rect {
+    fill: rgba(23, 27, 33, 0.6);
+    stroke: var(--empty);
+    stroke-width: 1.5;
+    stroke-dasharray: 8 10;
+    animation: march 3s linear infinite;
+  }
+  @keyframes march {
+    to { stroke-dashoffset: -36; }
+  }
+  .tile.empty .value {
+    color: var(--empty);
+    font-size: 34px;
+    letter-spacing: -0.5px;
+    margin-top: 26px;
+    font-weight: 500;
+  }
+  .tile.empty .label, .tile.empty .note { position: relative; }
+  .tile.empty .value { position: relative; }
+  .ring-track { stroke: var(--line); }
+  .ring-fill {
+    stroke: var(--accent);
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    animation: ringin 1.6s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  @keyframes ringin {
+    from { stroke-dashoffset: 326.7; }
+  }
+  .orbit {
+    animation: spin 6s linear infinite;
+    transform-origin: 50% 50%;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hand {
+    transform-origin: 60px 60px;
+    animation: sweep 12.4s linear infinite;
+  }
+  @keyframes sweep {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  .cell {
+    fill: var(--warn);
+    opacity: 0;
+    animation: cellin 0.4s ease-out forwards;
+  }
+  .cell.blink {
+    animation: cellin 0.4s ease-out forwards, blink 1.6s ease-in-out 2s infinite;
+  }
+  @keyframes cellin { to { opacity: 0.85; } }
+  @keyframes blink {
+    0%, 100% { opacity: 0.85; }
+    50%      { opacity: 0.2; }
+  }
+  .bar {
+    fill: var(--accent-2);
+    opacity: 0.7;
+    transform-origin: 50% 100%;
+    animation: breathe 3.2s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scaleY(0.75); }
+    50%      { transform: scaleY(1); }
+  }
+  footer {
+    color: var(--muted);
+    font-size: 14px;
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+
+<canvas id="bg" width="1600" height="900"></canvas>
+
+<div class="page">
+  <header>
+    <div>
+      <h1>Ledger</h1>
+      <div class="period">Product metrics, last 30 days</div>
+    </div>
+    <div class="live"><span class="dot"></span>4 of 8 metrics reported</div>
+  </header>
+
+  <div class="grid">
+
+    <div class="tile">
+      <div class="label">Active installs</div>
+      <div class="value"><span id="installs" data-target="1284">0</span></div>
+      <div class="note">Installs that ran Ledger at least once in the period.</div>
+      <svg class="viz" width="120" height="56" viewBox="0 0 120 56" aria-hidden="true">
+        <rect class="bar" x="0"  y="20" width="12" height="36" style="animation-delay:0s"></rect>
+        <rect class="bar" x="18" y="14" width="12" height="42" style="animation-delay:.3s"></rect>
+        <rect class="bar" x="36" y="24" width="12" height="32" style="animation-delay:.6s"></rect>
+        <rect class="bar" x="54" y="8"  width="12" height="48" style="animation-delay:.9s"></rect>
+        <rect class="bar" x="72" y="18" width="12" height="38" style="animation-delay:1.2s"></rect>
+        <rect class="bar" x="90" y="4"  width="12" height="52" style="animation-delay:1.5s"></rect>
+        <rect class="bar" x="108" y="12" width="12" height="44" style="animation-delay:1.8s"></rect>
+      </svg>
+    </div>
+
+    <div class="tile empty">
+      <svg class="frame" aria-hidden="true"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="14"></rect></svg>
+      <div class="label">Weekly active users</div>
+      <div class="value">Not reported</div>
+      <div class="note">No value in the source data for this period.</div>
+    </div>
+
+    <div class="tile">
+      <div class="label">Median session length</div>
+      <div class="value"><span id="session" data-target="12.4" data-decimals="1">0.0</span><span class="unit">min</span></div>
+      <div class="note">Half of sessions ran longer than this, half shorter.</div>
+      <svg class="viz" width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r="52" fill="none" stroke="var(--line)" stroke-width="2"></circle>
+        <path d="M60 8 A52 52 0 0 1 106.1 34.1" fill="none" stroke="var(--accent-2)" stroke-width="4" stroke-linecap="round"></path>
+        <line class="hand" x1="60" y1="60" x2="60" y2="14" stroke="var(--text)" stroke-width="2.5" stroke-linecap="round"></line>
+        <circle cx="60" cy="60" r="4" fill="var(--text)"></circle>
+      </svg>
+    </div>
+
+    <div class="tile empty">
+      <svg class="frame" aria-hidden="true"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="14"></rect></svg>
+      <div class="label">Retention, day 30</div>
+      <div class="value">Not reported</div>
+      <div class="note">No value in the source data for this period.</div>
+    </div>
+
+    <div class="tile">
+      <div class="label">Crash-free rate</div>
+      <div class="value"><span id="crash" data-target="99.2" data-decimals="1">0.0</span><span class="unit">%</span></div>
+      <div class="note">Sessions that ended without a crash.</div>
+      <svg class="viz" width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="ring-track" cx="60" cy="60" r="52" fill="none" stroke-width="8"></circle>
+        <circle class="ring-fill" cx="60" cy="60" r="52" fill="none" stroke-width="8"
+                stroke-dasharray="326.7" stroke-dashoffset="2.6"></circle>
+        <g class="orbit">
+          <circle cx="60" cy="8" r="5" fill="var(--accent)"></circle>
+        </g>
+      </svg>
+    </div>
+
+    <div class="tile empty">
+      <svg class="frame" aria-hidden="true"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="14"></rect></svg>
+      <div class="label">Paid conversions</div>
+      <div class="value">Not reported</div>
+      <div class="note">No value in the source data for this period.</div>
+    </div>
+
+    <div class="tile">
+      <div class="label">Support tickets</div>
+      <div class="value"><span id="tickets" data-target="37">0</span></div>
+      <div class="note">Tickets opened against Ledger in the period.</div>
+      <svg class="viz" id="ticketgrid" width="140" height="84" viewBox="0 0 140 84" aria-hidden="true"></svg>
+    </div>
+
+    <div class="tile empty">
+      <svg class="frame" aria-hidden="true"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="14"></rect></svg>
+      <div class="label">NPS</div>
+      <div class="value">Not reported</div>
+      <div class="note">No value in the source data for this period.</div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>Metrics marked "Not reported" have no value in the source. They are not 0.</span>
+    <span>Source: product metrics export, last 30 days</span>
+  </footer>
+</div>
+
+<script>
+  (function () {
+    // Count each reported value up from 0 on load.
+    var counters = document.querySelectorAll('[data-target]');
+    var start = null;
+    var duration = 1400;
+    function step(ts) {
+      if (start === null) start = ts;
+      var t = Math.min(1, (ts - start) / duration);
+      var e = 1 - Math.pow(1 - t, 3);
+      counters.forEach(function (el) {
+        var target = parseFloat(el.getAttribute('data-target'));
+        var d = parseInt(el.getAttribute('data-decimals') || '0', 10);
+        var v = target * e;
+        el.textContent = d ? v.toFixed(d) : Math.round(v).toLocaleString('en-US');
+      });
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+
+    // 37 ticket cells, filled one at a time; the last one keeps blinking.
+    var svg = document.getElementById('ticketgrid');
+    var ns = 'http://www.w3.org/2000/svg';
+    var cols = 10, size = 10, gap = 4, total = 37;
+    for (var i = 0; i < total; i++) {
+      var r = document.createElementNS(ns, 'rect');
+      r.setAttribute('x', (i % cols) * (size + gap));
+      r.setAttribute('y', Math.floor(i / cols) * (size + gap));
+      r.setAttribute('width', size);
+      r.setAttribute('height', size);
+      r.setAttribute('rx', 2);
+      r.setAttribute('class', i === total - 1 ? 'cell blink' : 'cell');
+      r.style.animationDelay = (i * 0.045) + 's' + (i === total - 1 ? ', 2s' : '');
+      svg.appendChild(r);
+    }
+
+    // Background: two soft drifting blobs, redrawn every frame.
+    var c = document.getElementById('bg');
+    var ctx = c.getContext('2d');
+    var t0 = performance.now();
+    function draw(now) {
+      var t = (now - t0) / 1000;
+      ctx.clearRect(0, 0, 1600, 900);
+      var blobs = [
+        { x: 800 + Math.cos(t * 0.11) * 420, y: 450 + Math.sin(t * 0.09) * 260, r: 520, col: 'rgba(92,200,168,0.10)' },
+        { x: 800 + Math.sin(t * 0.07) * 500, y: 450 + Math.cos(t * 0.13) * 300, r: 600, col: 'rgba(106,169,255,0.09)' }
+      ];
+      blobs.forEach(function (b) {
+        var g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+        g.addColorStop(0, b.col);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, 1600, 900);
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  })();
+</script>

@@ -33,3 +33,17 @@ jobs:
       - if: matrix.python-version != '3.8'
         run: python -m pip install -r requirements.lock
       - run: python -m unittest discover -s tests -v
+
+  # The pages under site/ ship to production and had no automated coverage at all: scan.test.cjs
+  # existed but no workflow ran it, and it only executed the page's logic sandbox. A button that
+  # did nothing shipped past eight green tests. This job runs the page for real in jsdom.
+  site-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm test
