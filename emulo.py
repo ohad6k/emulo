@@ -4565,6 +4565,7 @@ def mcp_main(argv):
 
 def legacy_main():
     ap = argparse.ArgumentParser(description="mine your AI sessions into a model of you")
+    ap.add_argument("--version", action="version", version=f"emulo {EMULO_VERSION}")
     ap.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode", "antigravity"], default="auto")
     ap.add_argument("--path", help="a folder of .jsonl session logs to read instead")
     ap.add_argument("--out", default=None,
