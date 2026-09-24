@@ -188,6 +188,8 @@ Share the card or one short trait, never your full profile.
 
 ## Quickstart
 
+Step by step, with what each command reads and writes, what reaches a model, and how to remove it: [docs/PROFILE-FLOW.md](docs/PROFILE-FLOW.md).
+
 Install the cross-agent bootstrap — runs in Claude Code and Codex, and installs profiles for Cursor and Gemini through the explicit adapters:
 
 ```bash
