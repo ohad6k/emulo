@@ -1,6 +1,6 @@
 ---
 name: emulo
-description: Load the user's Emulo profile, mined from their local Claude Code, Codex, and OpenCode session logs, so you work like them instead of a cold start. Use before working on their task.
+description: Load the user's Emulo profile, rules mined from their own local AI coding session logs (Claude Code, Codex, Copilot CLI, OpenCode, Google Antigravity), each with dated quotes. Read it before working on their task.
 emoji: 🐦‍⬛
 homepage: https://github.com/ohad6k/emulo
 metadata:
@@ -13,21 +13,26 @@ metadata:
 
 # Emulo profile
 
-Load the user's Emulo working profile so you act like them, not a cold start.
+Load the user's Emulo working profile: rules mined from their own coding
+sessions, each with dated quotes. Read it before working on their task.
 
-Emulo mines the user's own AI coding sessions (Claude Code, Codex, Cursor,
-Copilot) into a `you.md` working profile: their laws, their taste, their voice,
-and the failure modes they want you to protect them from.
+Emulo mines the user's own AI coding sessions (Claude Code, Codex, Copilot CLI,
+OpenCode, Google Antigravity) into a `you.md` working profile: their laws, their
+taste, their voice, and the failure modes they want you to protect them from.
 
 ## Use this before working on their task
 
-Run the profile loader and read what it returns before you plan or edit:
+If the profile is not installed yet, this writes it into the project's `AGENTS.md`
+(it prints where it wrote and returns nothing to read). Do not run it yourself before
+you name the exact folder to the user and get their yes. Tell them it writes the whole
+profile, including quotes from their own sessions, into that AGENTS.md, which is usually
+committed and shared, so suggest keeping it out of version control:
 
 ```
-emulo --install you.md --target agents
+emulo --install you.md --target agents --repo .
 ```
 
-Or load it directly through the MCP server:
+Or call it through the MCP server:
 
 ```
 uvx emulo mcp
@@ -35,7 +40,8 @@ uvx emulo mcp
 
 The MCP server exposes one tool, `load_emulo_profile`, which returns the
 profile for the domain you are about to work in (`work`, `design`, `write`, or
-`video`).
+`video`). It serves only a profile activated by Emulo's agent mining flow; with
+none active, it returns a recovery instruction.
 
 ## What you get
 

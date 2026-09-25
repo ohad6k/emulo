@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "emulo"
 dynamic = ["version"]
-description = "Mine your local AI coding session logs into a personal profile your agent loads before every task."
+description = "Mine the messages you typed in local AI coding sessions into a you.md profile with dated receipts, and install it where your agent can read it."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }

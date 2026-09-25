@@ -61,7 +61,7 @@
     {
       "@type": "Question",
       "name": "How do I make my AI agent write code the way I do?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Start with what it keeps missing. The free report shows where you repeat yourself to the agent. Mining goes further: it turns the rules that recur across your sessions into a you.md your agent loads before a task, with dated quotes behind every rule. Whether that changes how the agent works for you is worth testing on your own work. Our own 60 run test is public, including the part that did not go our way." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Start with what it keeps missing. The free report shows where you repeat yourself to the agent. Mining goes further: it turns the rules that recur across your sessions into a you.md you can install for your agent, with dated quotes behind every rule. Whether that changes how the agent works for you is worth testing on your own work. Our own 60 run test is public, including the part that did not go our way." }
     },
     {
       "@type": "Question",
@@ -81,7 +81,7 @@
     {
       "@type": "Question",
       "name": "Which coding agents does it work with?",
-      "acceptedAnswer": { "@type": "Answer", "text": "It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions, but it installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load a profile mined through the agent flow before a task." }
+      "acceptedAnswer": { "@type": "Answer", "text": "It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions. Installing a profile and an agent reading it are different things: in a host-by-host test on 2026-09-25, a project AGENTS.md reached the model in Codex and was loaded into OpenCode's instructions, and in Claude Code the profile skill loads when you type /you. It also writes rules files for Cursor and Gemini, where loading is not verified, and ships an MCP server that any MCP client can connect to; it serves only a profile mined through the agent flow." }
     },
     {
       "@type": "Question",
@@ -91,7 +91,7 @@
     {
       "@type": "Question",
       "name": "How much history do I need?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Any. The report counts whatever you have. For a profile, more sessions help, since a rule only earns a place when separate sessions keep supporting it. The example profile on this page came from 1,656 sessions over nine months." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Any. The report counts whatever you have. For a profile, more sessions help, since a rule only earns a place when separate sessions keep supporting it. The example profile on this page is a profile the author mined in early July 2026 (1,656 sessions)." }
     }
   ]
 }
@@ -564,7 +564,7 @@ footer a:hover{color:var(--red)}
 <div class="manifest">
   <div class="wrap">
     <div class="cell"><span class="mono-label">Reads</span><p>Claude Code, Codex, Copilot CLI, OpenCode and Google Antigravity logs</p></div>
-    <div class="cell"><span class="mono-label">Installs a profile into</span><p>Claude Code, Codex, Cursor, Gemini, OpenCode, or any AGENTS.md repo</p></div>
+    <div class="cell"><span class="mono-label">Installs a profile into</span><p>Any AGENTS.md repo (read by Codex and OpenCode), Claude Code, Codex, OpenCode, Cursor or Gemini</p></div>
     <div class="cell"><span class="mono-label">Also</span><p>An MCP server, MIT licensed</p></div>
   </div>
 </div>
@@ -609,13 +609,13 @@ footer a:hover{color:var(--red)}
           <li><b>Fix the one thing.</b> Rewriting what isn't broken gets rejected.</li>
           <li><b>No walls of text.</b> Short, concrete, no hype.</li>
         </ul>
-        <small>From the author's own profile, mined from 1,656 sessions over nine months. Yours comes from your logs and will read nothing like it.</small>
+        <small>From a profile the author mined in early July 2026 (1,656 sessions). Yours comes from your logs and will read nothing like it.</small>
       </figcaption>
     </figure>
 
     <div class="mine-copy">
       <h2 class="reveal">When a report is not enough, mine a profile.</h2>
-      <p class="lede reveal">A you.md is a plain file your agent reads before a task: the rules that keep showing up across your sessions, each one carrying the dated quotes it came from. You can open it, edit it, or delete it.</p>
+      <p class="lede reveal">A you.md is a plain file your agent can read before a task: the rules that keep showing up across your sessions, each one carrying the dated quotes it came from. You can open it, edit it, or delete it.</p>
       <ol class="seq reveal">
         <li>
           <span class="step-no">1</span>
@@ -643,7 +643,7 @@ footer a:hover{color:var(--red)}
       <span class="step-no reveal">3</span>
       <h2 class="reveal">Check every quote before you trust a single rule.</h2>
       <p class="lede reveal"><code>emulo verify you.md</code> pulls every quote out of the profile and searches your mined sessions for it. A rule is only as good as its receipt, and this is how you find out which receipts are real.</p>
-      <p class="verify-after reveal">Then install what survives: <code>emulo --install you.md --target claude</code>, or codex, cursor, gemini, opencode, agents. Whether a rule is vague, or true of every developer alive, is still your call.</p>
+      <p class="verify-after reveal">Then install what survives: <code>emulo --install you.md --target agents --repo .</code> puts it in the project's AGENTS.md, which Codex and OpenCode were seen loading. That writes the whole profile, including verbatim quotes from your sessions, into a file that is usually committed and shared, so keep it out of version control or install to a personal folder that is not committed. In Claude Code, <code>--target claude</code> installs a skill you load by typing <code>/you</code>. Whether a rule is vague, or true of every developer alive, is still your call.</p>
     </div>
     <div>
       <div class="verdicts reveal">
@@ -657,13 +657,13 @@ footer a:hover{color:var(--red)}
         </div>
         <div class="verdict">
           <span class="stamp bad">NOT FOUND</span>
-          <div><q>Cut those rules.</q><p>The quote appears in no session, so the receipt was invented. The command exits non-zero.</p></div>
+          <div><q>Cut those rules.</q><p>The quote appears in no session: it may be invented, paraphrased, or from history that was not mined. The command exits non-zero.</p></div>
         </div>
       </div>
     </div>
     <div class="direction reveal">
       <h3>Where this is going, and where it is today.</h3>
-      <p>The aim is an agent that already works the way you do. It is an aim, not a result. In a 60 run test written down in advance, a real mined profile changed the output compared with no profile at all, but it did not beat an invented profile of the same length. <a href="/placebo">Read the test</a></p>
+      <p>The aim is an agent that already works the way you do. It is an aim, not a result. In a 60 run test written down in advance, a real mined profile changed the output compared with no profile at all, but it did not beat an invented profile of the same length. <a href="/placebo">Read the test</a>. A September rerun with an older profile and a new invented one separated on 5 of 9 measures on Fable 5.1 and 1 of 9 on Opus 5. Both tests measure whether the output changed, not whether it got better. <a href="/fable">Read the rerun</a></p>
     </div>
   </div>
 </section>
@@ -705,7 +705,7 @@ footer a:hover{color:var(--red)}
     <div class="q-list reveal">
       <div class="q">
         <h3>How do I make my AI agent write code the way I do?</h3>
-        <p>Start with what it keeps missing. The free report shows where you repeat yourself to the agent. Mining goes further: it turns the rules that recur across your sessions into a <code>you.md</code> your agent loads before a task, with dated quotes behind every rule. Whether that changes how the agent works for you is worth testing on your own work. Our own <a href="/placebo">60 run test</a> is public, including the part that did not go our way.</p>
+        <p>Start with what it keeps missing. The free report shows where you repeat yourself to the agent. Mining goes further: it turns the rules that recur across your sessions into a <code>you.md</code> you can install for your agent, with dated quotes behind every rule. Whether that changes how the agent works for you is worth testing on your own work. Our own <a href="/placebo">60 run test</a> is public, including the part that did not go our way.</p>
       </div>
       <div class="q">
         <h3>How is this different from agent memory?</h3>
@@ -721,7 +721,7 @@ footer a:hover{color:var(--red)}
       </div>
       <div class="q">
         <h3>Which coding agents does it work with?</h3>
-        <p>It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions, but it installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load a profile mined through the agent flow before a task.</p>
+        <p>It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions. Installing a profile and an agent reading it are different things: in a host-by-host test on 2026-09-25, a project AGENTS.md reached the model in Codex and was loaded into OpenCode's instructions, and in Claude Code the profile skill loads when you type /you. It also writes rules files for Cursor and Gemini, where loading is not verified, and ships an MCP server that any MCP client can connect to; it serves only a profile mined through the agent flow.</p>
       </div>
       <div class="q">
         <h3>What does it cost to run?</h3>
@@ -729,7 +729,7 @@ footer a:hover{color:var(--red)}
       </div>
       <div class="q">
         <h3>How much history do I need?</h3>
-        <p>Any. The report counts whatever you have. For a profile, more sessions help, since a rule only earns a place when separate sessions keep supporting it. The example profile on this page came from 1,656 sessions over nine months.</p>
+        <p>Any. The report counts whatever you have. For a profile, more sessions help, since a rule only earns a place when separate sessions keep supporting it. The example profile on this page is a profile the author mined in early July 2026 (1,656 sessions).</p>
       </div>
     </div>
   </div>

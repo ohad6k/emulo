@@ -828,6 +828,55 @@ class RunMeInstallPathTest(unittest.TestCase):
             # the user's own file is never rewritten
             self.assertEqual(RUN_ME_PROFILE, (work / "emulo-out" / "you.md").read_text(encoding="utf-8"))
 
+    def test_run_me_leads_with_the_install_routes_a_host_was_seen_to_load(self):
+        # A host-by-host load test on 2026-09-25 found AGENTS.md reaches the model in
+        # Codex and OpenCode, while the Claude Code skill is not reliably opened on its
+        # own and has to be called with /you. RUN_ME.md used to lead with the claude
+        # skill and promise the agent "behaves like someone who already knows them".
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp) / "work"
+            home = Path(tmp) / "home"
+            work.mkdir()
+            home.mkdir()
+            run_me = self._mine(work, home)
+            printed = [line.strip() for line in run_me.splitlines()
+                       if line.strip().startswith("emulo --install ")]
+            self.assertEqual("emulo --install emulo-out/you.md --target agents --repo .", printed[0])
+            # backticked, so emulo-out/you.md cannot satisfy it
+            self.assertIn("type `/you`", run_me)
+            self.assertNotIn("already knows them", run_me)
+            self.assertNotIn("confidently wrong", run_me)
+
+    def test_run_me_asks_before_installing_and_warns_that_agents_md_is_shared(self):
+        # The agent runs these installs itself, so the person may never see them.
+        # --target agents --repo . appends the whole profile, verbatim dated quotes
+        # included, to AGENTS.md in whatever folder the agent is in, and AGENTS.md is
+        # usually committed. Nothing may be installed before the person says which
+        # agents they use, and the agents target needs the folder confirmed first.
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp) / "work"
+            home = Path(tmp) / "home"
+            work.mkdir()
+            home.mkdir()
+            # collapse the template's line wrapping so a phrase is found wherever it breaks
+            run_me = " ".join(self._mine(work, home).split())
+            first_command = run_me.index("emulo --install ")
+            ask = run_me.find("Ask the person which coding agents they use")
+            self.assertNotEqual(-1, ask, run_me)
+            self.assertLess(ask, first_command)
+            self.assertIn("Run only the installs for those agents", run_me)
+            self.assertIn("never all of them", run_me)
+            confirm = run_me.find("get their yes before you run it")
+            self.assertNotEqual(-1, confirm, run_me)
+            self.assertLess(confirm, first_command)
+            warning = run_me.find("usually committed and shared")
+            self.assertNotEqual(-1, warning, run_me)
+            self.assertLess(warning, first_command)
+            self.assertIn("quotes from their own sessions", run_me)
+            self.assertIn("out of version control", run_me)
+            # the old line presented every command as something to run
+            self.assertNotIn("then install it into the agents this person actually uses:", run_me)
+
     def test_skill_install_without_frontmatter_says_it_added_one(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("emulo", EMULO)

@@ -23,7 +23,7 @@ description: Evidence-backed Emulo video profile
 - Captions carry one idea per scene and match the voiceover word for word.
   - Action: Write uppercase display captions of 2 to 4 words that repeat the spoken words exactly, popped in with a back.out ease.
 - Copy for a video is Ohad's voice: normal capitalization, no em or en dashes, no trust-badge filler, real numbers when Emulo is the subject.
-  - Action: Use 1,656 sessions, 9 months, 3M tokens where Emulo is the subject; end on the felt thing, never a guessed claim.
+  - Action: Use a profile the author mined in early July 2026 (1,656 sessions) where Emulo is the subject; end on the felt thing, never a guessed claim.
 - Each voiceover line has its own energy, not one global setting; calm explanatory lines slur less, punchy lines carry the hook.
   - Action: Tag calm lines exaggeration 0.42 to 0.5 cfg 0.68 to 0.7, and hook, reveal, and CTA lines exaggeration 0.6 cfg 0.65.
 - Emoji reactions read cheap.

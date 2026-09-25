@@ -66,6 +66,13 @@ class VerifyReceiptsTest(unittest.TestCase):
             self.assertEqual(1, result.returncode)
             self.assertIn("NOT FOUND", result.stdout)
             self.assertIn("appear in no session", result.stdout)
+            # A text match cannot know why a quote is missing or what the agent
+            # will do with the rule, so the message names possibilities, not causes.
+            self.assertNotIn("confidently wrong", result.stdout)
+            self.assertNotIn("is invented", result.stdout)
+            self.assertIn("paraphrased", result.stdout)
+            # one instruction to cut, not two
+            self.assertEqual(1, result.stdout.lower().count("cut"), result.stdout)
 
     def test_single_session_quote_is_flagged_as_context_not_a_rule(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -3,21 +3,24 @@
 
 <h1 align="center">Emulo</h1>
 
-<p align="center"><b>Your AI agents act like they just met you. Emulo fixes that.</b></p>
+<p align="center"><b>Mine the messages you typed to your coding agents into a you.md profile, every rule with dated receipts, and install it where your agent can read it.</b></p>
 
 <p align="center">
 <img src="https://img.shields.io/github/stars/ohad6k/emulo?style=for-the-badge&color=3a3a3a&labelColor=141414&logo=github&logoColor=white&cacheSeconds=600" alt="stars">
 <a href="https://discord.gg/QMnYtVcxk2"><img src="https://img.shields.io/badge/discord-join-3a3a3a?style=for-the-badge&labelColor=141414&logo=discord&logoColor=white" alt="discord"></a>
 <img src="https://img.shields.io/badge/license-MIT-3a3a3a?style=for-the-badge&labelColor=141414" alt="MIT">
 <img src="https://img.shields.io/badge/python-zero_deps-3a3a3a?style=for-the-badge&labelColor=141414&logo=python&logoColor=white" alt="Python, zero dependencies">
-<img src="https://img.shields.io/badge/works_with-claude_·_codex_·_cursor_·_copilot_·_openclaw_·_hermes-141414?style=for-the-badge&labelColor=3a3a3a" alt="works with claude, codex, cursor, copilot, openclaw, hermes">
+<img src="https://img.shields.io/badge/reads_logs_from-claude_code_·_codex_·_copilot_cli_·_opencode_·_antigravity-141414?style=for-the-badge&labelColor=3a3a3a" alt="reads logs from Claude Code, Codex, Copilot CLI, OpenCode, Antigravity">
+<img src="https://img.shields.io/badge/installs_to-agents.md_·_claude_code_·_codex_·_opencode_·_cursor_·_gemini-141414?style=for-the-badge&labelColor=3a3a3a" alt="installs to AGENTS.md, Claude Code, Codex, OpenCode, Cursor, Gemini">
 </p>
 
 Your real coding-agent sessions already contain the rules you never wrote down: what “done” means, what you reject on sight, how you debug, how you design UI, and how you write when you are actually working.
 
-Emulo mines selected evidence from those sessions — Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box — into a private working profile your agent reads before every task. Separate layers for work, design, writing, and video mean the right part of you loads for the right task.
+Emulo mines selected evidence from those sessions (Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box) into a private working profile, where every rule carries dated quotes from your own messages, and installs it where your agent can read it. The agent mining flow writes separate files for work, design, writing, and video, so a host can load only the one that fits the task.
 
-The mined profile loads where your agents already live: Claude Code and Codex natively, Cursor, Gemini, and OpenCode through explicit adapters, and OpenClaw and Hermes Agent as a standard skill ([guide](docs/OPENCLAW_HERMES.md)).
+The aim is an agent that works the way you do from the first message. That is an aim, not a result: [what is tested so far](#what-is-tested-so-far) is below, including the part that did not go our way.
+
+Installing a profile and an agent actually reading it are two different things. In a host-by-host test on 2026-09-25, the profile reached the model through a project `AGENTS.md` in Codex (`--target agents --repo .`, verified end to end in one test) and was loaded into OpenCode's instructions. In Claude Code the `you` skill installs but is not reliably opened on its own; typing `/you` loads it. Cursor, Gemini, OpenClaw and Hermes Agent get the file where they look for it, and loading there is not verified. The [support matrix](#support-matrix) has each one.
 
 The [Emulo Proof v1 methodology](docs/proof/README.md) is an unexecuted methodology until a separately approved evidence release exists.
 
@@ -47,7 +50,7 @@ Inside Claude Code:
 Inside Codex:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.6 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.7 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -55,8 +58,10 @@ Then run `emulo:mine` and point it at your session history. Everything below exp
 
 ## Open source and privacy
 
-Emulo is MIT licensed, free, and works without an account. There is nothing to
-buy and no sign-in.
+Emulo is MIT licensed, free, and works without an account or a sign-in. The tool
+itself has nothing to buy. Separately, [the site](https://emulo.vercel.app/#pricing)
+offers one optional paid service, a hand edit of a profile you already mined, and
+you never need it to use Emulo.
 
 Session extraction, redaction, caches, the profile itself, and the agent
 adapters all stay on your machine. The one exception is mining: if you point it
@@ -67,13 +72,28 @@ local model and the whole run stays on your machine.
 
 Memory is what you explicitly told the model.
 
-Emulo mines what your work already proved about you: what you reject, what "done" means, when you ask for proof, how you talk when you're actually working, and the agent behaviors that make you stop the task.
+Emulo mines what keeps coming up in your own sessions: what you reject, what "done" means, when you ask for proof, how you talk when you're actually working, and the agent behaviors that make you stop the task.
 
 That's why it reads raw session logs, not your `CLAUDE.md` or rules file.
 
-## A real run
+## What is tested so far
 
-One line to the same agent, twice: **"help me post emulo on reddit."** Once cold, once with the Emulo profile loaded.
+Emulo does three separate things, and they are held to different standards:
+
+- **The usage report and `emulo verify`** are text matches on your own messages. They count and they trace quotes. They cannot tell you why anything happened.
+- **Loading** means a host puts the profile in front of its model. Which hosts were seen doing that is in the [support matrix](#support-matrix).
+- **Whether a loaded profile makes the agent's work better** is not shown. It is the aim, not a result.
+
+What the published tests do show:
+
+- An appended mined profile changed what the model produced, compared with no profile.
+- In a 60 run study with every prediction written down in advance (August 2026), the mined profile did not separate from an invented profile of the same length on any of 9 comparisons. [emulo.vercel.app/placebo](https://emulo.vercel.app/placebo)
+- In a September 2026 rerun with a later July 2026 profile (dated 2026-07-30) and a new invented profile, the mined profile separated from the invented one on 5 of 9 comparisons on Fable 5.1 and on 1 of 9 on Opus 5. [emulo.vercel.app/fable](https://emulo.vercel.app/fable)
+- Both tests measure whether the output changed (rounded corners, colour saturation, card containers, length), not whether it got better.
+
+## One example, not a test
+
+An anecdote. One line to the same agent, twice: **"help me post emulo on reddit."** Once cold, once with the Emulo profile loaded. One run each way, with no control and no placebo, so it shows what two replies looked like, not what the profile does. Both replies are trimmed to their opening plan and title.
 
 <table>
 <tr>
@@ -89,22 +109,6 @@ Here's how I'd play it.
 
 **Title:** I built a local tool that reads your AI coding logs and writes a "you.md" your agents read before every task
 
-<details open>
-<summary>full reply</summary>
-
-**Titles (pick per sub):**
-- I built a local tool that reads your AI coding logs and writes a "you.md" your agents read before every task
-- emulo: mine your own Claude Code history into a profile so your agent codes like you (local, open source)
-
-**Body:**
-> Every fresh agent session starts from zero — it doesn't know how you work, so you re-explain yourself every time. All of that is already in your session logs. So I built **emulo**: it reads your history, mines how you decide and talk, and writes a `you.md` your agents read before every task.
-> - runs locally, your logs never leave your machine
-> - redacts secrets before processing
-> - open source: [link]
-
-Also: open with the pain not the product, reply fast in the first hour, add a demo gif, and flair it correctly. Want me to write tuned variants for each subreddit?
-
-</details>
 </td>
 <td>
 
@@ -114,36 +118,20 @@ one sub, not five — a skills sub, where people come looking for this instead o
 
 **Title:** I built a Claude skill from 8 months of my own Claude Code sessions
 
-<details open>
-<summary>the full post it wrote</summary>
-
-**body:** I use claude code and codex every day. 8 months, solo. every session gets logged and i never really looked back at them.
-
-then it hit me that those logs are probably the most honest record of how i actually work. not my CLAUDE.md, not my docs, not the rules i remembered to write down. the real sessions.
-
-so i built emulo.
-
-What I did: pulled every message i typed from my local claude/codex logs. stripped tool output, pasted errors, file dumps, and assistant replies. kept only my words. came out to around 1,656 sessions and almost 3M tokens of just me.
-
-then i split it into chunks and had agents read each slice. each one pulled patterns like how i define done, what kind of code i reject, when i ask for proof, what makes me stop a task, and how i talk when i am actually working.
-
-then i merged the repeated traits into one you.md.
-
-the useful part is that it installs as a claude skill. so now instead of starting every task cold, claude reads my profile first and already knows how i work.
-
-not memory exactly. memory is what you told the model. this is more like mining what your work already proved about you.
-
-</details>
 </td>
 </tr>
 </table>
 
-I posted it on r/ClaudeSkills, as written:
+The title is the agent's wording. The profile loaded was a profile the author mined in early July 2026 (1,656 sessions).
+
+I posted the loaded version on r/ClaudeSkills. The numbers below are as shown in the screenshot, which shows the vote bar only, not the post or the date:
 
 <p align="center"><img src="assets/reddit-proof.png" width="460" alt="The post the Emulo-loaded agent wrote: 200 upvotes, 32 comments, 102K views"></p>
 
 <p align="center"><strong>200 upvotes &middot; 32 comments &middot; 102K views</strong><br>
-<sub>from an account with no followers. The cold plan was reasonable. The loaded plan knew its user's voice — and it worked.</sub></p>
+<sub>One post, so it says nothing about whether the profile caused any of that.</sub></p>
+
+The controlled tests are at [emulo.vercel.app/placebo](https://emulo.vercel.app/placebo) and [emulo.vercel.app/fable](https://emulo.vercel.app/fable), summed up in [What is tested so far](#what-is-tested-so-far).
 
 ## What it finds
 
@@ -163,7 +151,7 @@ Nobody wrote those rules down. They came out of one person's own history, with r
 
 ## The usage report
 
-Mining answers "who is this person." The usage report answers a different question: where might you be losing time with the model.
+Mining answers "who is this person." The usage report answers a different question: where you keep repeating yourself to the model.
 
 ```bash
 python emulo.py --coach                   # every source it can find
@@ -184,13 +172,15 @@ The agent mining flow (`run emulo` or `emulo:mine`) also writes a `card.json`, a
 
 <p align="center"><img src="assets/card.png" width="460" alt="An Emulo profile card: archetype, laws with receipts, session stats, and the one uncomfortable truth"></p>
 
+<p align="center"><sub>This card is from a different run of the miner than the early July 2026 profile quoted elsewhere in this README, so its session and token counts differ from it.</sub></p>
+
 Share the card or one short trait, never your full profile.
 
 ## Quickstart
 
 Step by step, with what each command reads and writes, what reaches a model, and how to remove it: [docs/PROFILE-FLOW.md](docs/PROFILE-FLOW.md).
 
-Install the cross-agent bootstrap — runs in Claude Code and Codex, and installs profiles for Cursor and Gemini through the explicit adapters:
+Install the cross-agent bootstrap. It runs the mining flow in Claude Code and Codex:
 
 ```bash
 npx skills add ohad6k/emulo@emulo
@@ -204,7 +194,7 @@ run emulo
 
 That installs the bootstrap and creates a read-only full-history mining plan. Your agent must show the cost and wait for approval before model work.
 
-Once your profile exists, the bootstrap offers the native plugin so you also get namespaced `emulo:` routing. It asks first and takes a no. In Codex it can run the install itself; in Claude Code `/plugin` is typed by you, so it hands you the two exact lines to paste.
+Once your profile exists, the bootstrap offers the native plugin so you also get the namespaced `emulo:` skills. It asks first and takes a no. In Codex it can run the install itself; in Claude Code `/plugin` is typed by you, so it hands you the two exact lines to paste.
 
 ### Install the CLI
 
@@ -222,7 +212,9 @@ That puts `emulo` on your path. `emulo --dry-run` writes nothing and prints what
 read emulo-out/RUN_ME.md and follow it
 ```
 
-Your agent makes one pass per chunk, merges them, writes `you.md`, and prints the install commands. Nothing to paste and nothing else to download. `you.md` needs no frontmatter: for the `claude` and `codex` targets, which install it as a skill, `emulo --install` adds `name: you` and a default description to the installed copy when the file has none, and says so. A file whose frontmatter already has `name` and `description` is installed as written; frontmatter missing either one is refused.
+Your agent makes one pass per chunk, merges them, writes `you.md`, and prints the install commands. Nothing to paste and nothing else to download.
+
+Which install to pick. For Codex and OpenCode, `emulo --install you.md --target agents --repo .` in the project you work in adds the profile to its `AGENTS.md`, and that is the route a host-by-host test on 2026-09-25 saw reach the model. It writes the whole profile, including verbatim quotes from your sessions, into that folder's AGENTS.md, which is usually committed and shared, so keep that file out of version control or install to a personal folder that is not committed. For Claude Code, `emulo --install you.md --target claude` installs a skill named `you`, and Claude Code does not reliably open it on its own, so type `/you` (or `/you <task>`) to load it. The other targets are in the [support matrix](#support-matrix). `you.md` needs no frontmatter: for the `claude` and `codex` targets, which install it as a skill, `emulo --install` adds `name: you` and a default description to the installed copy when the file has none, and says so. A file whose frontmatter already has `name` and `description` is installed as written; frontmatter missing either one is refused.
 
 ### Check the receipts
 
@@ -232,7 +224,7 @@ A profile is only worth loading if its evidence is real. The failure that matter
 emulo verify you.md
 ```
 
-It pulls every quote out of the profile and searches the mined sessions for it. Quotes it cannot find are reported and the command exits non-zero, because a receipt that cannot be traced was invented. Quotes resting on a single session are flagged separately: one session is context, not a rule. Add `--json` for machine-readable output, including which session ids support each quote.
+It pulls every quote out of the profile and searches the mined sessions for it. Quotes it cannot find are reported and the command exits non-zero, because nothing in the mined corpus backs them. A missing quote may be invented, paraphrased, or from history that was not mined. Quotes resting on a single session are flagged separately: one session is context, not a rule. Add `--json` for machine-readable output, including which session ids support each quote.
 
 This checks what is mechanically checkable. Whether a rule is vague, generic, or true of every developer alive is still a judgment call, and still yours.
 
@@ -241,7 +233,7 @@ This checks what is mechanically checkable. Whether a rule is vague, generic, or
 The native plugin adds `emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, and `emulo:video`:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.6 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.7 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -249,16 +241,18 @@ The plugin-install command itself scans no logs, writes no private profile state
 
 ### Native Claude Code plugin
 
-The Claude Code plugin exposes the same five skills. Install it from inside Claude Code:
+The Claude Code plugin registers the same five skills. Install it from inside Claude Code:
 
 ```text
 /plugin marketplace add ohad6k/emulo
 /plugin install emulo@emulo
 ```
 
+Or from a terminal: `claude plugin marketplace add ohad6k/emulo`, then `claude plugin install emulo@emulo`. On 2026-09-25 both worked headlessly and the five skills registered. Like any skill, Claude Code decides when to open one. The plugin serves only a profile activated by the agent mining flow (`emulo:mine` or `run emulo`), never a hand-made `you.md` or one from the `RUN_ME.md` path.
+
 ## MCP server
 
-Emulo also ships a Model Context Protocol (MCP) server, so any MCP client — Claude Desktop, Cursor, and other agents — can load your profile before a task. The server implements MCP over stdio and exposes one tool, `load_emulo_profile`, which returns your mined work, design, writing, or video profile over the Model Context Protocol.
+Emulo also ships a Model Context Protocol (MCP) server that any MCP client can connect to. On 2026-09-25, Claude Code connected and listed the tool; Codex called it and received the no-profile message. Other clients have not been tested. The server implements MCP over stdio and exposes one tool, `load_emulo_profile`, which returns your mined work, design, writing, or video profile over the Model Context Protocol.
 
 Run it from the published package with `uvx emulo mcp`, or from a checkout with `python emulo.py mcp`, and point an MCP client at it:
 
@@ -270,7 +264,7 @@ Run it from the published package with `uvx emulo mcp`, or from a checkout with 
 }
 ```
 
-The MCP server is stdlib-only and makes no network calls of its own. It serves the profile activated by the agent mining flow (`run emulo` or `emulo:mine`), which lives under `~/.emulo` or `EMULO_HOME`. A `you.md` from the `RUN_ME.md` path is not activated there, so the server does not see it; install that one with `emulo --install` instead.
+The MCP server is stdlib-only and makes no network calls of its own. It serves the profile activated by the agent mining flow (`run emulo` or `emulo:mine`), which lives under `~/.emulo` or `EMULO_HOME`. A `you.md` from the `RUN_ME.md` path is not activated there, so the server does not see it; install that one with `emulo --install` instead. With no activated profile, the tool returns a recovery instruction instead.
 
 ## What happens when you run it
 
@@ -356,7 +350,7 @@ See [SECURITY.md](SECURITY.md) for the exact boundary.
 The legacy extractor remains available and backward compatible:
 
 ```bash
-curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.6/emulo.py
+curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.7/emulo.py
 python emulo.py --dry-run
 python emulo.py --chunks 4 --out emulo-out
 ```
@@ -374,16 +368,36 @@ python emulo.py --install you.md --target opencode
 
 ## Support matrix
 
+Loading rows come from a host-by-host test on 2026-09-25: Emulo 0.6.6 from PyPI, a canary profile, fresh headless sessions in each host. Installing a file and a host reading it are listed separately.
+
+**Where a profile goes**
+
 | Surface | Status in this release |
 |---|---|
-| Codex native plugin | Proven locally with five namespaced skills (`emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, `emulo:video`) |
-| Codex skills.sh bootstrap | Supported |
-| Claude Code skills.sh/direct adapter | Supported |
-| Claude native plugin | Not claimed; host unavailable during validation |
-| Cursor / Gemini adapters | Supported through explicit install commands |
-| OpenCode | Both directions verified live: sessions mined from its SQLite store and legacy JSON layout (`--source opencode`), profile installed to its global rules (`--target opencode`) |
-| Google Antigravity | Mining verified live against a real local install (`--source antigravity`): typed prompts extracted from `~/.gemini/antigravity/brain` transcripts, harness envelopes stripped. Antigravity only writes transcripts when interaction logging is enabled in its privacy settings |
-| OpenClaw / Hermes Agent | Profile skill discovery verified locally; [guide](docs/OPENCLAW_HERMES.md) |
+| Codex, `--target agents --repo .` (project `AGENTS.md`) | Verified end to end in one test: a real model answered the canary from the profile with no tool calls, and the control without it answered "Unknown". |
+| OpenCode, `--target opencode` (global `~/.config/opencode/AGENTS.md`) or a project `AGENTS.md` | Loaded into OpenCode's instructions: the profile is in the system prompt OpenCode sends to the model. Whether the model follows it was not tested |
+| Claude Code, `--target claude` (skill at `~/.claude/skills/you/`) | Installs. Not loaded automatically in a reliable way: with many skills installed, Claude Code listed only some of them to the model and left `you` out. Typing `/you` or `/you <task>` loads it (verified) |
+| Codex, `--target codex` (skill) | Installs. Codex opens it only when a request matches the skill's description; on a plain prompt it was not opened. `--target agents --repo .` is the route verified end to end in one test |
+| Claude Code native plugin | `claude plugin marketplace add ohad6k/emulo` and `claude plugin install emulo@emulo` work headlessly and the five skills register (verified). Serves only a profile activated by the agent mining flow, never a hand-made or `RUN_ME.md` `you.md` |
+| Codex native plugin | Proven locally with five namespaced skills (`emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, `emulo:video`): installs and lists them. Not re-tested on 2026-09-25, and whether Codex opens them during a task was not tested |
+| MCP server (`emulo mcp`) | The protocol works. Claude Code connected and listed the tool; Codex called it and received the no-profile message. Any MCP client can connect; others were not tested. Serves only a profile activated by the agent mining flow; with none, it says so |
+| Cursor, `--target cursor` (`.cursor/rules/you.mdc`, `alwaysApply`) | Writes the file where Cursor looks for rules. Loading not verified |
+| Gemini, `--target gemini` (`GEMINI.md`) | Writes the file where Gemini looks for it. Loading not verified |
+| OpenClaw / Hermes Agent | Skill discovery was checked in July 2026 on earlier versions and has not been re-verified; [guide](docs/OPENCLAW_HERMES.md) |
+
+**Where logs come from**
+
+| Source | Status in this release |
+|---|---|
+| Claude Code, Codex, Copilot CLI | Mined from their local JSONL session logs. Copilot CLI is a source only, never a destination |
+| OpenCode | Sessions mined from its SQLite store and legacy JSON layout (`--source opencode`), verified live |
+| Google Antigravity | Source only. Mining verified live against a real local install (`--source antigravity`): typed prompts extracted from `~/.gemini/antigravity/brain` transcripts, harness envelopes stripped. Antigravity only writes transcripts when interaction logging is enabled in its privacy settings |
+
+**Running the mining flow**
+
+| Surface | Status in this release |
+|---|---|
+| skills.sh bootstrap (`npx skills add ohad6k/emulo@emulo`, then `run emulo`) | Runs in Codex and Claude Code |
 
 ## Updating and notifications
 
@@ -393,10 +407,10 @@ A GitHub star bookmarks the repository but does not subscribe you to releases. T
 
 ## Limits
 
-- Emulo models how you work, design, write, and make videos. It does not make the underlying model smarter.
+- Emulo writes down rules mined from how you work, design, write, and make videos. It does not make the underlying model smarter.
 - Sparse or repetitive histories can leave design or writing inactive. Emulo reports the exact targeted-deepen instruction instead of inventing a persona.
 - Provider token accounting remains outside Emulo's exact measurement.
-- Benchmarks, leaderboard results, and proof videos are a separate later release.
+- Published tests so far: [emulo.vercel.app/placebo](https://emulo.vercel.app/placebo) and [emulo.vercel.app/fable](https://emulo.vercel.app/fable). Neither shows the work got better; see [What is tested so far](#what-is-tested-so-far).
 
 ## FAQ
 
@@ -404,13 +418,13 @@ The three things people push back on, answered once.
 
 **"Why not just ask Claude to summarize my logs?"**
 
-One pass can't do it. My history is 1,656 sessions, about 3M tokens after extraction, and the raw logs are mostly tool output, file dumps, and pasted errors. A single summarize call burns the window on that noise. Emulo keeps only the words you typed, gives each validated segment its own evidence pass, and requires distinct supporting sessions before an inferred rule can survive. The resulting profile keeps session receipts instead of an obsolete worker-count score.
+One pass can't do it. For scale, a profile the author mined in early July 2026 (1,656 sessions) was mined from raw logs that are mostly tool output, file dumps, and pasted errors. A single summarize call burns the window on that noise. Emulo keeps only the words you typed, gives each validated segment its own evidence pass, and requires distinct supporting sessions before an inferred rule can survive. The resulting profile keeps session receipts instead of an obsolete worker-count score.
 
 **"Claude already has memory. Why do I need this?"**
 
-Use both. Memory is what you told the model: curated notes, `CLAUDE.md`, and it stays inside one tool. Emulo reads supported raw sessions from Codex, Claude Code, Copilot CLI, OpenCode, and Google Antigravity and pulls out what you never wrote down: what you reject, what "done" means to you, and when you demand proof. The output is plain files you own and can load through supported agents.
+Use both. Memory is what you told the model: curated notes, `CLAUDE.md`, and it stays inside one tool. Emulo reads supported raw sessions from Codex, Claude Code, Copilot CLI, OpenCode, and Google Antigravity and pulls out what you never wrote down: what you reject, what "done" means to you, and when you demand proof. The output is plain files you own, and the [support matrix](#support-matrix) says which agents were seen loading them.
 
-**"Claude only keeps 30 days of logs. Where did 9 months come from?"**
+**"Claude only keeps 30 days of logs. Where did nine months come from?"**
 
 Claude Code's retention is a setting (`cleanupPeriodDays`, 30 by default), and my longer history combines Claude Code, Codex, and Copilot CLI sessions plus archives. If you keep the default retention, older Claude sessions can roll off before Emulo sees them. Raise the retention, then mine what's left.
 
