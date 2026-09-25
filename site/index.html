@@ -81,12 +81,12 @@
     {
       "@type": "Question",
       "name": "Which coding agents does it work with?",
-      "acceptedAnswer": { "@type": "Answer", "text": "It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions, but it installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load the profile before a task." }
+      "acceptedAnswer": { "@type": "Answer", "text": "It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions, but it installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load a profile mined through the agent flow before a task." }
     },
     {
       "@type": "Question",
       "name": "What does it cost to run?",
-      "acceptedAnswer": { "@type": "Answer", "text": "The tool is MIT licensed and free. The coach report makes no model call, so running it costs nothing. Mining spends model calls to read your history, so Emulo prints a read-only plan with the cost first and waits for your approval before any model work starts." }
+      "acceptedAnswer": { "@type": "Answer", "text": "The tool is MIT licensed and free. The coach report makes no model call, so running it costs nothing. Mining spends model calls to read your history. When an agent mines for you through run emulo, it shows a read-only plan with the cost first and waits for your approval before any model work starts. The plain emulo command makes no model calls: it writes chunks and a RUN_ME.md, and the model work happens when you hand that file to your agent." }
     },
     {
       "@type": "Question",
@@ -628,7 +628,7 @@ footer a:hover{color:var(--red)}
           <span class="step-no">2</span>
           <div>
             <h3>read emulo-out/RUN_ME.md and follow it</h3>
-            <p>Say that to your coding agent. This is the step that spends model calls: it reads each chunk and writes <code>you.md</code>, and it shows you the plan and the cost before it starts.</p>
+            <p>Say that to your coding agent. This is the step that spends model calls: it makes one pass per chunk and writes <code>you.md</code>. It starts straight away, with no cost plan first; if you want the plan and an approval step, use the agent route below.</p>
           </div>
         </li>
       </ol>
@@ -721,11 +721,11 @@ footer a:hover{color:var(--red)}
       </div>
       <div class="q">
         <h3>Which coding agents does it work with?</h3>
-        <p>It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions, but it installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load the profile before a task.</p>
+        <p>It reads Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity logs out of the box. It does not read Cursor sessions, but it installs profiles for Cursor and Gemini through explicit adapters. It also ships an MCP server, so any MCP client can load a profile mined through the agent flow before a task.</p>
       </div>
       <div class="q">
         <h3>What does it cost to run?</h3>
-        <p>The tool is MIT licensed and free. The coach report makes no model call, so running it costs nothing. Mining spends model calls to read your history, so Emulo prints a read-only plan with the cost first and waits for your approval before any model work starts.</p>
+        <p>The tool is MIT licensed and free. The coach report makes no model call, so running it costs nothing. Mining spends model calls to read your history. When an agent mines for you through <code>run emulo</code>, it shows a read-only plan with the cost first and waits for your approval before any model work starts. The plain <code>emulo</code> command makes no model calls: it writes chunks and a RUN_ME.md, and the model work happens when you hand that file to your agent.</p>
       </div>
       <div class="q">
         <h3>How much history do I need?</h3>

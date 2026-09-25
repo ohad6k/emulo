@@ -79,6 +79,13 @@ class McpHandlerTest(unittest.TestCase):
             tools[0]["inputSchema"]["properties"]["domain"]["enum"],
         )
 
+    def test_tool_description_names_every_domain_the_enum_accepts(self):
+        # A model picks the domain from this sentence; a value it never reads
+        # about is one it never asks for.
+        tool = emulo.mcp_handle(rpc(id=2, method="tools/list"), self.HOME)["result"]["tools"][0]
+        for domain in tool["inputSchema"]["properties"]["domain"]["enum"]:
+            self.assertIn(f"'{domain}'", tool["description"], domain)
+
     def test_unknown_method_is_method_not_found(self):
         response = emulo.mcp_handle(rpc(id=3, method="does/notexist"), self.HOME)
         self.assertEqual(-32601, response["error"]["code"])

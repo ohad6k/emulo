@@ -64,7 +64,7 @@ class EmuloCliTest(unittest.TestCase):
             self.assertIn("jsonl files: 2", result.stdout)
             self.assertIn("sessions: 2", result.stdout)
             self.assertIn("your messages: 2", result.stdout)
-            self.assertIn("secrets/PII redacted: 1", result.stdout)
+            self.assertIn("messages with secrets/PII redacted: 1", result.stdout)
             self.assertFalse(out.exists())
 
     def test_run_writes_redacted_corpus_and_chunks(self):
@@ -169,6 +169,115 @@ class EmuloCliTest(unittest.TestCase):
                       "my token store", "passwd prompt appeared",
                       "boarding pass QF12345", "pwd C:/Users/me/project1"):
             self.assertNotIn("[REDACTED]", emulo.redact(prose), prose)
+
+    def test_redacts_anthropic_google_and_openai_project_keys(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("emulo", EMULO)
+        emulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(emulo)
+
+        body = "Ab3_dE-fGh" * 9
+        anthropic = "sk-" + "ant-api03-" + body + "AA"
+        oauth = "sk-" + "ant-oat01-" + body
+        google = "AI" + "za" + ("SyD3_x-9QwErTyUiOpAsDfGhJkLzXcVbN12")[:35]
+        openai_project = "sk-" + "proj-" + body + "_T3BlbkFJ" + body
+        self.assertEqual(39, len(google))
+
+        for text, label, secret in (
+            (f"use {anthropic} for the eval", "[ANTHROPIC_KEY]", anthropic),
+            (f"ANTHROPIC_API_KEY {oauth}", "[ANTHROPIC_KEY]", oauth),
+            (f"maps key {google}.", "[GOOGLE_API_KEY]", google),
+            (f"?key={google}&v=3", "[GOOGLE_API_KEY]", google),
+            (f"old key {openai_project} rotated", "[OPENAI_KEY]", openai_project),
+        ):
+            out = emulo.redact(text)
+            self.assertIn(label, out, text)
+            self.assertNotIn(secret, out)
+            self.assertNotIn(body[:10], out, out)
+
+        for prose in ("the AIza prefix marks a Google key",
+                      "AIzaShort-123 is not a key",
+                      "AIza" + "x" * 20 + " too short",
+                      "sk-ant is the prefix Anthropic uses"):
+            self.assertEqual(prose, emulo.redact(prose), prose)
+
+    def test_redacts_passwords_in_connection_urls(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("emulo", EMULO)
+        emulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(emulo)
+
+        exact = {
+            "postgres://app:s3cr3tpw@localhost:5432/db":
+                "postgres://app:[REDACTED]@localhost:5432/db",
+            "DATABASE_URL=postgresql://app:hunter2@localhost/app_dev":
+                "DATABASE_URL=postgresql://app:[REDACTED]@localhost/app_dev",
+            "mysql://root:rootpw@dbhost:3306/shop":
+                "mysql://root:[REDACTED]@dbhost:3306/shop",
+            "redis://:redispass@localhost:6379/0":
+                "redis://:[REDACTED]@localhost:6379/0",
+            "amqp://guest:guestpw@rabbit:5672/":
+                "amqp://guest:[REDACTED]@rabbit:5672/",
+            "jdbc:postgresql://svc:pw1@localhost/x":
+                "jdbc:postgresql://svc:[REDACTED]@localhost/x",
+            "postgres://u:p@ss@localhost/db":
+                "postgres://u:[REDACTED]@localhost/db",
+        }
+        for text, expected in exact.items():
+            self.assertEqual(expected, emulo.redact(text), text)
+
+        for text, secret in (
+            ("mongodb+srv://admin:M0ng0!pass@cluster0.abcde.mongodb.net/test", "M0ng0!pass"),
+            ("git clone https://deploy:tok3nvalue@git.example.com/repo.git", "tok3nvalue"),
+            ("postgres://app:pw@10.0.0.5/db", ":pw@"),
+        ):
+            out = emulo.redact(text)
+            self.assertNotIn(secret, out, out)
+            self.assertIn("[REDACTED]", out, out)
+
+        for keep in ("https://example.com/path?q=1",
+                     "http://localhost:3000/api",
+                     "postgres://app@localhost/db",
+                     "ssh://deploy@build-box:22/srv/repo",
+                     "see http://host:8080/a:b for details",
+                     "https://host:8443/path?u=a@b"):
+            self.assertEqual(keep, emulo.redact(keep), keep)
+
+        # a port followed by a query or fragment holding an @ is not a password:
+        # the address in it is still an email, and the port stays
+        self.assertEqual("http://localhost:3000?next=[EMAIL]",
+                         emulo.redact("http://localhost:3000?next=a@b.com"))
+        self.assertEqual("http://localhost:3000#to=[EMAIL]",
+                         emulo.redact("http://localhost:3000#to=a@b.com"))
+
+    def test_connection_url_rule_stays_linear_on_long_tokens(self):
+        import importlib.util
+        import time
+        spec = importlib.util.spec_from_file_location("emulo", EMULO)
+        emulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(emulo)
+        # Only the URL rule: the scheme is anchored to the start of a word so a
+        # long pasted token is scanned once, not once per character.
+        blob = "a" * 200_000 + " " + "b://" + "c" * 200_000 + " x://u:" + "p" * 200_000
+        started = time.perf_counter()
+        emulo.CONNECTION_URL_PASSWORD.sub(emulo.CONNECTION_URL_REPLACEMENT, blob)
+        self.assertLess(time.perf_counter() - started, 2.0)
+
+    def test_redaction_count_is_labelled_as_messages(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            logs = root / "logs"
+            write_jsonl(logs / "codex.jsonl", [{
+                "timestamp": "2026-07-08T10:00:00Z",
+                "payload": {"type": "message", "role": "user",
+                            "content": [{"text": "mail a@example.com and b@example.com token=abc123456789"}]},
+            }])
+            result = subprocess.run(
+                [sys.executable, str(EMULO), "--path", str(logs), "--dry-run"],
+                check=True, capture_output=True, text=True, cwd=tmp,
+            )
+            # three items redacted in one message: the count is messages, and says so
+            self.assertIn("messages with secrets/PII redacted: 1", result.stdout)
 
     def test_phone_redaction_does_not_eat_dates_versions_or_part_numbers(self):
         import importlib.util
@@ -448,6 +557,23 @@ class EmuloCliTest(unittest.TestCase):
             )
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("no card found", result.stdout)
+            # The hint must match the flow that exists: RUN_ME.md writes you.md
+            # and no card; the plugin pipeline is what writes card.json.
+            self.assertNotIn("MINING_PROMPT", result.stdout)
+            self.assertIn("RUN_ME.md", result.stdout)
+            self.assertIn("emulo plugin status", result.stdout)
+            self.assertIn("emulo --card <card_path>", result.stdout)
+
+    def test_card_hint_names_a_command_that_prints_the_card_path(self):
+        # The hint sends the user to `emulo plugin status`; that command must
+        # exist and answer with a status even when no profile is active.
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                [sys.executable, str(EMULO), "plugin", "status", "--emulo-home", str(Path(tmp) / "emulo-home")],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual("missing", json.loads(result.stdout)["status"])
 
     def test_zero_valid_sessions_fails_without_writing_output(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -601,6 +727,228 @@ class EmuloCliTest(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stderr.decode("utf-8", errors="replace"))
             self.assertIn("שלום", result.stdout.decode("utf-8"))
             self.assertTrue((home / ".codex" / "skills" / "you" / "SKILL.md").exists())
+
+
+def isolated_home_env(home):
+    """Point HOME (every OS) and the log roots at one directory."""
+    env = dict(os.environ)
+    for name in ("HOME", "USERPROFILE", "CODEX_HOME", "XDG_DATA_HOME"):
+        env[name] = str(home)
+    env.pop("HOMEDRIVE", None)
+    env.pop("HOMEPATH", None)
+    return env
+
+
+# A you.md written the way RUN_ME.md asks for it: domains, instruction,
+# implication, a dated verbatim quote. RUN_ME.md never mentions frontmatter,
+# so an agent following it writes none.
+RUN_ME_PROFILE = """# You
+
+## work
+
+- **Prove it ran before calling it done.**
+  Implication: run the change and read the output before reporting success.
+  Receipt (2026-07-08): "done means live proof, not code existing"
+
+## write
+
+- **No filler in replies.**
+  Implication: answer first, cut the preamble. Aimed at: the agent.
+  Receipt (2026-07-09): "skip the intro and give me the answer"
+"""
+
+
+class RunMeInstallPathTest(unittest.TestCase):
+    def _mine(self, work, home):
+        logs = work / "logs"
+        write_jsonl(logs / "codex.jsonl", [
+            {
+                "timestamp": "2026-07-08T10:00:00Z",
+                "payload": {"type": "message", "role": "user",
+                            "content": [{"text": "done means live proof, not code existing"}]},
+            },
+            {
+                "timestamp": "2026-07-09T10:00:00Z",
+                "payload": {"type": "message", "role": "user",
+                            "content": [{"text": "skip the intro and give me the answer"}]},
+            },
+        ])
+        subprocess.run(
+            [sys.executable, str(EMULO), "--path", str(logs), "--chunks", "1"],
+            check=True, capture_output=True, text=True, cwd=work, env=isolated_home_env(home),
+        )
+        return (work / "emulo-out" / "RUN_ME.md").read_text(encoding="utf-8")
+
+    def test_you_md_written_as_run_me_says_installs_with_every_printed_command(self):
+        import shlex
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp) / "work"
+            home = Path(tmp) / "home"
+            work.mkdir()
+            home.mkdir()
+            run_me = self._mine(work, home)
+
+            self.assertIn("emulo-out/you.md", run_me)
+            self.assertNotIn("frontmatter", run_me)
+            (work / "emulo-out" / "you.md").write_text(RUN_ME_PROFILE, encoding="utf-8")
+
+            printed = [line.strip() for line in run_me.splitlines()
+                       if line.strip().startswith("emulo --install ")]
+            self.assertEqual(3, len(printed), run_me)
+            # RUN_ME.md also lists every target by name; each must work the same way.
+            listed = [line for line in run_me.splitlines() if line.startswith("Targets: ")]
+            self.assertEqual(1, len(listed))
+            targets = [t.strip() for t in listed[0][len("Targets: "):].rstrip(".").split(",")]
+            self.assertEqual(["claude", "codex", "cursor", "agents", "gemini", "opencode"], targets)
+            commands = list(printed)
+            for target in targets:
+                if not any(f"--target {target}" in c for c in printed):
+                    commands.append(f"emulo --install emulo-out/you.md --target {target} --repo .")
+
+            for command in commands:
+                argv = shlex.split(command)
+                self.assertEqual("emulo", argv[0])
+                proc = subprocess.run(
+                    [sys.executable, str(EMULO), *argv[1:]],
+                    capture_output=True, text=True, cwd=work, env=isolated_home_env(home),
+                )
+                self.assertEqual(0, proc.returncode, f"{command}\n{proc.stdout}{proc.stderr}")
+                self.assertIn("installed:", proc.stdout, command)
+
+            body = RUN_ME_PROFILE.strip()
+            for skill in (home / ".claude" / "skills" / "you" / "SKILL.md",
+                          home / ".codex" / "skills" / "you" / "SKILL.md"):
+                installed = skill.read_text(encoding="utf-8")
+                self.assertTrue(installed.startswith("---\nname: you\ndescription: "), installed[:80])
+                self.assertIn(body, installed)
+            for block_file in (work / "AGENTS.md", work / "GEMINI.md",
+                               home / ".config" / "opencode" / "AGENTS.md"):
+                self.assertIn(body, block_file.read_text(encoding="utf-8"))
+            self.assertIn(body, (work / ".cursor" / "rules" / "you.mdc").read_text(encoding="utf-8"))
+            # the user's own file is never rewritten
+            self.assertEqual(RUN_ME_PROFILE, (work / "emulo-out" / "you.md").read_text(encoding="utf-8"))
+
+    def test_skill_install_without_frontmatter_says_it_added_one(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("emulo", EMULO)
+        emulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(emulo)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile = root / "you.md"
+            profile.write_text(RUN_ME_PROFILE, encoding="utf-8")
+            for target in ("claude", "codex"):
+                proc = subprocess.run(
+                    [sys.executable, str(EMULO), "--install", str(profile), "--target", target,
+                     "--home", str(root / "home")],
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(0, proc.returncode, proc.stderr)
+                self.assertIn("no frontmatter", proc.stdout)
+                self.assertIn("name: you", proc.stdout)
+            installed = (root / "home" / ".claude" / "skills" / "you" / "SKILL.md").read_text(encoding="utf-8")
+            fields = emulo.parse_frontmatter(installed)
+            self.assertEqual("you", fields["name"])
+            self.assertTrue(emulo.has_skill_frontmatter(installed, expected_name="you"))
+
+    def test_frontmatter_after_blank_lines_or_indent_is_used_not_stacked(self):
+        # The check used to run on the raw text: a blank first line, or an
+        # indented marker, made a real block read as "no frontmatter", so the
+        # default was stacked on top and the user's own block left in the body.
+        own = "---\nname: ohad\ndescription: my desc\n---\n# body\n"
+        cases = {
+            "blank first line": "\n" + own,
+            "whitespace-only first lines": "  \n\t\r\n" + own,
+            "indented marker": "  " + own,
+        }
+        for label, text in cases.items():
+            for target in ("claude", "codex"):
+                with self.subTest(case=label, target=target), tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    profile = root / "you.md"
+                    profile.write_bytes(text.encode("utf-8"))
+                    proc = subprocess.run(
+                        [sys.executable, str(EMULO), "--install", str(profile), "--target", target,
+                         "--home", str(root / "home")],
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(0, proc.returncode, proc.stderr)
+                    self.assertNotIn("no frontmatter", proc.stdout)
+                    installed = (root / "home" / f".{target}" / "skills" / "you" / "SKILL.md").read_text(encoding="utf-8")
+                    self.assertEqual(own, installed)
+
+    def test_frontmatter_after_blank_lines_is_stripped_from_block_targets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile = root / "you.md"
+            profile.write_text("\n  ---\nname: ohad\ndescription: my desc\n---\n# body\n", encoding="utf-8")
+            subprocess.run(
+                [sys.executable, str(EMULO), "--install", str(profile), "--target", "agents", "--repo", str(root)],
+                check=True, capture_output=True, text=True,
+            )
+            installed = (root / "AGENTS.md").read_text(encoding="utf-8")
+            self.assertIn("# body", installed)
+            self.assertNotIn("name: ohad", installed)
+            self.assertNotIn("---", installed)
+
+    def test_existing_frontmatter_with_utf8_bom_is_kept_not_doubled(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile = root / "you.md"
+            text = "---\nname: you\ndescription: my own words\n---\n\n# profile\n"
+            profile.write_bytes(b"\xef\xbb\xbf" + text.encode("utf-8"))
+            proc = subprocess.run(
+                [sys.executable, str(EMULO), "--install", str(profile), "--target", "claude",
+                 "--home", str(root / "home")],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(0, proc.returncode, proc.stderr)
+            self.assertNotIn("no frontmatter", proc.stdout)
+            installed = (root / "home" / ".claude" / "skills" / "you" / "SKILL.md").read_text(encoding="utf-8")
+            self.assertEqual(text, installed)
+
+
+class EmptyEnvVarTest(unittest.TestCase):
+    def test_empty_codex_home_and_xdg_data_home_mean_unset(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "home"
+            work = Path(tmp) / "work"
+            home.mkdir()
+            env = isolated_home_env(home)
+            env["CODEX_HOME"] = ""
+            env["XDG_DATA_HOME"] = ""
+            proc = subprocess.run(
+                [sys.executable, "-c",
+                 "import importlib.util, json, sys;"
+                 "spec = importlib.util.spec_from_file_location('emulo', sys.argv[1]);"
+                 "m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m);"
+                 "print(json.dumps({'codex': m.SOURCES['codex'], 'opencode': m.SOURCES['opencode']}))",
+                 str(EMULO)],
+                capture_output=True, text=True, env=env, check=True,
+            )
+            roots = json.loads(proc.stdout)
+            self.assertEqual(
+                [os.path.join(str(home), ".codex", "sessions"),
+                 os.path.join(str(home), ".codex", "archived_sessions")],
+                roots["codex"],
+            )
+            self.assertEqual([os.path.join(str(home), ".local", "share", "opencode")], roots["opencode"])
+
+            # the real CLI must not mine folders that happen to sit in the working directory
+            for decoy in ("sessions", "archived_sessions"):
+                write_jsonl(work / decoy / "decoy.jsonl", [{
+                    "timestamp": "2026-07-08T10:00:00Z",
+                    "payload": {"type": "message", "role": "user",
+                                "content": [{"text": "a message from the working directory"}]},
+                }])
+            (work / "opencode").mkdir()
+            dry = subprocess.run(
+                [sys.executable, str(EMULO), "--source", "codex", "--dry-run"],
+                capture_output=True, text=True, env=env, cwd=work,
+            )
+            self.assertEqual(1, dry.returncode, dry.stdout + dry.stderr)
+            self.assertIn("no session logs found", dry.stdout)
+            self.assertIn(os.path.join(str(home), ".codex", "sessions"), dry.stdout)
 
 
 if __name__ == "__main__":

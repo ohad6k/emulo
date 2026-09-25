@@ -236,7 +236,8 @@ class LoadCardTest(unittest.TestCase):
                     emulo.load_card(tmp)
             self.assertEqual(1, raised.exception.code)
             self.assertIn("no card found", buf.getvalue())
-            self.assertIn("MINING_PROMPT.md", buf.getvalue())
+            self.assertNotIn("MINING_PROMPT.md", buf.getvalue())
+            self.assertIn("emulo plugin status", buf.getvalue())
 
     def test_explicit_card_path_wins_over_the_out_dir_default(self):
         with tempfile.TemporaryDirectory() as tmp:

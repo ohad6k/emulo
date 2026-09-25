@@ -246,3 +246,24 @@ test('every path chip shows a path, not the placeholder markup', { skip: needsJs
     assert.match(shown, /\.(claude|codex)$/, `chip shows ${shown}`);
   }
 });
+
+test('the redaction stat says it counts messages, not items', { skip: needsJsdom }, async () => {
+  // One message holding three redactable items: the page counts it once, like emulo.py.
+  const row = JSON.stringify({ type: 'user', timestamp: '2026-09-20T10:00:00Z',
+    message: { role: 'user', content: 'mail a@example.com and b@example.com token=abc123456789' } });
+  const file = { kind: 'file', name: 'session.jsonl', getFile: async () => ({ text: async () => row + '\n' }) };
+  const handle = { name: '.claude', kind: 'directory', values: async function* () { yield file; } };
+  const { window, document } = loadPage({ directoryPicker: async () => handle });
+  // jsdom has neither; the scan hashes long messages with them, as a browser does.
+  window.TextEncoder = TextEncoder;
+  Object.defineProperty(window, 'crypto', { value: require('node:crypto').webcrypto, configurable: true });
+  click(window, document.getElementById('picker-button'));
+  for (let i = 0; i < 50 && !document.getElementById('result-state').classList.contains('active'); i += 1) {
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  assert.ok(document.getElementById('result-state').classList.contains('active'),
+    `the scan must finish: ${document.getElementById('error-message').textContent}`);
+  const stats = [...document.querySelectorAll('#summary-grid .summary-stat')]
+    .map((cell) => [cell.querySelector('strong').textContent, cell.querySelector('span').textContent]);
+  assert.deepEqual(stats.at(-1), ['1', 'messages redacted']);
+});
