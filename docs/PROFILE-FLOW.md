@@ -1,6 +1,6 @@
 # The profile flow, step by step
 
-This guide explains what Emulo does with your session logs, what it writes, what can reach a model provider, and how to load and remove a profile. It describes Emulo 0.6.5.
+This guide explains what Emulo does with your session logs, what it writes, what can reach a model provider, and how to load and remove a profile. It describes Emulo 0.6.6.
 
 Commands use `emulo`, which `pip install emulo` puts on your path. From a checkout of this repository, use `python emulo.py` instead.
 
@@ -12,7 +12,7 @@ Emulo does three different jobs. You can use any of them without the others.
 |---|---|---|---|
 | Usage report | `emulo --coach` | No | No |
 | Mine a profile | `emulo`, then a coding agent | Yes, in the agent step | Yes |
-| Load a profile | `emulo --install ...` or `emulo mcp` | Emulo does not. The agent that loads it does. | `--install` writes one file or block |
+| Load a profile | `emulo --install ...`, or `emulo mcp` for a plugin-activated profile | Emulo does not. The agent that loads it does. | `--install` writes one file or block |
 
 **The usage report** reads the messages you typed and prints counts: asks you sent three or more times in a row, messages that say "as I said", runs of near-identical asks, and messages that open like a correction. Every finding prints the dated messages behind it. It makes no model call and writes nothing.
 
@@ -28,10 +28,10 @@ Whether loading a profile makes an agent's work better is not proven. The one pu
 
 There are two mining paths and they store the profile in different places.
 
-- **The one-file CLI.** You run `emulo`. It writes `emulo-out/` with chunk files and a `RUN_ME.md`. You tell your agent `read emulo-out/RUN_ME.md and follow it`, and the agent writes `emulo-out/you.md`. You load it with `emulo --install`.
-- **The plugin or bootstrap.** You ask your agent to `run emulo` (after `npx skills add ohad6k/emulo@emulo`) or use `emulo:mine` from the native plugin. The agent runs `emulo plugin preflight`, shows you the plan, waits for your approval, runs one worker pass per segment and one reducer pass, and activates the profile inside `~/.emulo`.
+- **The one-file CLI (the `RUN_ME.md` path).** You run `emulo`. It writes `emulo-out/` with chunk files and a `RUN_ME.md` straight away, with no plan or approval step, because it makes no model call. You tell your agent `read emulo-out/RUN_ME.md and follow it`, and the agent writes `emulo-out/you.md`. You load it with `emulo --install`. This path writes no card.
+- **The agent mining flow (plugin or bootstrap).** You ask your agent to `run emulo` (after `npx skills add ohad6k/emulo@emulo`) or use `emulo:mine` from the native plugin. The agent runs `emulo plugin preflight`, shows you the plan, waits for your approval, runs one worker pass per segment and one reducer pass, and activates the profile inside `~/.emulo`, including a `card.json`.
 
-The MCP server and the `emulo:work`, `emulo:design`, `emulo:write` and `emulo:video` skills only read the profile activated by the second path. A `you.md` made with the first path is loaded only through `emulo --install`.
+The MCP server only serves a profile activated by the agent mining flow. It does not read a `you.md` from the `RUN_ME.md` path, even after you install it with `emulo --install`. The same is true of the `emulo:work`, `emulo:design`, `emulo:write` and `emulo:video` skills.
 
 ## 2. Before mining
 
@@ -46,6 +46,8 @@ With no options, Emulo searches all of these. `~` is your home directory (`C:\Us
 | Copilot CLI | `~/.copilot/session-state` | none |
 | OpenCode | `~/.local/share/opencode` (the `opencode.db` SQLite file and `storage/session/**/*.json`) | `XDG_DATA_HOME` replaces `~/.local/share` |
 | Google Antigravity | `~/.gemini/antigravity/brain` | none |
+
+If `CODEX_HOME` or `XDG_DATA_HOME` is set but empty, Emulo treats it as unset and uses the default above. (Before 0.6.6, an empty value made it search folders under the directory you ran it from.)
 
 It reads every `*.jsonl` file under those folders, skips any file under a `subagents` folder, and reads OpenCode's database read-only. It looks nowhere else.
 
@@ -71,17 +73,35 @@ Only messages you typed. Each kept message keeps its date. Each session gets a h
 
 ### Redaction
 
-Redaction runs before anything is written. It replaces:
+Redaction runs before anything is written. This list is the one in [SECURITY.md](../SECURITY.md), where each pattern is pinned by a test. It covers:
 
-- OpenAI-style `sk-` keys, Stripe `sk_live_` keys, `whsec_` webhook secrets, Supabase `sbp_` tokens, GitHub `ghp_`, `gho_`, `ghu_`, `ghs_` and `ghr_` tokens, JWTs, AWS `AKIA` key ids and Slack `xox` tokens
-- email addresses and IPv4 addresses
-- phone numbers written with a `+` country code or a leading `0` trunk prefix
-- the value after `api_key`, `api-key`, `apikey`, `secret`, `token`, `password` or `passwd` followed by `:` or `=`
-- `password is X`, `passphrase X`, `psk X`, `passkey X` and `wifi key X`, when X looks like a secret (12 or more characters, or containing a digit or a symbol)
+- OpenAI keys (`sk-`, `sk-proj-`, `sk-svcacct-`, `sk-admin-`)
+- Anthropic keys (`sk-ant-`)
+- Google API keys (`AIza` plus 35 characters)
+- Stripe live secret keys (`sk_live_`)
+- webhook secrets (`whsec_`)
+- Supabase access tokens (`sbp_`)
+- GitHub tokens (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`)
+- JWTs (three dot-separated parts starting `eyJ`)
+- AWS access key IDs (`AKIA`)
+- Slack tokens (`xoxb-`, `xoxa-`, `xoxp-`, `xoxr-`, `xoxs-`)
+- the password in a connection URL (`scheme://user:password@host`; tested for postgres, postgresql, mysql, mongodb+srv, redis, amqp and https, including a percent-encoded password)
+- email addresses
+- phone numbers with an international or trunk prefix
+- IPv4 addresses
+- any value assigned with `=` or `:` to a name ending in `api_key`, `apikey`, `api-key`, `secret`, `token`, `password` or `passwd`, in any case, so `client_secret=` and `GITHUB_TOKEN=` are covered
+- `password is`, `passwd`, `passphrase`, `passkey`, `psk` and `wifi key` followed by a value, when that value has a digit or a symbol or is at least 12 characters long
 
-Redaction is best-effort pattern matching. It does not catch, for example: names, street addresses, company or client names, file paths (which often contain your username and project names), phone numbers without a country code or leading 0 such as `415-555-2671`, Anthropic-style `sk-ant-` keys, Google `AIza` keys, or a password inside a connection URL. Read the output before you send it anywhere.
+Anything else passes through. Known misses:
 
-The count Emulo prints as `secrets/PII redacted` is the number of messages that had something replaced, not the number of items.
+- `AWS_SECRET_ACCESS_KEY=...`, because the name ends in `ACCESS_KEY`
+- a provider key with no fixed prefix
+- a connection URL password that holds a raw `#`, `/`, `?` or space
+- a connection URL password after a user name that holds a raw `@`, as in `postgres://user@corp.com:pw@host`, where only the user name is replaced
+
+Redaction is best-effort. Read the output before you share it.
+
+The line `messages with secrets/PII redacted` counts messages that had anything replaced, not the number of items.
 
 `--no-redact` turns redaction off. Do not use it unless you are keeping everything local.
 
@@ -98,15 +118,15 @@ dry run: no files written
 looked in: <each folder from the table above>
 jsonl files: 3
 sessions: 3
-your messages: 4
-tokens (approx): 67
-secrets/PII redacted: 1
+your messages: 6
+tokens (approx): 110
+messages with secrets/PII redacted: 2
 would write: emulo-out/you-corpus.txt  +  emulo-out/RUN_ME.md  +  chunks in emulo-out/chunks/
 ```
 
 If nothing is found it prints `no session logs found`, lists every folder it looked in, and exits with status 1.
 
-On the plugin path, the plan comes from `emulo plugin preflight`. It prints one line of JSON with the valid sessions, the source tokens, the planned worker and reducer passes, and an `approval_hash`. It writes nothing. `emulo plugin prepare --approved-plan-hash HASH` refuses to run if the plan changed since you approved it.
+On the agent mining flow, the plan comes from `emulo plugin preflight`. It prints one line of JSON with the valid sessions, the source tokens, the planned worker and reducer passes, and an `approval_hash`. It writes nothing. `emulo plugin prepare --approved-plan-hash HASH` refuses to run if the plan changed since you approved it.
 
 ## 3. What can reach a model provider
 
@@ -114,8 +134,8 @@ On the plugin path, the plan comes from `emulo plugin preflight`. It prints one 
 
 Text reaches a model in exactly these places:
 
-1. **The mining agent.** When your coding agent reads the chunk files (CLI path) or its assigned segments (plugin path), that text goes to the model the agent runs on. The text is your redacted typed messages, their dates, the session id hashes and the source names, plus the instructions in `RUN_ME.md` or `MINING_PROMPT.md`.
-2. **The reducer, on the plugin path.** It reads the workers' JSON reports, not your raw logs. Those reports contain short verbatim quotes of your messages.
+1. **The mining agent.** When your coding agent reads the chunk files (`RUN_ME.md` path) or its assigned segments (agent mining flow), that text goes to the model the agent runs on. The text is your redacted typed messages, their dates, the session id hashes and the source names, plus the instructions in `RUN_ME.md` or `MINING_PROMPT.md`.
+2. **The reducer, in the agent mining flow.** It reads the workers' JSON reports, not your raw logs. Those reports contain short verbatim quotes of your messages.
 3. **Loading the profile.** Whenever an agent loads your profile, the profile text goes to that agent's model with the task. A profile includes quotes of your own messages.
 
 Emulo cannot control what else the agent does while it works, such as other files it opens. That is up to the agent and its settings.
@@ -126,7 +146,7 @@ One more network step, not involving your logs: the `npx skills add` bootstrap d
 
 ## 4. Output files and caches
 
-### The CLI path
+### The `RUN_ME.md` path
 
 ```bash
 emulo
@@ -141,7 +161,8 @@ It writes to `emulo-out/` inside the folder you run it from. `--out DIR` picks a
 | `emulo-out/stats.json` | Session, message, token and redaction counts and the date range |
 | `emulo-out/RUN_ME.md` | Instructions for your agent, listing the chunk files |
 | `emulo-out/you.md` | The profile. The agent writes this, not Emulo. |
-| `emulo-out/card.html` | Only if you run `emulo --card` |
+
+This path writes no `card.json`, so `emulo --card` has nothing to show after it. It says so and exits with status 1. A card comes only from the agent mining flow: `emulo plugin status` prints its `card_path`, and `emulo --card <card_path>` renders it and writes `card.html` into `emulo-out/` (or `--out DIR`).
 
 Running `emulo` again replaces `chunks/` and overwrites the corpus, `stats.json` and `RUN_ME.md`. It does not touch `you.md`. If you have an old `ditto-out/` folder and no `emulo-out/`, Emulo keeps using `ditto-out/`.
 
@@ -155,7 +176,7 @@ Let the agent open `RUN_ME.md` and the chunks with its own file tools. Do not pa
 
 This path writes nothing to `~/.emulo`.
 
-### The plugin path
+### The agent mining flow
 
 Everything goes to `~/.emulo`, or to `EMULO_HOME` if set. An existing `~/.ditto` from before the rename is still used if `~/.emulo` holds no mined data.
 
@@ -180,7 +201,7 @@ rm -rf emulo-out                           # macOS, Linux
 Remove-Item -Recurse -Force emulo-out      # Windows PowerShell
 ```
 
-Everything the plugin path stored, including the active profile:
+Everything the agent mining flow stored, including the active profile:
 
 ```bash
 rm -rf ~/.emulo                            # macOS, Linux
@@ -195,16 +216,9 @@ After that, the MCP server and the `emulo:*` skills report `no active Emulo prof
 
 `you.md` is plain Markdown. Open it, read every rule, and delete or rewrite anything that is wrong. It is your file.
 
-For the `claude` and `codex` targets, the file must start with `name` and `description` frontmatter, or `--install` refuses it. `RUN_ME.md` does not ask the agent for this, so add it yourself if it is missing:
+`you.md` needs no frontmatter. See section 6 for what `--install` does with it.
 
-```text
----
-name: you
-description: My working profile. Load before a task.
----
-```
-
-Profile files on the plugin path are hash-checked against their manifest. If you edit one in place, the loaders refuse it with `corrupt active profile; run emulo to recover`. To change a plugin profile, mine again.
+Profile files from the agent mining flow are hash-checked against their manifest. If you edit one in place, the loaders refuse it with `corrupt active profile; run emulo to recover`. To change one, mine again.
 
 ### Check the receipts
 
@@ -219,7 +233,7 @@ checked 3 quotes against 3 sessions in emulo-out
 
   NOT FOUND  "I love a long planning meeting"
 
-  one session  "fix the one thing I asked about"  (1d9269c0c67f61c8)
+  one session  "fix the one thing I asked about"  (8b0f15686137fe49)
 
 2/3 quotes traced to a real session.
 
@@ -235,7 +249,7 @@ What it cannot check:
 - whether a rule actually follows from its quote
 - the date next to a quote
 - rules with no quote, quotes shorter than four words (`--min-words` changes this), and quotes in single quotes or backticks
-- anything outside the corpus currently in `emulo-out`. If you mined different sources since, re-run `emulo` over the same history first. This also applies to a plugin profile: `verify` reads `emulo-out`, not `~/.emulo`.
+- anything outside the corpus currently in `emulo-out`. If you mined different sources since, re-run `emulo` over the same history first. This also applies to a profile from the agent mining flow: `verify` reads `emulo-out`, not `~/.emulo`.
 
 Whether a rule is vague or generic is still your call.
 
@@ -252,12 +266,14 @@ emulo --install emulo-out/you.md --target gemini --repo .
 
 | Target | Where it writes | How |
 |---|---|---|
-| `claude` | `~/.claude/skills/you/SKILL.md` | Copies the whole file. Needs frontmatter. |
-| `codex` | `~/.codex/skills/you/SKILL.md` | Copies the whole file. Needs frontmatter. |
+| `claude` | `~/.claude/skills/you/SKILL.md` | Copies the file as a skill |
+| `codex` | `~/.codex/skills/you/SKILL.md` | Copies the file as a skill |
 | `cursor` | `<repo>/.cursor/rules/you.mdc` | Writes a rule with `alwaysApply: true` and your profile body |
 | `agents` | `<repo>/AGENTS.md` | Adds a marked block |
 | `gemini` | `<repo>/GEMINI.md` | Adds a marked block |
 | `opencode` | `~/.config/opencode/AGENTS.md` | Adds a marked block |
+
+A skill needs `name` and `description` frontmatter. For `claude` and `codex`, if `you.md` has no frontmatter, `--install` adds `name: you` and a default description to the installed copy and prints a note saying so. Your `you.md` is not changed. If `you.md` has frontmatter with `name` and `description`, it is installed as written. If it has frontmatter missing either one, or otherwise malformed, it is refused; fix the two fields or delete the block. Blank lines or an indent before the opening `---` do not hide it. The other four targets drop the frontmatter and install only the body.
 
 `--repo` defaults to the current folder. `--dry-run` prints the destination without writing. The command prints `destination:` and `installed:` with the full path.
 
@@ -291,11 +307,11 @@ It speaks MCP over stdio and exposes one tool, `load_emulo_profile`, with a `dom
 }
 ```
 
-It serves the active profile in `~/.emulo` (or `EMULO_HOME`, or `--emulo-home DIR`). It does not read `emulo-out/you.md`. Until a profile has been activated on the plugin path, the tool returns `no active Emulo profile; run emulo`.
+The MCP server only serves a profile activated by the agent mining flow (`run emulo` or `emulo:mine`), stored in `~/.emulo` (or `EMULO_HOME`, or `--emulo-home DIR`). It does not serve a `you.md` from the `RUN_ME.md` path, whether or not you installed it. Until a profile has been activated, the tool returns `no active Emulo profile; run emulo`. If you used the `RUN_ME.md` path, load your profile with `--install` instead.
 
 ## 7. Turn it off or remove it
 
-Emulo 0.6.5 has no uninstall command. Removal is deleting what `--install` wrote.
+Emulo 0.6.6 has no uninstall command. Removal is deleting what `--install` wrote.
 
 | Target | Delete |
 |---|---|
