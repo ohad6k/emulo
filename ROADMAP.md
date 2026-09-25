@@ -23,7 +23,7 @@ Published so far: a pre-registered placebo test (https://emulo.vercel.app/placeb
 
 ### More session sources
 
-Adapters for more local coding-agent logs (issue #3). The Hermes Agent spec is complete in-thread: read its SQLite `state.db` read-only (WAL-aware), resolve `HERMES_HOME` overrides and per-profile databases, extract user messages only. Cursor and Windsurf storage is undocumented. No adapter is planned; a contributed one may be read, with no commitment to review or merge it (see MAINTENANCE.md).
+Adapters for more local coding-agent logs (issue #3). The Hermes Agent spec is complete in-thread: read its SQLite `state.db` read-only (WAL-aware), resolve `HERMES_HOME` overrides and per-profile databases, extract user messages only. Cursor and Windsurf storage is undocumented. No adapter is planned. Adapters already offered in issue #3 (Hermes, Cursor, Windsurf) will still be reviewed if they come with the tests and real-run evidence described in docs/SOURCES.md; new sources beyond those are out of scope. See MAINTENANCE.md.
 
 ### Workflow mining
 

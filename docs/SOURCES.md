@@ -115,7 +115,7 @@ layout.
 
 Recorded in [issue #3](https://github.com/ohad6k/emulo/issues/3) for reference. None of the below is
 readable today, and none is planned: Emulo is in maintenance mode (see [MAINTENANCE.md](../MAINTENANCE.md)).
-A contributed adapter may be read, with no commitment to review or merge it.
+Adapters already offered in issue #3 (Hermes, Cursor, Windsurf) will still be reviewed if they come with the tests and real-run evidence described below; new sources beyond those are out of scope.
 
 **Hermes Agent.** The storage spec is complete. Read its SQLite `state.db` read-only and WAL-aware,
 resolve `HERMES_HOME` overrides and per-profile databases, and extract user messages only. The other
