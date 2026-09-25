@@ -1,6 +1,6 @@
 # Session sources
 
-Every session-log source Emulo reads today, and the ones planned. Groundwork for
+Every session-log source Emulo reads today, and notes on ones it does not. Groundwork for
 [issue #3](https://github.com/ohad6k/emulo/issues/3). Every path and record shape below traces to code
 in `emulo.py` or to a test; anything unproven is marked unverified.
 
@@ -111,11 +111,11 @@ Evidence: `tests/test_antigravity_source.py`.
 same parsers apply; `source_kind()` returns `custom` unless the path happens to match a known
 layout.
 
-## Planned
+## Not read today, and not planned
 
-Tracked in [issue #3](https://github.com/ohad6k/emulo/issues/3) and in
-[ROADMAP.md](../ROADMAP.md#more-session-sources). Adapter code lands after the `emulo.py` rewrite,
-so none of the below is readable today.
+Recorded in [issue #3](https://github.com/ohad6k/emulo/issues/3) for reference. None of the below is
+readable today, and none is planned: Emulo is in maintenance mode (see [MAINTENANCE.md](../MAINTENANCE.md)).
+Adapters already offered in issue #3 (Hermes, Cursor, Windsurf) will still be reviewed if they come with the tests and real-run evidence described below; new sources beyond those are out of scope.
 
 **Hermes Agent.** The storage spec is complete. Read its SQLite `state.db` read-only and WAL-aware,
 resolve `HERMES_HOME` overrides and per-profile databases, and extract user messages only. The other
@@ -127,7 +127,7 @@ duplicated here.
 **OpenClaw.** Same issue. No storage spec written up in this repo yet, so its session layout is
 unverified.
 
-**Cursor and Windsurf.** Storage docs in progress per ROADMAP.md. Locations and formats unverified.
+**Cursor and Windsurf.** Storage undocumented. Locations and formats unverified.
 
 ## How to add a source
 

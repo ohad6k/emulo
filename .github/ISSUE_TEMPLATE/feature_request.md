@@ -11,7 +11,9 @@ Same rule as bug reports: no profile contents, no session transcripts, no
 absolute paths from your machine, no client or repo names. Describe the shape of
 your history, never its text. Use <HOME>/<REPO> placeholders if you need a path.
 
-Check ROADMAP.md first. Some things are deferred on purpose.
+Emulo is in maintenance mode. New features, sources and install targets are
+out of scope by default; see MAINTENANCE.md. If this is really a bug in the
+advertised install or loading path, use the bug report template instead.
 -->
 
 **The problem**

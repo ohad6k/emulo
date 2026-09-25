@@ -430,9 +430,13 @@ Use both. Memory is what you told the model: curated notes, `CLAUDE.md`, and it 
 
 Claude Code's retention is a setting (`cleanupPeriodDays`, 30 by default), and my longer history combines Claude Code, Codex, and Copilot CLI sessions plus archives. If you keep the default retention, older Claude sessions can roll off before Emulo sees them. Raise the retention, then mine what's left.
 
+## Maintenance
+
+Emulo is maintained, not developed further: security and redaction fixes, a broken advertised install or loading path, and reproducible bugs. See [MAINTENANCE.md](MAINTENANCE.md) for what is in and out of scope and how to report.
+
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for what is intentionally deferred.
+See [ROADMAP.md](ROADMAP.md) for what shipped and for ideas that are recorded but not planned.
 
 ## Community
 

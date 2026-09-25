@@ -2,6 +2,10 @@
 
 Emulo reads private AI coding-session logs, so its trust boundaries must stay explicit.
 
+## Reporting a vulnerability
+
+Report security and redaction problems privately through GitHub's private vulnerability reporting: the "Report a vulnerability" button on this repository's Security tab. Do not open a public issue with details. See [MAINTENANCE.md](MAINTENANCE.md) for what is in scope.
+
 ## Local extraction and private state
 
 `emulo.py` uses Python's standard library and makes no network calls. By default it discovers local session history under the Claude Code, Codex, Copilot CLI, OpenCode, and Google Antigravity paths, or a directory supplied with `--path`. Those logs are JSONL files, except OpenCode, which keeps a SQLite database and JSON session files. `CODEX_HOME` and `XDG_DATA_HOME` move the Codex and OpenCode roots; set but empty, they count as unset.
