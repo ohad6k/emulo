@@ -273,6 +273,8 @@ emulo --install emulo-out/you.md --target cursor --repo .
 emulo --install emulo-out/you.md --target gemini --repo .
 ```
 
+The `agents`, `cursor` and `gemini` targets write into the folder you pass with `--repo` (`AGENTS.md`, `.cursor/rules/you.mdc`, `GEMINI.md`). Each gets the whole profile, including verbatim quotes from your sessions, and those files are usually committed and shared with everyone who works in the repo. Keep them out of version control, or install into a folder that is not committed.
+
 | Target | Where it writes | How | Does the host read it (2026-09-25 test) |
 |---|---|---|---|
 | `agents` | `<repo>/AGENTS.md` | Adds a marked block | Codex: verified end to end in one test, a real model answered a canary question from it with no tool calls. OpenCode: loaded into the instructions it sends the model; whether the model follows it was not tested |
