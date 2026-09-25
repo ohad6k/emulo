@@ -322,7 +322,7 @@ The receipt-salience and scout pipeline remains available to developers through 
 
 ## What makes the result trustworthy
 
-The checks below are enforced on the agent mining flow (`run emulo`, or `emulo:mine`). On the `RUN_ME.md` path your agent follows the same rules as written instructions, and nothing enforces them except running `emulo verify you.md` yourself. See [the profile flow guide](docs/PROFILE-FLOW.md) for which path does what.
+The first bullet holds on every path, because the extractor enforces it. The rest are enforced in code on the agent mining flow (`run emulo`, or `emulo:mine`). On the `RUN_ME.md` path your agent is only asked, in writing, to use verbatim dated quotes, cut rules without one, and drop generic filler; nothing enforces that, and `emulo verify you.md` checks only that each quote appears in your corpus. See [the profile flow guide](docs/PROFILE-FLOW.md) for which path does what.
 
 - Only messages you typed are mined, read from each tool's own session logs: JSONL for Claude Code, Codex, Copilot CLI and Antigravity, and the SQLite database or JSON session files for OpenCode. `AGENTS.md`, `CLAUDE.md`, memory files, and typed self-descriptions are rejected as source evidence.
 - Every bounded worker covers work, design, writing, and video in one validated report.

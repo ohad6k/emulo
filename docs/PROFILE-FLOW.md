@@ -142,7 +142,7 @@ Emulo cannot control what else the agent does while it works, such as other file
 
 To keep everything on your machine, run the mining agent, and any agent that loads the profile, on a local model. Emulo does not include or set up a model. Whether your agent can use a local one depends on the agent.
 
-One more network step, not involving your logs: the `npx skills add` bootstrap downloads `emulo.py` and `MINING_PROMPT.md` from GitHub at the exact release tag and checks their SHA-256 before running them. That happens before any log is read. The skills.sh CLI sends anonymous install telemetry by default; `DISABLE_TELEMETRY=1` turns it off.
+Two more network steps, neither involving your logs. The `card.html` that `emulo --card` writes loads its picture from `raw.githubusercontent.com`, and `--card` opens it in your browser unless you pass `--no-open`. And the `npx skills add` bootstrap downloads `emulo.py` and `MINING_PROMPT.md` from GitHub at the exact release tag and checks their SHA-256 before running them. That happens before any log is read. The skills.sh CLI sends anonymous install telemetry by default; `DISABLE_TELEMETRY=1` turns it off.
 
 ## 4. Output files and caches
 
@@ -186,7 +186,7 @@ Everything goes to `~/.emulo`, or to `EMULO_HOME` if set. An existing `~/.ditto`
 | `cache/reports/`, `cache/reductions/` | Validated worker reports and reducer output, reused on the next run |
 | `runs/<run id>/` | Each run's plan, its copies of the segments, reports and the draft pack |
 | `profiles/default/versions/<version>/` | The activated profile: `you.md`, `you-designer.md`, `you-writer.md`, `you-video.md` (only the active ones), `appendix.md` with the private quotes behind each rule, `card.json` and `manifest.json` |
-| `profiles/default/current.json`, `active-profile.json` | Which version is active |
+| `profiles/default/current.json`, and `active-profile.json` at the root of `~/.emulo` | Which version is active |
 | `runtime/` | The bootstrap's downloaded copy of `emulo.py` and `MINING_PROMPT.md` |
 | `migrations/`, `legacy/` | Records and backups from upgrading an old install |
 
@@ -238,6 +238,8 @@ checked 3 quotes against 3 sessions in emulo-out
 2/3 quotes traced to a real session.
 
 1 quote(s) appear in no session. Cut those rules.
+A rule whose receipt cannot be found is invented, and it makes the agent
+confidently wrong about the person it is describing.
 ```
 
 It exits with status 1 when any quote is not found, 2 when the profile or the mined corpus is missing, and 0 otherwise. `--json` prints the same result with the supporting session ids. `--out DIR` points it at another output folder.
@@ -287,7 +289,7 @@ For `agents`, `gemini` and `opencode`, Emulo appends this to the end of the file
 <!-- emulo profile:end -->
 ```
 
-If the destination already exists, Emulo stops and asks for `--yes`. With `--yes`, `claude`, `codex` and `cursor` overwrite the whole file, and `agents`, `gemini` and `opencode` replace only the marked block.
+For `claude`, `codex` and `cursor`, if the destination file already exists, Emulo stops and asks for `--yes`, and with it overwrites the whole file. For `agents`, `gemini` and `opencode`, Emulo adds its block to an existing file without asking; it stops and asks for `--yes` only when an Emulo block is already there ("emulo profile block already exists. pass --yes to replace it."), and with it replaces only that block.
 
 OpenClaw and Hermes Agent load the profile as a standard skill: see [OPENCLAW_HERMES.md](OPENCLAW_HERMES.md).
 
