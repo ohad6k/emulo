@@ -1,6 +1,8 @@
 # Roadmap
 
-Emulo's current focus is the bounded plugin loop: deterministic extraction, stable caches, exact evidence receipts, private versioned profiles, safe migration, and separate work/design/write/video routing.
+Emulo is in maintenance mode. See [MAINTENANCE.md](MAINTENANCE.md) for what gets fixed. Nothing below is planned: the ideas under "Later work" are recorded for reference and are out of scope by default.
+
+What shipped is the bounded plugin loop: deterministic extraction, stable caches, exact evidence receipts, private versioned profiles, safe migration, and separate work/design/write/video routing.
 
 ## Current release
 
@@ -13,7 +15,7 @@ Emulo's current focus is the bounded plugin loop: deterministic extraction, stab
 - Content-addressed segments and validated report/reduction reuse
 - Atomic profile activation plus exclusive legacy cutover and rollback
 
-## Later work
+## Later work (not planned)
 
 ### Benchmark release
 

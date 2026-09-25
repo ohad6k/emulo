@@ -436,7 +436,7 @@ Emulo is maintained, not developed further: security and redaction fixes, a brok
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for what is intentionally deferred.
+See [ROADMAP.md](ROADMAP.md) for what shipped and for ideas that are recorded but not planned.
 
 ## Community
 

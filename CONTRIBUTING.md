@@ -71,13 +71,13 @@ python emulo.py mcp
 - Docs updated in the same PR when behavior, flags, or the privacy boundary changed.
 - The PR checklist filled in honestly, including the "could not verify" cases.
 
-Open an issue before a large change so nobody builds the wrong thing twice.
+Emulo is in maintenance mode, so read [MAINTENANCE.md](MAINTENANCE.md) first: fixes for security, the advertised install and loading path, and reproducible bugs are welcome; new features, sources and targets are out of scope by default. Open an issue before any change so nobody builds the wrong thing.
 
 ## Reporting bugs
 
 Use the issue templates. They exist because a bug report about a log miner is the easiest place in this project to leak your own data by accident. Give the Emulo version, the OS, the command, and the error text with paths and log contents redacted. Never attach a profile, a session transcript, or a chunk of your corpus.
 
-For a security issue, do not open a public issue with reproduction details. Report it privately to the maintainer first, through GitHub's private vulnerability reporting on the repository if it is enabled.
+For a security issue, do not open a public issue with reproduction details. Report it privately to the maintainer first, through GitHub's private vulnerability reporting on the repository (the "Report a vulnerability" button on the Security tab).
 
 ## License
 
