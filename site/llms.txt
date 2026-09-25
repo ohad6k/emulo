@@ -8,21 +8,21 @@ Emulo is useful when a developer has coding-session history and wants recurring 
 
 ## Supported inputs and destinations
 
-- Session inputs in published CLI 0.6.2: Claude Code, Codex, GitHub Copilot CLI, OpenCode and Google Antigravity. Antigravity needs readable transcripts from interaction logging.
+- Session inputs in published CLI 0.6.6: Claude Code, Codex, GitHub Copilot CLI, OpenCode and Google Antigravity. Antigravity needs readable transcripts from interaction logging.
 - Profile destinations: Claude Code, Codex, Cursor, Gemini, OpenCode and the generic AGENTS.md adapter. Host-specific installation and loading behavior varies; consult the support matrix.
 - Cursor is a destination adapter, not a raw-log source in this release.
-- MCP: `emulo mcp` exposes `load_emulo_profile` over stdio for a client to load an existing local profile. It does not mine a profile by itself.
+- MCP: `emulo mcp` exposes `load_emulo_profile` over stdio for a client to load the profile activated by the agent mining flow. It does not mine a profile by itself, and it does not read a you.md installed from the RUN_ME.md path.
 
 ## Start
 
-Published package checked September 15, 2026: Emulo 0.6.2, Python >=3.8.
+Published package: Emulo 0.6.6, released September 25, 2026, Python >=3.8.
 
 ```sh
-python -m pip install emulo==0.6.2
+python -m pip install emulo==0.6.6
 emulo --dry-run
 ```
 
-The dry run inspects available history without writing extracted output. Running `emulo` prepares chunks and RUN_ME.md; an agent follows the generated instructions to mine them into a profile. Review the plan and model cost before authorizing mining. Agent bootstrap: `npx skills add ohad6k/emulo@emulo`, then ask the agent to `run emulo`.
+The dry run prints counts of the available history without writing extracted output. Running `emulo` prepares chunks and RUN_ME.md; an agent follows the generated instructions to mine them into you.md and install it with `emulo --install`. Agent bootstrap: `npx skills add ohad6k/emulo@emulo`, then ask the agent to `run emulo`; on that path, review the plan and model cost before authorizing mining.
 
 ## Privacy and limits
 

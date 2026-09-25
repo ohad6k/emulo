@@ -62,6 +62,84 @@ test('redaction matches the Python table without eating dates or plain password 
   ].join('\n'));
 });
 
+// The rows SECURITY.md is pinned to, read from tests/redaction_table.py so the browser port is
+// held to exactly the samples the Python table test uses.
+function redactionTable() {
+  const python = spawnSync('python', ['-c', 'import json,sys; sys.path.insert(0, "tests"); import redaction_table as t; print(json.dumps({"rows": t.ROWS, "misses": t.MISSES, "negatives": t.NEGATIVES}))'], {
+    cwd: path.join(__dirname, '..'), encoding: 'utf8',
+  });
+  assert.equal(python.status, 0, python.stderr);
+  return JSON.parse(python.stdout);
+}
+
+test('every pattern SECURITY.md names redacts its sample to the documented placeholder', () => {
+  const { core } = loadCore();
+  const { rows, misses, negatives } = redactionTable();
+  assert.ok(rows.length >= 40, `expected the full table, got ${rows.length} rows`);
+  for (const row of [...rows, ...misses, ...negatives]) assert.equal(core.redact(row.input), row.expected, row.doc || row.input);
+});
+
+// Built from parts so no scanner mistakes the fixtures for live keys.
+function credentialSamples() {
+  const body = 'Ab3_dE-fGh'.repeat(9);
+  const google = ['AI', 'za', 'SyD3_x-9QwErTyUiOpAsDfGhJkLzXcVbN12'.slice(0, 35)].join('');
+  return [
+    `use ${['sk-', 'ant-api03-', body, 'AA'].join('')} for the eval`,
+    `ANTHROPIC_API_KEY ${['sk-', 'ant-oat01-', body].join('')}`,
+    `old key ${['sk-', 'proj-', body, '_T3BlbkFJ', body].join('')} rotated`,
+    `maps key ${google}.`, `?key=${google}&v=3`,
+    'the AIza prefix marks a Google key', 'AIzaShort-123 is not a key', 'sk-ant is the prefix Anthropic uses',
+    'postgres://app:s3cr3tpw@localhost:5432/db', 'DATABASE_URL=postgresql://app:hunter2@localhost/app_dev',
+    'mysql://root:rootpw@dbhost:3306/shop', 'redis://:redispass@localhost:6379/0',
+    'amqp://guest:guestpw@rabbit:5672/', 'jdbc:postgresql://svc:pw1@localhost/x', 'postgres://u:p@ss@localhost/db',
+    'mongodb+srv://admin:M0ng0!pass@cluster0.abcde.mongodb.net/test',
+    'git clone https://deploy:tok3nvalue@git.example.com/repo.git', 'postgres://app:pw@10.0.0.5/db',
+    'https://example.com/path?q=1', 'http://localhost:3000/api', 'postgres://app@localhost/db',
+    'ssh://deploy@build-box:22/srv/repo', 'see http://host:8080/a:b for details',
+    // adjacency: a lookbehind reads a character a previous match already used; a rewrite without
+    // one must still match here exactly as Python does
+    'a://u:p@b://v:q@h', ['x://u:p@-sk-', 'ant-', 'A'.repeat(24)].join(''),
+    '0521234567 0521234567', 'call +972 52-123-4567,+972 52-123-4567',
+    'https://host:8443/path?u=a@b', 'http://localhost:3000?next=a@b.com', 'http://localhost:3000#to=a@b.com',
+  ];
+}
+
+test('redaction covers Anthropic and Google keys and passwords in connection URLs', () => {
+  const { core } = loadCore();
+  const google = ['AI', 'za', 'SyD3_x-9QwErTyUiOpAsDfGhJkLzXcVbN12'.slice(0, 35)].join('');
+  const cases = [
+    [['sk-', 'ant-api03-', 'Ab3_dE-fGh'.repeat(9), 'AA'].join(''), '[ANTHROPIC_KEY]'],
+    [['sk-', 'proj-', 'Ab3_dE-fGh'.repeat(9)].join(''), '[OPENAI_KEY]'],
+    [`key ${google}`, 'key [GOOGLE_API_KEY]'],
+    ['postgres://app:s3cr3tpw@localhost:5432/db', 'postgres://app:[REDACTED]@localhost:5432/db'],
+    ['redis://:redispass@localhost:6379/0', 'redis://:[REDACTED]@localhost:6379/0'],
+    ['postgres://u:p@ss@localhost/db', 'postgres://u:[REDACTED]@localhost/db'],
+    ['postgres://app@localhost/db', 'postgres://app@localhost/db'],
+    ['http://localhost:3000?next=a@b.com', 'http://localhost:3000?next=[EMAIL]'],
+    ['https://host:8443/path?u=a@b', 'https://host:8443/path?u=a@b'],
+    ['the AIza prefix marks a Google key', 'the AIza prefix marks a Google key'],
+  ];
+  for (const [input, expected] of cases) assert.equal(core.redact(input), expected, input);
+});
+
+test('no script in scan.html uses a regex lookbehind, which Safari before 16.4 cannot parse', () => {
+  // One unparseable literal stops the whole inline script, so the scan would not load at all.
+  const { html } = loadCore();
+  const scripts = Array.from(html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g), (match) => match[1]);
+  assert.ok(scripts.length >= 2);
+  for (const script of scripts) assert.doesNotMatch(script, /\(\?<[=!]/);
+});
+
+test('the connection URL rule stays linear on long tokens without a lookbehind', () => {
+  const { core } = loadCore();
+  const blob = 'a'.repeat(200000) + ' b://' + 'c'.repeat(200000) + ' x://u:' + 'p'.repeat(200000);
+  const started = performance.now();
+  const output = core.redactConnectionUrlPasswords(blob);
+  assert.ok(performance.now() - started < 2000, `took ${performance.now() - started} ms`);
+  assert.equal(output, blob);
+  assert.equal(core.redactConnectionUrlPasswords('a://u:p@b://v:q@h'), 'a://u:[REDACTED]@b://v:[REDACTED]@h');
+});
+
 test('redaction is byte-for-byte equal to Python on the repository edge-case corpus', () => {
   const { core } = loadCore();
   const samples = [
@@ -73,6 +151,8 @@ test('redaction is byte-for-byte equal to Python on the repository edge-case cor
     '07 5477 4500', '+61 400 123 456', '0400123456', '052-1234567', '0521234567',
     '03-1234567', 'reach me at +972 52-123-4567.', '(02) 9876 5432', '(03) 123-4567',
     '+1 (415) 555-2671', '07700 900123', '+49 151 12345678',
+    ...credentialSamples(),
+    ...(({ rows, misses, negatives }) => [...rows, ...misses, ...negatives].map((row) => row.input))(redactionTable()),
   ];
   const python = spawnSync('python', ['-c', 'import emulo,json,sys; print(json.dumps([emulo.redact(x) for x in json.loads(sys.argv[1])]))', JSON.stringify(samples)], {
     cwd: path.join(__dirname, '..'), encoding: 'utf8',

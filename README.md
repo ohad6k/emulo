@@ -47,7 +47,7 @@ Inside Claude Code:
 Inside Codex:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.5 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.6 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -180,7 +180,7 @@ It reads only the messages you typed, which is all Emulo keeps. It cannot see co
 
 ## The card
 
-After mining, `python emulo.py --card` renders your profile as a shareable card: archetype, top laws ranked by distinct supporting session receipts, coverage stats, and one sharp truth.
+The agent mining flow (`run emulo` or `emulo:mine`) also writes a `card.json`, and `emulo --card <card_path>` renders it as a shareable card: archetype, top laws ranked by distinct supporting session receipts, coverage stats, and one sharp truth. `emulo plugin status` prints the `card_path`. The `RUN_ME.md` path writes `you.md` only, so it has no card to render.
 
 <p align="center"><img src="assets/card.png" width="460" alt="An Emulo profile card: archetype, laws with receipts, session stats, and the one uncomfortable truth"></p>
 
@@ -212,7 +212,7 @@ If you'd rather run Emulo yourself instead of through an agent:
 pip install emulo
 ```
 
-That puts `emulo` on your path. `emulo` runs the miner, `emulo --dry-run` prints the read-only plan first, and `emulo mcp` runs the MCP server below. `uv tool install emulo` works the same way, and `uvx emulo` runs it without installing.
+That puts `emulo` on your path. `emulo --dry-run` writes nothing and prints what it found: sessions, your messages, approximate tokens, how many messages had something redacted, and the paths it would write. `emulo` then extracts and writes the corpus, the chunks and `RUN_ME.md` to `emulo-out/` straight away. There is no plan or approval step on this path, because it makes no model calls; the model work starts when you hand `RUN_ME.md` to your agent. `emulo mcp` runs the MCP server below. `uv tool install emulo` works the same way, and `uvx emulo` runs it without installing.
 
 `emulo` writes `RUN_ME.md` next to your chunks. It is self-contained, so the whole remaining step is one line to your agent:
 
@@ -220,7 +220,7 @@ That puts `emulo` on your path. `emulo` runs the miner, `emulo --dry-run` prints
 read emulo-out/RUN_ME.md and follow it
 ```
 
-Your agent makes one pass per chunk, merges them, writes `you.md`, and prints the install command. Nothing to paste and nothing else to download.
+Your agent makes one pass per chunk, merges them, writes `you.md`, and prints the install commands. Nothing to paste and nothing else to download. `you.md` needs no frontmatter: for the `claude` and `codex` targets, which install it as a skill, `emulo --install` adds `name: you` and a default description to the installed copy when the file has none, and says so. A file whose frontmatter already has `name` and `description` is installed as written; frontmatter missing either one is refused.
 
 ### Check the receipts
 
@@ -239,7 +239,7 @@ This checks what is mechanically checkable. Whether a rule is vague, generic, or
 The native plugin adds `emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, and `emulo:video`:
 
 ```bash
-codex plugin marketplace add ohad6k/emulo --ref v0.6.5 --json
+codex plugin marketplace add ohad6k/emulo --ref v0.6.6 --json
 codex plugin add emulo@emulo --json
 ```
 
@@ -268,11 +268,11 @@ Run it from the published package with `uvx emulo mcp`, or from a checkout with 
 }
 ```
 
-The MCP server is stdlib-only and serves the profile you already mined locally; it makes no network calls of its own.
+The MCP server is stdlib-only and makes no network calls of its own. It serves the profile activated by the agent mining flow (`run emulo` or `emulo:mine`), which lives under `~/.emulo` or `EMULO_HOME`. A `you.md` from the `RUN_ME.md` path is not activated there, so the server does not see it; install that one with `emulo --install` instead.
 
 ## What happens when you run it
 
-Emulo first prints a read-only plan:
+When an agent runs Emulo for you (`run emulo` through the bootstrap, or `emulo:mine`), it first prints a read-only plan from `emulo plugin preflight`. This is an excerpt; the real output also lists the selected segments and their hashes:
 
 ```json
 {
@@ -288,7 +288,7 @@ Emulo first prints a read-only plan:
 }
 ```
 
-The full-history quality default reads all eligible history. Emulo shows the exact plan first and waits for approval before any worker or reducer runs. Cached reports are reused, so the displayed remaining cost can fall over time.
+The full-history quality default reads all eligible history. The agent shows the exact plan first and waits for your approval before any worker or reducer runs. The plain `emulo` command from [Install the CLI](#install-the-cli) is a different path: it prints counts, not this plan, and writes chunks for you to hand to an agent yourself. Cached reports are reused, so the displayed remaining cost can fall over time.
 
 If you explicitly want a cheaper first look, ask for `run emulo quick preview` or use `--preview`:
 
@@ -320,7 +320,7 @@ The receipt-salience and scout pipeline remains available to developers through 
 
 ## What makes the result trustworthy
 
-- Only real user-authored `.jsonl` messages are mined. `AGENTS.md`, `CLAUDE.md`, memory files, and typed self-descriptions are rejected as source evidence.
+- Only messages you typed are mined, read from each tool's own session logs: JSONL for Claude Code, Codex, Copilot CLI and Antigravity, and the SQLite database or JSON session files for OpenCode. `AGENTS.md`, `CLAUDE.md`, memory files, and typed self-descriptions are rejected as source evidence.
 - Every bounded worker covers work, design, writing, and video in one validated report.
 - Quotes must be short, dated, verbatim receipts from known session IDs.
 - Inferred rules require at least two distinct sessions and, when available, two source/time strata.
@@ -352,7 +352,7 @@ See [SECURITY.md](SECURITY.md) for the exact boundary.
 The legacy extractor remains available and backward compatible:
 
 ```bash
-curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.5/emulo.py
+curl -O https://raw.githubusercontent.com/ohad6k/emulo/v0.6.6/emulo.py
 python emulo.py --dry-run
 python emulo.py --chunks 4 --out emulo-out
 ```

@@ -292,9 +292,39 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
     return match;
   }
 
+  // CONNECTION_URL_PASSWORD from emulo.py, written without a lookbehind: Safari before 16.4
+  // cannot parse one, and a single unparseable literal stops this whole script. The scheme may
+  // only start where the character before it, in the original text, is not a scheme character,
+  // and the sticky pattern is tried only there. That keeps a long token to one scan instead of
+  // one per character, and unlike a (^|[^...]) capture group it still sees a URL that starts
+  // right after the previous one's @, as Python does: a://u:p@b://v:q@h redacts both.
+  const URL_SCHEME_START = /[A-Za-z]/;
+  const URL_SCHEME_CHAR = /[A-Za-z0-9+.\-]/;
+  const URL_PASSWORD_AT = /([A-Za-z][A-Za-z0-9+.\-]*:\/\/[^\s:\/@]*):[^\s\/?#]+@/y;
+
+  function redactConnectionUrlPasswords(text) {
+    let output = '', last = 0;
+    for (let index = 0; index < text.length; index += 1) {
+      if (!URL_SCHEME_START.test(text[index]) || (index > 0 && URL_SCHEME_CHAR.test(text[index - 1]))) continue;
+      URL_PASSWORD_AT.lastIndex = index;
+      const match = URL_PASSWORD_AT.exec(text);
+      if (!match) continue;
+      output += `${text.slice(last, index)}${match[1]}:[REDACTED]@`;
+      last = URL_PASSWORD_AT.lastIndex;
+      index = last - 1;
+    }
+    return output + text.slice(last);
+  }
+
   function redact(text) {
-    let output = String(text || '');
+    // Same order and patterns as REDACTIONS in emulo.py; the URL password runs before [EMAIL].
+    let output = redactConnectionUrlPasswords(String(text || ''));
     const rules = [
+      // Python's left boundary as a kept capture group, so no lookbehind. Consuming that
+      // character cannot hide a match: the tail class covers every character a key starts with.
+      [/(^|[^A-Za-z0-9])sk-ant-[A-Za-z0-9_-]{20,}/g, '$1[ANTHROPIC_KEY]'],
+      [/(^|[^A-Za-z0-9])sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}/g, '$1[OPENAI_KEY]'],
+      [/AIza[0-9A-Za-z_-]{35}/g, '[GOOGLE_API_KEY]'],
       [/sk-[A-Za-z0-9]{20,}/g, '[OPENAI_KEY]'],
       [/sk_live_[A-Za-z0-9]{20,}/g, '[STRIPE_KEY]'],
       [/whsec_[A-Za-z0-9]{20,}/g, '[WEBHOOK_SECRET]'],
@@ -305,7 +335,9 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
       [/xox[baprs]-[A-Za-z0-9-]{10,}/g, '[SLACK_TOKEN]'],
       [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[EMAIL]'],
       [/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[IP]'],
-      [/(?<![\p{L}\p{N}_.\-/])(?:\+\d{1,3}[\s-]?(?:\(\d{1,4}\)[\s-]?)?\d(?:[\s-]?\d){6,10}|\(?0[2-9]\d{0,2}\)?(?:[\s-]?\d){6,9})(?![\p{L}\p{N}_/]|[.-]\d)/gu, '[PHONE]'],
+      // Python's lookbehind as a kept capture group. A phone match ends in a digit, which the
+      // group refuses anyway, so consuming the character before a number hides nothing.
+      [/(^|[^\p{L}\p{N}_.\-/])(?:\+\d{1,3}[\s-]?(?:\(\d{1,4}\)[\s-]?)?\d(?:[\s-]?\d){6,10}|\(?0[2-9]\d{0,2}\)?(?:[\s-]?\d){6,9})(?![\p{L}\p{N}_/]|[.-]\d)/gu, '$1[PHONE]'],
     ];
     for (const [pattern, replacement] of rules) output = output.replace(pattern, replacement);
     output = output.replace(/(api[_-]?key|secret|token|password|passwd)\s*[:=]\s*\S+/gi, (_, keyword) => `${keyword}=[REDACTED]`);
@@ -564,7 +596,7 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
     };
   }
 
-  globalThis.EmuloScanCore = Object.freeze({ redact, isPastedLog, isInjectedContext, isHumanTurn, extractMessages, sourceKind, mineFiles, usageReport });
+  globalThis.EmuloScanCore = Object.freeze({ redact, redactConnectionUrlPasswords, isPastedLog, isInjectedContext, isHumanTurn, extractMessages, sourceKind, mineFiles, usageReport });
 }());
 </script>
 
@@ -629,7 +661,7 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
     summary.replaceChildren();
     addStat(summary, report.sessions, 'sessions');
     addStat(summary, report.messages, 'your messages');
-    addStat(summary, mined.redactions, 'redacted');
+    addStat(summary, mined.redactions, 'messages redacted');
     const sources = Object.entries(report.sources).sort().map(([name, count]) => `${name} ${count}`).join(', ');
     const span = report.first_date ? `${report.first_date} to ${report.last_date}` : 'dates unavailable';
     byId('result-meta').textContent = `${span} · ${sources || 'custom logs'} · scanned in ${elapsed.toFixed(2)}s`;

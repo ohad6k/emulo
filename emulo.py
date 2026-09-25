@@ -2,34 +2,36 @@
 """
 emulo - turn your own AI coding sessions into a model of how you think.
 
-It reads your local session logs (Codex / Claude Code / Copilot CLI / Antigravity jsonl),
-keeps ONLY the words you typed, redacts secrets + personal info, and writes one
-clean corpus + chunks. You then point a coding agent at the chunks with
-MINING_PROMPT.md to produce your `you.md`.
+It reads your local session logs (Codex / Claude Code / Copilot CLI / Antigravity jsonl,
+OpenCode SQLite + json), keeps ONLY the words you typed, redacts secrets + personal
+info, and writes one clean corpus + chunks + RUN_ME.md. You then tell a coding agent
+to read RUN_ME.md and follow it, which produces your `you.md`.
 
 Extraction and redaction happen locally, and emulo.py makes no network calls.
 Selected redacted text is processed by the model provider you choose. Stdlib only.
 
 Usage:
-    python emulo.py                     # auto-detect Codex + Claude + Copilot logs
+    python emulo.py                     # auto-detect every supported source
     python emulo.py --dry-run           # preview counts without writing files
     python emulo.py --coach             # how you use the model (no mining, no model call)
     python emulo.py --coach --source claude   # ...for Claude Code only
-    python emulo.py --card              # render your profile card (after mining)
+    python emulo.py --card CARD_JSON    # render a card.json from the plugin mining flow
     python emulo.py --install you.md --target codex
     python emulo.py --source codex      # only ~/.codex/sessions
     python emulo.py --source copilot    # only ~/.copilot/session-state
     python emulo.py --source antigravity # only ~/.gemini/antigravity/brain
-    python emulo.py --path ./logs       # a folder of jsonl you point at
+    python emulo.py --path ./logs       # a folder of session logs you point at
     python emulo.py --chunks 20         # how many chunks to split into
     python emulo.py --no-redact         # DANGER: skip redaction (not recommended)
 """
 import argparse, base64, glob, hashlib, json, os, re, shutil, sqlite3, stat, sys, tempfile, time, unicodedata, uuid
 
 HOME = os.path.expanduser("~")
-CODEX_HOME = os.path.expanduser(os.environ.get("CODEX_HOME", os.path.join(HOME, ".codex")))
+# `or`, not a .get default: an exported-but-empty variable is unset, not the
+# current directory, which would have mined any sessions/ folder under cwd.
+CODEX_HOME = os.path.expanduser(os.environ.get("CODEX_HOME") or os.path.join(HOME, ".codex"))
 OPENCODE_DATA = os.path.join(
-    os.path.expanduser(os.environ.get("XDG_DATA_HOME", os.path.join(HOME, ".local", "share"))),
+    os.path.expanduser(os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share")),
     "opencode",
 )
 SOURCES = {
@@ -103,7 +105,28 @@ def _credential_repl(m):
         return f"{m.group(1)}=[REDACTED]"
     return m.group(0)
 
+# The password in `scheme://user:password@host`, for any scheme (postgres,
+# mysql, mongodb+srv, redis, amqp, https ...). The user and host stay. The
+# password runs to the last @ before a space, /, ? or #, so a raw `p@ss` is
+# covered while `host:3000?next=a@b.com` is a port and a query, not a password. The scheme must start a word: without that lookbehind a long pasted
+# token is rescanned from every character. Runs before [EMAIL], which would
+# otherwise take `password@host.tld` and leave a password on a dotless host.
+CONNECTION_URL_PASSWORD = re.compile(
+    r"(?<![A-Za-z0-9+.\-])([A-Za-z][A-Za-z0-9+.\-]*://[^\s:/@]*):[^\s/?#]+@"
+)
+CONNECTION_URL_REPLACEMENT = r"\1:[REDACTED]@"
+
 REDACTIONS = [
+    (CONNECTION_URL_PASSWORD,                            CONNECTION_URL_REPLACEMENT),
+    # These two allow - in the tail, so without a left boundary a kebab-case
+    # branch name holding one of the prefixes mid-word was eaten from the prefix
+    # on and replaced with [OPENAI_KEY]. The browser port keeps the boundary with a
+    # capture group instead, because older Safari cannot parse a lookbehind.
+    (re.compile(r"(?<![A-Za-z0-9])sk-ant-[A-Za-z0-9_\-]{20,}"), "[ANTHROPIC_KEY]"),
+    # project, service account and admin keys carry - and _, which the plain
+    # sk- rule below stops at, so it never matched them
+    (re.compile(r"(?<![A-Za-z0-9])sk-(?:proj|svcacct|admin)-[A-Za-z0-9_\-]{20,}"), "[OPENAI_KEY]"),
+    (re.compile(r"AIza[0-9A-Za-z_\-]{35}"),              "[GOOGLE_API_KEY]"),
     (re.compile(r"sk-[A-Za-z0-9]{20,}"),                 "[OPENAI_KEY]"),
     (re.compile(r"sk_live_[A-Za-z0-9]{20,}"),            "[STRIPE_KEY]"),
     (re.compile(r"whsec_[A-Za-z0-9]{20,}"),              "[WEBHOOK_SECRET]"),
@@ -2526,8 +2549,12 @@ def load_card(out_dir, card_path=None):
     path = card_path or os.path.join(out_dir, "card.json")
     if not os.path.exists(path):
         print(f"no card found at {path}")
-        print("the card is written by the mining step: run emulo.py, then paste")
-        print("MINING_PROMPT.md into your agent - the reducer emits card.json.")
+        # Only the plugin pipeline's reducer writes card.json, into the active
+        # profile under the Emulo home. The RUN_ME.md path writes you.md only.
+        print("the RUN_ME.md flow writes you.md, not a card, so it leaves nothing to render here.")
+        print("card.json comes from the agent mining flow (`run emulo` through the bootstrap, or emulo:mine).")
+        print("after that, `emulo plugin status` prints its card_path; render it with:")
+        print("    emulo --card <card_path>")
         sys.exit(1)
     with open(path, "r", encoding="utf-8", errors="replace") as fh:
         card = json.load(fh)
@@ -3090,7 +3117,8 @@ def print_counts(result, no_redact=False):
     print(f"tokens (approx): {result['chars'] // 4:,}")
     if result.get("duplicates"):
         print(f"duplicate specs/rules collapsed: {result['duplicates']}  (saves tokens, no signal lost)")
-    print(f"secrets/PII redacted: {result['redactions']}" + ("  (redaction OFF)" if no_redact else ""))
+    # mine_files counts a message once however many items it redacts in it
+    print(f"messages with secrets/PII redacted: {result['redactions']}" + ("  (redaction OFF)" if no_redact else ""))
 
 # ---------- usage report ----------
 #
@@ -3442,6 +3470,32 @@ def has_skill_frontmatter(text, expected_name=None):
         return False
     return expected_name is None or fields["name"] == expected_name
 
+def starts_with_frontmatter(text):
+    return text.replace("\r\n", "\n").split("\n", 1)[0].rstrip() == "---"
+
+_LEADING_BLANK_LINES = re.compile(r"\A(?:[ \t]*\r?\n)+")
+
+def normalize_profile_start(text):
+    """Drop blank lines before a profile and the indent on a `---` first line.
+
+    Every frontmatter check reads the first line, so a blank line or an
+    indented marker hid a real block: the default was stacked on top of it for
+    skills, and the user's own block leaked into AGENTS.md and the like.
+    """
+    text = _LEADING_BLANK_LINES.sub("", text)
+    first, sep, rest = text.partition("\n")
+    if first.strip() == "---":
+        return "---" + ("\r" if first.endswith("\r") else "") + sep + rest
+    return text
+
+DEFAULT_SKILL_FRONTMATTER = (
+    "---\n"
+    "name: you\n"
+    "description: How the person you are working with works, mined from their own AI "
+    "sessions. Read it before any task and follow it.\n"
+    "---\n\n"
+)
+
 def cursor_rule(profile):
     body = strip_frontmatter(profile)
     return f"---\ndescription: emulo user profile\nalwaysApply: true\n---\n\n{body.strip()}\n"
@@ -3468,21 +3522,37 @@ def install_profile(profile_path, target, repo_dir, home_dir, yes=False, dry_run
         print(f"profile not found: {profile_path}")
         sys.exit(1)
 
-    with open(profile_path, "r", encoding="utf-8", errors="replace") as fh:
-        profile = fh.read()
+    # utf-8-sig: an editor's BOM must not hide real frontmatter from the check
+    # below, or a valid file would get a second frontmatter block stacked on it.
+    with open(profile_path, "r", encoding="utf-8-sig", errors="replace") as fh:
+        profile = normalize_profile_start(fh.read())
 
+    added_frontmatter = False
     if target in ("claude", "codex") and not has_skill_frontmatter(profile):
-        print(
-            "profile must start with exact name and description frontmatter fields for this target",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        if starts_with_frontmatter(profile):
+            print(
+                "profile must start with exact name and description frontmatter fields for this target",
+                file=sys.stderr,
+            )
+            print(
+                "fix those two fields, or delete the frontmatter block and emulo adds a default one",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        # RUN_ME.md asks for a plain markdown profile, and a skill needs name
+        # and description. Add them to the installed copy only; you.md is not
+        # touched, and a file that already has frontmatter is used as written.
+        profile = DEFAULT_SKILL_FRONTMATTER + profile.lstrip("\r\n")
+        added_frontmatter = True
 
     repo_dir = os.path.abspath(repo_dir)
     home_dir = os.path.abspath(os.path.expanduser(home_dir))
     dest = install_destination(target, repo_dir, home_dir)
     print(f"target: {target}")
     print(f"destination: {dest}")
+    if added_frontmatter:
+        print("note: the profile has no frontmatter, so the installed skill gets "
+              "name: you and a default description. your profile file is unchanged.")
 
     if dry_run:
         if target in ("agents", "gemini", "opencode"):
@@ -4361,7 +4431,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-EMULO_VERSION = "0.6.5"
+EMULO_VERSION = "0.6.6"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 AUTOPILOT_HEAD_SCHEMA = "emulo.autopilot-head/v1"
 AUTOPILOT_GENERATION_SCHEMA = "emulo.autopilot-generation/v1"
@@ -4517,7 +4587,8 @@ def mcp_tool_definitions():
                 "Load the user's Emulo profile so you act like them instead of starting cold. "
                 "Call this before working on their task. domain 'work' covers execution, "
                 "debugging, planning, and shipping; 'design' covers UI/UX and visual taste; "
-                "'write' covers their writing voice. Returns the mined profile text, or a "
+                "'write' covers their writing voice; 'video' covers pacing, captions, "
+                "voiceover, and shot and render choices. Returns the mined profile text, or a "
                 "recovery instruction if no profile is active yet."
             ),
             "inputSchema": {
@@ -4622,7 +4693,8 @@ def legacy_main():
     ap = argparse.ArgumentParser(description="mine your AI sessions into a model of you")
     ap.add_argument("--version", action="version", version=f"emulo {EMULO_VERSION}")
     ap.add_argument("--source", choices=["auto", "codex", "claude", "copilot", "opencode", "antigravity"], default="auto")
-    ap.add_argument("--path", help="a folder of .jsonl session logs to read instead")
+    ap.add_argument("--path", help="a folder of session logs to read instead: .jsonl files at any depth, "
+                    "or an OpenCode data folder (opencode.db, storage/session/*.json)")
     ap.add_argument("--out", default=None,
                     help="mining output dir (default: emulo-out, or an existing ditto-out from before the rename)")
     ap.add_argument("--chunks", type=int, default=20)

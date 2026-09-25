@@ -58,22 +58,23 @@
       <ul>
         <li><strong>Logs Emulo can read:</strong> Claude Code, Codex, GitHub Copilot CLI, OpenCode and Google Antigravity. Antigravity requires interaction logging to have produced readable transcripts.</li>
         <li><strong>Agents that can receive a profile:</strong> Claude Code and Codex through their supported install paths; Cursor, Gemini and OpenCode through explicit adapters. A generic <code>AGENTS.md</code> adapter is also available.</li>
-        <li><strong>MCP clients:</strong> Emulo provides a local server with the <code>load_emulo_profile</code> tool. Configure your client to call it when the profile is relevant.</li>
+        <li><strong>MCP clients:</strong> Emulo provides a local server with the <code>load_emulo_profile</code> tool. It serves the profile activated by the agent mining flow, not a <code>you.md</code> installed from <code>RUN_ME.md</code>. Configure your client to call it when the profile is relevant.</li>
       </ul>
       <p>Cursor is a profile destination here, not a supported raw-log source in the published CLI. A profile only helps when the agent actually loads it. Installation and automatic loading depend on the host; see the <a href="https://github.com/ohad6k/emulo#support-matrix">current support matrix</a>.</p>
     </section>
     <section id="start">
       <h2>Start with the released CLI</h2>
-      <p>The <a href="https://pypi.org/project/emulo/0.6.2/">published 0.6.2 package</a> requires Python 3.8 or newer. In a Python environment, install it and inspect your available history without writing extracted output:</p>
-      <pre><code>python -m pip install emulo==0.6.2
+      <p>The <a href="https://pypi.org/project/emulo/0.6.6/">published 0.6.6 package</a> requires Python 3.8 or newer. In a Python environment, install it and count your available history without writing anything:</p>
+      <pre><code>python -m pip install emulo==0.6.6
 emulo --dry-run</code></pre>
-      <p>When ready, run <code>emulo</code> to prepare the extracted chunks and <code>RUN_ME.md</code>. Ask your coding agent to follow that generated file to mine the evidence and produce the profile. Review the mining plan and model cost before authorizing model work. Preparing chunks alone does not produce a finished personal profile.</p>
+      <p>The dry run prints what it found: sessions, your messages, approximate tokens, how many messages had something redacted, and the paths it would write.</p>
+      <p>When ready, run <code>emulo</code>. It writes the extracted chunks and <code>RUN_ME.md</code> to <code>emulo-out/</code> straight away. There is no plan or approval step on this path, because <code>emulo</code> itself makes no model calls; the model work starts when you ask your coding agent to follow <code>RUN_ME.md</code>, which mines the chunks into <code>you.md</code>. Preparing chunks alone does not produce a finished personal profile.</p>
       <p>Prefer setup through an agent? The <a href="https://github.com/ohad6k/emulo#quickstart">documented skill bootstrap</a> is:</p>
       <pre><code>npx skills add ohad6k/emulo@emulo</code></pre>
-      <p>Then ask your agent to <code>run emulo</code>. It prepares a mining plan for review. The repository also documents <a href="https://github.com/ohad6k/emulo#install">native plugin installation</a>.</p>
+      <p>Then ask your agent to <code>run emulo</code>. On this path the agent shows a read-only mining plan with the planned model calls and waits for your approval before any model work. The repository also documents <a href="https://github.com/ohad6k/emulo#install">native plugin installation</a>.</p>
       <h2>Review, then load the profile</h2>
       <p>Check the generated rules against their receipts. <code>emulo verify you.md</code> checks whether quoted evidence can be found in the mined sessions; it cannot decide whether a rule is useful or accurately describes you.</p>
-      <p>For a Cursor repository, run this from the repository after replacing <code>you.md</code> with your generated profile's path:</p>
+      <p>For a Cursor repository, run this from the repository after replacing <code>you.md</code> with your generated profile's path. The same command with <code>--target claude</code>, <code>codex</code>, <code>agents</code>, <code>gemini</code> or <code>opencode</code> installs it for those agents:</p>
       <pre><code>emulo --install you.md --target cursor --repo .</code></pre>
       <p>For an MCP client, use the installed <code>emulo</code> command with the argument <code>mcp</code>. A common client configuration is:</p>
       <pre><code>{
@@ -81,7 +82,7 @@ emulo --dry-run</code></pre>
     "emulo": { "command": "emulo", "args": ["mcp"] }
   }
 }</code></pre>
-      <p>The MCP server serves an existing local profile. Mining and installing the profile are separate setup steps. See <a href="https://github.com/ohad6k/emulo#mcp-server">MCP setup</a> for alternatives.</p>
+      <p>The MCP server serves the profile activated by the agent mining flow (<code>run emulo</code> or <code>emulo:mine</code>), which lives under <code>~/.emulo</code> or <code>EMULO_HOME</code>. A <code>you.md</code> from the <code>RUN_ME.md</code> path, installed with <code>emulo --install</code> as above, is not activated there, so the server does not see it. See <a href="https://github.com/ohad6k/emulo#mcp-server">MCP setup</a> for alternatives.</p>
     </section>
     <section id="privacy">
       <h2>What stays local, and what reaches a model?</h2>
