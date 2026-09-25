@@ -188,6 +188,8 @@ Share the card or one short trait, never your full profile.
 
 ## Quickstart
 
+Step by step, with what each command reads and writes, what reaches a model, and how to remove it: [docs/PROFILE-FLOW.md](docs/PROFILE-FLOW.md).
+
 Install the cross-agent bootstrap — runs in Claude Code and Codex, and installs profiles for Cursor and Gemini through the explicit adapters:
 
 ```bash
@@ -319,6 +321,8 @@ These are selected source tokens and planned worker/reducer passes, not provider
 The receipt-salience and scout pipeline remains available to developers through explicit `--stage A`, but it is experimental and is not used by the Plugin release, quality-default setup, updates, or calibration.
 
 ## What makes the result trustworthy
+
+The first bullet holds on every path, because the extractor enforces it. The rest are enforced in code on the agent mining flow (`run emulo`, or `emulo:mine`). On the `RUN_ME.md` path your agent is only asked, in writing, to use verbatim dated quotes, cut rules without one, and drop generic filler; nothing enforces that, and `emulo verify you.md` checks only that each quote appears in your corpus. See [the profile flow guide](docs/PROFILE-FLOW.md) for which path does what.
 
 - Only messages you typed are mined, read from each tool's own session logs: JSONL for Claude Code, Codex, Copilot CLI and Antigravity, and the SQLite database or JSON session files for OpenCode. `AGENTS.md`, `CLAUDE.md`, memory files, and typed self-descriptions are rejected as source evidence.
 - Every bounded worker covers work, design, writing, and video in one validated report.

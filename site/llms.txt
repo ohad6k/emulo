@@ -31,6 +31,7 @@ The local engine works without an Emulo account. Extraction, redaction, caches a
 ## Documentation
 
 - [Working profile guide](https://emulo.vercel.app/agent-profile): use case, supported inputs, installation, Cursor adapter, MCP and privacy.
+- [Profile flow](https://github.com/ohad6k/emulo/blob/main/docs/PROFILE-FLOW.md): what each command reads and writes, which step sends text to a model, output files and caches, install targets and manual removal.
 - [Repository and installation](https://github.com/ohad6k/emulo): current documentation, native plugin instructions and source.
 - [Support matrix](https://github.com/ohad6k/emulo#support-matrix): source and destination status.
 - [Published package](https://pypi.org/project/emulo/): CLI releases and Python requirement.
