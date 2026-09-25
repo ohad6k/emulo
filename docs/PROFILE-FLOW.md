@@ -1,6 +1,6 @@
 # The profile flow, step by step
 
-This guide explains what Emulo does with your session logs, what it writes, what can reach a model provider, and how to load and remove a profile. It describes Emulo 0.6.6.
+This guide explains what Emulo does with your session logs, what it writes, what can reach a model provider, and how to load and remove a profile. It describes Emulo 0.6.7.
 
 Commands use `emulo`, which `pip install emulo` puts on your path. From a checkout of this repository, use `python emulo.py` instead.
 
@@ -18,11 +18,11 @@ Emulo does three different jobs. You can use any of them without the others.
 
 **Mining** has two halves. First Emulo reads your logs on your machine, keeps only what you typed, redacts it, and writes it out as text files. Then a coding agent reads those files and writes the profile. The second half is the only part that involves a model.
 
-**Loading** puts a finished profile where an agent reads it: a skill folder, a rules file, or an MCP server the agent can call.
+**Loading** puts a finished profile where an agent can read it: a skill folder, a rules file, or an MCP server the agent can call. Putting it there and the agent reading it are different things; section 6 says which hosts were seen reading it.
 
 If you only want to see how you use the model, `emulo --coach` is all you need.
 
-Whether loading a profile makes an agent's work better is not proven. The one published test so far, where a mined profile was run against a made-up one, is at <https://emulo.vercel.app/placebo>.
+Whether loading a profile makes an agent's work better is not shown. It is the aim, not a result. An appended mined profile changed what the model produced compared with no profile. In a 60 run study with every prediction written down in advance (August 2026), it did not separate from an invented profile of the same length on any of 9 comparisons: <https://emulo.vercel.app/placebo>. In a September 2026 rerun with a later July 2026 profile (dated 2026-07-30) and a new invented profile, it separated on 5 of 9 on Fable 5.1 and 1 of 9 on Opus 5: <https://emulo.vercel.app/fable>. Both measure whether the output changed, not whether it got better.
 
 ### Two ways to mine
 
@@ -238,8 +238,8 @@ checked 3 quotes against 3 sessions in emulo-out
 2/3 quotes traced to a real session.
 
 1 quote(s) appear in no session. Cut those rules.
-A rule whose receipt cannot be found is invented, and it makes the agent
-confidently wrong about the person it is describing.
+A missing quote may be invented, paraphrased, or from history that was not
+mined. Either way, nothing in the mined corpus backs that rule.
 ```
 
 It exits with status 1 when any quote is not found, 2 when the profile or the mined corpus is missing, and 0 otherwise. `--json` prints the same result with the supporting session ids. `--out DIR` points it at another output folder.
@@ -257,23 +257,30 @@ Whether a rule is vague or generic is still your call.
 
 ## 6. Install into an agent
 
+Where to start. For Codex and OpenCode, install into the project's `AGENTS.md`. It writes the whole profile, including verbatim quotes from your sessions, into that folder's AGENTS.md, which is usually committed and shared, so keep that file out of version control or install to a personal folder that is not committed. For Claude Code, install the skill and type `/you` (or `/you <task>`) in a session to load it:
+
 ```bash
-emulo --install emulo-out/you.md --target claude
-emulo --install emulo-out/you.md --target codex
-emulo --install emulo-out/you.md --target opencode
-emulo --install emulo-out/you.md --target cursor --repo .
 emulo --install emulo-out/you.md --target agents --repo .
+emulo --install emulo-out/you.md --target claude
+```
+
+Those are the routes a host-by-host test on 2026-09-25 (Emulo 0.6.6 from PyPI, a canary profile, fresh headless sessions) saw reach the model. The other targets:
+
+```bash
+emulo --install emulo-out/you.md --target opencode
+emulo --install emulo-out/you.md --target codex
+emulo --install emulo-out/you.md --target cursor --repo .
 emulo --install emulo-out/you.md --target gemini --repo .
 ```
 
-| Target | Where it writes | How |
-|---|---|---|
-| `claude` | `~/.claude/skills/you/SKILL.md` | Copies the file as a skill |
-| `codex` | `~/.codex/skills/you/SKILL.md` | Copies the file as a skill |
-| `cursor` | `<repo>/.cursor/rules/you.mdc` | Writes a rule with `alwaysApply: true` and your profile body |
-| `agents` | `<repo>/AGENTS.md` | Adds a marked block |
-| `gemini` | `<repo>/GEMINI.md` | Adds a marked block |
-| `opencode` | `~/.config/opencode/AGENTS.md` | Adds a marked block |
+| Target | Where it writes | How | Does the host read it (2026-09-25 test) |
+|---|---|---|---|
+| `agents` | `<repo>/AGENTS.md` | Adds a marked block | Codex: verified end to end in one test, a real model answered a canary question from it with no tool calls. OpenCode: loaded into the instructions it sends the model; whether the model follows it was not tested |
+| `opencode` | `~/.config/opencode/AGENTS.md` | Adds a marked block | Loaded into OpenCode's instructions; model following not tested |
+| `claude` | `~/.claude/skills/you/SKILL.md` | Copies the file as a skill | Not reliably opened on its own: with many skills installed, Claude Code listed only some to the model and left `you` out. Typing `/you` loads it (verified) |
+| `codex` | `~/.codex/skills/you/SKILL.md` | Copies the file as a skill | Opened only when a request matches the skill's description; on a plain prompt it was not opened. `agents` is the route verified end to end in one test |
+| `cursor` | `<repo>/.cursor/rules/you.mdc` | Writes a rule with `alwaysApply: true` and your profile body | Not verified |
+| `gemini` | `<repo>/GEMINI.md` | Adds a marked block | Not verified |
 
 A skill needs `name` and `description` frontmatter. For `claude` and `codex`, if `you.md` has no frontmatter, `--install` adds `name: you` and a default description to the installed copy and prints a note saying so. Your `you.md` is not changed. If `you.md` has frontmatter with `name` and `description`, it is installed as written. If it has frontmatter missing either one, or otherwise malformed, it is refused; fix the two fields or delete the block. Blank lines or an indent before the opening `---` do not hide it. The other four targets drop the frontmatter and install only the body.
 
@@ -291,7 +298,7 @@ For `agents`, `gemini` and `opencode`, Emulo appends this to the end of the file
 
 For `claude`, `codex` and `cursor`, if the destination file already exists, Emulo stops and asks for `--yes`, and with it overwrites the whole file. For `agents`, `gemini` and `opencode`, Emulo adds its block to an existing file without asking; it stops and asks for `--yes` only when an Emulo block is already there ("emulo profile block already exists. pass --yes to replace it."), and with it replaces only that block.
 
-OpenClaw and Hermes Agent load the profile as a standard skill: see [OPENCLAW_HERMES.md](OPENCLAW_HERMES.md).
+OpenClaw and Hermes Agent can take the profile as a standard skill. Skill discovery was checked in July 2026 on earlier versions and has not been re-verified; whether they read it during a task is not shown. See [OPENCLAW_HERMES.md](OPENCLAW_HERMES.md).
 
 ### The MCP server
 
@@ -299,7 +306,7 @@ OpenClaw and Hermes Agent load the profile as a standard skill: see [OPENCLAW_HE
 emulo mcp
 ```
 
-It speaks MCP over stdio and exposes one tool, `load_emulo_profile`, with a `domain` of `work` (the default), `design`, `write` or `video`. Add it to your MCP client's config:
+It speaks MCP over stdio and exposes one tool, `load_emulo_profile`, with a `domain` of `work` (the default), `design`, `write` or `video`. Any MCP client can connect. On 2026-09-25, Claude Code connected and listed the tool; Codex called it and received the no-profile message. Other clients were not tested. Add it to your MCP client's config:
 
 ```json
 {
@@ -313,7 +320,7 @@ The MCP server only serves a profile activated by the agent mining flow (`run em
 
 ## 7. Turn it off or remove it
 
-Emulo 0.6.6 has no uninstall command. Removal is deleting what `--install` wrote.
+Emulo 0.6.7 has no uninstall command. Removal is deleting what `--install` wrote.
 
 | Target | Delete |
 |---|---|

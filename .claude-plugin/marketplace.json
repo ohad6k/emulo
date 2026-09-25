@@ -1,6 +1,6 @@
 {
   "name": "emulo",
-  "description": "Emulo: mine your local AI coding session logs into a personal profile your agent loads before every task.",
+  "description": "Emulo: mine your local AI coding session logs into a you.md profile with dated receipts, installed where your agent can read it.",
   "owner": {"name": "Ohad"},
   "plugins": [
     {
@@ -8,7 +8,7 @@
       "source": "./",
       "displayName": "Emulo",
       "description": "Mine real AI coding sessions into a bounded, evidence-backed personal layer.",
-      "version": "0.6.6",
+      "version": "0.6.7",
       "author": {"name": "Ohad"},
       "homepage": "https://github.com/ohad6k/emulo",
       "repository": "https://github.com/ohad6k/emulo",

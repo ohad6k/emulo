@@ -216,10 +216,12 @@ footer { padding: 24px 0 38px; border-top: 1px solid var(--rule); color: var(--s
           <div class="next-step">
             <h3>The obvious next move, and whether it works</h3>
             <p>Most people answer a scan like this by writing the agent a rules file. I tested
-            that properly before recommending it: the same tasks on this repo, run with the rules
-            loaded and without them, scored blind. One of the two things I was sure would help
-            made the agent measurably worse.</p>
-            <p><a href="/notes/nothing-is-enforcing-your-agent-rules">Read what the harness found</a>.</p>
+            my own rules file first: three tasks, the same model, once with the rules loaded and
+            once without, one run each. Both runs found the same four real defects. With the rules
+            it took 3.2 times as long, and it brought in two reviewers, one of whom caught a defect
+            that run had shipped. On raw defect discovery, the rules made no measurable
+            difference.</p>
+            <p><a href="/notes/do-your-agent-rules-do-anything">Read what the test found</a>.</p>
             <p>If you want that harness pointed at your repo and your rules, write to
             <a href="mailto:founder@viberaven.dev?subject=Harness%20my%20agent%20rules">founder@viberaven.dev</a>
             and say what your agent keeps getting wrong. Ohad reads them.</p>

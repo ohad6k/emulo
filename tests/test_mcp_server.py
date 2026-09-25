@@ -86,6 +86,16 @@ class McpHandlerTest(unittest.TestCase):
         for domain in tool["inputSchema"]["properties"]["domain"]["enum"]:
             self.assertIn(f"'{domain}'", tool["description"], domain)
 
+    def test_tool_description_says_what_it_returns_not_what_it_does_for_the_user(self):
+        # Every MCP client shows this string to its model. It used to promise
+        # "so you act like them instead of starting cold", which no published
+        # test supports, so it now only says what the tool returns.
+        tool = emulo.mcp_handle(rpc(id=2, method="tools/list"), self.HOME)["result"]["tools"][0]
+        description = tool["description"].lower()
+        for claim in ("act like", "starting cold", "cold start", "work like"):
+            self.assertNotIn(claim, description)
+        self.assertIn("mined emulo profile", description)
+
     def test_unknown_method_is_method_not_found(self):
         response = emulo.mcp_handle(rpc(id=3, method="does/notexist"), self.HOME)
         self.assertEqual(-32601, response["error"]["code"])

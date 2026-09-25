@@ -119,8 +119,9 @@ so none of the below is readable today.
 
 **Hermes Agent.** The storage spec is complete. Read its SQLite `state.db` read-only and WAL-aware,
 resolve `HERMES_HOME` overrides and per-profile databases, and extract user messages only. The other
-direction (installing a mined profile *into* Hermes and OpenClaw) already works and is documented in
-[OPENCLAW_HERMES.md](OPENCLAW_HERMES.md); that guide is the reference for the runtime layout, not
+direction (copying a mined profile *into* Hermes and OpenClaw skill folders) is documented in
+[OPENCLAW_HERMES.md](OPENCLAW_HERMES.md). Skill discovery there was checked in July 2026 on earlier
+versions and has not been re-verified; that guide is the reference for the runtime layout, not
 duplicated here.
 
 **OpenClaw.** Same issue. No storage spec written up in this repo yet, so its session layout is

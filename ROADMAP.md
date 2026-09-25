@@ -1,14 +1,14 @@
 # Roadmap
 
-Emulo's current focus is the bounded plugin loop: deterministic extraction, stable caches, exact evidence receipts, private versioned profiles, safe migration, and separate work/design/write routing. User feedback and what it changed lives in `docs/FEEDBACK.md`.
+Emulo's current focus is the bounded plugin loop: deterministic extraction, stable caches, exact evidence receipts, private versioned profiles, safe migration, and separate work/design/write/video routing.
 
 ## Current release
 
 - Fourth mined domain `video` (`emulo:video`): mining loads motion, caption, voiceover, and edit taste before video work, alongside work, design, and write
-- Voice registers in the writing profile: mined `write` evidence carries a `casual`, `professional`, or `shared` register, `you-writer.md` groups rules by register, and `emulo:write` infers the register from task context instead of asking (from user feedback, `docs/FEEDBACK.md`)
+- Voice registers in the writing profile: mined `write` evidence carries a `casual`, `professional`, or `shared` register, `you-writer.md` groups rules by register, and `emulo:write` infers the register from task context instead of asking (from user feedback)
 - Cross-agent selected bootstrap through `npx skills add ohad6k/emulo@emulo`
-- Native Codex plugin with `emulo:mine`, `emulo:work`, `emulo:design`, and `emulo:write`
-- Bounded starter candidates capped at 160K new source tokens and nine planned mining passes
+- Native Codex plugin with `emulo:mine`, `emulo:work`, `emulo:design`, `emulo:write`, and `emulo:video`
+- Full history is the quality default; the quick preview is capped at 160K new source tokens and nine planned mining passes
 - Explicit deep mode, never an automatic fallback
 - Content-addressed segments and validated report/reduction reuse
 - Atomic profile activation plus exclusive legacy cutover and rollback
@@ -17,7 +17,7 @@ Emulo's current focus is the bounded plugin loop: deterministic extraction, stab
 
 ### Benchmark release
 
-Run the approved cold-versus-Emulo model matrix, publish the reproducible leaderboard, and produce proof clips as a separate release. No benchmark score belongs in the plugin release.
+Published so far: a pre-registered placebo test (https://emulo.vercel.app/placebo) and a September rerun on two models (https://emulo.vercel.app/fable). Neither measures whether the work got better, and no test of that has been run yet. Any benchmark ships as its own release; no benchmark score belongs in the plugin release.
 
 ### More session sources
 
@@ -45,7 +45,7 @@ Any future sync must be opt-in, encrypted, explicit about provider boundaries, a
 
 ### Counterweight profiles
 
-Use the evidence-backed profile to challenge repeated failure modes rather than merely imitate the user.
+Use the evidence-backed profile to challenge repeated failure modes rather than only restating the user's habits.
 
 ### Graph output
 

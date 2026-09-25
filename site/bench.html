@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Emulo Bench | Does a mined profile stop the model breaking your rules?</title>
-<meta name="description" content="Claude Opus 4.8 ran eight tasks twice, identical prompts, the only difference being whether it read a real Emulo profile first. Violations of the profile's own stated rules were counted, not judged: 12 for the plain model, 1 with Emulo.">
+<title>Emulo Bench | An early rule count, superseded by the placebo test</title>
+<meta name="description" content="An early July 2026 comparison: Claude Opus 4.8 ran eight tasks once without and once with a mined Emulo profile. One run per task and no placebo. Superseded by the pre-registered placebo test and the Fable 5.1 rerun.">
 <link rel="canonical" href="https://emulo.vercel.app/bench">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 
-<meta property="og:title" content="Emulo Bench | Does a mined profile stop the model breaking your rules?">
-<meta property="og:description" content="Claude Opus 4.8 ran eight tasks twice, identical prompts, the only difference being whether it read a real Emulo profile first. Violations of the profile's own stated rules were counted, not judged: 12 for the plain model, 1 with Emulo.">
+<meta property="og:title" content="Emulo Bench | An early rule count, superseded by the placebo test">
+<meta property="og:description" content="An early July 2026 comparison: Claude Opus 4.8 ran eight tasks once without and once with a mined Emulo profile. One run per task and no placebo. Superseded by the pre-registered placebo test and the Fable 5.1 rerun.">
 <meta property="og:image" content="https://raw.githubusercontent.com/ohad6k/emulo/main/assets/emulo.png">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://emulo.vercel.app/bench">
 <meta property="og:site_name" content="Emulo">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Emulo Bench | Does a mined profile stop the model breaking your rules?">
-<meta name="twitter:description" content="Claude Opus 4.8 ran eight tasks twice, identical prompts, the only difference being whether it read a real Emulo profile first. Violations of the profile's own stated rules were counted, not judged: 12 for the plain model, 1 with Emulo.">
+<meta name="twitter:title" content="Emulo Bench | An early rule count, superseded by the placebo test">
+<meta name="twitter:description" content="An early July 2026 comparison: Claude Opus 4.8 ran eight tasks once without and once with a mined Emulo profile. One run per task and no placebo. Superseded by the pre-registered placebo test and the Fable 5.1 rerun.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/ohad6k/emulo/main/assets/emulo.png">
 </head>
 <body>
@@ -129,10 +129,10 @@ footer .w{display:flex;justify-content:space-between;align-items:center}
 <nav><a class="wm" href="/">EMULO</a><span><a class="nl" href="/fable" style="margin-right:22px">Fable 5.1 vs Opus 5</a><a class="nl" href="https://github.com/ohad6k/emulo">GitHub</a></span></nav>
 
 <header class="hero"><div class="w">
-  <a href="/fable" style="display:inline-block;margin:0 0 26px;padding:12px 18px;border:1px solid var(--ink);text-decoration:none;font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink)"><span class="r">New, 2026-09-01</span> &nbsp;&middot;&nbsp; Fable 5.1 vs Opus 5, 120 generated UIs on day one, every one live &rarr;</a>
+  <div role="note" style="max-width:62ch;margin:0 auto 30px;padding:16px 20px;border:1px solid var(--ink);border-left:3px solid var(--red);text-align:left;font-size:16px;line-height:1.5;color:var(--ink)"><b>Superseded.</b> This is an early comparison from July 2026: one run per task, no placebo, and the model without the profile never saw the rules it was scored against. It does not show what the profile does. Two later tests replace it: a <a href="/placebo" style="color:inherit">pre-registered placebo test</a>, where the mined profile did not separate from an invented one of the same length on any of 9 comparisons, and a <a href="/fable" style="color:inherit">September rerun</a>, where it separated on 5 of 9 on Fable 5.1 and 1 of 9 on Opus 5. Both measure whether output changed, not whether it got better. Read those first.</div>
   <div class="plate"><span class="tick"></span><span class="lab"><span class="r">Emulo Bench</span> &nbsp;&middot;&nbsp; Rule adherence v1</span></div>
   <h1>Same prompt. Same model.<br>One of them had read <i>your rules</i>.</h1>
-  <p class="sub">Claude Opus 4.8 ran eight tasks twice. Identical prompt and identical files both times. The only difference is whether it first read a real Emulo profile, mined from 1,656 of my own coding sessions. Then every output was scanned for things the profile explicitly forbids.</p>
+  <p class="sub">Claude Opus 4.8 ran eight tasks twice. Identical prompt and identical files both times. The only difference is whether it first read a real Emulo profile mined from my own coding sessions. Then every output was scanned for things the profile explicitly forbids.</p>
   <div class="band">
     <div class="bx r"><div class="n">12</div><div class="k">Rule violations<br>Opus 4.8 alone</div></div>
     <div class="bx g"><div class="n">1</div><div class="k">Rule violations<br>Opus 4.8 + Emulo</div></div>
@@ -164,13 +164,13 @@ footer .w{display:flex;justify-content:space-between;align-items:center}
     <div class="st"><div class="no">02</div><div><h3>One model, two runs</h3><p>Claude Opus 4.8 both times. One run alone, one after reading the real profile file. That single difference is the whole experiment.</p></div></div>
     <div class="st"><div class="no">03</div><div><h3>The real profile, not a brief</h3><p>The Emulo run reads the actual mined profile the tool ships. No hand-written instructions were written for the task.</p></div></div>
     <div class="st"><div class="no">04</div><div><h3>Counted, not judged</h3><p>No taste panel. A violation is a hue in the purple range, a fabricated metric, an em-dash. Every hit prints the matched text.</p></div></div>
-    <div class="st"><div class="no">05</div><div><h3>A neutral product</h3><p>Orbit, a scheduling app neither run had context on, so only the profile could move the result.</p></div></div>
+    <div class="st"><div class="no">05</div><div><h3>A neutral product</h3><p>Orbit, a scheduling app neither run had context on.</p></div></div>
     <div class="st"><div class="no">06</div><div><h3>Emulo's own miss stays on the board</h3><p>Emulo broke one of its own rules: an em-dash in the pricing copy. It is in the table above. A result that hid it would be a pitch.</p></div></div>
   </div>
 
   <div class="lim">
     <div class="t">What this is not</div>
-    <p>This does <i>not</i> claim Emulo produces better work. It claims something narrower and checkable: the plain model breaks the rules you told it, and the profiled one mostly does not. On a separate blind panel judging generic quality, the plain model actually won several tasks, partly by doing the very things these rules forbid, because fabricated social proof and a tidy rule-of-three score well with a neutral judge.</p>
+    <p>This does <i>not</i> claim Emulo produces better work. What it counts is narrower: how often each output broke rules written in the profile. The plain run never saw those rules, and one run each way cannot tell the profile's content apart from simply being handed a long, confident document. The <a href="/placebo">placebo test</a> was built to check exactly that, and there the mined profile did not beat an invented one. On a separate blind panel judging generic quality, the plain model actually won several tasks, partly by doing the very things these rules forbid, because fabricated social proof and a tidy rule-of-three score well with a neutral judge.</p>
     <p>Read it as directional: eight tasks, one operator, one model. The scanner is regex and hue math, so it catches concrete rules and cannot see a vague one. It also missed three purples on its first run until the detector was rewritten to measure hue instead of matching a list of hex codes, which is a fair thing to be skeptical about.</p>
   </div>
 </div></section>

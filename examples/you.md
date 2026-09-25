@@ -1,6 +1,6 @@
 ---
 name: you
-description: A working profile mined from your own AI sessions — laws, taste, voice — so the agent acts like you, not a stranger.
+description: A working profile mined from your own AI sessions, with laws, taste and voice, each backed by dated quotes. Read it before a task.
 ---
 
 # you.md — example output

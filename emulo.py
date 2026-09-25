@@ -2398,8 +2398,8 @@ Your sessions have already been mined, redacted and split into {chunk_count} chu
 
 ## What to produce
 
-One file, `{out_dir}/you.md`: a working profile of this person that an agent loads
-before a task, so it behaves like someone who already knows them.
+One file, `{out_dir}/you.md`: a working profile of this person, every rule backed by
+a dated quote from their own messages, for an agent to read before a task.
 
 ## How
 
@@ -2424,8 +2424,9 @@ Every item you keep needs:
 
 Cut every rule you cannot attach a real quote to.
 
-A rule with no receipt is worse than a missing rule, because it makes the agent
-confidently wrong about someone. Expect to cut a large share of your first draft.
+A rule with no receipt is worse than a missing rule: it states something about this
+person that nothing in their messages supports. Expect to cut a large share of your
+first draft.
 Anything true of every developer alive ("values clean code", "likes tests") is noise.
 Keep what would surprise a stranger.
 
@@ -2435,11 +2436,31 @@ person writes for an audience.
 
 ## When you are done
 
-Write `{out_dir}/you.md`, then install it into the agents this person actually uses:
+Write `{out_dir}/you.md`. Then, before you run any install command:
 
+1. Ask the person which coding agents they use. Run only the installs for those agents,
+   never all of them.
+2. `--target agents --repo .` writes into AGENTS.md in the folder you are in now. Tell
+   the person that exact folder path and get their yes before you run it. Never run it
+   from a home folder or Downloads.
+3. Before that yes, tell them the whole profile, including quotes from their own
+   sessions, goes into that AGENTS.md, which is usually committed and shared with
+   everyone who works in the repo. Suggest keeping that file out of version control, or
+   choosing a personal folder that is not committed.
+
+The installs to choose from, one per agent:
+
+    emulo --install {out_dir}/you.md --target agents --repo .
     emulo --install {out_dir}/you.md --target claude
-    emulo --install {out_dir}/you.md --target codex
-    emulo --install {out_dir}/you.md --target cursor --repo .
+    emulo --install {out_dir}/you.md --target opencode
+
+AGENTS.md is what Codex and OpenCode put in the instructions they send the model.
+`--target opencode` does the same through OpenCode's global rules, for OpenCode users
+only. `--target claude` installs a skill named `you`; Claude Code does not reliably open
+it on its own, so tell the person to type `/you` (or `/you <task>`) to load it. The
+`codex` skill target is opened only when a request matches its description. Cursor and
+Gemini get a rules file where those tools look for one; whether they load it has not
+been checked.
 
 Targets: claude, codex, cursor, agents, gemini, opencode.
 
@@ -4431,7 +4452,7 @@ def plugin_main(argv):
         raise SystemExit(1) from None
     print(json.dumps(payload, sort_keys=True))
 
-EMULO_VERSION = "0.6.6"
+EMULO_VERSION = "0.6.7"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 AUTOPILOT_HEAD_SCHEMA = "emulo.autopilot-head/v1"
 AUTOPILOT_GENERATION_SCHEMA = "emulo.autopilot-generation/v1"
@@ -4584,8 +4605,9 @@ def mcp_tool_definitions():
         {
             "name": "load_emulo_profile",
             "description": (
-                "Load the user's Emulo profile so you act like them instead of starting cold. "
-                "Call this before working on their task. domain 'work' covers execution, "
+                "Return the user's mined Emulo profile for one domain: rules mined from "
+                "their own coding sessions, each with dated quotes. Read it before working "
+                "on their task. domain 'work' covers execution, "
                 "debugging, planning, and shipping; 'design' covers UI/UX and visual taste; "
                 "'write' covers their writing voice; 'video' covers pacing, captions, "
                 "voiceover, and shot and render choices. Returns the mined profile text, or a "
@@ -4933,8 +4955,8 @@ def verify_main(argv):
     print(f"{ok}/{len(results)} quotes traced to a real session.")
     if unsupported:
         print(f"\n{len(unsupported)} quote(s) appear in no session. Cut those rules.")
-        print("A rule whose receipt cannot be found is invented, and it makes the agent")
-        print("confidently wrong about the person it is describing.")
+        print("A missing quote may be invented, paraphrased, or from history that was not")
+        print("mined. Either way, nothing in the mined corpus backs that rule.")
         sys.exit(1)
     if thin:
         print(f"{len(thin)} quote(s) rest on a single session. That is context, not a rule.")

@@ -1,6 +1,6 @@
 ---
 name: you-working
-description: The working-self lens — laws, taste, and voice so an agent acts like this person on a task. The default emulo output.
+description: The working-self lens. Laws, taste, and voice mined from this person's sessions, for an agent to read before a task. The default emulo output.
 ---
 
 # you-working — the default lens

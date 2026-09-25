@@ -1,6 +1,6 @@
 {
   "name": "emulo",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Mine real AI coding sessions into a bounded, evidence-backed personal layer.",
   "author": {"name": "Ohad"},
   "homepage": "https://github.com/ohad6k/emulo",
@@ -10,7 +10,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Emulo",
-    "shortDescription": "Your agents stop starting from zero",
+    "shortDescription": "Mine your sessions into a you.md with receipts",
     "longDescription": "Emulo mines selected evidence from your real local coding-agent sessions into private work, design, writing, and video profiles.",
     "developerName": "Ohad",
     "category": "Developer Tools",
