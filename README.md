@@ -366,6 +366,8 @@ python emulo.py --install you.md --target gemini --repo .
 python emulo.py --install you.md --target opencode
 ```
 
+The `agents`, `cursor` and `gemini` targets write into the folder you pass with `--repo` (`AGENTS.md`, `.cursor/rules/you.mdc`, `GEMINI.md`). Each gets the whole profile, including verbatim quotes from your sessions, and those files are usually committed and shared with everyone who works in the repo. Keep them out of version control, or install into a folder that is not committed.
+
 ## Support matrix
 
 Loading rows come from a host-by-host test on 2026-09-25: Emulo 0.6.6 from PyPI, a canary profile, fresh headless sessions in each host. Installing a file and a host reading it are listed separately.
