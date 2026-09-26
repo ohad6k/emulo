@@ -17,6 +17,8 @@ Emulo is finished software. It does what the README and the [profile flow guide]
 
 Pull requests in these areas may still be read, but there is no commitment to review or merge them.
 
+The Hermes, Cursor and Windsurf adapters already offered in [issue #3](https://github.com/ohad6k/emulo/issues/3) are an exception: they will still be reviewed if submitted with the tests and real-run evidence described in [docs/SOURCES.md](docs/SOURCES.md#how-to-add-a-source). This does not promise a merge or make those sources supported today.
+
 ## How to report
 
 Open an issue with the steps, `emulo --version`, your OS and Python version, and what you expected. Security issues go through the Security tab's private report, never a public issue.
