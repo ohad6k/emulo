@@ -7,7 +7,14 @@ from pathlib import Path
 
 SITE = Path(__file__).resolve().parent.parent / "site"
 BASE = "https://emulo.vercel.app"
-ARTICLES = {"/agent-profile", "/placebo", "/bench", "/fable"}
+ARTICLES = {
+    "/agent-profile",
+    "/placebo",
+    "/bench",
+    "/fable",
+    "/notes/do-your-agent-rules-do-anything",
+    "/notes/nothing-is-enforcing-your-agent-rules",
+}
 # scan.html carries no absolute URL at all (site/scan.test.cjs), so it cannot name a canonical.
 NO_ABSOLUTE_URLS = {"/scan"}
 
